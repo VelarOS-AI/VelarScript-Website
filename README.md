@@ -47,8 +47,11 @@ Prepare the provider-specific but still local external-preview candidate with:
 npm run preview:prepare
 ```
 
-This produces and verifies `dist-netlify` with Velar-owned `_headers`,
-`_redirects`, CSP, asset hashes, and SPA fallback rules. It does not deploy.
+This builds the site twice, verifies byte-for-byte reproducibility, then
+atomically writes `release/external-preview/site` with Velar-owned `_headers`,
+`_redirects`, CSP, asset hashes, and SPA fallback rules. It refuses to replace
+an unrelated directory and does not deploy. Successful CI runs retain that
+exact directory as a commit-named downloadable artifact.
 After an explicitly authorized deployment, compare the hosted bytes, routes,
 MIME types, and headers with the local candidate using:
 

@@ -37,3 +37,10 @@ jobs:
         working-directory: website
       - run: npm run test:browser:all
         working-directory: website
+      - uses: actions/upload-artifact@v7
+        with:
+          name: velarscript-website-netlify-${{ github.sha }}
+          path: website/release/external-preview/site
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9

@@ -28,8 +28,8 @@
     "build": "velar build",
     "verify": "velar verify",
     "preview": "velar preview",
-    "preview:prepare": "velar build velar.netlify.json && velar verify dist-netlify",
-    "verify:deployment": "velar verify-deployment dist-netlify",
+    "preview:prepare": "node scripts/prepare-external-preview.mjs",
+    "verify:deployment": "velar verify-deployment release/external-preview/site",
     "validate": "npm run format:check && npm run check && npm test && npm run packages:check && npm run build && npm run verify"
   },
   "dependencies": {
