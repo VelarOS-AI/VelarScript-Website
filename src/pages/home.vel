@@ -1,234 +1,209 @@
 import {Head} from "velar/web"
-import {ActionLink, CodeWindow, Container, Eyebrow, Section, SectionHeading, Surface} from "@velarscript/site-ui"
+import {ActionLink, CodeWindow, Container, Eyebrow, Section, SectionHeading, Surface, foundationInkFaint as inkFaint, foundationInkSoft as inkSoft, foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {features, learningSteps} from "../content.vel"
 import {FeatureGrid} from "../components/feature-grid.vel"
 import {LearningPath} from "../components/learning-path.vel"
 
-const heroCode = "type Project:\n    name: string\n    stars: int\n\ncomponent ProjectCard(project: Project):\n    state starred = false\n\n    style:\n        article {\n            display: grid;\n            gap: 12px;\n        }\n\n    return <article>\n        <h2>{project.name}</h2>\n        <p>{project.stars} stars</p>\n        <button on:click={() => starred = not starred}>\n            {starred ? \"Starred\" : \"Star\"}\n        </button>\n    </article>"
+const heroCode = "type Project:\n    name: string\n    stars: int\n\nconst cardLook = look:\n    display = grid\n    gap = 12px\n\ncomponent ProjectCard(project: Project):\n    state starred = false\n\n    return <article look={cardLook}>\n        <h2>{project.name}</h2>\n        <p>{project.stars} stars</p>\n        <button on:click={() => starred = not starred}>\n            {starred ? \"Starred\" : \"Star\"}\n        </button>\n    </article>"
+
+const heroLook = look:
+    minHeight = 100vh - 66px
+    paddingTop = clamp(70px, 10vw, 128px)
+    paddingBottom = 64px
+
+    if viewport.width <= 980px:
+        minHeight = auto
+
+const heroGridLook = look:
+    display = grid
+    columns = tracks(minmax(0px, 1.05fr), minmax(420px, 0.72fr))
+    alignItems = center
+    gap = clamp(50px, 8vw, 120px)
+
+    if viewport.width <= 980px:
+        columns = tracks(minmax(0px, 1fr))
+
+const heroTitleLook = look:
+    maxWidth = 900px
+    margin = 0
+    marginTop = 18px
+    fontSize = clamp(4rem, 10vw, 9.5rem)
+    lineHeight = 0.85
+    letterSpacing = -0.075em
+
+const heroAccentLook = look:
+    display = block
+    color = sea
+    fontWeight = 520
+
+const leadLook = look:
+    maxWidth = 690px
+    margin = 0
+    marginTop = 34px
+    color = inkSoft
+    fontSize = clamp(1.12rem, 2.2vw, 1.42rem)
+    lineHeight = 1.62
+
+const actionsLook = look:
+    display = flex
+    wrap = wrap
+    gap = 10px
+    marginTop = 32px
+
+const proofLook = look:
+    display = flex
+    wrap = wrap
+    gap = space(8px, 20px)
+    margin = 0
+    marginTop = 27px
+    color = inkFaint
+    fontSize = 0.78rem
+    fontWeight = 650
+
+const proofItemLook = look:
+    @before:
+        content = "—"
+        marginRight = 8px
+        color = sea
+
+const codeColumnLook = look:
+    rotate = 1.4deg
+
+    if viewport.width <= 980px:
+        width = 100%
+        minWidth = 0
+        maxWidth = 680px
+        rotate = 0deg
+
+const manifestoLook = look:
+    display = grid
+    columns = tracks(minmax(0px, 0.9fr), minmax(280px, 0.48fr))
+    gap = clamp(40px, 8vw, 120px)
+    alignItems = end
+
+    if viewport.width <= 980px:
+        columns = tracks(minmax(0px, 1fr))
+
+const manifestoTitleLook = look:
+    margin = 0
+    fontSize = clamp(3rem, 7.5vw, 7.4rem)
+    lineHeight = 0.92
+    letterSpacing = -0.065em
+
+const manifestoTextLook = look:
+    margin = 0
+    color = inkSoft
+    fontSize = 1.08rem
+    lineHeight = 1.75
+
+const layersLook = look:
+    display = grid
+    columns = repeat(3, minmax(0px, 1fr))
+    marginTop = 70px
+
+    if viewport.width <= 720px:
+        columns = tracks(1fr)
+
+def layerLook(last: bool) -> Look:
+    return look:
+        display = grid
+        gap = 28px
+        minHeight = 250px
+        padding = 28px
+        borderRight = line(1px, rgba(255, 255, 255, 0.16))
+
+        if last:
+            borderRight = line(0px, transparent)
+
+        if viewport.width <= 720px:
+            minHeight = 190px
+            borderRight = line(0px, transparent)
+            borderBottom = line(1px, rgba(255, 255, 255, 0.16))
+
+            if last:
+                borderBottom = line(0px, transparent)
+
+const layerIndexLook = look:
+    color = rgba(255, 255, 255, 0.55)
+    font = "SFMono-Regular, Consolas, monospace"
+    fontSize = 0.74rem
+
+const layerTitleLook = look:
+    alignSelf = end
+    fontSize = clamp(1.5rem, 3vw, 2.7rem)
+    letterSpacing = -0.045em
+
+const closingLook = look:
+    display = grid
+    columns = tracks(1fr, auto)
+    alignItems = end
+    gap = 40px
+    padding = clamp(52px, 8vw, 86px)
+
+    if viewport.width <= 720px:
+        columns = tracks(1fr)
+
+const closingTitleLook = look:
+    maxWidth = 760px
+    margin = 0
+    fontSize = clamp(2.7rem, 7vw, 6.8rem)
+    lineHeight = 0.94
+    letterSpacing = -0.065em
+
+const closingTextLook = look:
+    maxWidth = 570px
+    margin = 0
+    marginTop = 20px
+    color = rgba(255, 255, 255, 0.65)
+    lineHeight = 1.7
 
 export component Home:
-    style:
-        .hero {
-            min-height: calc(100vh - 66px);
-            padding: clamp(70px, 10vw, 128px) 0 64px;
-        }
-
-        .hero-grid {
-            display: grid;
-            grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.72fr);
-            align-items: center;
-            gap: clamp(50px, 8vw, 120px);
-        }
-
-        h1, .lead, .proof {
-            margin: 0;
-        }
-
-        h1 {
-            max-width: 900px;
-            margin-top: 18px;
-            font-size: clamp(4rem, 10vw, 9.5rem);
-            line-height: 0.85;
-            letter-spacing: -0.075em;
-        }
-
-        h1 span {
-            display: block;
-            color: var(--velar-sea);
-            font-weight: 520;
-        }
-
-        .lead {
-            max-width: 690px;
-            margin-top: 34px;
-            color: var(--velar-ink-soft);
-            font-size: clamp(1.12rem, 2.2vw, 1.42rem);
-            line-height: 1.62;
-        }
-
-        .actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 32px;
-        }
-
-        .proof {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px 20px;
-            margin-top: 27px;
-            color: var(--velar-ink-faint);
-            font-size: 0.78rem;
-            font-weight: 650;
-        }
-
-        .proof span::before {
-            content: "—";
-            margin-right: 8px;
-            color: var(--velar-sea);
-        }
-
-        .code-column {
-            transform: rotate(1.4deg);
-        }
-
-        .manifesto {
-            display: grid;
-            grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.48fr);
-            gap: clamp(40px, 8vw, 120px);
-            align-items: end;
-        }
-
-        .manifesto h2, .manifesto p {
-            margin: 0;
-        }
-
-        .manifesto h2 {
-            font-size: clamp(3rem, 7.5vw, 7.4rem);
-            line-height: 0.92;
-            letter-spacing: -0.065em;
-        }
-
-        .manifesto p {
-            color: var(--velar-ink-soft);
-            font-size: 1.08rem;
-            line-height: 1.75;
-        }
-
-        .layers {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            margin-top: 70px;
-        }
-
-        .layer {
-            display: grid;
-            gap: 28px;
-            min-height: 250px;
-            padding: 28px;
-            border-right: 1px solid rgba(255, 255, 255, 0.16);
-        }
-
-        .layer:last-child {
-            border-right: 0;
-        }
-
-        .layer span {
-            color: rgba(255, 255, 255, 0.55);
-            font: 0.74rem "SFMono-Regular", Consolas, monospace;
-        }
-
-        .layer strong {
-            align-self: end;
-            font-size: clamp(1.5rem, 3vw, 2.7rem);
-            letter-spacing: -0.045em;
-        }
-
-        .closing {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            align-items: end;
-            gap: 40px;
-            padding: clamp(52px, 8vw, 86px);
-        }
-
-        .closing h2, .closing p {
-            margin: 0;
-        }
-
-        .closing h2 {
-            max-width: 760px;
-            font-size: clamp(2.7rem, 7vw, 6.8rem);
-            line-height: 0.94;
-            letter-spacing: -0.065em;
-        }
-
-        .closing p {
-            max-width: 570px;
-            margin-top: 20px;
-            color: rgba(255, 255, 255, 0.65);
-            line-height: 1.7;
-        }
-
-        @media (max-width: 980px) {
-            .hero-grid, .manifesto {
-                grid-template-columns: minmax(0, 1fr);
-            }
-
-            .hero {
-                min-height: auto;
-            }
-
-            .code-column {
-                width: 100%;
-                min-width: 0;
-                max-width: 680px;
-                transform: none;
-            }
-        }
-
-        @media (max-width: 720px) {
-            .layers, .closing {
-                grid-template-columns: 1fr;
-            }
-
-            .layer {
-                min-height: 190px;
-                border-right: 0;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.16);
-            }
-
-            .layer:last-child {
-                border-bottom: 0;
-            }
-        }
-
+    const locale = useLocale()
     return <main>
-        <Head title="VelarScript — The Web, written clearly" description="A clear, compact language and integrated framework for modern web applications." themeColor="#f7f5f0" />
-        <section class="hero" data-home-hero>
+        <Head title={locale.text("VelarScript — The Web, written clearly", "VelarScript — 清晰地书写 Web")} description={locale.text("A clear, compact language and integrated framework for modern web applications.", "面向现代 Web 应用的清晰、紧凑语言与一体化框架。")} themeColor="#f7f5f0" />
+        <section class="hero" look={heroLook} data-home-hero>
             <Container>
-                <div class="hero-grid">
+                <div class="hero-grid" look={heroGridLook}>
                     <div>
-                        <Eyebrow label="Language + Web framework" />
-                        <h1>The Web,<span>written clearly.</span></h1>
-                        <p class="lead">VelarScript combines Python's readability with JavaScript's flexible runtime model, then makes components, styles, data, and browser capabilities feel like one language.</p>
-                        <div class="actions"><ActionLink to="/learn" label="Start learning" /><ActionLink to="/docs" label="Read the docs" quiet={true} /></div>
-                        <p class="proof"><span>Compiles to JavaScript</span><span>Native JSX and CSS</span><span>Apache-2.0</span></p>
+                        <Eyebrow label={locale.text("Language + Web framework", "语言 + Web 框架")} />
+                        <h1 look={heroTitleLook}>{locale.text("The Web,", "让 Web，")}<span look={heroAccentLook}>{locale.text("written clearly.", "写得更清晰。")}</span></h1>
+                        <p class="lead" look={leadLook}>{locale.text("VelarScript combines Python's readability with JavaScript's flexible runtime model, then makes components, Look, data, and browser capabilities feel like one language.", "VelarScript 融合 Python 的可读性与 JavaScript 灵活的运行时模型，并让组件、Look、数据和浏览器能力像同一门语言一样自然协作。")}</p>
+                        <div class="actions" look={actionsLook}><ActionLink to="/learn" label={locale.text("Start learning", "开始学习")} /><ActionLink to="/docs" label={locale.text("Read the docs", "阅读文档")} quiet={true} /></div>
+                        <p class="proof" look={proofLook}><span look={proofItemLook}>{locale.text("Compiles to JavaScript", "编译为 JavaScript")}</span><span look={proofItemLook}>{locale.text("Native JSX and controlled Look", "原生 JSX 与受控 Look")}</span><span look={proofItemLook}>Apache-2.0</span></p>
                     </div>
-                    <div class="code-column"><CodeWindow code={heroCode} label="project-card.vel" /></div>
+                    <div class="code-column" look={codeColumnLook}><CodeWindow code={heroCode} label="project-card.vel" /></div>
                 </div>
             </Container>
         </section>
 
         <Section ruled={true}>
             <Container>
-                <div class="manifesto"><h2>Less language between you and the idea.</h2><p>VelarScript does not invent a new virtual machine or disguise how the browser works. Values, references, closures, promises, and the prototype-based JavaScript runtime remain underneath. The source language simply gives you a cleaner place to think.</p></div>
+                <div class="manifesto" look={manifestoLook}><h2 look={manifestoTitleLook}>{locale.text("Less language between you and the idea.", "让语言少挡在你与想法之间。")}</h2><p look={manifestoTextLook}>{locale.text("VelarScript does not invent a new virtual machine or disguise how the browser works. Values, references, closures, promises, and the prototype-based JavaScript runtime remain underneath. The source language simply gives you a cleaner place to think.", "VelarScript 不发明新的虚拟机，也不掩饰浏览器如何工作。值、引用、闭包、Promise 与基于原型的 JavaScript 运行时仍在底层；源语言只是提供一个更干净的思考空间。")}</p></div>
             </Container>
         </Section>
 
         <Section ruled={true}>
             <Container>
-                <SectionHeading kicker="Design principles" title="Small enough to learn. Complete enough to ship." summary="Every feature must make ordinary web application code easier to read, safer at a real boundary, or simpler to operate." />
+                <SectionHeading kicker={locale.text("Design principles", "设计原则")} title={locale.text("Small enough to learn. Complete enough to ship.", "足够小，易于学习；足够完整，可以交付。")} summary={locale.text("Every feature must make ordinary web application code easier to read, safer at a real boundary, or simpler to operate.", "每项能力都必须让日常 Web 应用代码更易读、让真实边界更安全，或让运行维护更简单。")} />
                 <FeatureGrid features={features} />
             </Container>
         </Section>
 
         <Section ruled={true}>
             <Container>
-                <SectionHeading kicker="One coherent stack" title="Language and framework, designed together." summary="The compiler owns the language. @velarscript/web owns browser application capabilities. The browser still runs ordinary JavaScript." />
-                <Surface dark={true}><div class="layers"><div class="layer"><span>01 / SOURCE</span><strong>VelarScript language</strong></div><div class="layer"><span>02 / FRAMEWORK</span><strong>@velarscript/web</strong></div><div class="layer"><span>03 / RUNTIME</span><strong>Browser JavaScript</strong></div></div></Surface>
+                <SectionHeading kicker={locale.text("One coherent stack", "一套连贯技术栈")} title={locale.text("Language and framework, designed together.", "语言与框架，从一开始就一起设计。")} summary={locale.text("The compiler owns the language. @velarscript/web owns browser application capabilities. The browser still runs ordinary JavaScript.", "编译器负责语言，@velarscript/web 负责浏览器应用能力，而浏览器最终运行的仍是普通 JavaScript。")} />
+                <Surface dark={true}><div class="layers" look={layersLook}><div class="layer" look={layerLook(false)}><span look={layerIndexLook}>01 / {locale.text("SOURCE", "源码")}</span><strong look={layerTitleLook}>{locale.text("VelarScript language", "VelarScript 语言")}</strong></div><div class="layer" look={layerLook(false)}><span look={layerIndexLook}>02 / {locale.text("FRAMEWORK", "框架")}</span><strong look={layerTitleLook}>@velarscript/web</strong></div><div class="layer" look={layerLook(true)}><span look={layerIndexLook}>03 / {locale.text("RUNTIME", "运行时")}</span><strong look={layerTitleLook}>{locale.text("Browser JavaScript", "浏览器 JavaScript")}</strong></div></div></Surface>
             </Container>
         </Section>
 
         <Section ruled={true}>
             <Container>
-                <SectionHeading kicker="Learning path" title="From first line to production." summary="Start with readable language fundamentals, then add Web capabilities only when your application needs them." />
+                <SectionHeading kicker={locale.text("Learning path", "学习路径")} title={locale.text("From first line to production.", "从第一行代码走向生产环境。")} summary={locale.text("Start with readable language fundamentals, then add Web capabilities only when your application needs them.", "先从易读的语言基础开始，再在应用真正需要时逐步加入 Web 能力。")} />
                 <LearningPath steps={learningSteps} />
             </Container>
         </Section>
 
         <Section ruled={true}>
-            <Container><Surface dark={true}><div class="closing"><div><h2>Write the app, not the ceremony.</h2><p>The current line is a development release. The language, compiler, Web framework, CLI, and this site advance as one tested system.</p></div><ActionLink to="/learn" label="Meet VelarScript" inverse={true} /></div></Surface></Container>
+            <Container><Surface dark={true}><div class="closing" look={closingLook}><div><h2 look={closingTitleLook}>{locale.text("Write the app, not the ceremony.", "写应用，而不是写仪式。")}</h2><p look={closingTextLook}>{locale.text("The current line is a development release. The language, compiler, Web framework, CLI, and this site advance as one tested system.", "当前版本仍处于开发阶段。语言、编译器、Web 框架、CLI 与官网作为同一个经过测试的系统共同演进。")}</p></div><ActionLink to="/learn" label={locale.text("Meet VelarScript", "认识 VelarScript")} inverse={true} /></div></Surface></Container>
         </Section>
     </main>

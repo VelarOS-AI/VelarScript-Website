@@ -1,5 +1,6 @@
 import {Head, Link} from "velar/web"
-import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
 const recordCode = "type User:\n    id: string\n    name: string\n    avatar: string?\n    roles: List<string>\n\ntype Identifier = string\ntype Users = List<User>\ntype UserHandler = (User) -> none"
@@ -9,44 +10,45 @@ const unionCode = "type DisplayValue = string | number | bool\n\ndef display(val
 const enumCode = "enum TaskStatus:\n    todo\n    doing\n    done\n\nconst status: TaskStatus = TaskStatus.todo\nconst parsed = TaskStatus.parse(rawStatus)"
 
 export component LanguageTypes:
+    const locale = useLocale()
     return <main>
-        <Head title="Types and data · VelarScript" description="VelarScript record types, aliases, optionals, unions, enums, inference, and runtime validation without a second schema language." themeColor="#f7f5f0" />
+        <Head title={locale.text("Types and data · VelarScript", "类型与数据 · VelarScript")} description={locale.text("VelarScript record types, aliases, optionals, unions, enums, inference, and runtime validation without a second schema language.", "VelarScript 的记录类型、别名、可选值、联合、枚举、推断与运行时验证，不引入第二套 schema 语言。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker="Language / 02" title="Useful types, not type-level programming." summary="Types document application boundaries, guide the editor, catch ordinary mistakes, and optionally validate incoming runtime data." tags={["one type keyword", "runtime parse", "simple unions", "enums"]} />
+            <PageHeader kicker={locale.text("Language / 02", "语言 / 02")} title={locale.text("Useful types, not type-level programming.", "类型要有用，而不是做类型层编程。")} summary={locale.text("Types document application boundaries, guide the editor, catch ordinary mistakes, and optionally validate incoming runtime data.", "类型用于说明应用边界、帮助编辑器、捕获常见错误，并按需验证进入运行时的数据。")} tags={["one type keyword", "runtime parse", "simple unions", "enums"]} />
             <Prose>
-                <h2 id="record">Records and aliases</h2>
-                <pre><code>{recordCode}</code></pre>
-                <p>The colon form declares a structural record. The equals form gives a readable transparent name to an existing type. Aliases expand for checking, may cross module boundaries, and can participate in runtime validation, but they do not create nominal wrappers or accept type parameters.</p>
-                <p>Fields may use primitives, optionals, Lists, Maps, Sets, functions, records, classes, enums, or bounded unions. Function signatures omit parameter names because names do not affect assignability. An optional function requires grouping: <code>((string) -&gt; string)?</code>.</p>
-                <Callout title="One declaration system"><p>VelarScript has no separate <code>schema</code> or <code>interface</code> keyword. The same named <code>type</code> serves static checking, editor help, JSON/HTTP/storage/form boundaries, and explicit runtime validation.</p></Callout>
+                <h2 id="record">{locale.text("Records and aliases", "记录与别名")}</h2>
+                <CodeBlock code={recordCode} />
+                <p>{locale.text("The colon form declares a structural record. The equals form gives an existing type a readable transparent name. Aliases expand for checking, cross module boundaries, and can participate in runtime validation, but do not create nominal wrappers or accept type parameters.", "冒号形式声明结构化记录；等号形式给现有类型一个易读的透明名称。别名会在检查时展开，可以跨模块并参与运行时验证，但不会创建名义包装，也不接受类型参数。")}</p>
+                <p>{locale.text("Fields may use primitives, optionals, Lists, Maps, Sets, functions, records, classes, enums, or bounded unions. Function signatures omit parameter names because names do not affect assignability. An optional function requires grouping: ", "字段可以使用基础类型、可选类型、List、Map、Set、函数、记录、类、枚举或有界联合。函数签名省略参数名，因为名称不影响可赋值性。可选函数需要分组：")}<code>((string) -&gt; string)?</code>{locale.text(".", "。")}</p>
+                <Callout title={locale.text("One declaration system", "一套声明系统")}><p>{locale.text("VelarScript has no separate ", "VelarScript 没有额外的 ")}<code>schema</code>{locale.text(" or ", " 或 ")}<code>interface</code>{locale.text(" keyword. The same named ", " 关键字。同一个命名 ")}<code>type</code>{locale.text(" serves static checks, editor help, JSON/HTTP/storage/form boundaries, and explicit runtime validation.", " 同时服务于静态检查、编辑器帮助、JSON/HTTP/存储/表单边界与显式运行时验证。")}</p></Callout>
 
-                <h2 id="validation">Runtime validation</h2>
-                <pre><code>{validationCode}</code></pre>
+                <h2 id="validation">{locale.text("Runtime validation", "运行时验证")}</h2>
+                <CodeBlock code={validationCode} />
                 <ul>
-                    <li><code>Type.parse(value)</code> returns the checked value or throws <code>ValidationError</code>.</li>
-                    <li><code>value is Type</code> checks and narrows without throwing.</li>
-                    <li>Runtime code is emitted only when a type is actually used at runtime.</li>
-                    <li>Every emitted record Type, alias, and enum is frozen and registered under one module-independent identity.</li>
-                    <li>Forged objects with lookalike <code>parse</code> or <code>is</code> fields cannot bypass validation.</li>
+                    <li><code>Type.parse(value)</code>{locale.text(" returns the checked value or throws ", " 返回通过检查的值，否则抛出 ")}<code>ValidationError</code>{locale.text(".", "。")}</li>
+                    <li><code>value is Type</code>{locale.text(" checks and narrows without throwing.", " 进行检查与收窄，但不抛错。")}</li>
+                    <li>{locale.text("Runtime code is emitted only when a type is actually used at runtime.", "只有类型确实在运行时使用时才会生成对应代码。")}</li>
+                    <li>{locale.text("Every emitted record Type, alias, and enum is frozen and registered under one module-independent identity.", "每个生成的记录 Type、别名与枚举都会冻结，并以独立于模块的统一身份注册。")}</li>
+                    <li>{locale.text("Forged objects with lookalike ", "伪造带有相似 ")}<code>parse</code>{locale.text(" or ", " 或 ")}<code>is</code>{locale.text(" fields cannot bypass validation.", " 字段的对象无法绕过验证。")}</li>
                 </ul>
-                <p>JSON-shaped validation accepts finite primitives, <code>none</code>, dense Lists, and plain records recursively. It rejects sparse/accessor Lists, symbols, cycles, class instances, functions, Map, Set, Promise, and non-finite numbers when those values cross strict data boundaries.</p>
+                <p>{locale.text("JSON-shaped validation recursively accepts finite primitives, ", "JSON 形状验证会递归接受有限基础值、")}<code>none</code>{locale.text(", dense Lists, and plain records. At strict data boundaries it rejects sparse/accessor Lists, symbols, cycles, class instances, functions, Map, Set, Promise, and non-finite numbers.", "、稠密 List 与普通记录。在严格数据边界上，它会拒绝稀疏/访问器 List、symbol、循环、类实例、函数、Map、Set、Promise 与非有限数字。")}</p>
 
-                <h2 id="recursive">Recursive records</h2>
-                <pre><code>{recursiveCode}</code></pre>
-                <p>A record may refer to itself or another record when a finite value can terminate through an optional, List, Map, or real union branch. Required cycles such as <code>type Loop: next: Loop</code> are rejected. Runtime validation accepts finite acyclic trees and shared subtrees, but rejects cyclic graphs and excessive depth safely.</p>
+                <h2 id="recursive">{locale.text("Recursive records", "递归记录")}</h2>
+                <CodeBlock code={recursiveCode} />
+                <p>{locale.text("A record may refer to itself or another record when a finite value can terminate through an optional, List, Map, or real union branch. Required cycles such as ", "只要有限值能通过可选值、List、Map 或真实联合分支终止，记录就可以引用自身或其他记录。像 ")}<code>type Loop: next: Loop</code>{locale.text(" are rejected. Runtime validation accepts finite acyclic trees and shared subtrees, but safely rejects cyclic graphs and excessive depth.", " 这样的必需循环会被拒绝。运行时验证接受有限无环树和共享子树，并安全拒绝循环图与过深结构。")}</p>
 
-                <h2 id="union">Simple unions and narrowing</h2>
-                <pre><code>{unionCode}</code></pre>
-                <p>Unions describe a small finite set of runtime alternatives. Each rejected <code>is</code> check removes the covered member for the following <code>else if</code> or <code>else</code> branch. The same bounded narrowing works for inline branches, assertions, stable record fields, and adjacent JSX branches. VelarScript does not add conditional, mapped, or user-programmable type subtraction.</p>
+                <h2 id="union">{locale.text("Simple unions and narrowing", "简单联合与收窄")}</h2>
+                <CodeBlock code={unionCode} />
+                <p>{locale.text("Unions describe a small finite set of runtime alternatives. Each rejected ", "联合描述一小组有限的运行时备选。每次失败的 ")}<code>is</code>{locale.text(" check removes that member for the following ", " 检查都会从后续 ")}<code>else if</code>{locale.text(" or ", " 或 ")}<code>else</code>{locale.text(" branch. The same bounded narrowing works for inline branches, assertions, stable record fields, and adjacent JSX branches. VelarScript does not add conditional, mapped, or programmable type subtraction.", " 分支中移除对应成员。同样的有界收窄适用于内联分支、断言、稳定记录字段与相邻 JSX 分支。VelarScript 不加入条件类型、映射类型或可编程类型减法。")}</p>
 
-                <h2 id="enum">Enums</h2>
-                <pre><code>{enumCode}</code></pre>
-                <p>Enums are nominal string-backed workflow values. Members serialize as their names and may flow out to string-based Web/storage boundaries, but an arbitrary string is not assignable back. Use <code>Enum.parse</code> for dynamic input and <code>match</code> for exhaustive handling.</p>
+                <h2 id="enum">{locale.text("Enums", "枚举")}</h2>
+                <CodeBlock code={enumCode} />
+                <p>{locale.text("Enums are nominal string-backed workflow values. Members serialize as their names and may flow to string-based Web/storage boundaries, but arbitrary strings are not assignable back. Use ", "枚举是以字符串承载的名义工作流值。成员序列化为自身名称，可以流向基于字符串的 Web/存储边界，但任意字符串不能反向赋值。动态输入使用 ")}<code>Enum.parse</code>{locale.text(" for dynamic input and ", "，穷尽处理使用 ")}<code>match</code>{locale.text(" for exhaustive handling.", "。")}</p>
 
-                <h2 id="inference">Inference and deliberate limits</h2>
-                <p>Local values, callback arguments/results, collection transforms, Promise results, runtime parsing, and empty collection first writes are inferred. Public function parameters, non-<code>none</code> results, class fields, and important application boundaries remain explicitly typed. The language intentionally omits user-defined generics, overloads, declaration merging, conditional types, mapped types, metaprogramming, and complex constraints.</p>
+                <h2 id="inference">{locale.text("Inference and deliberate limits", "推断与有意限制")}</h2>
+                <p>{locale.text("Local values, callback arguments/results, collection transforms, Promise results, runtime parsing, and first writes to empty collections are inferred. Public function parameters, non-", "局部值、回调参数/结果、集合变换、Promise 结果、运行时解析与空集合首次写入都可以推断。公开函数参数、非 ")}<code>none</code>{locale.text(" results, class fields, and important application boundaries stay explicit. The language intentionally omits user-defined generics, overloads, declaration merging, conditional/mapped types, metaprogramming, and complex constraints.", " 结果、类字段与重要应用边界仍需显式类型。语言有意省略用户泛型、重载、声明合并、条件/映射类型、元编程与复杂约束。")}</p>
 
-                <div class="next-links"><Link to="/docs/language/functions"><strong>Next: Functions and flow</strong><span>Use those types across synchronous and asynchronous work.</span></Link><Link to="/docs/language/collections"><strong>Collections</strong><span>Lists, Maps, Sets, iteration, and transformations.</span></Link></div>
+                <div class="next-links"><Link to="/docs/language/functions"><strong>{locale.text("Next: Functions and flow", "下一步：函数与控制流")}</strong><span>{locale.text("Use those types across synchronous and asynchronous work.", "在同步与异步工作中使用这些类型。")}</span></Link><Link to="/docs/language/collections"><strong>{locale.text("Collections", "集合")}</strong><span>{locale.text("Lists, Maps, Sets, iteration, and transformations.", "List、Map、Set、迭代与变换。")}</span></Link></div>
             </Prose>
         </DocsShell>
     </main>

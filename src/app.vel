@@ -1,6 +1,6 @@
 import {publicConfig} from "velar/config"
 import {Head, RouteContext, Router, route} from "velar/web"
-import {Container, SiteFoundation} from "@velarscript/site-ui"
+import {Container, SiteFoundation, foundationInkSoft as inkSoft, foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {primaryNav, SiteRuntimeConfig} from "./content.vel"
 import {SiteFooter, SiteHeader} from "./components/site-shell.vel"
 import {DocsOverview} from "./pages/docs-overview.vel"
@@ -26,37 +26,33 @@ import {WebRouting} from "./pages/web-routing.vel"
 
 const config = publicConfig(SiteRuntimeConfig)
 
+const missingLook = look:
+    minHeight = 70vh
+    paddingBlock = clamp(90px, 14vw, 180px)
+
+const missingCodeLook = look:
+    margin = 0
+    color = sea
+    font = "SFMono-Regular, Consolas, monospace"
+    fontSize = 0.76rem
+
+const missingTitleLook = look:
+    maxWidth = 900px
+    margin = 0
+    marginTop = 16px
+    fontSize = clamp(4rem, 10vw, 9rem)
+    lineHeight = 0.9
+    letterSpacing = -0.07em
+
+const missingMessageLook = look:
+    margin = 0
+    marginTop = 26px
+    color = inkSoft
+    fontSize = 1.1rem
+
 component NotFound(route: RouteContext):
-    style:
-        .missing {
-            min-height: 70vh;
-            padding: clamp(90px, 14vw, 180px) 0;
-        }
-
-        .code, h1, p {
-            margin: 0;
-        }
-
-        .code {
-            color: var(--velar-sea);
-            font: 0.76rem "SFMono-Regular", Consolas, monospace;
-        }
-
-        h1 {
-            max-width: 900px;
-            margin-top: 16px;
-            font-size: clamp(4rem, 10vw, 9rem);
-            line-height: 0.9;
-            letter-spacing: -0.07em;
-        }
-
-        p {
-            margin-top: 26px;
-            color: var(--velar-ink-soft);
-            font-size: 1.1rem;
-        }
-
-    return <main class="missing" data-not-found><Head title="Page not found · VelarScript" description="The requested VelarScript documentation page does not exist." /><Container><span class="code">404 / UNKNOWN ROUTE</span><h1>Nothing is written here yet.</h1><p>No VelarScript page matches {route.path}.</p></Container></main>
+    const locale = useLocale()
+    return <main class="missing" look={missingLook} data-not-found><Head title={locale.text("Page not found · VelarScript", "页面不存在 · VelarScript")} description={locale.text("The requested VelarScript documentation page does not exist.", "请求的 VelarScript 文档页面不存在。")} /><Container><span class="code" look={missingCodeLook}>404 / {locale.text("UNKNOWN ROUTE", "未知路由")}</span><h1 look={missingTitleLook}>{locale.text("Nothing is written here yet.", "这里还没有内容。")}</h1><p look={missingMessageLook}>{locale.text("No VelarScript page matches", "没有 VelarScript 页面匹配")} {route.path}.</p></Container></main>
 
 const routes = [
     route("/", Home),
@@ -82,4 +78,5 @@ const routes = [
 ]
 
 export component App:
-    return <SiteFoundation><SiteHeader items={primaryNav} repositoryUrl={config.repositoryUrl} version={config.languageVersion} /><div id="main-content" tabindex="-1"><Router routes={routes} fallback={NotFound} /></div><SiteFooter repositoryUrl={config.repositoryUrl} version={config.languageVersion} /></SiteFoundation>
+    const locale = useLocale()
+    return <SiteFoundation><Head title={locale.text("VelarScript — Write the Web clearly", "VelarScript — 清晰地书写 Web")} language={locale.languageTag()} /><SiteHeader items={primaryNav} repositoryUrl={config.repositoryUrl} version={config.languageVersion} /><div id="main-content" tabindex="-1"><Router routes={routes} fallback={NotFound} /></div><SiteFooter repositoryUrl={config.repositoryUrl} version={config.languageVersion} /></SiteFoundation>

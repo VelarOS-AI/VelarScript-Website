@@ -11,7 +11,7 @@
       "repositoryUrl": "https://github.com/VelarOS-AI/VelarScript",
       "releaseChannel": "development",
       "languageVersion": "0.9.0-dev",
-      "webApiVersion": "0.8"
+      "webApiVersion": "0.9"
     },
     "build": {
       "sourceMaps": false

@@ -1,221 +1,230 @@
 import {Link} from "velar/web"
 import {SkipLink} from "@velarscript/ui"
-import {FoundationFrame} from "./foundation.vel"
+import {FoundationFrame, codeInk, ink, inkFaint, inkSoft, paper, paperPure, rule, ruleStrong, sea, seaSoft} from "./foundation.vel"
+import {LocaleComposer as InternalLocaleComposer, useLocale as createLocaleComposer} from "./locale.vel"
+import {SyntaxCode as SyntaxCodeRenderer} from "./syntax.vel"
+
+export const foundationInk: Color = ink
+export const foundationInkSoft: Color = inkSoft
+export const foundationInkFaint: Color = inkFaint
+export const foundationPaperPure: Color = paperPure
+export const foundationRule: Color = rule
+export const foundationSea: Color = sea
+export const foundationSeaSoft: Color = seaSoft
+
+export def controlSurface(radius: Length = 9px, padding: Spacing = space(8px, 11px)) -> Look:
+    return look:
+        display = inlineGrid
+        placeItems = center
+        padding = padding
+        border = line(1px, rule)
+        radius = radius
+        color = ink
+        background = paperPure
+        fontSize = 0.88rem
+        fontWeight = 650
+        textDecoration = undecorated
+        cursor = pointer
+        transition = change("background", 180ms, easeOut)
+
+        if @hover:
+            background = lighten(seaSoft, 0.08)
+
+export type LocaleComposer:
+    locale: () -> string
+    languageTag: () -> string
+    isChinese: () -> bool
+    text: (string, string) -> string
+    setLocale: (string) -> none
+    toggle: () -> none
+
+export def useLocale() -> LocaleComposer:
+    const composer: InternalLocaleComposer = createLocaleComposer()
+    return composer
+
+export component SyntaxCode(code: string):
+    return <SyntaxCodeRenderer code={code} />
 
 export component SiteFoundation(children: WebNode):
-    return <FoundationFrame><SkipLink target="#main-content" />{children}</FoundationFrame>
+    const locale = useLocale()
+    return <FoundationFrame><div lang={locale.languageTag()}><SkipLink target="#main-content" />{children}</div></FoundationFrame>
+
+const brandLinkLook = look:
+    display = inlineFlex
+    alignItems = center
+    gap = 10px
+    color = ink
+    textDecoration = undecorated
+
+const brandImageLook = look:
+    width = 28px
+    height = 28px
+    objectFit = contain
+
+const brandNameLook = look:
+    fontSize = 1.02rem
+    fontWeight = 760
+    letterSpacing = -0.035em
+
+const brandLabelLook = look:
+    color = inkFaint
+    fontSize = 0.78rem
+    fontWeight = 650
 
 export component Brand(compact: bool = false):
-    style:
-        .brand {
-            display: inline-flex;
-            color: var(--velar-ink);
-            text-decoration: none;
-        }
+    const locale = useLocale()
+    return <span class="brand"><Link to="/" look={brandLinkLook}><img look={brandImageLook} src="/brand/velar-sail.png" alt="" /><span class="brand-name" look={brandNameLook}>VelarScript</span>{compact ? none : <span look={brandLabelLook}>{locale.text("Language + Web", "语言 + Web")}</span>}</Link></span>
 
-        .brand a {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-        }
+def containerLook(narrow: bool) -> Look:
+    return look:
+        width = 100%
+        maxWidth = 1320px
+        marginInline = auto
+        paddingInline = clamp(20px, 4vw, 56px)
 
-        .brand img {
-            width: 28px;
-            height: 28px;
-            object-fit: contain;
-        }
-
-        .brand-name {
-            font-size: 1.02rem;
-            font-weight: 760;
-            letter-spacing: -0.035em;
-        }
-
-        .brand-label {
-            color: var(--velar-ink-faint);
-            font-size: 0.78rem;
-            font-weight: 650;
-        }
-
-    return <span class="brand"><Link to="/"><img src="/brand/velar-sail.png" alt="" /><span class="brand-name">VelarScript</span>{compact ? none : <span class="brand-label">Language + Web</span>}</Link></span>
+        if narrow:
+            maxWidth = 1012px
 
 export component Container(children: WebNode, narrow: bool = false):
-    style:
-        .container {
-            width: min(var(--velar-content), calc(100% - var(--velar-page) * 2));
-            margin: 0 auto;
-        }
+    return <div class="container" look={containerLook(narrow)}>{children}</div>
 
-        .container.narrow {
-            max-width: 900px;
-        }
-
-    return <div class="container" class:narrow={narrow}>{children}</div>
+const eyebrowLook = look:
+    margin = 0
+    color = sea
+    fontSize = 0.76rem
+    fontWeight = 760
+    letterSpacing = 0.12em
+    textCase = uppercase
 
 export component Eyebrow(label: string):
-    style:
-        .eyebrow {
-            margin: 0;
-            color: var(--velar-sea);
-            font-size: 0.76rem;
-            font-weight: 760;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-        }
+    return <p look={eyebrowLook}>{label}</p>
 
-    return <p class="eyebrow">{label}</p>
+def sectionLook(ruled: bool) -> Look:
+    return look:
+        paddingBlock = clamp(72px, 10vw, 132px)
+
+        if ruled:
+            borderTop = line(1px, rule)
 
 export component Section(children: WebNode, ruled: bool = false):
-    style:
-        .section {
-            padding: clamp(72px, 10vw, 132px) 0;
-        }
+    return <section look={sectionLook(ruled)}>{children}</section>
 
-        .section.ruled {
-            border-top: 1px solid var(--velar-line);
-        }
+const headingLook = look:
+    display = grid
+    columns = tracks(minmax(0px, 0.82fr), minmax(280px, 0.5fr))
+    alignItems = end
+    gap = clamp(28px, 6vw, 88px)
+    marginBottom = clamp(42px, 6vw, 76px)
 
-    return <section class="section" class:ruled={ruled}>{children}</section>
+    if viewport.width <= 760px:
+        columns = tracks(1fr)
+
+const headingTitleLook = look:
+    margin = 0
+    marginTop = 14px
+    maxWidth = 850px
+    fontSize = clamp(2.5rem, 6vw, 5.4rem)
+    lineHeight = 0.98
+    letterSpacing = -0.06em
+
+const headingSummaryLook = look:
+    margin = 0
+    color = inkSoft
+    fontSize = 1.04rem
+    lineHeight = 1.7
 
 export component SectionHeading(kicker: string, title: string, summary: string):
-    style:
-        .heading {
-            display: grid;
-            grid-template-columns: minmax(0, 0.82fr) minmax(280px, 0.5fr);
-            align-items: end;
-            gap: clamp(28px, 6vw, 88px);
-            margin-bottom: clamp(42px, 6vw, 76px);
-        }
+    return <header look={headingLook}><div><Eyebrow label={kicker} /><h2 look={headingTitleLook}>{title}</h2></div><p look={headingSummaryLook}>{summary}</p></header>
 
-        h2, p {
-            margin: 0;
-        }
+def surfaceLook(dark: bool) -> Look:
+    return look:
+        border = line(1px, rule)
+        radius = 20px
+        background = paperPure
 
-        h2 {
-            margin-top: 14px;
-            max-width: 850px;
-            font-size: clamp(2.5rem, 6vw, 5.4rem);
-            line-height: 0.98;
-            letter-spacing: -0.06em;
-        }
-
-        .summary {
-            color: var(--velar-ink-soft);
-            font-size: 1.04rem;
-            line-height: 1.7;
-        }
-
-        @media (max-width: 760px) {
-            .heading {
-                grid-template-columns: 1fr;
-            }
-        }
-
-    return <header class="heading"><div><Eyebrow label={kicker} /><h2>{title}</h2></div><p class="summary">{summary}</p></header>
+        if dark:
+            border = line(1px, ink)
+            color = paperPure
+            background = ink
 
 export component Surface(children: WebNode, dark: bool = false):
-    style:
-        .surface {
-            border: 1px solid var(--velar-line);
-            border-radius: var(--velar-radius-large);
-            background: var(--velar-paper-pure);
-        }
+    return <div look={surfaceLook(dark)}>{children}</div>
 
-        .surface.dark {
-            border-color: #111216;
-            color: var(--velar-paper-pure);
-            background: var(--velar-ink);
-        }
+def actionLook(quiet: bool, inverse: bool) -> Look:
+    return look:
+        display = inlineFlex
+        border = line(1px, ink)
+        radius = pill
+        color = paperPure
+        background = ink
+        transition = change("translate", 220ms, easeOut)
 
-    return <div class="surface" class:dark={dark}>{children}</div>
+        if quiet:
+            color = ink
+            background = transparent
+
+        if inverse:
+            border = line(1px, paperPure)
+            color = ink
+            background = paperPure
+
+        if @hover:
+            translateY = -2px
+
+const actionContentLook = look:
+    display = inlineFlex
+    padding = space(10px, 16px)
+    color = inherit
+    textDecoration = undecorated
 
 export component ActionLink(to: string, label: string, quiet: bool = false, inverse: bool = false):
-    style:
-        .action {
-            display: inline-flex;
-            border: 1px solid var(--velar-ink);
-            border-radius: 999px;
-            color: var(--velar-paper-pure);
-            background: var(--velar-ink);
-            transition: transform 220ms var(--velar-ease), background 220ms var(--velar-ease);
-        }
+    return <span look={actionLook(quiet, inverse)}><Link to={to} look={actionContentLook}>{label}</Link></span>
 
-        .action.quiet {
-            color: var(--velar-ink);
-            background: transparent;
-        }
-
-        .action.inverse {
-            border-color: var(--velar-paper-pure);
-            color: var(--velar-ink);
-            background: var(--velar-paper-pure);
-        }
-
-        .action:hover {
-            transform: translateY(-2px);
-        }
-
-        .action a {
-            padding: 10px 16px;
-            text-decoration: none;
-        }
-
-    return <span class="action" class:quiet={quiet} class:inverse={inverse}><Link to={to}>{label}</Link></span>
+const tagLook = look:
+    display = inlineFlex
+    padding = space(5px, 9px)
+    border = line(1px, rule)
+    radius = pill
+    color = inkSoft
+    background = paperPure
+    fontSize = 0.78rem
+    fontWeight = 650
 
 export component Tag(label: string):
-    style:
-        .tag {
-            display: inline-flex;
-            padding: 5px 9px;
-            border: 1px solid var(--velar-line);
-            border-radius: 999px;
-            color: var(--velar-ink-soft);
-            background: var(--velar-paper-pure);
-            font-size: 0.78rem;
-            font-weight: 650;
-        }
+    return <span look={tagLook}>{label}</span>
 
-    return <span class="tag">{label}</span>
+const codeWindowLook = look:
+    overflow = hidden
+    width = 100%
+    minWidth = 0
+    margin = 0
+    border = line(1px, ruleStrong)
+    radius = 20px
+    background = ink
+    shadow = dropShadow(0px, 24px, 80px, rule)
+
+const codeBarLook = look:
+    display = flex
+    alignItems = center
+    justifyContent = spaceBetween
+    padding = space(10px, 14px)
+    borderBottom = line(1px, rgba(255, 255, 255, 0.11))
+    color = rgba(255, 255, 255, 0.62)
+    fontSize = 0.74rem
+
+const codeDotsLook = look:
+    letterSpacing = 0.2em
+
+const codeBodyLook = look:
+    overflow = auto
+    maxWidth = 100%
+    minHeight = 260px
+    margin = 0
+    padding = clamp(20px, 4vw, 34px)
+    color = codeInk
+    font = "SFMono-Regular, Consolas, Liberation Mono, monospace"
+    fontSize = clamp(0.78rem, 1.5vw, 0.92rem)
+    lineHeight = 1.75
 
 export component CodeWindow(code: string, label: string = "main.vel"):
-    style:
-        .window {
-            overflow: hidden;
-            width: 100%;
-            min-width: 0;
-            margin: 0;
-            border: 1px solid var(--velar-line-strong);
-            border-radius: var(--velar-radius-large);
-            background: #111216;
-            box-shadow: 0 24px 80px rgba(17, 18, 22, 0.14);
-        }
-
-        .bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 14px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.11);
-            color: rgba(255, 255, 255, 0.62);
-            font-size: 0.74rem;
-        }
-
-        .dots {
-            letter-spacing: 0.2em;
-        }
-
-        pre {
-            overflow: auto;
-            max-width: 100%;
-            min-height: 260px;
-            margin: 0;
-            padding: clamp(20px, 4vw, 34px);
-            color: #f3f0e8;
-            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-            font-size: clamp(0.78rem, 1.5vw, 0.92rem);
-            line-height: 1.75;
-            tab-size: 4;
-        }
-
-    return <figure class="window"><figcaption class="bar"><span class="dots">● ● ●</span><span>{label}</span></figcaption><pre><code>{code}</code></pre></figure>
+    return <figure look={codeWindowLook}><figcaption look={codeBarLook}><span look={codeDotsLook}>● ● ●</span><span>{label}</span></figcaption><pre look={codeBodyLook}><SyntaxCode code={code} /></pre></figure>

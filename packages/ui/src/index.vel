@@ -3,102 +3,107 @@ import {domId} from "velar/web"
 
 export const UI_API_VERSION = "0.2"
 
-export component VisuallyHidden(children: WebNode):
-    style:
-        .visually-hidden {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            overflow: hidden;
-            margin: -1px;
-            padding: 0;
-            border: 0;
-            clip: rect(0 0 0 0);
-            clip-path: inset(50%);
-            white-space: nowrap;
-        }
+const visuallyHiddenLook = look:
+    position = absolute
+    width = 1px
+    height = 1px
+    overflow = hidden
+    margin = -1px
+    padding = 0
+    border = line(0px, transparent)
+    clip = "rect(0 0 0 0)"
+    clipPath = "inset(50%)"
+    whiteSpace = nowrap
 
-    return <span class="visually-hidden">{children}</span>
+export component VisuallyHidden(children: WebNode):
+    return <span class="visually-hidden" look={visuallyHiddenLook}>{children}</span>
+
+const skipLinkLook = look:
+    position = fixed
+    top = 12px
+    left = 12px
+    zIndex = 2147483647
+    padding = space(10px, 14px)
+    border = line(2px, currentColor)
+    radius = 8px
+    color = canvasText
+    background = canvas
+    fontSize = 0.92rem
+    fontWeight = 600
+    lineHeight = 1.2
+    textDecoration = undecorated
+    translateY = -100% - 24px
+
+    if @focusVisible:
+        translateY = 0px
 
 export component SkipLink(target: string, label: string = "Skip to content"):
-    style:
-        .skip-link {
-            position: fixed;
-            top: 12px;
-            left: 12px;
-            z-index: 2147483647;
-            padding: 10px 14px;
-            border: 2px solid currentColor;
-            border-radius: 8px;
-            color: CanvasText;
-            background: Canvas;
-            font: 600 0.92rem/1.2 ui-sans-serif, system-ui, sans-serif;
-            text-decoration: none;
-            transform: translateY(calc(-100% - 24px));
-            transition: transform 120ms ease-out;
-        }
+    return <a class="skip-link" look={skipLinkLook} href={target}>{label}</a>
 
-        .skip-link:focus-visible {
-            transform: translateY(0);
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .skip-link {
-                transition: none;
-            }
-        }
-
-    return <a class="skip-link" href={target}>{label}</a>
+def stackLook(tight: bool) -> Look:
+    return look:
+        display = grid
+        gap = tight ? 0.5rem : 1rem
 
 export component Stack(children: WebNode, tight: bool = false):
-    style:
-        .stack {
-            display: grid;
-            gap: var(--velar-ui-stack-gap, 1rem);
-        }
+    return <div class="stack" look={stackLook(tight)}>{children}</div>
 
-        .stack.tight {
-            gap: var(--velar-ui-stack-gap-tight, 0.5rem);
-        }
+def inlineLook(centered: bool) -> Look:
+    return look:
+        display = flex
+        wrap = wrap
+        alignItems = center
+        gap = 0.5rem
 
-    return <div class="stack" class:tight={tight}>{children}</div>
+        if centered:
+            justifyContent = center
 
 export component Inline(children: WebNode, centered: bool = false):
-    style:
-        .inline {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: var(--velar-ui-inline-gap, 0.5rem);
-        }
-
-        .inline.centered {
-            justify-content: center;
-        }
-
-    return <div class="inline" class:centered={centered}>{children}</div>
+    return <div class="inline" look={inlineLook(centered)}>{children}</div>
 
 export component Status(message: string, assertive: bool = false):
     return <p role={assertive ? "alert" : "status"} aria-live={assertive ? "assertive" : "polite"} aria-atomic="true">{message}</p>
 
+const disclosureLook = look:
+    border = line(1px, currentColor)
+    radius = 12px
+
+const disclosureSummaryLook = look:
+    padding = space(14px, 16px)
+    fontWeight = 700
+    cursor = pointer
+
+const disclosureContentLook = look:
+    padding = edges(0px, 16px, 16px, 16px)
+
 export component Disclosure(summary: string, children: WebNode, open: bool = false):
-    style:
-        .disclosure {
-            border: 1px solid currentColor;
-            border-radius: 12px;
-        }
+    return <details class="disclosure" look={disclosureLook} open={open}><summary look={disclosureSummaryLook}>{summary}</summary><div class="disclosure-content" look={disclosureContentLook}>{children}</div></details>
 
-        summary {
-            padding: 14px 16px;
-            font-weight: 700;
-            cursor: pointer;
-        }
+const dialogControlLook = look:
+    display = block
 
-        .disclosure-content {
-            padding: 0 16px 16px;
-        }
+const dialogLook = look:
+    width = 100%
+    maxWidth = 560px
+    padding = 0
+    border = line(1px, currentColor)
+    radius = 16px
+    color = canvasText
+    background = canvas
 
-    return <details class="disclosure" open={open}><summary>{summary}</summary><div class="disclosure-content">{children}</div></details>
+    @backdrop:
+        background = rgba(0, 0, 0, 0.48)
+
+const dialogBodyLook = look:
+    display = grid
+    gap = 18px
+    padding = 24px
+
+const dialogTitleLook = look:
+    margin = 0
+
+const dialogButtonLook = look:
+    justifySelf = start
 
 export component ModalDialog(title: string, triggerLabel: string, children: WebNode, closeLabel: string = "Close"):
     let dialog: DialogElement? = none
@@ -117,69 +122,30 @@ export component ModalDialog(title: string, triggerLabel: string, children: WebN
         if trigger:
             focus(trigger, true)
 
-    style:
-        .dialog-control {
-            display: block;
-        }
+    return <div class="dialog-control" look={dialogControlLook}><button type="button" look={dialogButtonLook} ref={trigger} on:click={openDialog}>{triggerLabel}</button><dialog look={dialogLook} ref={dialog} aria-labelledby={titleId} on:close={restoreTriggerFocus}><div class="dialog-body" look={dialogBodyLook}><h2 look={dialogTitleLook} id={titleId}>{title}</h2>{children}<button type="button" look={dialogButtonLook} on:click={dismissDialog}>{closeLabel}</button></div></dialog></div>
 
-        dialog {
-            width: min(560px, calc(100% - 32px));
-            padding: 0;
-            border: 1px solid currentColor;
-            border-radius: 16px;
-            color: CanvasText;
-            background: Canvas;
-        }
+const fieldLook = look:
+    display = grid
+    gap = 7px
 
-        dialog::backdrop {
-            background: rgba(0, 0, 0, 0.48);
-        }
+const fieldLabelLook = look:
+    fontWeight = 700
 
-        .dialog-body {
-            display: grid;
-            gap: 18px;
-            padding: 24px;
-        }
+const fieldInputLook = look:
+    minHeight = 42px
+    padding = space(9px, 11px)
+    border = line(1px, currentColor)
+    radius = 9px
+    color = inherit
+    background = transparent
 
-        h2 {
-            margin: 0;
-        }
-
-        button {
-            justify-self: start;
-            font: inherit;
-        }
-
-    return <div class="dialog-control"><button type="button" ref={trigger} on:click={openDialog}>{triggerLabel}</button><dialog ref={dialog} aria-labelledby={titleId} on:close={restoreTriggerFocus}><div class="dialog-body"><h2 id={titleId}>{title}</h2>{children}<button type="button" on:click={dismissDialog}>{closeLabel}</button></div></dialog></div>
+const fieldHintLook = look:
+    margin = 0
+    opacity = 0.72
+    fontSize = 0.9em
 
 export component TextField(name: string, label: string, hint: string = "", inputType: string = "text", autocomplete: string = "", placeholder: string = "", required: bool = false):
     const controlId = domId("velar-field")
     const hintId = f"{controlId}-hint"
 
-    style:
-        .field {
-            display: grid;
-            gap: 7px;
-        }
-
-        label {
-            font-weight: 700;
-        }
-
-        input {
-            min-height: 42px;
-            padding: 9px 11px;
-            border: 1px solid currentColor;
-            border-radius: 9px;
-            color: inherit;
-            background: transparent;
-            font: inherit;
-        }
-
-        .hint {
-            margin: 0;
-            opacity: 0.72;
-            font-size: 0.9em;
-        }
-
-    return <div class="field" data-velar-ui-field><label for={controlId}>{label}</label><input id={controlId} name={name} type={inputType} autocomplete={autocomplete != "" ? autocomplete : none} placeholder={placeholder != "" ? placeholder : none} required={required} aria-describedby={hint != "" ? hintId : none} />{hint != "" ? <p class="hint" id={hintId}>{hint}</p> : none}</div>
+    return <div class="field" look={fieldLook} data-velar-ui-field><label look={fieldLabelLook} for={controlId}>{label}</label><input look={fieldInputLook} id={controlId} name={name} type={inputType} autocomplete={autocomplete != "" ? autocomplete : none} placeholder={placeholder != "" ? placeholder : none} required={required} aria-describedby={hint != "" ? hintId : none} />{hint != "" ? <p class="hint" look={fieldHintLook} id={hintId}>{hint}</p> : none}</div>

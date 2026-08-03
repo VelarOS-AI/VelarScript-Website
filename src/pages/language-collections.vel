@@ -1,5 +1,6 @@
 import {Head, Link} from "velar/web"
-import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
 const listCode = "const users: List<User> = [ada, grace]\nusers.append(linus)\nusers.extend(moreUsers)\n\nconst first = users.get(0)\nconst page = users.slice(10, 20)\nconst names = users.map(user => user.name)\nconst active = users.filter(user => user.active)"
@@ -8,40 +9,41 @@ const setCode = "const tags: Set<string> = Set([\"web\", \"language\", \"web\"])
 const helpersCode = "import {enumerate, groupBy, range, sortBy, sum, zip} from \"velar/collections\"\n\nconst pages = range(1, 5)\nconst numbered = enumerate(users, 1)\nconst byRole = groupBy(users, user => user.role)\nconst ordered = sortBy(users, user => user.name)\nconst total = sum(scores)\nconst pairs = zip(labels, values)"
 
 export component LanguageCollections:
+    const locale = useLocale()
     return <main>
-        <Head title="Collections · VelarScript" description="VelarScript List, Map, Set, iteration, mutation, slices, functional transforms, and collection helpers." themeColor="#f7f5f0" />
+        <Head title={locale.text("Collections · VelarScript", "集合 · VelarScript")} description={locale.text("VelarScript List, Map, Set, iteration, mutation, slices, functional transforms, and collection helpers.", "VelarScript 的 List、Map、Set、迭代、修改、切片、函数式变换与集合辅助函数。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker="Language / 04" title="Three native collections, one clear vocabulary." summary="Lists preserve order, Maps own dynamic keys, and Sets own unique membership. All keep JavaScript reference identity and predictable bounded behavior." tags={["List<T>", "Map<K, V>", "Set<T>", "dense data"]} />
+            <PageHeader kicker={locale.text("Language / 04", "语言 / 04")} title={locale.text("Three native collections, one clear vocabulary.", "三种原生集合，一套清晰词汇。")} summary={locale.text("Lists preserve order, Maps own dynamic keys, and Sets own unique membership. All retain JavaScript reference identity and predictable bounded behavior.", "List 保持顺序，Map 管理动态键，Set 管理唯一成员；三者都保留 JavaScript 引用身份与可预测的有界行为。")} tags={["List<T>", "Map<K, V>", "Set<T>", "dense data"]} />
             <Prose>
                 <h2 id="list">List</h2>
-                <pre><code>{listCode}</code></pre>
+                <CodeBlock code={listCode} />
                 <ul>
-                    <li><code>list[index]</code> throws <code>IndexError</code> outside the valid range; <code>get(index)</code> returns an optional value.</li>
-                    <li><code>append(value)</code> adds one value and <code>extend(list)</code> adds a typed List atomically. Both return <code>none</code>.</li>
-                    <li><code>slice()</code>, <code>slice(start)</code>, and <code>slice(start, end)</code> return shallow copies. Negative positions count from the end and out-of-range positions clamp.</li>
-                    <li>An empty unannotated List learns its element type from the first direct append or extension, then rejects incompatible writes.</li>
-                    <li>Standard <code>map</code>, <code>filter</code>, and <code>reduce</code> callbacks preserve checked element and result types.</li>
+                    <li><code>list[index]</code>{locale.text(" throws ", " 在超出有效范围时抛出 ")}<code>IndexError</code>{locale.text(" outside the valid range; ", "；")}<code>get(index)</code>{locale.text(" returns an optional value.", " 返回可选值。")}</li>
+                    <li><code>append(value)</code>{locale.text(" adds one value and ", " 添加一个值，")}<code>extend(list)</code>{locale.text(" atomically adds a typed List. Both return ", " 原子地添加类型化 List；两者都返回 ")}<code>none</code>{locale.text(".", "。")}</li>
+                    <li><code>slice()</code>, <code>slice(start)</code>{locale.text(", and ", " 与 ")}<code>slice(start, end)</code>{locale.text(" return shallow copies. Negative positions count from the end and out-of-range positions clamp.", " 返回浅拷贝。负位置从末尾计数，越界位置会被夹紧。")}</li>
+                    <li>{locale.text("An empty unannotated List learns its element type from the first append or extension, then rejects incompatible writes.", "没有标注的空 List 会从首次 append 或 extend 学到元素类型，之后拒绝不兼容写入。")}</li>
+                    <li>{locale.text("Standard ", "标准 ")}<code>map</code>, <code>filter</code>{locale.text(", and ", " 与 ")}<code>reduce</code>{locale.text(" callbacks preserve checked element and result types.", " 回调会保留受检查的元素与结果类型。")}</li>
                 </ul>
-                <Callout title="No JavaScript push surface"><p>VelarScript uses <code>append</code> and <code>extend</code> instead of a variadic, length-returning <code>push</code>. Every List is dense and bounded to 1,000,000 items.</p></Callout>
+                <Callout title={locale.text("No JavaScript push surface", "不暴露 JavaScript push")}><p>{locale.text("VelarScript uses ", "VelarScript 使用 ")}<code>append</code>{locale.text(" and ", " 与 ")}<code>extend</code>{locale.text(" instead of variadic, length-returning ", "，而不是可变参数、返回长度的 ")}<code>push</code>{locale.text(". Every List is dense and bounded to 1,000,000 items.", "。每个 List 都是稠密的，并限制为最多 1,000,000 项。")}</p></Callout>
 
                 <h2 id="map">Map</h2>
-                <pre><code>{mapCode}</code></pre>
-                <p>Use a Map for keys chosen at runtime. <code>get</code> returns <code>none</code> when a key is absent. <code>set</code> and <code>clear</code> return <code>none</code>; <code>has</code> and <code>remove</code> return booleans. <code>keys</code>, <code>values</code>, and <code>entries</code> return ordered List snapshots, with each entry shaped as <code>{"{key, value}"}</code>. Iterating a Map yields keys.</p>
-                <p><code>Map()</code> creates an empty map; <code>Map(existing)</code> creates a typed shallow copy. Put type arguments on the binding, not the constructor.</p>
+                <CodeBlock code={mapCode} />
+                <p>{locale.text("Use a Map for runtime-chosen keys. ", "运行时选择键时使用 Map。")}<code>get</code>{locale.text(" returns ", " 在键缺失时返回 ")}<code>none</code>{locale.text(" when absent. ", "；")}<code>set</code>{locale.text(" and ", " 与 ")}<code>clear</code>{locale.text(" return ", " 返回 ")}<code>none</code>; <code>has</code>{locale.text(" and ", " 与 ")}<code>remove</code>{locale.text(" return booleans. ", " 返回布尔值。")}<code>keys</code>, <code>values</code>{locale.text(", and ", " 与 ")}<code>entries</code>{locale.text(" return ordered List snapshots shaped as ", " 返回有序 List 快照，条目形状为 ")}<code>{"{key, value}"}</code>{locale.text(". Iteration yields keys.", "。迭代 Map 会得到键。")}</p>
+                <p><code>Map()</code>{locale.text(" creates an empty map; ", " 创建空映射；")}<code>Map(existing)</code>{locale.text(" creates a typed shallow copy. Put type arguments on the binding, not the constructor.", " 创建类型化浅拷贝。类型参数写在绑定上，而不是构造器上。")}</p>
 
                 <h2 id="set">Set</h2>
-                <pre><code>{setCode}</code></pre>
-                <p><code>Set()</code> creates an empty set and <code>Set(list)</code> constructs from a typed List. Duplicate values collapse under native JavaScript SameValueZero membership and insertion order is preserved. <code>add</code> and <code>clear</code> return <code>none</code>; <code>has</code> and <code>remove</code> return booleans.</p>
+                <CodeBlock code={setCode} />
+                <p><code>Set()</code>{locale.text(" creates an empty set and ", " 创建空集合，")}<code>Set(list)</code>{locale.text(" constructs from a typed List. Duplicates collapse under native SameValueZero membership and insertion order is preserved. ", " 从类型化 List 构造。重复值按原生 SameValueZero 成员规则合并，并保留插入顺序。")}<code>add</code>{locale.text(" and ", " 与 ")}<code>clear</code>{locale.text(" return ", " 返回 ")}<code>none</code>; <code>has</code>{locale.text(" and ", " 与 ")}<code>remove</code>{locale.text(" return booleans.", " 返回布尔值。")}</p>
 
-                <h2 id="iteration">Iteration and destructuring</h2>
-                <p><code>for value in list</code> visits List or Set values in order. <code>for key in map</code> visits Map keys. Object and List patterns may destructure each iteration value. Collection snapshots are ordinary typed Lists, so they compose with every List operation.</p>
+                <h2 id="iteration">{locale.text("Iteration and destructuring", "迭代与解构")}</h2>
+                <p><code>for value in list</code>{locale.text(" visits List or Set values in order. ", " 按顺序访问 List 或 Set 值。")}<code>for key in map</code>{locale.text(" visits Map keys. Object and List patterns may destructure each value. Collection snapshots are ordinary typed Lists and compose with every List operation.", " 访问 Map 键。对象与 List 模式可以解构每个迭代值。集合快照是普通类型化 List，可以使用所有 List 操作。")}</p>
 
                 <h2 id="helpers">velar/collections</h2>
-                <pre><code>{helpersCode}</code></pre>
-                <p>The module includes <code>range</code>, <code>enumerate</code>, <code>zip</code>, <code>unique</code>, <code>chunk</code>, <code>flatten</code>, <code>compact</code>, <code>reverse</code>, <code>take</code>, <code>drop</code>, <code>first</code>, <code>last</code>, <code>find</code>, <code>findIndex</code>, <code>contains</code>, <code>count</code>, <code>any</code>, <code>all</code>, <code>partition</code>, <code>groupBy</code>, <code>keyBy</code>, <code>countBy</code>, <code>sortBy</code>, <code>minBy</code>, <code>maxBy</code>, <code>sum</code>, <code>join</code>, and <code>repeat</code>.</p>
-                <p>Transforms return new collections unless the name explicitly says otherwise. Predicates must return a real bool. Ordering keys must be uniformly strings or finite numbers, equal-key order stays stable, and missing lookups use <code>none</code>.</p>
+                <CodeBlock code={helpersCode} />
+                <p>{locale.text("The module includes bounded helpers for ranges, enumeration, zipping, uniqueness, chunking, flattening, filtering, ordering, grouping, aggregation, joining, and repetition: ", "该模块提供有界的范围、枚举、配对、去重、分块、展平、过滤、排序、分组、聚合、连接与重复辅助函数：")}<code>range</code>, <code>enumerate</code>, <code>zip</code>, <code>unique</code>, <code>chunk</code>, <code>flatten</code>, <code>compact</code>, <code>sortBy</code>, <code>groupBy</code>, <code>sum</code>, <code>join</code>{locale.text(", and more.", " 等。")}</p>
+                <p>{locale.text("Transforms return new collections unless explicitly named otherwise. Predicates return a real bool. Ordering keys are uniformly strings or finite numbers, equal-key order stays stable, and missing lookups use ", "除非名称明确说明，否则变换都会返回新集合。谓词必须返回真实 bool。排序键必须统一为字符串或有限数字，相同键保持稳定顺序，缺失查找使用 ")}<code>none</code>{locale.text(".", "。")}</p>
 
-                <div class="next-links"><Link to="/docs/core"><strong>Core module reference</strong><span>See every collections export and the rest of the standard library.</span></Link><Link to="/docs/language/classes"><strong>Next: Classes</strong><span>Model nominal behavior while keeping collection fields explicit.</span></Link></div>
+                <div class="next-links"><Link to="/docs/core"><strong>{locale.text("Core module reference", "Core 模块参考")}</strong><span>{locale.text("See every collections export and the rest of the standard library.", "查看集合的全部导出与标准库其他部分。")}</span></Link><Link to="/docs/language/classes"><strong>{locale.text("Next: Classes", "下一步：类")}</strong><span>{locale.text("Model nominal behavior while keeping collection fields explicit.", "在保持集合字段明确的同时建模名义行为。")}</span></Link></div>
             </Prose>
         </DocsShell>
     </main>

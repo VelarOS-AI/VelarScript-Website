@@ -1,134 +1,126 @@
 import {NavLink} from "velar/web"
-import {Brand, Container} from "@velarscript/site-ui"
+import {Brand, Container, controlSurface, foundationInk as ink, foundationInkFaint as inkFaint, foundationInkSoft as inkSoft, foundationPaperPure as paperPure, foundationRule as rule, foundationSeaSoft as seaSoft, useLocale} from "@velarscript/site-ui"
 import {NavItem} from "../content.vel"
 
+const headerLook = look:
+    position = sticky
+    top = 0px
+    zIndex = 20
+    borderBottom = line(1px, rule)
+    background = rgba(247, 245, 240, 0.9)
+    backdropFilter = "blur(18px)"
+
+const headerInnerLook = look:
+    display = grid
+    columns = tracks(auto, minmax(0px, 1fr), auto, auto)
+    alignItems = center
+    gap = 28px
+    minHeight = 66px
+
+    if viewport.width <= 760px:
+        columns = tracks(minmax(0px, 1fr), auto)
+        gap = 12px
+        paddingBlock = 10px
+
+const headerBrandLook = look:
+    if viewport.width <= 760px:
+        gridColumn = "1"
+        gridRow = "1"
+
+const navLook = look:
+    display = flex
+    justifyContent = center
+    gap = 4px
+
+    if viewport.width <= 760px:
+        gridColumn = "1 / -1"
+        gridRow = "2"
+        width = 100%
+        justifyContent = start
+        overflow = auto
+
+const navLinkLook = look:
+    padding = space(8px, 11px)
+    radius = 8px
+    color = inkSoft
+    fontSize = 0.88rem
+    fontWeight = 650
+    textDecoration = undecorated
+
+    if @current:
+        color = ink
+        background = seaSoft
+
+    if viewport.width <= 520px:
+        paddingInline = 7px
+        fontSize = 0.8rem
+
+const languageLook = look:
+    ...controlSurface(radius: 9px, padding: space(0px, 0px))
+    width = 38px
+    height = 34px
+    fontSize = 0.78rem
+    fontWeight = 760
+
+    if viewport.width <= 760px:
+        gridColumn = "2"
+        gridRow = "1"
+        justifySelf = end
+
+const headerMetaLook = look:
+    display = flex
+    alignItems = center
+    gap = 10px
+
+    if viewport.width <= 760px:
+        display = gone
+
+const versionLook = look:
+    color = inkFaint
+    font = "SFMono-Regular, Consolas, monospace"
+    fontSize = 0.72rem
+
+const sourceLook = controlSurface(radius: 8px)
+
+const footerLook = look:
+    borderTop = line(1px, rule)
+    background = paperPure
+
+const footerInnerLook = look:
+    display = grid
+    columns = tracks(1fr, auto)
+    alignItems = end
+    gap = 30px
+    paddingBlock = 48px
+
+    if viewport.width <= 640px:
+        columns = tracks(1fr)
+
+const statementLook = look:
+    maxWidth = 620px
+    margin = 0
+    fontSize = clamp(1.3rem, 3vw, 2.2rem)
+    fontWeight = 720
+    lineHeight = 1.14
+    letterSpacing = -0.045em
+
+const footerMetaLook = look:
+    margin = 0
+    color = inkFaint
+    fontSize = 0.78rem
+    lineHeight = 1.7
+    textAlign = end
+
+    if viewport.width <= 640px:
+        textAlign = start
+
+const footerLinkLook = look:
+    color = inkSoft
+
 export component SiteHeader(items: List<NavItem>, repositoryUrl: string, version: string):
-    style:
-        .header {
-            position: sticky;
-            top: 0;
-            z-index: 20;
-            border-bottom: 1px solid var(--velar-line);
-            background: rgba(247, 245, 240, 0.9);
-            backdrop-filter: blur(18px);
-        }
-
-        .inner {
-            display: grid;
-            grid-template-columns: auto 1fr auto;
-            align-items: center;
-            gap: 28px;
-            min-height: 66px;
-        }
-
-        nav {
-            display: flex;
-            justify-content: center;
-            gap: 4px;
-        }
-
-        nav a, .source {
-            padding: 8px 11px;
-            border-radius: 8px;
-            color: var(--velar-ink-soft);
-            font-size: 0.88rem;
-            font-weight: 650;
-            text-decoration: none;
-        }
-
-        nav a[aria-current="page"] {
-            color: var(--velar-ink);
-            background: var(--velar-sea-soft);
-        }
-
-        .meta {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .version {
-            color: var(--velar-ink-faint);
-            font: 0.72rem "SFMono-Regular", Consolas, monospace;
-        }
-
-        .source {
-            border: 1px solid var(--velar-line);
-            color: var(--velar-ink);
-            background: var(--velar-paper-pure);
-        }
-
-        @media (max-width: 760px) {
-            .inner {
-                grid-template-columns: auto 1fr;
-                gap: 12px;
-            }
-
-            nav {
-                justify-content: end;
-                overflow: auto;
-            }
-
-            .meta {
-                display: none;
-            }
-        }
-
-        @media (max-width: 520px) {
-            nav a {
-                padding-inline: 7px;
-                font-size: 0.8rem;
-            }
-        }
-
-    return <header class="header"><Container><div class="inner"><Brand compact={true} /><nav aria-label="Primary navigation">{items.map(item => <NavLink key={item.path} to={item.path}>{item.label}</NavLink>)}</nav><div class="meta"><span class="version">v{version}</span><a class="source" href={repositoryUrl}>Source</a></div></div></Container></header>
+    const locale = useLocale()
+    return <header class="header" look={headerLook}><Container><div class="inner" look={headerInnerLook}><Brand compact={true} look={headerBrandLook} /><nav class="primary-nav" look={navLook} aria-label={locale.text("Primary navigation", "主导航")}>{items.map(item => <NavLink key={item.path} to={item.path} look={navLinkLook}>{locale.text(item.label, item.labelZh)}</NavLink>)}</nav><button class="language-switch" look={languageLook} type="button" on:click={locale.toggle} aria-label={locale.text("切换到中文", "Switch to English")} title={locale.text("切换到中文", "Switch to English")}><span aria-hidden="true">{locale.text("中", "EN")}</span></button><div class="meta" look={headerMetaLook}><span class="version" look={versionLook}>v{version}</span><a class="source" look={sourceLook} href={repositoryUrl}>{locale.text("Source", "源码")}</a></div></div></Container></header>
 
 export component SiteFooter(repositoryUrl: string, version: string):
-    style:
-        .footer {
-            border-top: 1px solid var(--velar-line);
-            background: var(--velar-paper-pure);
-        }
-
-        .inner {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            align-items: end;
-            gap: 30px;
-            padding: 48px 0;
-        }
-
-        .statement, .meta {
-            margin: 0;
-        }
-
-        .statement {
-            max-width: 620px;
-            font-size: clamp(1.3rem, 3vw, 2.2rem);
-            font-weight: 720;
-            line-height: 1.14;
-            letter-spacing: -0.045em;
-        }
-
-        .meta {
-            color: var(--velar-ink-faint);
-            font-size: 0.78rem;
-            line-height: 1.7;
-            text-align: right;
-        }
-
-        .meta a {
-            color: var(--velar-ink-soft);
-        }
-
-        @media (max-width: 640px) {
-            .inner {
-                grid-template-columns: 1fr;
-            }
-
-            .meta {
-                text-align: left;
-            }
-        }
-
-    return <footer class="footer"><Container><div class="inner"><p class="statement">A small, coherent language for ambitious work on the Web.</p><p class="meta">VelarScript {version}<br /><a href={repositoryUrl}>Apache-2.0 on GitHub</a></p></div></Container></footer>
+    const locale = useLocale()
+    return <footer class="footer" look={footerLook}><Container><div class="inner" look={footerInnerLook}><p class="statement" look={statementLook}>{locale.text("A small, coherent language for ambitious work on the Web.", "一门小而完整的语言，为有野心的 Web 创作而生。")}</p><p class="meta" look={footerMetaLook}>VelarScript {version}<br /><a look={footerLinkLook} href={repositoryUrl}>{locale.text("Apache-2.0 on GitHub", "GitHub 上的 Apache-2.0 开源项目")}</a></p></div></Container></footer>

@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           repository: VelarOS-AI/VelarScript
-          ref: 74e4ffabe8decb6f2e338109170ad6a15dddcc3a
+          ref: 42e7dacdfcba60239701d9041b9fe54626547119
           path: toolchain
       - uses: actions/setup-node@v6
         with:

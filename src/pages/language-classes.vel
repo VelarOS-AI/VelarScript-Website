@@ -1,5 +1,6 @@
 import {Head, Link} from "velar/web"
-import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
 const basicCode = "class Player(const id: string, let score: number = 0):\n    const achievements: List<string> = []\n    let sessions: number = 0\n\n    init:\n        assert id.length > 0, \"Player id cannot be empty\"\n\n    get label() -> string:\n        return f\"{self.id}: {self.score}\"\n\n    def add(points: number):\n        self.score += points\n\nconst player = Player(\"nova\")"
@@ -8,43 +9,44 @@ const privateCode = "class Session(private const token: string):\n    private st
 const staticCode = "class User(const id: string):\n    static const guestId: string = \"guest\"\n\n    static def guest() -> User:\n        return User(User.guestId)"
 
 export component LanguageClasses:
+    const locale = useLocale()
     return <main>
-        <Head title="Classes · VelarScript" description="VelarScript classes, construction, fields, init, methods, getters, private members, inheritance, abstract contracts, override, super, and Error subclasses." themeColor="#f7f5f0" />
+        <Head title={locale.text("Classes · VelarScript", "类 · VelarScript")} description={locale.text("VelarScript classes, construction, fields, init, methods, getters, private members, inheritance, abstract contracts, override, super, and Error subclasses.", "VelarScript 的类、构造、字段、init、方法、getter、私有成员、继承、抽象契约、override、super 与 Error 子类。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker="Language / 05" title="Native identity without prototype ceremony." summary="Classes lower to JavaScript classes and preserve nominal runtime identity while exposing one smaller, explicit construction and inheritance model." tags={["explicit self", "single inheritance", "private", "native getters"]} />
+            <PageHeader kicker={locale.text("Language / 05", "语言 / 05")} title={locale.text("Native identity without prototype ceremony.", "保留原生身份，去掉原型仪式。")} summary={locale.text("Classes lower to JavaScript classes and preserve nominal runtime identity while exposing a smaller, explicit construction and inheritance model.", "类会降级为 JavaScript 类并保留名义运行时身份，同时只暴露更小、更明确的构造与继承模型。")} tags={["explicit self", "single inheritance", "private", "native getters"]} />
             <Prose>
-                <h2 id="construction">Construction, fields, and init</h2>
-                <pre><code>{basicCode}</code></pre>
+                <h2 id="construction">{locale.text("Construction, fields, and init", "构造、字段与 init")}</h2>
+                <CodeBlock code={basicCode} />
                 <ul>
-                    <li>Construct with <code>Player(...)</code>; source never writes <code>new</code>.</li>
-                    <li>A constructor parameter prefixed with <code>const</code> or <code>let</code> also declares a public instance field.</li>
-                    <li>Body-owned <code>const</code>/<code>let</code> fields require explicit types and initialize once per instance.</li>
-                    <li>Construction order is base construction, parameter fields, body fields, bound methods, then one synchronous <code>init</code> block.</li>
-                    <li><code>init</code> may validate with <code>assert</code> and call methods, but it is not callable or inherited and cannot directly <code>return</code> or <code>await</code>.</li>
-                    <li>A failing <code>init</code> prevents the incomplete object from escaping.</li>
+                    <li>{locale.text("Construct with ", "使用 ")}<code>Player(...)</code>{locale.text("; source never writes ", " 构造，源码不写 ")}<code>new</code>{locale.text(".", "。")}</li>
+                    <li>{locale.text("A constructor parameter prefixed with ", "构造参数前加 ")}<code>const</code>{locale.text(" or ", " 或 ")}<code>let</code>{locale.text(" also declares a public instance field.", "，同时声明公开实例字段。")}</li>
+                    <li>{locale.text("Body-owned ", "类体中的 ")}<code>const</code>/<code>let</code>{locale.text(" fields require explicit types and initialize once per instance.", " 字段需要显式类型，并为每个实例初始化一次。")}</li>
+                    <li>{locale.text("Construction order is base construction, parameter fields, body fields, bound methods, then one synchronous ", "构造顺序是：基类构造、参数字段、类体字段、绑定方法，最后执行一个同步 ")}<code>init</code>{locale.text(" block.", " 块。")}</li>
+                    <li><code>init</code>{locale.text(" may validate with ", " 可以用 ")}<code>assert</code>{locale.text(" and call methods, but is not callable or inherited and cannot directly ", " 验证并调用方法，但它不能被调用或继承，也不能直接 ")}<code>return</code>{locale.text(" or ", " 或 ")}<code>await</code>{locale.text(".", "。")}</li>
+                    <li>{locale.text("A failing ", "失败的 ")}<code>init</code>{locale.text(" prevents the incomplete object from escaping.", " 会阻止不完整对象逃逸。")}</li>
                 </ul>
 
-                <h2 id="methods">Methods and getters</h2>
-                <p>Instance methods use explicit <code>self</code>. Passing a method as a callback retains its instance. <code>get name() -&gt; Type</code> declares a read-only property evaluated on each read and lowered to a native JavaScript getter. Writable state stays an explicit <code>let</code> field; VelarScript does not add setters.</p>
+                <h2 id="methods">{locale.text("Methods and getters", "方法与 getter")}</h2>
+                <p>{locale.text("Instance methods use explicit ", "实例方法使用显式 ")}<code>self</code>{locale.text(". Passing a method as a callback retains its instance. ", "。把方法作为回调传递时会保留实例。")}<code>get name() -&gt; Type</code>{locale.text(" declares a read-only property evaluated on every read and lowered to a native JavaScript getter. Writable state stays an explicit ", " 声明每次读取时求值的只读属性，并降级为原生 JavaScript getter。可写状态保持为显式 ")}<code>let</code>{locale.text(" field; VelarScript adds no setters.", " 字段；VelarScript 不增加 setter。")}</p>
 
-                <h2 id="inheritance">Inheritance and abstract contracts</h2>
-                <pre><code>{inheritanceCode}</code></pre>
-                <p>Classes use one base through <code>extends Base(arguments)</code>. Base construction is explicit. Replacing an inherited method or getter requires <code>override</code> with the same contract. Abstract classes cannot be constructed, and a concrete subclass must implement every inherited abstract member.</p>
-                <p><code>super.method()</code> calls an inherited method and <code>super.name</code> reads an inherited getter. A derived instance is assignable to its base and passes <code>value is Base</code> through native runtime identity.</p>
+                <h2 id="inheritance">{locale.text("Inheritance and abstract contracts", "继承与抽象契约")}</h2>
+                <CodeBlock code={inheritanceCode} />
+                <p>{locale.text("Classes use one base through ", "类通过 ")}<code>extends Base(arguments)</code>{locale.text(". Base construction is explicit. Replacing an inherited method or getter requires ", " 使用单一基类，基类构造显式可见。替换继承的方法或 getter 必须写 ")}<code>override</code>{locale.text(" with the same contract. Abstract classes cannot be constructed; concrete subclasses implement every inherited abstract member.", " 并保持同一契约。抽象类不能构造；具体子类必须实现所有继承的抽象成员。")}</p>
+                <p><code>super.method()</code>{locale.text(" calls an inherited method and ", " 调用继承方法，")}<code>super.name</code>{locale.text(" reads an inherited getter. A derived instance is assignable to its base and passes ", " 读取继承 getter。派生实例可赋值给基类，并通过原生运行时身份满足 ")}<code>value is Base</code>{locale.text(" through native runtime identity.", "。")}</p>
 
-                <h2 id="private">Private members</h2>
-                <pre><code>{privateCode}</code></pre>
-                <p>Fields, getters, and concrete instance/static methods are public by default. <code>private</code> is the only access modifier and lowers to native JavaScript private storage. Private members disappear from exported interfaces, outside completion, navigation, and rename; they are not inherited and cannot be abstract or overridden.</p>
-                <Callout title="A deliberately small hierarchy"><p>There is no redundant <code>public</code>, no <code>protected</code>, multiple inheritance, mixins, decorators, operator overloading, metaclasses, or parallel interface system.</p></Callout>
+                <h2 id="private">{locale.text("Private members", "私有成员")}</h2>
+                <CodeBlock code={privateCode} />
+                <p>{locale.text("Fields, getters, and concrete instance/static methods are public by default. ", "字段、getter 与具体实例/静态方法默认公开。")}<code>private</code>{locale.text(" is the only access modifier and lowers to native JavaScript private storage. Private members disappear from exported interfaces and outside completion/navigation/rename; they are not inherited and cannot be abstract or overridden.", " 是唯一访问修饰符，并降级为原生 JavaScript 私有存储。私有成员不会出现在导出接口及外部补全/跳转/重命名中；它们不被继承，也不能抽象或覆盖。")}</p>
+                <Callout title={locale.text("A deliberately small hierarchy", "有意保持小型层级")}><p>{locale.text("There is no redundant ", "没有多余的 ")}<code>public</code>{locale.text(", no ", "，也没有 ")}<code>protected</code>{locale.text(", multiple inheritance, mixins, decorators, operator overloading, metaclasses, or parallel interface system.", "、多重继承、mixin、装饰器、运算符重载、元类或平行 interface 系统。")}</p></Callout>
 
-                <h2 id="static">Static members</h2>
-                <pre><code>{staticCode}</code></pre>
-                <p><code>static const</code>/<code>static let</code> declare class-owned fields, <code>static def</code> declares class methods, and <code>static get</code> declares class properties. Static members use the class name instead of <code>self</code>.</p>
+                <h2 id="static">{locale.text("Static members", "静态成员")}</h2>
+                <CodeBlock code={staticCode} />
+                <p><code>static const</code>/<code>static let</code>{locale.text(" declare class-owned fields, ", " 声明类拥有的字段，")}<code>static def</code>{locale.text(" declares class methods, and ", " 声明类方法，")}<code>static get</code>{locale.text(" declares class properties. Static members use the class name instead of ", " 声明类属性。静态成员使用类名，而不是 ")}<code>self</code>{locale.text(".", "。")}</p>
 
-                <h2 id="errors">Application errors</h2>
-                <p><code>Error</code> is the built-in nominal base for application error classes. Error subclasses use the same construction and inheritance rules and may be narrowed with <code>is</code> inside a catch block. Throwing values that are not Error instances is rejected in VelarScript source.</p>
+                <h2 id="errors">{locale.text("Application errors", "应用错误")}</h2>
+                <p><code>Error</code>{locale.text(" is the built-in nominal base for application error classes. Subclasses use the same construction and inheritance rules and can narrow with ", " 是应用错误类的内置名义基类。子类使用相同构造与继承规则，并可在 catch 块中用 ")}<code>is</code>{locale.text(" inside catch. VelarScript rejects throwing non-Error values.", " 收窄。VelarScript 拒绝抛出非 Error 值。")}</p>
 
-                <div class="next-links"><Link to="/docs/language/modules"><strong>Next: Modules and JavaScript</strong><span>Organize VelarScript source and cross the ecosystem boundary explicitly.</span></Link><Link to="/docs/web/components"><strong>Components and JSX</strong><span>Move from nominal domain behavior into the Web extension.</span></Link></div>
+                <div class="next-links"><Link to="/docs/language/modules"><strong>{locale.text("Next: Modules and JavaScript", "下一步：模块与 JavaScript")}</strong><span>{locale.text("Organize source and cross the ecosystem boundary explicitly.", "组织源码并显式跨越生态边界。")}</span></Link><Link to="/docs/web/components"><strong>{locale.text("Components and JSX", "组件与 JSX")}</strong><span>{locale.text("Move from nominal domain behavior into the Web extension.", "从名义领域行为进入 Web 扩展。")}</span></Link></div>
             </Prose>
         </DocsShell>
     </main>

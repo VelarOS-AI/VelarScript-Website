@@ -1,5 +1,6 @@
 import {Head, Link} from "velar/web"
-import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
 const timersCode = "import {after, environment, every, watchOnline, watchVisibility} from \"velar/browser\"\n\ncomponent EnvironmentStatus:\n    const stopReady = after(250, () => print(\"ready\"))\n    const stopHeartbeat = every(1000, () => refresh())\n    const stopOnline = watchOnline(value => print(value))\n    const stopVisibility = watchVisibility(value => print(value))\n\n    cleanup:\n        stopReady()\n        stopHeartbeat()\n        stopOnline()\n        stopVisibility()\n\n    return <p>{environment().online ? \"Online\" : \"Offline\"}</p>"
@@ -9,39 +10,40 @@ const realtimeCode = "import {eventStream, socket} from \"velar/realtime\"\n\nco
 const appCode = "import {onError, reportError} from \"velar/app\"\n\ncomponent ErrorStatus:\n    state message = \"ready\"\n    const stopErrors = onError(report => message = report.phase + \":\" + report.error.message)\n\n    cleanup:\n        stopErrors()\n\n    return <output>{message}</output>"
 
 export component WebBrowser:
+    const locale = useLocale()
     return <main>
-        <Head title="Browser capabilities · VelarScript" description="VelarScript browser snapshots, timers, focus, layout, dialogs, clipboard, files, realtime, and application error handling." themeColor="#f7f5f0" />
+        <Head title={locale.text("Browser capabilities · VelarScript", "浏览器能力 · VelarScript")} description={locale.text("VelarScript browser snapshots, timers, focus, layout, dialogs, clipboard, files, realtime, and application error handling.", "VelarScript 的浏览器快照、定时器、焦点、布局、对话框、剪贴板、文件、实时连接与应用错误处理。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker="Web framework / 05" title="Browser effects have names and lifetimes." summary="Typed capability modules replace ambient globals. Anything that keeps running returns a handle that component cleanup owns." tags={["velar/browser", "velar/files", "velar/realtime", "velar/app"]} />
+            <PageHeader kicker={locale.text("Web framework / 05", "Web 框架 / 05")} title={locale.text("Browser effects have names and lifetimes.", "浏览器副作用有名称，也有生命周期。")} summary={locale.text("Typed capability modules replace ambient globals. Anything that keeps running returns a handle owned by component cleanup.", "类型化能力模块替代环境全局。任何持续运行的工作都会返回由组件 cleanup 拥有的句柄。")} tags={["velar/browser", "velar/files", "velar/realtime", "velar/app"]} />
             <Prose>
-                <h2 id="browser">velar/browser snapshots and watchers</h2>
-                <pre><code>{timersCode}</code></pre>
-                <p><code>location()</code> and <code>environment()</code> return typed snapshots. <code>media</code>, <code>watchMedia</code>, <code>watchOnline</code>, and <code>watchVisibility</code> expose changing environment state; every watcher returns cleanup. <code>copyText</code> and <code>readClipboardText</code> remain subject to browser security and user-gesture policy.</p>
-                <p><code>after</code> schedules once and <code>every</code> schedules repeatedly. Both return idempotent stop functions. Repeating work waits for a synchronous or asynchronous callback to settle before scheduling the next turn, so slow polling never overlaps itself. Callback errors report through <code>velar/app</code>.</p>
+                <h2 id="browser">{locale.text("velar/browser snapshots and watchers", "velar/browser 快照与监听")}</h2>
+                <CodeBlock code={timersCode} />
+                <p><code>location()</code>{locale.text(" and ", " 与 ")}<code>environment()</code>{locale.text(" return typed snapshots. ", " 返回类型化快照。")}<code>media</code>, <code>watchMedia</code>, <code>watchOnline</code>{locale.text(", and ", " 与 ")}<code>watchVisibility</code>{locale.text(" expose changing environment state; every watcher returns cleanup. Clipboard APIs remain subject to browser security and user-gesture policy.", " 暴露变化的环境状态；每个监听器都返回 cleanup。剪贴板 API 仍受浏览器安全与用户手势策略约束。")}</p>
+                <p><code>after</code>{locale.text(" schedules once and ", " 调度一次，")}<code>every</code>{locale.text(" repeatedly. Both return idempotent stop functions. Repeating work waits for sync/async callback settlement before next turn, so slow polling never overlaps. Errors report through ", " 重复调度。两者都返回幂等 stop 函数。重复工作会等待同步/异步回调结算后再调度下一轮，因此慢轮询不会重叠。错误通过 ")}<code>velar/app</code>{locale.text(".", " 报告。")}</p>
 
-                <h2 id="layout">Layout, scrolling, frames, and focus</h2>
-                <p><code>open</code>, <code>scrollTo</code>, <code>scrollIntoView</code>, <code>measure</code>, and <code>frame</code> expose intentional window/layout work with checked strings, finite coordinates, and bounded return values. <code>focus(element, preventScroll=false)</code> and <code>blur(element)</code> require real HTML element refs and invoke native prototype operations without exposing document globals.</p>
+                <h2 id="layout">{locale.text("Layout, scrolling, frames, and focus", "布局、滚动、帧与焦点")}</h2>
+                <p><code>open</code>, <code>scrollTo</code>, <code>scrollIntoView</code>, <code>measure</code>{locale.text(", and ", " 与 ")}<code>frame</code>{locale.text(" expose intentional window/layout work with checked strings, finite coordinates, and bounded returns. ", " 用受检查字符串、有限坐标与有界返回值暴露明确 window/布局工作。")}<code>focus(element, preventScroll=false)</code>{locale.text(" and ", " 与 ")}<code>blur(element)</code>{locale.text(" require real HTML refs and invoke native prototype operations without document globals.", " 要求真实 HTML 引用，并在不暴露 document 全局的情况下调用原生原型操作。")}</p>
 
-                <h2 id="dialogs">Native dialogs</h2>
-                <pre><code>{dialogCode}</code></pre>
-                <p>A dialog ref narrows to <code>DialogElement?</code>. <code>showDialog</code> opens a mounted native dialog modally, <code>closeDialog</code> closes it with an optional string result, and <code>dialogResult</code> reads that result. The application remains responsible for accessible naming, initial focus, Escape behavior, and returning focus to the trigger.</p>
+                <h2 id="dialogs">{locale.text("Native dialogs", "原生对话框")}</h2>
+                <CodeBlock code={dialogCode} />
+                <p>{locale.text("A dialog ref narrows to ", "dialog 引用收窄为 ")}<code>DialogElement?</code>{locale.text(". ", "。")}<code>showDialog</code>{locale.text(" opens mounted native dialog modally, ", " 模态打开已挂载原生对话框，")}<code>closeDialog</code>{locale.text(" closes with optional string result, and ", " 用可选字符串结果关闭，")}<code>dialogResult</code>{locale.text(" reads it. App owns accessible naming, initial focus, Escape behavior, and focus return.", " 读取结果。应用负责无障碍命名、初始焦点、Escape 行为与焦点返回。")}</p>
 
                 <h2 id="files">velar/files</h2>
-                <pre><code>{filesCode}</code></pre>
-                <p><code>pick</code> returns opaque stable records with name, size, type, and modified time. Only those records may enter <code>readText</code>, <code>readDataUrl</code>, or an HTTP multipart body. Reads inspect size before loading and use an explicit ceiling up to 64 MiB. <code>download</code> creates a bounded text download. Directory and persistent file-handle access are outside Web API 0.8.</p>
+                <CodeBlock code={filesCode} />
+                <p><code>pick</code>{locale.text(" returns opaque stable records with name, size, type, and modified time. Only those records may enter ", " 返回包含名称、大小、类型与修改时间的不透明稳定记录。只有这些记录能进入 ")}<code>readText</code>, <code>readDataUrl</code>{locale.text(", or HTTP multipart. Reads inspect size first and use explicit ceiling up to 64 MiB. ", " 或 HTTP multipart。读取先检查大小，并使用不超过 64 MiB 的显式上限。")}<code>download</code>{locale.text(" creates bounded text download. Directory/persistent handles remain outside Web API 0.9.", " 创建有界文本下载。目录/持久句柄仍在 Web API 0.9 范围外。")}</p>
 
                 <h2 id="realtime">velar/realtime</h2>
-                <pre><code>{realtimeCode}</code></pre>
-                <p><code>socket</code> wraps text WebSockets and exposes <code>state</code>, <code>send</code>, <code>sendJson</code>, and <code>close</code>. <code>eventStream</code> wraps server-sent events with <code>state</code> and <code>close</code>. URLs, handlers, message sizes, close codes, and reasons are validated before native effects. JSON sends use the strict lossless data boundary.</p>
-                <p>Handler throws and rejected promises enter the shared application error channel. Oversized inbound data closes its channel. Components explicitly close every connection during cleanup.</p>
+                <CodeBlock code={realtimeCode} />
+                <p><code>socket</code>{locale.text(" wraps text WebSockets and exposes ", " 包装文本 WebSocket 并暴露 ")}<code>state</code>, <code>send</code>, <code>sendJson</code>{locale.text(", and ", " 与 ")}<code>close</code>{locale.text(". ", "。")}<code>eventStream</code>{locale.text(" wraps server-sent events with ", " 包装服务器发送事件并提供 ")}<code>state</code>{locale.text(" and ", " 与 ")}<code>close</code>{locale.text(". URLs, handlers, sizes, close codes/reasons validate before native effects. JSON sends use strict lossless data.", "。URL、处理器、大小、关闭码/原因都在原生副作用前验证。JSON 发送使用严格无损数据。")}</p>
+                <p>{locale.text("Handler throws and rejected promises enter shared application errors. Oversized inbound data closes its channel. Components explicitly close every connection during cleanup.", "处理器抛错与 Promise 拒绝进入共享应用错误。超大输入会关闭通道。组件在 cleanup 中显式关闭每个连接。")}</p>
 
                 <h2 id="app">velar/app</h2>
-                <pre><code>{appCode}</code></pre>
-                <p><code>onError(callback)</code> receives normalized reports with error, phase, detail, component, and timestamp and returns cleanup. <code>reportError(error, phase="manual", detail="")</code> submits a deliberate failure without throwing it again.</p>
-                <p>The channel owns mount, render, watch, event, mounted, cleanup, resource, action, timer, storage, and realtime failures. With no handler, automatic failures surface through the host rather than disappearing. Initial mount failure renders a compiler-owned accessible fatal state; later transactional render failures retain the last valid UI.</p>
-                <Callout title="Acquire, retain, release"><p>If an API returns <code>stop</code>, <code>close</code>, or another lifetime handle, keep it in component scope and call it from the sibling <code>cleanup</code> block.</p></Callout>
+                <CodeBlock code={appCode} />
+                <p><code>onError(callback)</code>{locale.text(" receives normalized reports with error, phase, detail, component, timestamp and returns cleanup. ", " 接收包含 error、phase、detail、component 与 timestamp 的规范报告并返回 cleanup。")}<code>reportError(error, phase="manual", detail="")</code>{locale.text(" submits deliberate failure without rethrowing.", " 提交有意失败但不再次抛出。")}</p>
+                <p>{locale.text("The channel owns mount, render, watch, event, mounted, cleanup, resource, action, timer, storage, and realtime failures. Without handler, automatic failures surface through host. Initial mount failure renders compiler-owned accessible fatal state; later transactional failures retain last valid UI.", "该通道拥有 mount、render、watch、event、mounted、cleanup、resource、action、timer、storage 与 realtime 失败。没有处理器时，自动失败通过宿主暴露。首次挂载失败渲染编译器拥有的无障碍致命状态；后续事务失败保留最后有效界面。")}</p>
+                <Callout title={locale.text("Acquire, retain, release", "获取、持有、释放")}><p>{locale.text("If an API returns ", "如果 API 返回 ")}<code>stop</code>, <code>close</code>{locale.text(", or another lifetime handle, keep it in component scope and call it from sibling ", " 或其他生命周期句柄，请保存在组件作用域并从并列 ")}<code>cleanup</code>{locale.text(".", " 调用。")}</p></Callout>
 
-                <div class="next-links"><Link to="/docs/testing"><strong>Next: Testing and deployment</strong><span>Prove these browser paths in the production artifact.</span></Link><Link to="/docs/web"><strong>Web overview</strong><span>Return to the complete framework map.</span></Link></div>
+                <div class="next-links"><Link to="/docs/testing"><strong>{locale.text("Next: Testing and deployment", "下一步：测试与部署")}</strong><span>{locale.text("Prove browser paths in the production artifact.", "在生产产物中证明这些浏览器路径。")}</span></Link><Link to="/docs/web"><strong>{locale.text("Web overview", "Web 概览")}</strong><span>{locale.text("Return to the complete framework map.", "返回完整框架地图。")}</span></Link></div>
             </Prose>
         </DocsShell>
     </main>

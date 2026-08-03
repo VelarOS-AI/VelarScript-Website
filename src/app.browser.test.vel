@@ -1,8 +1,14 @@
 import {expect} from "velar/test"
 import {browser} from "velar/web-test"
 
+async def useEnglish():
+    if await browser.text(".language-switch") == "EN":
+        await browser.click(".language-switch")
+        await browser.waitForText(".language-switch", "中")
+
 async def test_home_explains_the_product_and_uses_framework_navigation():
     await browser.open("/")
+    await useEnglish()
     expect(await browser.attribute('a[href="#main-content"]', "href")).toBe("#main-content")
     expect(await browser.count('#main-content[tabindex="-1"]')).toBe(1)
     expect(await browser.text(".brand-name")).toBe("VelarScript")
@@ -15,8 +21,29 @@ async def test_home_explains_the_product_and_uses_framework_navigation():
     expect(await browser.attribute('nav a[href="/learn"]', "aria-current")).toBe("page")
     expect(await browser.text("[data-package-workflow]")).toContain("velar add")
 
+async def test_locale_switch_is_reusable_persistent_and_code_is_highlighted():
+    await browser.open("/")
+    if await browser.text(".language-switch") == "EN":
+        await browser.click(".language-switch")
+    expect(await browser.text(".language-switch")).toBe("中")
+    expect(await browser.attribute("html", "lang")).toBe("en")
+    expect(await browser.count(".token-keyword") > 0).toBe(true)
+    expect(await browser.count(".token-type") > 0).toBe(true)
+    await browser.click(".language-switch")
+    await browser.waitForText("[data-home-hero] h1", "让 Web")
+    expect(await browser.attribute("html", "lang")).toBe("zh-CN")
+    expect(await browser.attribute('[aria-label="主导航"] a[href="/docs"]', "href")).toBe("/docs")
+    await browser.reload()
+    await browser.waitForText("[data-home-hero] h1", "让 Web")
+    expect(await browser.text(".language-switch")).toBe("EN")
+    expect(await browser.attribute("html", "lang")).toBe("zh-CN")
+    await browser.click(".language-switch")
+    await browser.waitForText("[data-home-hero] h1", "The Web")
+    expect(await browser.attribute("html", "lang")).toBe("en")
+
 async def test_documentation_routes_and_active_navigation():
     await browser.open("/docs")
+    await useEnglish()
     await browser.waitForText("h1", "Learn the whole stack, from first value to verified deployment.")
     expect(await browser.text(".velar-docs-callout")).toContain("Language and framework are separate")
     expect(await browser.text("[data-docs-page]")).toContain("@velarscript/ui")
@@ -65,6 +92,7 @@ async def test_documentation_routes_and_active_navigation():
 
 async def test_examples_and_not_found_are_delivered_by_production_router():
     await browser.open("/examples")
+    await useEnglish()
     await browser.waitForText("h1", "Small programs, honest ideas.")
     expect(await browser.count("article.example")).toBe(3)
     await browser.open("/not-a-velar-page")
@@ -74,16 +102,21 @@ async def test_examples_and_not_found_are_delivered_by_production_router():
 async def test_mobile_navigation_and_code_surfaces_remain_usable():
     await browser.viewport(390, 844)
     await browser.open("/")
-    expect(await browser.visible('[aria-label="Primary navigation"]')).toBe(true)
-    expect(await browser.visible("[data-home-hero] figure")).toBe(true)
+    const primaryNavCount = await browser.count(".primary-nav")
+    const primaryNavStyle = await browser.attribute(".primary-nav", "style")
+    assert await browser.visible(".primary-nav"), f"Mobile primary navigation must remain visible (count={primaryNavCount}, style={primaryNavStyle})"
+    assert await browser.visible("[data-home-hero] figure"), "Mobile hero code sample must remain visible"
     await browser.open("/docs")
-    expect(await browser.visible(".docs aside .brand")).toBe(false)
-    expect(await browser.visible(".mobile-docs-nav")).toBe(true)
+    assert not await browser.visible(".docs aside .brand"), "Mobile docs must hide the duplicate sidebar brand"
+    const mobileDocsCount = await browser.count(".mobile-docs-nav")
+    const mobileDocsStyle = await browser.attribute(".mobile-docs-nav", "style")
+    assert await browser.visible(".mobile-docs-nav"), f"Mobile docs navigation must replace the desktop navigation (count={mobileDocsCount}, style={mobileDocsStyle})"
     await browser.click(".mobile-docs-nav summary")
-    expect(await browser.visible('[aria-label="Mobile documentation sections"]')).toBe(true)
+    assert await browser.visible(".mobile-docs-nav nav"), "Expanded mobile docs navigation must expose its sections"
 
 async def test_detailed_reference_routes_are_delivered():
     await browser.open("/docs/language/types")
+    await useEnglish()
     await browser.waitForText("h1", "Useful types, not type-level programming.")
     expect(await browser.text("main")).toContain("User.parse")
     await browser.open("/docs/core")

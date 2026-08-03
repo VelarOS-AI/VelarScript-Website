@@ -10,6 +10,8 @@
   "files": [
     "src/index.vel",
     "src/foundation.vel",
+    "src/locale.vel",
+    "src/syntax.vel",
     "README.md"
   ],
   "dependencies": {

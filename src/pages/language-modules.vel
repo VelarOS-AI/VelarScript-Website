@@ -1,5 +1,6 @@
 import {Head, Link} from "velar/web"
-import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
 const moduleCode = "// src/models.vel\nexport type User:\n    id: string\n    name: string\n\nexport def displayName(user: User) -> string:\n    return user.name\n\n// src/app.vel\nimport {User, displayName} from \"./models.vel\""
@@ -9,38 +10,39 @@ const externCode = "extern module \"small-parser\":\n    export const version: s
 const packageCode = "{\n  \"name\": \"@example/velar-cards\",\n  \"version\": \"1.0.0\",\n  \"velar\": {\"entry\": \"src/index.vel\"},\n  \"files\": [\"src\"]\n}"
 
 export component LanguageModules:
+    const locale = useLocale()
     return <main>
-        <Head title="Modules and JavaScript · VelarScript" description="VelarScript static and dynamic modules, npm source packages, JavaScript imports, declaration bridging, extern modules, and unsafe adapters." themeColor="#f7f5f0" />
+        <Head title={locale.text("Modules and JavaScript · VelarScript", "模块与 JavaScript · VelarScript")} description={locale.text("VelarScript static and dynamic modules, npm source packages, JavaScript imports, declaration bridging, extern modules, and unsafe adapters.", "VelarScript 的静态与动态模块、npm 源码包、JavaScript 导入、声明桥接、extern 模块与 unsafe 适配器。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker="Language / 06" title="Explicit boundaries, complete project knowledge." summary="Static VelarScript modules form the checked application graph. Dynamic VelarScript imports retain types and chunks. JavaScript enters only through a visible interop boundary." tags={["import + export", "checked chunks", "npm source", "import js"]} />
+            <PageHeader kicker={locale.text("Language / 06", "语言 / 06")} title={locale.text("Explicit boundaries, complete project knowledge.", "边界明确，项目知识完整。")} summary={locale.text("Static VelarScript modules form the checked application graph. Dynamic imports retain types and chunks. JavaScript enters only through a visible interop boundary.", "静态 VelarScript 模块组成受检查的应用图；动态导入保留类型与分块；JavaScript 只通过可见互操作边界进入。")} tags={["import + export", "checked chunks", "npm source", "import js"]} />
             <Prose>
-                <h2 id="velar-modules">VelarScript modules</h2>
-                <pre><code>{moduleCode}</code></pre>
-                <p>Every <code>.vel</code> file is a module. Imports and exports are explicit, relative paths include the <code>.vel</code> suffix, and exported types, classes, functions, components, constants, aliases, enums, documentation, and symbol identities cross the same semantic graph used by the compiler and language server.</p>
+                <h2 id="velar-modules">{locale.text("VelarScript modules", "VelarScript 模块")}</h2>
+                <CodeBlock code={moduleCode} />
+                <p>{locale.text("Every ", "每个 ")}<code>.vel</code>{locale.text(" file is a module. Imports and exports are explicit, relative paths include the ", " 文件都是模块。导入导出明确可见，相对路径包含 ")}<code>.vel</code>{locale.text(" suffix, and exported types, classes, functions, components, constants, aliases, enums, docs, and symbol identities cross the same semantic graph used by compiler and language server.", " 后缀；导出的类型、类、函数、组件、常量、别名、枚举、文档与符号身份都跨越编译器和语言服务器共用的语义图。")}</p>
 
-                <h2 id="dynamic">Checked dynamic imports</h2>
-                <pre><code>{dynamicCode}</code></pre>
-                <p>A dynamic VelarScript path is a literal relative <code>.vel</code> path. Its Promise resolves to the checked export object, participates in dependency confinement, incremental invalidation, editor navigation, production manifests, and deterministic code splitting. Runtime-computed paths, bare package names, and dynamic JavaScript imports are not accepted.</p>
-                <p>Dynamic modules cannot export top-level reactive state. Web <code>lazy</code> adds loading, failure, retry, route ownership, and component cleanup around a checked component export.</p>
+                <h2 id="dynamic">{locale.text("Checked dynamic imports", "受检查的动态导入")}</h2>
+                <CodeBlock code={dynamicCode} />
+                <p>{locale.text("A dynamic VelarScript path is a literal relative ", "动态 VelarScript 路径必须是字面量相对 ")}<code>.vel</code>{locale.text(" path. Its Promise resolves to a checked export object and participates in dependency confinement, incremental invalidation, editor navigation, manifests, and deterministic splitting. Computed paths, bare package names, and dynamic JavaScript imports are rejected.", " 路径。其 Promise 解析为受检查导出对象，并参与依赖限制、增量失效、编辑器跳转、清单与确定性分块。运行时计算路径、裸包名与动态 JavaScript 导入会被拒绝。")}</p>
+                <p>{locale.text("Dynamic modules cannot export top-level reactive state. Web ", "动态模块不能导出顶层响应式状态。Web 的 ")}<code>lazy</code>{locale.text(" adds loading, failure, retry, route ownership, and cleanup around a checked component export.", " 围绕受检查组件导出加入加载、失败、重试、路由所有权与清理。")}</p>
 
-                <h2 id="packages">npm VelarScript source packages</h2>
-                <pre><code>{packageCode}</code></pre>
-                <p>A package declares one relative <code>velar.entry</code> inside its root and publishes source files. Consumer projects resolve and analyze that source directly. Package-relative imports remain root-confined, and the same package-lock version controls local development, CI, editor semantics, and production bundling.</p>
+                <h2 id="packages">{locale.text("npm VelarScript source packages", "npm VelarScript 源码包")}</h2>
+                <CodeBlock code={packageCode} />
+                <p>{locale.text("A package declares one relative ", "包在根目录内声明一个相对 ")}<code>velar.entry</code>{locale.text(" and publishes source files. Consumers resolve and analyze that source directly. Package-relative imports stay root-confined, and one lockfile version controls local development, CI, editor semantics, and production bundling.", " 并发布源码文件。消费项目直接解析并分析源码。包内相对导入保持在根目录内，同一锁文件版本控制本地开发、CI、编辑器语义与生产打包。")}</p>
 
-                <h2 id="javascript">JavaScript packages</h2>
-                <pre><code>{jsCode}</code></pre>
-                <p>Safe <code>import js</code> reads a limited, practical subset of package TypeScript declarations. Understood functions, constants, records, promises, simple unions, aliases, and complete non-generic classes receive VelarScript types. Unsupported overloads, generics, recursive/type-level constructs, or unresolved hierarchies become <code>unknown</code> with a notice; unknown values cannot be called or inspected.</p>
-                <p><code>import js unsafe</code> is the only ordinary source of <code>any</code>. It is a visible trust boundary for code you have audited and adapted. Complex compatibility belongs in a separate <code>.js</code> adapter rather than embedded JavaScript inside a <code>.vel</code> file.</p>
+                <h2 id="javascript">{locale.text("JavaScript packages", "JavaScript 包")}</h2>
+                <CodeBlock code={jsCode} />
+                <p>{locale.text("Safe ", "安全的 ")}<code>import js</code>{locale.text(" reads a limited practical subset of package TypeScript declarations. Understood functions, constants, records, promises, simple unions, aliases, and complete non-generic classes receive VelarScript types. Unsupported overloads, generics, recursive/type-level constructs, or unresolved hierarchies become ", " 读取包 TypeScript 声明的有限实用子集。可理解的函数、常量、记录、Promise、简单联合、别名与完整非泛型类获得 VelarScript 类型。不支持的重载、泛型、递归/类型层结构或未解析层级会带提示变为 ")}<code>unknown</code>{locale.text("; unknown values cannot be called or inspected.", "；unknown 值不能调用或检查。")}</p>
+                <p><code>import js unsafe</code>{locale.text(" is the only ordinary source of ", " 是普通源码中唯一的 ")}<code>any</code>{locale.text(". It is a visible trust boundary for audited, adapted code. Complex compatibility belongs in a separate ", " 来源。它是已审计并适配代码的可见信任边界。复杂兼容应放在独立 ")}<code>.js</code>{locale.text(" adapter, not embedded JavaScript inside ", " 适配器中，而不是嵌入 ")}<code>.vel</code>{locale.text(".", "。")}</p>
 
-                <h2 id="extern">Manual declarations</h2>
-                <pre><code>{externCode}</code></pre>
-                <p>An <code>extern module</code> describes a small JavaScript surface in VelarScript syntax. Extern constants are read-only runtime exports, functions reuse ordinary signatures and rest parameters, and classes retain construction, field mutability, static/instance members, aliases, and nominal module identity.</p>
+                <h2 id="extern">{locale.text("Manual declarations", "手动声明")}</h2>
+                <CodeBlock code={externCode} />
+                <p>{locale.text("An ", "")}<code>extern module</code>{locale.text(" describes a small JavaScript surface in VelarScript syntax. Extern constants are read-only runtime exports, functions reuse ordinary signatures/rest parameters, and classes retain construction, field mutability, static/instance members, aliases, and nominal module identity.", " 用 VelarScript 语法描述小型 JavaScript 表面。extern 常量是只读运行时导出，函数复用普通签名与剩余参数，类保留构造、字段可变性、静态/实例成员、别名与名义模块身份。")}</p>
 
-                <h2 id="official">Official modules</h2>
-                <p>Core capabilities live under explicit <code>velar/*</code> imports. Web capabilities are contributed only when the project declares <code>@velarscript/web</code>. Nothing patches native prototypes or creates hidden global names. Core projects cannot accidentally use JSX, browser globals, or Web lifecycle syntax.</p>
-                <Callout title="JavaScript is the ABI, not the source authority"><p>VelarScript keeps the existing engine and ecosystem while deciding which source patterns are safe, clear, and supported. Interop never expands the language into “JavaScript with indentation.”</p></Callout>
+                <h2 id="official">{locale.text("Official modules", "官方模块")}</h2>
+                <p>{locale.text("Core capabilities live under explicit ", "Core 能力通过显式 ")}<code>velar/*</code>{locale.text(" imports. Web capabilities appear only when a project declares ", " 导入使用。只有项目声明 ")}<code>@velarscript/web</code>{locale.text(". Nothing patches native prototypes or creates hidden globals. Core projects cannot accidentally use JSX, browser globals, or Web lifecycle syntax.", " 时才会提供 Web 能力。任何东西都不会修改原生原型或创建隐藏全局。Core 项目无法意外使用 JSX、浏览器全局或 Web 生命周期语法。")}</p>
+                <Callout title={locale.text("JavaScript is the ABI, not source authority", "JavaScript 是 ABI，不是源码权威")}><p>{locale.text("VelarScript keeps the existing engine and ecosystem while deciding which source patterns are safe, clear, and supported. Interop never expands the language into “JavaScript with indentation.”", "VelarScript 保留现有引擎与生态，同时决定哪些源码模式安全、清晰且受支持。互操作绝不会把语言扩张为“带缩进的 JavaScript”。")}</p></Callout>
 
-                <div class="next-links"><Link to="/docs/core"><strong>Core module reference</strong><span>Use collections, text, math, JSON, async, URL, time, IDs, and logs.</span></Link><Link to="/docs/web"><strong>Web framework overview</strong><span>Activate the official browser development layer.</span></Link></div>
+                <div class="next-links"><Link to="/docs/core"><strong>{locale.text("Core module reference", "Core 模块参考")}</strong><span>{locale.text("Use collections, text, math, JSON, async, URL, time, IDs, and logs.", "使用集合、文本、数学、JSON、异步、URL、时间、ID 与日志。")}</span></Link><Link to="/docs/web"><strong>{locale.text("Web framework overview", "Web 框架概览")}</strong><span>{locale.text("Activate the official browser development layer.", "启用官方浏览器开发层。")}</span></Link></div>
             </Prose>
         </DocsShell>
     </main>

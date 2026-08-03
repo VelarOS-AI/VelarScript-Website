@@ -1,5 +1,6 @@
 import {Head, Link} from "velar/web"
-import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
 const configCode = "import {publicConfig} from \"velar/config\"\n\ntype RuntimeConfig:\n    apiBase: string\n    releaseChannel: string\n\nconst config = publicConfig(RuntimeConfig)"
@@ -9,43 +10,44 @@ const formsCode = "import {clearErrors, focusFirstError, read, setError, setPend
 const storageCode = "import {database, storage} from \"velar/storage\"\n\ntype Settings:\n    theme: string\n\nconst preferences = storage.scope(\"studio\")\nconst settings = preferences.get(\"settings\", Settings, {theme: \"system\"})\npreferences.set(\"settings\", settings)\n\nconst cache = database(\"studio\")\nawait cache.set(\"settings\", settings)\nconst saved = await cache.get(\"settings\", Settings)"
 
 export component WebData:
+    const locale = useLocale()
     return <main>
-        <Head title="Forms, HTTP and storage · VelarScript" description="VelarScript public config, typed HTTP, multipart uploads, native forms, runtime validation, local/session storage, and IndexedDB." themeColor="#f7f5f0" />
+        <Head title={locale.text("Forms, HTTP and storage · VelarScript", "表单、HTTP 与存储 · VelarScript")} description={locale.text("VelarScript public config, typed HTTP, multipart uploads, native forms, runtime validation, local/session storage, and IndexedDB.", "VelarScript 的公开配置、类型化 HTTP、多段上传、原生表单、运行时验证、本地/会话存储与 IndexedDB。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker="Web framework / 04" title="External data crosses checked boundaries." summary="One record type validates public configuration, HTTP responses, form input, storage, and IndexedDB without duplicating schemas." tags={["velar/config", "velar/http", "velar/forms", "velar/storage"]} />
+            <PageHeader kicker={locale.text("Web framework / 04", "Web 框架 / 04")} title={locale.text("External data crosses checked boundaries.", "外部数据通过受检查边界。")} summary={locale.text("One record type validates public configuration, HTTP responses, form input, storage, and IndexedDB without duplicate schemas.", "同一个记录类型验证公开配置、HTTP 响应、表单输入、存储与 IndexedDB，不重复维护 schema。")} tags={["velar/config", "velar/http", "velar/forms", "velar/storage"]} />
             <Prose>
                 <h2 id="config">velar/config</h2>
-                <pre><code>{configCode}</code></pre>
-                <p><code>publicConfig(Type)</code> validates the complete <code>velar.json.web.publicConfig</code> object and returns the named type. <code>has(key)</code> and sorted <code>keys()</code> support optional discovery. Configuration is JSON-only, recursively frozen, bounded to 64 KiB, baked into the hashed entry, and never reads <code>.env</code>, process state, server configuration, or secrets.</p>
+                <CodeBlock code={configCode} />
+                <p><code>publicConfig(Type)</code>{locale.text(" validates the complete ", " 验证完整 ")}<code>velar.json.web.publicConfig</code>{locale.text(" object and returns the named type. ", " 对象并返回命名类型。")}<code>has(key)</code>{locale.text(" and sorted ", " 与排序后的 ")}<code>keys()</code>{locale.text(" support optional discovery. Config is JSON-only, recursively frozen, bounded to 64 KiB, baked into hashed entry, and never reads ", " 支持可选发现。配置仅限 JSON、递归冻结、限制 64 KiB、写入哈希入口，并且绝不读取 ")}<code>.env</code>{locale.text(", process state, server config, or secrets.", "、进程状态、服务器配置或密钥。")}</p>
 
                 <h2 id="http">velar/http</h2>
-                <pre><code>{httpCode}</code></pre>
-                <p><code>request</code>, <code>get</code>, <code>post</code>, <code>put</code>, <code>patch</code>, <code>delete</code>, and <code>head</code> create lazy requests. Options include string Map headers, body, timeout, maximum bytes, credentials, and cache policy. Requests expose <code>response</code>, <code>json</code>, <code>text</code>, <code>blob</code>, <code>parse(Type)</code>, and idempotent <code>cancel</code>.</p>
+                <CodeBlock code={httpCode} />
+                <p><code>request</code>, <code>get</code>, <code>post</code>, <code>put</code>, <code>patch</code>, <code>delete</code>{locale.text(", and ", " 与 ")}<code>head</code>{locale.text(" create lazy requests. Options include string Map headers, body, timeout, max bytes, credentials, and cache policy. Requests expose ", " 创建惰性请求。选项包括字符串 Map 响应头、请求体、超时、最大字节、凭据与缓存策略。请求暴露 ")}<code>response</code>, <code>json</code>, <code>text</code>, <code>blob</code>, <code>parse(Type)</code>{locale.text(", and idempotent ", " 与幂等 ")}<code>cancel</code>{locale.text(".", "。")}</p>
                 <ul>
-                    <li>The first body read starts fetch; cancelling before it prevents fetch entirely.</li>
-                    <li>Timeout/cancellation reject with <code>HttpAbortError</code> and stable reasons <code>timeout</code> or <code>cancelled</code>.</li>
-                    <li>Non-2xx responses throw <code>HttpError</code> with status, URL, and unknown body.</li>
-                    <li>Responses are streamed up to <code>maxBytes</code>, then cached so repeated readers are stable.</li>
-                    <li>Object request bodies use strict lossless JSON; unsupported values fail before fetch starts.</li>
-                    <li>Headers, methods, options, credentials, cache modes, returned metadata, and URL sizes are validated before native coercion.</li>
+                    <li>{locale.text("First body read starts fetch; cancelling before it prevents fetch entirely.", "首次读取响应体才启动 fetch；此前取消可完全阻止 fetch。")}</li>
+                    <li>{locale.text("Timeout/cancellation reject with ", "超时/取消以 ")}<code>HttpAbortError</code>{locale.text(" and stable reasons ", " 拒绝，并带稳定原因 ")}<code>timeout</code>{locale.text(" or ", " 或 ")}<code>cancelled</code>{locale.text(".", "。")}</li>
+                    <li>{locale.text("Non-2xx responses throw ", "非 2xx 响应抛出 ")}<code>HttpError</code>{locale.text(" with status, URL, and unknown body.", "，包含状态、URL 与 unknown 响应体。")}</li>
+                    <li>{locale.text("Responses stream up to ", "响应以流方式读取到 ")}<code>maxBytes</code>{locale.text(", then cache for stable repeated readers.", "，随后缓存以保证重复读取稳定。")}</li>
+                    <li>{locale.text("Object bodies use strict lossless JSON; unsupported values fail before fetch.", "对象请求体使用严格无损 JSON；不支持的值在 fetch 前失败。")}</li>
+                    <li>{locale.text("Headers, methods, options, credentials, cache modes, metadata, and URL sizes validate before native coercion.", "响应头、方法、选项、凭据、缓存模式、元数据与 URL 大小都在原生强制转换前验证。")}</li>
                 </ul>
 
-                <h2 id="multipart">Multipart form bodies</h2>
-                <pre><code>{uploadCode}</code></pre>
-                <p><code>formBody()</code> exposes <code>field</code>, <code>file</code>, <code>files</code>, <code>remove</code>, <code>has</code>, and <code>names</code>. Files must be opaque records returned by <code>velar/files.pick</code>; a forged structural object has no native authority. The browser owns the multipart boundary, so manually supplying a content-type header is rejected.</p>
+                <h2 id="multipart">{locale.text("Multipart form bodies", "多段表单请求体")}</h2>
+                <CodeBlock code={uploadCode} />
+                <p><code>formBody()</code>{locale.text(" exposes ", " 暴露 ")}<code>field</code>, <code>file</code>, <code>files</code>, <code>remove</code>, <code>has</code>{locale.text(", and ", " 与 ")}<code>names</code>{locale.text(". Files must be opaque records returned by ", "。文件必须是 ")}<code>velar/files.pick</code>{locale.text("; forged structural objects have no native authority. Browser owns multipart boundary, so manual content-type is rejected.", " 返回的不透明记录；伪造结构对象没有原生权限。浏览器拥有 multipart boundary，因此手动 content-type 会被拒绝。")}</p>
 
                 <h2 id="forms">velar/forms</h2>
-                <pre><code>{formsCode}</code></pre>
-                <p><code>values</code> and <code>fieldValue</code> expose raw native form shapes. <code>textValue</code>, <code>numberValue</code>, <code>checkedValue</code>, and <code>fieldValues</code> provide common typed reads. <code>read(form, Type)</code> decodes flat string, finite number, bool checkbox, enum, repeated <code>List&lt;string&gt;</code>, and optional scalar fields into the existing record type.</p>
-                <p><code>setError</code>, <code>clearError</code>, <code>clearErrors</code>, <code>errors</code>, and <code>focusFirstError</code> own accessible field error relationships. <code>setPending</code> owns <code>aria-busy</code> and temporary disabled state. <code>reset</code> restores pending/error ownership before the native reset. Business validation, trimming, submission, and nested object construction remain application code.</p>
+                <CodeBlock code={formsCode} />
+                <p><code>values</code>{locale.text(" and ", " 与 ")}<code>fieldValue</code>{locale.text(" expose raw form shapes. ", " 暴露原始表单形状。")}<code>textValue</code>, <code>numberValue</code>, <code>checkedValue</code>{locale.text(", and ", " 与 ")}<code>fieldValues</code>{locale.text(" provide typed reads. ", " 提供类型化读取。")}<code>read(form, Type)</code>{locale.text(" decodes flat string, finite number, bool checkbox, enum, repeated ", " 把扁平字符串、有限数字、布尔复选框、枚举、重复 ")}<code>List&lt;string&gt;</code>{locale.text(", and optional scalars into the existing record type.", " 与可选标量解码为现有记录类型。")}</p>
+                <p><code>setError</code>, <code>clearError</code>, <code>clearErrors</code>, <code>errors</code>{locale.text(", and ", " 与 ")}<code>focusFirstError</code>{locale.text(" own accessible field-error relationships. ", " 拥有无障碍字段错误关系。")}<code>setPending</code>{locale.text(" owns ", " 拥有 ")}<code>aria-busy</code>{locale.text(" and temporary disabled state. ", " 与临时禁用状态。")}<code>reset</code>{locale.text(" restores ownership before native reset. Business validation, trimming, submission, and nested construction remain application code.", " 在原生重置前恢复所有权。业务验证、裁剪、提交与嵌套构造仍由应用代码负责。")}</p>
 
                 <h2 id="storage">velar/storage</h2>
-                <pre><code>{storageCode}</code></pre>
-                <p><code>storage</code> and <code>session</code> expose scoped or unscoped <code>get</code>, <code>set</code>, <code>has</code>, <code>keys</code>, <code>remove</code>, <code>clear</code>, and <code>watch</code>. Typed reads and watches use a real compiler-registered Type. Watches observe same-page writes and browser storage events, return cleanup functions, and report callback failure through <code>velar/app</code>.</p>
-                <p><code>database(name)</code> provides asynchronous IndexedDB operations with the same names. Writes resolve only after transaction commit, failed/blocked opens may retry, version changes close stale handles, key lists are sorted, and every value obeys the strict JSON contract.</p>
-                <Callout title="Strict JSON everywhere"><p>Network and persistence accept only finite primitives, <code>none</code>, dense Lists, and plain records recursively. Maps, Sets, classes, functions, sparse/accessor Lists, non-finite numbers, and cycles fail instead of being silently omitted or converted.</p></Callout>
+                <CodeBlock code={storageCode} />
+                <p><code>storage</code>{locale.text(" and ", " 与 ")}<code>session</code>{locale.text(" expose scoped/unscoped ", " 暴露有/无作用域的 ")}<code>get</code>, <code>set</code>, <code>has</code>, <code>keys</code>, <code>remove</code>, <code>clear</code>{locale.text(", and ", " 与 ")}<code>watch</code>{locale.text(". Typed reads/watches use a compiler-registered Type. Watches observe same-page writes and browser events, return cleanup, and report callbacks through ", "。类型化读取/监听使用编译器注册 Type。监听观察同页写入与浏览器事件，返回 cleanup，并通过 ")}<code>velar/app</code>{locale.text(".", " 报告回调失败。")}</p>
+                <p><code>database(name)</code>{locale.text(" provides asynchronous IndexedDB operations. Writes resolve after transaction commit, failed/blocked opens retry, version changes close stale handles, keys sort, and every value obeys strict JSON.", " 提供异步 IndexedDB 操作。写入在事务提交后解析，失败/阻塞打开可重试，版本变化关闭旧句柄，键列表排序，所有值遵循严格 JSON。")}</p>
+                <Callout title={locale.text("Strict JSON everywhere", "处处使用严格 JSON")}><p>{locale.text("Network and persistence accept only finite primitives, ", "网络与持久化只递归接受有限基础值、")}<code>none</code>{locale.text(", dense Lists, and plain records recursively. Maps, Sets, classes, functions, sparse/accessor Lists, non-finite numbers, and cycles fail instead of silent omission/conversion.", "、稠密 List 与普通记录。Map、Set、类、函数、稀疏/访问器 List、非有限数字与循环会失败，而不是被静默省略或转换。")}</p></Callout>
 
-                <div class="next-links"><Link to="/docs/web/browser"><strong>Next: Browser capabilities</strong><span>Own platform effects and resource lifetimes explicitly.</span></Link><Link to="/docs/core"><strong>Core modules</strong><span>Parse, compare, transform, schedule, and format data.</span></Link></div>
+                <div class="next-links"><Link to="/docs/web/browser"><strong>{locale.text("Next: Browser capabilities", "下一步：浏览器能力")}</strong><span>{locale.text("Own platform effects and resource lifetimes explicitly.", "显式拥有平台副作用与资源生命周期。")}</span></Link><Link to="/docs/core"><strong>{locale.text("Core modules", "Core 模块")}</strong><span>{locale.text("Parse, compare, transform, schedule, and format data.", "解析、比较、变换、调度并格式化数据。")}</span></Link></div>
             </Prose>
         </DocsShell>
     </main>

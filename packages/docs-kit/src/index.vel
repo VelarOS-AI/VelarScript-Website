@@ -1,297 +1,190 @@
 import {NavLink} from "velar/web"
-import {Brand, Container, Eyebrow, Tag} from "@velarscript/site-ui"
+import {Brand, Container, Eyebrow, SyntaxCode, Tag, foundationInk as ink, foundationInkSoft as inkSoft, foundationPaperPure as paperPure, foundationRule as rule, foundationSea as sea, foundationSeaSoft as seaSoft, useLocale} from "@velarscript/site-ui"
 import {Inline, Stack} from "@velarscript/ui"
 
 export type DocsNavItem:
     path: string
     label: string
+    labelZh: string
 
 export type DocsNavGroup:
     label: string
+    labelZh: string
     items: List<DocsNavItem>
 
+const codeBlockLook = look:
+    overflow = auto
+    maxWidth = 100%
+    margin = 0
+    padding = 20px
+    border = line(1px, rule)
+    radius = 9px
+    color = rgb(243, 240, 232)
+    background = rgb(17, 18, 22)
+    font = "SFMono-Regular, Consolas, Liberation Mono, monospace"
+    fontSize = 0.9rem
+    lineHeight = 1.72
+
+export component CodeBlock(code: string):
+    return <pre look={codeBlockLook}><SyntaxCode code={code} /></pre>
+
+const docsLook = look:
+    display = grid
+    columns = tracks(248px, minmax(0px, 1fr))
+    minHeight = 100vh - 66px
+
+    if viewport.width <= 840px:
+        columns = tracks(1fr)
+
+const asideLook = look:
+    position = sticky
+    top = 66px
+    alignSelf = start
+    height = 100vh - 66px
+    overflow = auto
+    padding = space(30px, 22px)
+    borderRight = line(1px, rule)
+    background = paperPure
+
+    if viewport.width <= 840px:
+        position = relative
+        top = 0px
+        width = 100%
+        height = auto
+        paddingBlock = 18px
+        borderRight = line(0px, transparent)
+        borderBottom = line(1px, rule)
+
+const asideBrandLook = look:
+    if viewport.width <= 840px:
+        display = gone
+
+const navLook = look:
+    display = grid
+    gap = 24px
+    marginTop = 28px
+
+const navGroupLook = look:
+    display = grid
+    gap = 9px
+
+const navLabelLook = look:
+    paddingInline = 10px
+    color = inkSoft
+    font = "SFMono-Regular, Consolas, monospace"
+    fontSize = 0.68rem
+    fontWeight = 700
+    letterSpacing = 0.11em
+    textCase = uppercase
+
+const navItemsLook = look:
+    display = grid
+    gap = 5px
+
+const navItemLook = look:
+    display = grid
+
+const navLinkLook = look:
+    padding = space(8px, 10px)
+    radius = 8px
+    color = inkSoft
+    textDecoration = undecorated
+
+    if @current:
+        color = ink
+        background = seaSoft
+
+const desktopNavLook = look:
+    if viewport.width <= 840px:
+        display = gone
+
+const mobileNavLook = look:
+    display = gone
+
+    if viewport.width <= 840px:
+        display = block
+
+const mobileSummaryLook = look:
+    padding = space(11px, 12px)
+    border = line(1px, rule)
+    radius = 10px
+    color = ink
+    background = paperPure
+    fontWeight = 700
+    cursor = pointer
+
+const mobileNavListLook = look:
+    display = grid
+    gap = 24px
+    maxHeight = 62vh
+    marginTop = 14px
+    overflow = auto
+    padding = 4px
+
+const contentLook = look:
+    minWidth = 0
+    paddingBlock = clamp(48px, 8vw, 96px)
+
+component DocsNavigation(items: List<DocsNavGroup>, label: string, mobile: bool = false):
+    return <nav class="nav" look={mobile ? mobileNavListLook : navLook} aria-label={label}>{items.map(group => <section key={group.label} class="nav-group" look={navGroupLook}><span class="nav-label" look={navLabelLook}>{group.label}</span><div class="nav-items" look={navItemsLook}>{group.items.map(item => <span key={item.path} class="nav-item" look={navItemLook}><NavLink to={item.path} exact={true} look={navLinkLook}>{item.label}</NavLink></span>)}</div></section>)}</nav>
+
 export component DocsShell(items: List<DocsNavGroup>, children: WebNode):
-    style:
-        .docs {
-            display: grid;
-            grid-template-columns: 248px minmax(0, 1fr);
-            min-height: calc(100vh - 66px);
-        }
+    const locale = useLocale()
+    const localized = items.map(group => {
+        label: locale.text(group.label, group.labelZh),
+        labelZh: group.labelZh,
+        items: group.items.map(item => {
+            path: item.path,
+            label: locale.text(item.label, item.labelZh),
+            labelZh: item.labelZh,
+        }),
+    })
+    return <div class="docs" look={docsLook}><aside look={asideLook}><div look={asideBrandLook}><Brand compact={true} /></div><div look={desktopNavLook}><DocsNavigation items={localized} label={locale.text("Documentation sections", "文档章节")} /></div><details class="mobile-docs-nav" look={mobileNavLook}><summary look={mobileSummaryLook}>{locale.text("Browse documentation", "浏览文档目录")}</summary><DocsNavigation items={localized} label={locale.text("Mobile documentation sections", "移动端文档章节")} mobile={true} /></details></aside><section class="content" look={contentLook}><Container narrow={true}>{children}</Container></section></div>
 
-        aside {
-            position: sticky;
-            top: 66px;
-            align-self: start;
-            height: calc(100vh - 66px);
-            overflow: auto;
-            padding: 30px 22px;
-            border-right: 1px solid var(--velar-line);
-            background: var(--velar-paper-pure);
-        }
+const pageHeaderLook = look:
+    display = grid
+    gap = 16px
+    paddingBottom = 44px
+    borderBottom = line(1px, rule)
 
-        .nav, .nav-group, .nav-items {
-            display: grid;
-        }
+const pageTitleLook = look:
+    maxWidth = 850px
+    margin = 0
+    fontSize = clamp(3rem, 8vw, 6.5rem)
+    lineHeight = 0.94
+    letterSpacing = -0.065em
 
-        .nav {
-            gap: 24px;
-            margin-top: 28px;
-        }
-
-        .nav-group {
-            gap: 9px;
-        }
-
-        .nav-label {
-            padding-inline: 10px;
-            color: var(--velar-ink-faint);
-            font: 0.68rem "SFMono-Regular", Consolas, monospace;
-            font-weight: 700;
-            letter-spacing: 0.11em;
-            text-transform: uppercase;
-        }
-
-        .nav-items {
-            gap: 5px;
-        }
-
-        .nav-item {
-            display: grid;
-        }
-
-        .nav-item a {
-            padding: 8px 10px;
-            border-radius: 8px;
-            color: var(--velar-ink-soft);
-            text-decoration: none;
-        }
-
-        .nav-item a[aria-current="page"] {
-            color: var(--velar-ink);
-            background: var(--velar-sea-soft);
-        }
-
-        .mobile-docs-nav {
-            display: none;
-        }
-
-        .content {
-            min-width: 0;
-            padding: clamp(48px, 8vw, 96px) 0;
-        }
-
-        @media (max-width: 840px) {
-            .docs {
-                grid-template-columns: 1fr;
-            }
-
-            aside {
-                position: static;
-                width: 100%;
-                height: auto;
-                padding-block: 18px;
-                border-right: 0;
-                border-bottom: 1px solid var(--velar-line);
-            }
-
-            aside .brand {
-                display: none;
-            }
-
-            .desktop-docs-nav {
-                display: none;
-            }
-
-            .mobile-docs-nav {
-                display: block;
-            }
-
-            .mobile-docs-nav summary {
-                padding: 11px 12px;
-                border: 1px solid var(--velar-line);
-                border-radius: 10px;
-                color: var(--velar-ink);
-                background: var(--velar-paper-pure);
-                font-weight: 700;
-                cursor: pointer;
-            }
-
-            .mobile-docs-nav .nav {
-                max-height: 62vh;
-                margin-top: 14px;
-                overflow: auto;
-                padding: 4px;
-            }
-
-            .mobile-docs-nav .nav-group {
-                gap: 6px;
-            }
-        }
-
-    return <div class="docs"><aside><Brand compact={true} /><nav class="nav desktop-docs-nav" aria-label="Documentation sections">{items.map(group => <section key={group.label} class="nav-group"><span class="nav-label">{group.label}</span><div class="nav-items">{group.items.map(item => <span key={item.path} class="nav-item"><NavLink to={item.path} exact={true}>{item.label}</NavLink></span>)}</div></section>)}</nav><details class="mobile-docs-nav"><summary>Browse documentation</summary><nav class="nav" aria-label="Mobile documentation sections">{items.map(group => <section key={group.label} class="nav-group"><span class="nav-label">{group.label}</span><div class="nav-items">{group.items.map(item => <span key={item.path} class="nav-item"><NavLink to={item.path} exact={true}>{item.label}</NavLink></span>)}</div></section>)}</nav></details></aside><section class="content"><Container narrow={true}>{children}</Container></section></div>
+const pageSummaryLook = look:
+    maxWidth = 720px
+    margin = 0
+    color = inkSoft
+    fontSize = clamp(1.08rem, 2vw, 1.3rem)
+    lineHeight = 1.65
 
 export component PageHeader(kicker: string, title: string, summary: string, tags: List<string> = []):
-    style:
-        .header {
-            display: grid;
-            gap: 16px;
-            padding-bottom: 44px;
-            border-bottom: 1px solid var(--velar-line);
-        }
+    return <header class="header" look={pageHeaderLook}><Eyebrow label={kicker} /><h1 look={pageTitleLook}>{title}</h1><p class="summary" look={pageSummaryLook}>{summary}</p>{tags.length > 0 ? <Inline>{tags.map(tag => <Tag key={tag} label={tag} />)}</Inline> : none}</header>
 
-        h1 {
-            max-width: 850px;
-            margin: 0;
-            font-size: clamp(3rem, 8vw, 6.5rem);
-            line-height: 0.94;
-            letter-spacing: -0.065em;
-        }
+const proseLook = look:
+    paddingBlock = 42px
+    color = inkSoft
+    fontSize = 1.02rem
+    lineHeight = 1.75
 
-        .summary {
-            max-width: 720px;
-            margin: 0;
-            color: var(--velar-ink-soft);
-            font-size: clamp(1.08rem, 2vw, 1.3rem);
-            line-height: 1.65;
-        }
-
-    return <header class="header"><Eyebrow label={kicker} /><h1>{title}</h1><p class="summary">{summary}</p>{tags.length > 0 ? <Inline>{tags.map(tag => <Tag key={tag} label={tag} />)}</Inline> : none}</header>
+    if viewport.width <= 620px:
+        paddingTop = 32px
+        fontSize = 0.98rem
 
 export component Prose(children: WebNode):
-    style global:
-        .velar-docs-prose {
-            display: grid;
-            gap: 22px;
-            padding: 42px 0;
-            color: var(--velar-ink-soft);
-            font-size: 1.02rem;
-            line-height: 1.75;
-        }
+    return <article class="velar-docs-prose" look={proseLook}>{children}</article>
 
-        .velar-docs-prose h2, .velar-docs-prose h3, .velar-docs-prose p, .velar-docs-prose ul, .velar-docs-prose ol, .velar-docs-prose pre {
-            margin: 0;
-        }
+const calloutLook = look:
+    padding = space(18px, 20px)
+    borderLeft = line(3px, sea)
+    radius = 9px
+    background = seaSoft
 
-        .velar-docs-prose h2, .velar-docs-prose h3 {
-            scroll-margin-top: 92px;
-        }
-
-        .velar-docs-prose h2, .velar-docs-prose h3 {
-            color: var(--velar-ink);
-            letter-spacing: -0.035em;
-        }
-
-        .velar-docs-prose h2 {
-            margin-top: 24px;
-            font-size: clamp(1.8rem, 4vw, 2.7rem);
-        }
-
-        .velar-docs-prose h3 {
-            font-size: 1.25rem;
-        }
-
-        .velar-docs-prose p, .velar-docs-prose li {
-            max-width: 800px;
-        }
-
-        .velar-docs-prose ul, .velar-docs-prose ol {
-            display: grid;
-            gap: 8px;
-            padding-left: 1.3rem;
-        }
-
-        .velar-docs-prose a {
-            color: var(--velar-sea);
-            font-weight: 680;
-        }
-
-        .velar-docs-prose code {
-            font-family: "SFMono-Regular", Consolas, monospace;
-            font-size: 0.9em;
-        }
-
-        .velar-docs-prose pre {
-            overflow: auto;
-            max-width: 100%;
-            padding: 20px;
-            border: 1px solid var(--velar-line);
-            border-radius: var(--velar-radius-small);
-            color: #f3f0e8;
-            background: #111216;
-        }
-
-        .velar-docs-prose :not(pre) > code {
-            padding: 0.16em 0.42em;
-            border: 1px solid var(--velar-line);
-            border-radius: 6px;
-            color: var(--velar-ink);
-            background: var(--velar-paper-pure);
-        }
-
-        .velar-docs-prose table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.94rem;
-        }
-
-        .velar-docs-prose th, .velar-docs-prose td {
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--velar-line);
-            text-align: left;
-            vertical-align: top;
-        }
-
-        .velar-docs-prose th {
-            color: var(--velar-ink);
-            background: var(--velar-paper-pure);
-        }
-
-        .velar-docs-prose .next-links {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
-            margin-top: 30px;
-        }
-
-        .velar-docs-prose .next-links a {
-            display: grid;
-            gap: 5px;
-            padding: 18px;
-            border: 1px solid var(--velar-line);
-            border-radius: var(--velar-radius-small);
-            color: var(--velar-ink);
-            background: var(--velar-paper-pure);
-            text-decoration: none;
-        }
-
-        @media (max-width: 620px) {
-            .velar-docs-prose {
-                padding-top: 32px;
-                font-size: 0.98rem;
-            }
-
-            .velar-docs-prose .next-links {
-                grid-template-columns: 1fr;
-            }
-        }
-
-    return <article class="velar-docs-prose">{children}</article>
+const calloutTitleLook = look:
+    color = ink
 
 export component Callout(title: string, children: WebNode):
-    style global:
-        .velar-docs-callout {
-            padding: 18px 20px;
-            border-left: 3px solid var(--velar-sea);
-            border-radius: 0 var(--velar-radius-small) var(--velar-radius-small) 0;
-            background: var(--velar-sea-soft);
-        }
-
-        .velar-docs-callout strong {
-            color: var(--velar-ink);
-        }
-
-        .velar-docs-callout p {
-            margin: 0;
-        }
-
-    return <aside class="velar-docs-callout"><Stack tight={true}><strong>{title}</strong>{children}</Stack></aside>
+    return <aside class="velar-docs-callout" look={calloutLook}><Stack tight={true}><strong look={calloutTitleLook}>{title}</strong>{children}</Stack></aside>

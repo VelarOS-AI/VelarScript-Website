@@ -1,75 +1,61 @@
 import {Head} from "velar/web"
-import {CodeWindow, Container, Eyebrow, Section, Tag} from "@velarscript/site-ui"
+import {CodeWindow, Container, Eyebrow, Section, Tag, foundationInkSoft as inkSoft, useLocale} from "@velarscript/site-ui"
 import {examples} from "../content.vel"
 
+const heroLook = look:
+    paddingTop = clamp(76px, 11vw, 144px)
+    paddingBottom = clamp(48px, 7vw, 84px)
+
+const titleLook = look:
+    maxWidth = 1040px
+    margin = 0
+    marginTop = 18px
+    fontSize = clamp(4rem, 10vw, 9rem)
+    lineHeight = 0.88
+    letterSpacing = -0.07em
+
+const introLook = look:
+    maxWidth = 760px
+    margin = 0
+    marginTop = 30px
+    color = inkSoft
+    fontSize = clamp(1.1rem, 2.2vw, 1.38rem)
+    lineHeight = 1.65
+
+const exampleLook = look:
+    display = grid
+    columns = tracks(minmax(250px, 0.48fr), minmax(0px, 1fr))
+    gap = clamp(40px, 8vw, 100px)
+    alignItems = start
+
+    if viewport.width <= 820px:
+        columns = tracks(1fr)
+
+const copyLook = look:
+    display = grid
+    gap = 17px
+
+const exampleTitleLook = look:
+    margin = 0
+    fontSize = clamp(2rem, 4.5vw, 4.1rem)
+    lineHeight = 1
+    letterSpacing = -0.055em
+
+const exampleSummaryLook = look:
+    margin = 0
+    color = inkSoft
+    lineHeight = 1.72
+
+const tagsLook = look:
+    display = flex
+    wrap = wrap
+    gap = 7px
+    marginTop = 8px
+
 export component Examples:
-    style:
-        .hero {
-            padding: clamp(76px, 11vw, 144px) 0 clamp(48px, 7vw, 84px);
-        }
-
-        h1, .intro {
-            margin: 0;
-        }
-
-        h1 {
-            max-width: 1040px;
-            margin-top: 18px;
-            font-size: clamp(4rem, 10vw, 9rem);
-            line-height: 0.88;
-            letter-spacing: -0.07em;
-        }
-
-        .intro {
-            max-width: 760px;
-            margin-top: 30px;
-            color: var(--velar-ink-soft);
-            font-size: clamp(1.1rem, 2.2vw, 1.38rem);
-            line-height: 1.65;
-        }
-
-        .example {
-            display: grid;
-            grid-template-columns: minmax(250px, 0.48fr) minmax(0, 1fr);
-            gap: clamp(40px, 8vw, 100px);
-            align-items: start;
-        }
-
-        .copy {
-            display: grid;
-            gap: 17px;
-        }
-
-        .copy h2, .copy p {
-            margin: 0;
-        }
-
-        .copy h2 {
-            font-size: clamp(2rem, 4.5vw, 4.1rem);
-            line-height: 1;
-            letter-spacing: -0.055em;
-        }
-
-        .copy p {
-            color: var(--velar-ink-soft);
-            line-height: 1.72;
-        }
-
-        .tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 7px;
-            margin-top: 8px;
-        }
-
-        @media (max-width: 820px) {
-            .example {
-                grid-template-columns: 1fr;
-            }
-        }
-
+    const locale = useLocale()
     return <main data-examples-page>
-        <Head title="Examples · VelarScript" description="Small VelarScript examples showing state, typed data, browser capabilities, and explicit lifecycle." themeColor="#f7f5f0" />
-        <section class="hero"><Container><Eyebrow label="Examples" /><h1>Small programs, honest ideas.</h1><p class="intro">These examples isolate the language decisions that matter in larger applications: direct state, one data model, native Web behavior, and visible resource ownership.</p></Container></section>
-        {examples.map(example => <Section key={example.slug} ruled={true}><Container><article class="example"><div class="copy"><Eyebrow label={example.eyebrow} /><h2>{example.title}</h2><p>{example.summary}</p><div class="tags">{example.traits.map(trait => <Tag key={trait} label={trait} />)}</div></div><CodeWindow code={example.code} label={example.slug + ".vel"} /></article></Container></Section>)}
+        <Head title={locale.text("Examples · VelarScript", "示例 · VelarScript")} description={locale.text("Small VelarScript examples showing state, typed data, browser capabilities, and explicit lifecycle.", "通过小型 VelarScript 示例理解状态、类型化数据、浏览器能力和明确的生命周期。")} themeColor="#f7f5f0" />
+        <section class="hero" look={heroLook}><Container><Eyebrow label={locale.text("Examples", "示例")} /><h1 look={titleLook}>{locale.text("Small programs, honest ideas.", "用小程序讲清真正的设计。")}</h1><p class="intro" look={introLook}>{locale.text("These examples isolate the language decisions that matter in larger applications: direct state, one data model, native Web behavior, and visible resource ownership.", "这些示例抽取了大型应用中真正重要的语言决策：直接状态、统一数据模型、原生 Web 行为和清晰可见的资源所有权。")}</p></Container></section>
+        {examples.map(example => <Section key={example.slug} ruled={true}><Container><article class="example" look={exampleLook}><div class="copy" look={copyLook}><Eyebrow label={locale.text(example.eyebrow, example.eyebrowZh)} /><h2 look={exampleTitleLook}>{locale.text(example.title, example.titleZh)}</h2><p look={exampleSummaryLook}>{locale.text(example.summary, example.summaryZh)}</p><div class="tags" look={tagsLook}>{(locale.isChinese() ? example.traitsZh : example.traits).map(trait => <Tag key={trait} label={trait} />)}</div></div><CodeWindow code={example.code} label={example.slug + ".vel"} /></article></Container></Section>)}
     </main>

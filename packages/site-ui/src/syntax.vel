@@ -1,0 +1,51 @@
+import {enumerate} from "velar/collections"
+import {findMatches, includes, matches, startsWith} from "velar/text"
+
+type SyntaxToken:
+    value: string
+    kind: string
+
+const keywords = "|abstract|action|and|as|assert|async|await|break|case|catch|class|cleanup|component|computed|const|continue|def|else|enum|export|extends|extern|finally|for|from|if|import|in|init|is|let|look|match|mounted|none|not|or|override|pass|private|resource|return|state|static|super|throw|try|type|unsafe|watch|while|"
+const builtins = "|Angle|any|bool|Border|Color|Duration|Error|Event|Image|int|Length|List|Look|Map|none|number|Percentage|Promise|Set|Shadow|Spacing|string|Track|TrackList|Transition|unknown|WebNode|"
+const tokenPattern = "#[^\\n]*|//[^\\n]*|\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|[A-Za-z_][A-Za-z0-9_]*|[0-9]+(?:\\.[0-9]+)?|[ \\t\\r\\n]+|."
+
+const syntaxLook = look:
+    color = rgb(243, 240, 232)
+
+def tokenLook(kind: string) -> Look:
+    return look:
+        if kind == "keyword":
+            color = rgb(233, 169, 111)
+            fontWeight = 650
+        else if kind == "type":
+            color = rgb(127, 199, 196)
+        else if kind == "string":
+            color = rgb(189, 215, 138)
+        else if kind == "number":
+            color = rgb(200, 167, 232)
+        else if kind == "comment":
+            color = rgb(133, 139, 150)
+            fontStyle = italic
+
+def tokenKind(value: string) -> string:
+    if startsWith(value, "#") or startsWith(value, "//"):
+        return "comment"
+    if startsWith(value, "\"") or startsWith(value, "'"):
+        return "string"
+    if matches(value, "^[0-9]"):
+        return "number"
+    if includes(keywords, f"|{value}|"):
+        return "keyword"
+    if includes(builtins, f"|{value}|") or matches(value, "^[A-Z]"):
+        return "type"
+    return "plain"
+
+def syntaxTokens(source: string) -> List<SyntaxToken>:
+    return findMatches(source, tokenPattern).map(item => {
+        value: item.value,
+        kind: tokenKind(item.value),
+    })
+
+export component SyntaxCode(code: string):
+    const tokens = enumerate(syntaxTokens(code))
+    return <code look={syntaxLook}>{tokens.map(item => <span key={item.index} class={f"token-{item.value.kind}"} look={tokenLook(item.value.kind)}>{item.value.value}</span>)}</code>

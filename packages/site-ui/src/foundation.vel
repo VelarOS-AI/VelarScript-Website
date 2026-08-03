@@ -1,74 +1,26 @@
+export const paper = rgb(247, 245, 240)
+export const paperPure = rgb(251, 250, 247)
+export const ink = rgb(17, 18, 22)
+export const inkSoft = rgb(94, 96, 102)
+export const inkFaint = rgb(110, 112, 117)
+export const rule = rgba(17, 18, 22, 0.14)
+export const ruleStrong = rgba(17, 18, 22, 0.26)
+export const sea = rgb(63, 115, 150)
+export const seaSoft = rgba(63, 115, 150, 0.12)
+export const success = rgb(23, 119, 68)
+export const danger = rgb(163, 58, 43)
+export const codeInk = rgb(243, 240, 232)
+
+export const foundationLook = look:
+    minWidth = 320px
+    minHeight = 100vh
+    color = ink
+    background = paper
+    font = "Inter, SF Pro Display, SF Pro Text, PingFang SC, Noto Sans CJK SC, Microsoft YaHei, ui-sans-serif, system-ui, sans-serif"
+
+    @selection:
+        color = paperPure
+        background = sea
+
 export component FoundationFrame(children: WebNode):
-    style global:
-        :root {
-            color-scheme: light;
-            font-family: Inter, "SF Pro Display", "SF Pro Text", "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", ui-sans-serif, system-ui, sans-serif;
-            color: #111216;
-            background: #f7f5f0;
-            --velar-paper: #f7f5f0;
-            --velar-paper-pure: #fbfaf7;
-            --velar-ink: #111216;
-            --velar-ink-soft: #5e6066;
-            --velar-ink-faint: #6e7075;
-            --velar-line: rgba(17, 18, 22, 0.14);
-            --velar-line-strong: rgba(17, 18, 22, 0.26);
-            --velar-sea: #3f7396;
-            --velar-sea-soft: rgba(63, 115, 150, 0.12);
-            --velar-success: #177744;
-            --velar-danger: #a33a2b;
-            --velar-page: clamp(20px, 4vw, 56px);
-            --velar-content: 1320px;
-            --velar-radius-small: 12px;
-            --velar-radius-large: 20px;
-            --velar-ease: cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            margin: 0;
-            min-width: 320px;
-            background: var(--velar-paper);
-        }
-
-        button, input, textarea, select {
-            font: inherit;
-        }
-
-        button, a {
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        a {
-            color: inherit;
-        }
-
-        ::selection {
-            color: var(--velar-paper-pure);
-            background: var(--velar-sea);
-        }
-
-        :focus-visible {
-            outline: 3px solid rgba(63, 115, 150, 0.42);
-            outline-offset: 3px;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            html {
-                scroll-behavior: auto;
-            }
-
-            *, *::before, *::after {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
-            }
-        }
-
-    return <>{children}</>
+    return <div look={foundationLook}>{children}</div>

@@ -1,5 +1,6 @@
 import {Head, Link} from "velar/web"
-import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
 import {InteractionPlayground} from "../components/interaction-playground.vel"
 import {docsNav} from "../content.vel"
 
@@ -7,45 +8,46 @@ const activateCode = "{\n  \"formatVersion\": 2,\n  \"entry\": \"src/main.vel\",
 const importsCode = "import {Head, Link, Router, route} from \"velar/web\"\nimport {http} from \"velar/http\"\nimport {read} from \"velar/forms\"\nimport {storage} from \"velar/storage\"\nimport {after, focus} from \"velar/browser\""
 
 export component WebDocs:
+    const locale = useLocale()
     return <main data-web-docs>
-        <Head title="Web framework · VelarScript" description="The official @velarscript/web framework: native JSX, components, reactivity, routing, data, browser capabilities, tests, and production." themeColor="#f7f5f0" />
+        <Head title={locale.text("Web framework · VelarScript", "Web 框架 · VelarScript")} description={locale.text("The official @velarscript/web framework: native JSX, components, Look, reactivity, routing, data, browser capabilities, tests, and production.", "官方 @velarscript/web 框架：原生 JSX、组件、Look、响应式、路由、数据、浏览器能力、测试与生产。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker="Web framework / Overview" title="One official path from component to production." summary="@velarscript/web adds checked browser authoring without changing the JavaScript engine, exposing ambient globals, or introducing a virtual DOM." tags={["Web API 0.8", "native DOM", "scoped CSS", "explicit capabilities"]} />
+            <PageHeader kicker={locale.text("Web framework / Overview", "Web 框架 / 概览")} title={locale.text("One official path from component to production.", "从组件到生产环境，只走一条官方路径。")} summary={locale.text("@velarscript/web adds checked browser authoring without changing the JavaScript engine, exposing ambient globals, or introducing a virtual DOM.", "@velarscript/web 提供受检查的浏览器开发能力，但不改变 JavaScript 引擎、不暴露环境全局，也不引入虚拟 DOM。")} tags={["Web API 0.9", "native DOM", "controlled Look", "explicit capabilities"]} />
             <Prose>
-                <h2 id="activate">Activate the extension</h2>
-                <pre><code>{activateCode}</code></pre>
-                <p>The npm dependency provides a compiler entry and a separate Web host entry. The compiler contribution owns JSX, components, state, lifecycle, DOM types, scoped CSS, diagnostics, and editor semantics. The host contribution owns browser documents, development reload, CSP, production assets, deployment projection, and browser-test metadata. The generic CLI stays framework-independent.</p>
+                <h2 id="activate">{locale.text("Activate the extension", "启用扩展")}</h2>
+                <CodeBlock code={activateCode} />
+                <p>{locale.text("The npm dependency provides a compiler entry and separate Web host entry. The compiler contribution owns JSX, components, state, lifecycle, DOM types, Look, diagnostics, and editor semantics. The host owns browser documents, development reload, CSP, production assets, deployment projection, and browser-test metadata. The generic CLI stays framework-independent.", "npm 依赖提供编译器入口与独立 Web 宿主入口。编译器贡献拥有 JSX、组件、状态、生命周期、DOM 类型、Look、诊断与编辑器语义；宿主拥有浏览器文档、开发重载、CSP、生产资源、部署映射与浏览器测试元数据。通用 CLI 保持框架无关。")}</p>
 
-                <h2 id="model">Rendering model</h2>
-                <p>JSX creates native HTML and SVG nodes. Static DOM and CSS are emitted once; reactive expressions subscribe only to the state they read and patch their owned text, attribute, branch, or keyed-list region. Components set up once and do not rerun as render functions.</p>
-                <p>Component CSS is scoped and extracted in production. The parent scope may style a child component's top-level DOM root while arbitrary child internals remain private. Global rules require an explicit <code>style global</code> block.</p>
+                <h2 id="model">{locale.text("Rendering model", "渲染模型")}</h2>
+                <p>{locale.text("JSX creates native HTML and SVG nodes. Static DOM and controlled Look rules emit once; reactive expressions subscribe only to state they read and patch their owned text, attribute, branch, keyed-list, or Look value. Components set up once and do not rerun as render functions.", "JSX 创建原生 HTML 与 SVG 节点。静态 DOM 与受控 Look 规则只生成一次；响应式表达式只订阅读取的状态，并更新自己拥有的文本、属性、分支、带键列表或 Look 值。组件只初始化一次，不会作为渲染函数反复执行。")}</p>
+                <p>{locale.text("Look is a typed Velar value that composes through ordinary constants and functions. Stable class names remain public hooks. Raw CSS requires an explicit unsafe import with mandatory before/after placement; inline style is rejected.", "Look 是类型化 Velar 值，通过普通常量与函数组合。稳定类名继续作为公开钩子。原生 CSS 必须显式 unsafe 导入并指定 before/after 位置；内联 style 会被拒绝。")}</p>
 
-                <h2 id="modules">Capability modules</h2>
-                <pre><code>{importsCode}</code></pre>
+                <h2 id="modules">{locale.text("Capability modules", "能力模块")}</h2>
+                <CodeBlock code={importsCode} />
                 <ul>
-                    <li><code>velar/app</code> owns application error reports and recovery.</li>
-                    <li><code>velar/config</code> validates explicit public build configuration.</li>
-                    <li><code>velar/web</code> owns routing, links, document metadata, navigation, announcements, and DOM IDs.</li>
-                    <li><code>velar/http</code> owns lazy bounded requests, strict data, typed responses, multipart bodies, timeout, and cancellation.</li>
-                    <li><code>velar/storage</code> owns local/session namespaces, watches, and IndexedDB.</li>
-                    <li><code>velar/forms</code> owns native form reads, typed record decoding, accessible errors, pending state, focus, and reset.</li>
-                    <li><code>velar/browser</code> owns snapshots, timers, media, visibility, clipboard, focus, scrolling, layout, frames, and dialogs.</li>
-                    <li><code>velar/files</code> owns cross-browser file selection, bounded reads, and downloads.</li>
-                    <li><code>velar/realtime</code> owns explicit WebSocket and server-sent-event lifetimes.</li>
-                    <li><code>velar/web-test</code> drives the delivered CSP application through a restricted typed browser controller.</li>
+                    <li><code>velar/app</code>{locale.text(" owns application error reports and recovery.", " 拥有应用错误报告与恢复。")}</li>
+                    <li><code>velar/config</code>{locale.text(" validates explicit public build configuration.", " 验证显式公开构建配置。")}</li>
+                    <li><code>velar/web</code>{locale.text(" owns routing, links, metadata, navigation, announcements, and DOM IDs.", " 拥有路由、链接、元数据、导航、播报与 DOM ID。")}</li>
+                    <li><code>velar/http</code>{locale.text(" owns lazy bounded requests, strict data, typed responses, multipart bodies, timeout, and cancellation.", " 拥有惰性有界请求、严格数据、类型化响应、多段请求体、超时与取消。")}</li>
+                    <li><code>velar/storage</code>{locale.text(" owns local/session namespaces, watches, and IndexedDB.", " 拥有本地/会话命名空间、监听与 IndexedDB。")}</li>
+                    <li><code>velar/forms</code>{locale.text(" owns native reads, typed record decoding, accessible errors, pending, focus, and reset.", " 拥有原生表单读取、类型化记录解码、无障碍错误、pending、焦点与重置。")}</li>
+                    <li><code>velar/browser</code>{locale.text(" owns snapshots, timers, media, visibility, clipboard, focus, scrolling, layout, frames, and dialogs.", " 拥有快照、定时器、媒体、可见性、剪贴板、焦点、滚动、布局、帧与对话框。")}</li>
+                    <li><code>velar/files</code>{locale.text(" owns cross-browser file selection, bounded reads, and downloads.", " 拥有跨浏览器文件选择、有界读取与下载。")}</li>
+                    <li><code>velar/realtime</code>{locale.text(" owns explicit WebSocket and server-sent-event lifetimes.", " 拥有显式 WebSocket 与服务器发送事件生命周期。")}</li>
+                    <li><code>velar/web-test</code>{locale.text(" drives the delivered CSP application through a restricted typed browser controller.", " 通过受限类型化浏览器控制器驱动交付的 CSP 应用。")}</li>
                 </ul>
 
-                <h2 id="native-interaction">Native interaction, composed</h2>
-                <p>The framework uses native anchors, forms, dialogs, focus, events, and accessibility relationships. Components can build higher-level UI without replacing platform semantics.</p>
+                <h2 id="native-interaction">{locale.text("Native interaction, composed", "组合原生交互")}</h2>
+                <p>{locale.text("The framework uses native anchors, forms, dialogs, focus, events, and accessibility relationships. Components build higher-level UI without replacing platform semantics.", "框架使用原生锚点、表单、对话框、焦点、事件与无障碍关系。组件可以构建更高层界面，而不替换平台语义。")}</p>
                 <InteractionPlayground />
 
-                <h2 id="globals">No ambient browser globals</h2>
-                <Callout title="Capabilities stay visible"><p>Direct <code>window</code>, <code>document</code>, <code>navigator</code>, <code>location</code>, <code>history</code>, <code>fetch</code>, <code>JSON</code>, <code>Math</code>, <code>Date</code>, and <code>console</code> are rejected in ordinary source. Diagnostics point to JSX, Core modules, Web modules, or an explicit JavaScript adapter.</p></Callout>
+                <h2 id="globals">{locale.text("No ambient browser globals", "不提供环境浏览器全局")}</h2>
+                <Callout title={locale.text("Capabilities stay visible", "能力保持可见")}><p>{locale.text("Direct ", "普通源码直接使用 ")}<code>window</code>, <code>document</code>, <code>navigator</code>, <code>location</code>, <code>history</code>, <code>fetch</code>, <code>JSON</code>, <code>Math</code>, <code>Date</code>{locale.text(", and ", " 与 ")}<code>console</code>{locale.text(" are rejected in ordinary source. Diagnostics point to JSX, Core/Web modules, or an explicit JavaScript adapter.", " 会被拒绝。诊断会指向 JSX、Core/Web 模块或显式 JavaScript 适配器。")}</p></Callout>
 
-                <h2 id="boundaries">Current boundary</h2>
-                <p>Web API 0.8 does not define SSR, hydration, server execution, workers, service workers/PWA, WebRTC, WebGPU, directory handles, persistent file handles, or a game runtime. <code>velar/game</code> remains a future Canvas-oriented framework built on this Web platform.</p>
+                <h2 id="boundaries">{locale.text("Current boundary", "当前边界")}</h2>
+                <p>{locale.text("Web API 0.9 does not define SSR, hydration, server execution, workers, service workers/PWA, WebRTC, WebGPU, directory handles, persistent file handles, or a game runtime. ", "Web API 0.9 尚不定义 SSR、hydration、服务器执行、worker、service worker/PWA、WebRTC、WebGPU、目录句柄、持久文件句柄或游戏运行时。")}<code>velar/game</code>{locale.text(" remains a future Canvas-oriented framework built on this Web platform.", " 仍是未来基于该 Web 平台构建、面向 Canvas 的框架。")}</p>
 
-                <div class="next-links"><Link to="/docs/web/components"><strong>Next: Components and JSX</strong><span>Build native, accessible view trees.</span></Link><Link to="/docs/web/reactivity"><strong>State and lifecycle</strong><span>Own updates, resources, actions, watchers, and cleanup.</span></Link></div>
+                <div class="next-links"><Link to="/docs/web/components"><strong>{locale.text("Next: Components and JSX", "下一步：组件与 JSX")}</strong><span>{locale.text("Build native, accessible view trees.", "构建原生且无障碍的视图树。")}</span></Link><Link to="/docs/web/reactivity"><strong>{locale.text("State and lifecycle", "状态与生命周期")}</strong><span>{locale.text("Own updates, resources, actions, watchers, and cleanup.", "明确拥有更新、资源、动作、监听与清理。")}</span></Link></div>
             </Prose>
         </DocsShell>
     </main>

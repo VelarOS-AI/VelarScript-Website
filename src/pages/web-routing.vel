@@ -1,5 +1,6 @@
 import {Head, Link} from "velar/web"
-import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
 const routeCode = "import {Head, RouteContext, Router, route} from \"velar/web\"\n\ncomponent ProjectPage(route: RouteContext):\n    const id = route.params.get(\"id\")\n    return <main><Head title=\"Project\" /><h1>{id ?? \"Missing\"}</h1></main>\n\nconst routes = [\n    route(\"/\", Home),\n    route(\"/projects/:id\", ProjectPage),\n    route(\"/files/*\", FileBrowser),\n]\n\ncomponent App:\n    return <Router routes={routes} fallback={NotFound} />"
@@ -9,41 +10,42 @@ const headCode = "component ArticlePage(article: Article):\n    return <main>\n 
 const lazyCode = "const Reports = lazy(\n    () => import(\"./pages/reports.vel\"),\n    \"Reports\",\n    ReportsLoading,\n    ReportsFailed,\n)\n\nconst routes = [route(\"/reports\", Reports)]"
 
 export component WebRouting:
+    const locale = useLocale()
     return <main>
-        <Head title="Routing and metadata · VelarScript" description="VelarScript Router, routes, RouteContext, Link, NavLink, navigation, Head, lazy components, announcements, and DOM IDs." themeColor="#f7f5f0" />
+        <Head title={locale.text("Routing and metadata · VelarScript", "路由与元数据 · VelarScript")} description={locale.text("VelarScript Router, routes, RouteContext, Link, NavLink, navigation, Head, lazy components, announcements, and DOM IDs.", "VelarScript 的 Router、路由、RouteContext、Link、NavLink、导航、Head、懒加载组件、播报与 DOM ID。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker="Web framework / 03" title="Routes are checked component boundaries." summary="Patterns, route props, links, base paths, navigation, metadata, lazy chunks, fallbacks, and recovery use one application-relative model." tags={["Router", "RouteContext", "Head", "lazy"]} />
+            <PageHeader kicker={locale.text("Web framework / 03", "Web 框架 / 03")} title={locale.text("Routes are checked component boundaries.", "路由是受检查的组件边界。")} summary={locale.text("Patterns, route props, links, base paths, navigation, metadata, lazy chunks, fallbacks, and recovery share one application-relative model.", "模式、路由属性、链接、基础路径、导航、元数据、懒分块、回退与恢复共用一套应用相对模型。")} tags={["Router", "RouteContext", "Head", "lazy"]} />
             <Prose>
-                <h2 id="routes">Declare routes</h2>
-                <pre><code>{routeCode}</code></pre>
-                <p>A route pattern begins with <code>/</code> and contains only a pathname. <code>:name</code> captures one decoded segment and a final <code>*</code> captures the remaining path under <code>route.params.get("wildcard")</code>. Queries, hashes, backslashes, empty segments, duplicate parameters, non-terminal wildcards, and redundant trailing slashes are rejected.</p>
-                <p><code>RouteContext</code> contains the application-relative <code>path</code>, string <code>params</code>/<code>query</code> Maps, and <code>hash</code>. A route component may require only <code>route: RouteContext</code>. The compiler checks that contract before browser execution.</p>
+                <h2 id="routes">{locale.text("Declare routes", "声明路由")}</h2>
+                <CodeBlock code={routeCode} />
+                <p>{locale.text("A route pattern begins with ", "路由模式以 ")}<code>/</code>{locale.text(" and contains only a pathname. ", " 开头且只包含 pathname。")}<code>:name</code>{locale.text(" captures one decoded segment and final ", " 捕获一个解码片段，末尾 ")}<code>*</code>{locale.text(" captures the remainder under ", " 把剩余路径放入 ")}<code>route.params.get("wildcard")</code>{locale.text(". Queries, hashes, backslashes, empty segments, duplicate parameters, non-terminal wildcards, and redundant trailing slashes are rejected.", "。查询、hash、反斜线、空片段、重复参数、非末尾通配符与多余尾斜线会被拒绝。")}</p>
+                <p><code>RouteContext</code>{locale.text(" contains application-relative ", " 包含应用相对 ")}<code>path</code>{locale.text(", string ", "、字符串 ")}<code>params</code>/<code>query</code>{locale.text(" Maps, and ", " Map 与 ")}<code>hash</code>{locale.text(". A route component may require only ", "。路由组件只能要求 ")}<code>route: RouteContext</code>{locale.text(". Compiler checks the contract before browser execution.", "；编译器在浏览器执行前检查该契约。")}</p>
 
-                <h2 id="router">Router behavior</h2>
-                <p><code>Router</code> renders the first match. An unmatched route renders an accessible default 404 or a checked fallback component. A malformed percent-encoded parameter becomes a normal non-match rather than a fatal render.</p>
-                <p>Navigation is transactional: Router constructs the target before destroying the current page. If construction fails, the incomplete target cleans up, the previous page remains mounted, and <code>velar/app</code> receives a recoverable <code>render/router</code> report. An initial route failure still reaches the root fatal boundary.</p>
+                <h2 id="router">{locale.text("Router behavior", "Router 行为")}</h2>
+                <p><code>Router</code>{locale.text(" renders the first match. Unmatched routes render an accessible default 404 or checked fallback. A malformed percent-encoded parameter becomes a normal non-match instead of fatal render.", " 渲染第一个匹配。未匹配路由会渲染无障碍默认 404 或受检查回退。格式错误的百分号编码参数会成为普通不匹配，而不是致命渲染。")}</p>
+                <p>{locale.text("Navigation is transactional: Router constructs target before destroying current page. On failure, incomplete target cleans up, previous page remains, and ", "导航是事务性的：Router 先构造目标再销毁当前页面。失败时，不完整目标会清理，上一页保持挂载，")}<code>velar/app</code>{locale.text(" receives recoverable ", " 收到可恢复 ")}<code>render/router</code>{locale.text(" report. Initial route failure reaches the root fatal boundary.", " 报告。首次路由失败仍会到达根致命边界。")}</p>
 
                 <h2 id="links">Link and NavLink</h2>
-                <pre><code>{linkCode}</code></pre>
-                <p><code>Link</code> preserves native anchor behavior and intercepts only an unmodified primary click on an internal path. <code>NavLink</code> adds <code>aria-current="page"</code>; non-exact links match descendants while <code>/</code> remains exact by design. Both understand <code>web.base</code>, trailing slashes, history changes, and component cleanup.</p>
+                <CodeBlock code={linkCode} />
+                <p><code>Link</code>{locale.text(" preserves native anchor behavior and intercepts only an unmodified primary click on an internal path. ", " 保留原生锚点行为，只拦截内部路径上的无修饰主按钮点击。")}<code>NavLink</code>{locale.text(" adds ", " 添加 ")}<code>aria-current="page"</code>{locale.text("; non-exact links match descendants while ", "；非 exact 链接匹配后代，")}<code>/</code>{locale.text(" stays exact. Both understand ", " 仍有意保持精确。两者都理解 ")}<code>web.base</code>{locale.text(", trailing slashes, history changes, and cleanup.", "、尾斜线、历史变化与清理。")}</p>
 
-                <h2 id="navigation">Intentional history operations</h2>
-                <pre><code>{navigationCode}</code></pre>
-                <p><code>navigate</code> accepts checked <code>replace</code> and <code>scroll</code> booleans. <code>redirect</code>, <code>back</code>, <code>forward</code>, and <code>reload</code> make history intent explicit. <code>currentRoute()</code> returns the same typed application-relative snapshot used by Router.</p>
+                <h2 id="navigation">{locale.text("Intentional history operations", "明确的历史操作")}</h2>
+                <CodeBlock code={navigationCode} />
+                <p><code>navigate</code>{locale.text(" accepts checked ", " 接受受检查布尔 ")}<code>replace</code>{locale.text(" and ", " 与 ")}<code>scroll</code>{locale.text(". ", "。")}<code>redirect</code>, <code>back</code>, <code>forward</code>{locale.text(", and ", " 与 ")}<code>reload</code>{locale.text(" make history intent explicit. ", " 让历史意图明确。")}<code>currentRoute()</code>{locale.text(" returns Router's same typed application-relative snapshot.", " 返回与 Router 相同的类型化应用相对快照。")}</p>
 
-                <h2 id="head">Document metadata</h2>
-                <pre><code>{headCode}</code></pre>
-                <p><code>Head</code> owns title, description, canonical URL, robots, social image, and theme color for its component lifetime and restores the previous values on cleanup. It composes with routes and lazy pages rather than relying on document globals.</p>
+                <h2 id="head">{locale.text("Document metadata", "文档元数据")}</h2>
+                <CodeBlock code={headCode} />
+                <p><code>Head</code>{locale.text(" owns title, description, canonical URL, robots, social image, and theme color for its component lifetime and restores previous values on cleanup. It composes with routes/lazy pages without document globals.", " 在组件生命周期内拥有标题、描述、规范 URL、robots、社交图片与主题色，并在清理时恢复旧值。它与路由/懒页面组合，不依赖 document 全局。")}</p>
 
-                <h2 id="lazy">Lazy route components</h2>
-                <pre><code>{lazyCode}</code></pre>
-                <p><code>lazy</code> accepts one checked dynamic VelarScript import, a literal component export name, and optional loading/failure components. It caches a successful module load, retries after failure, owns loading/resolved child lifetimes, and handles both module-load and component-construction failure through accessible fallbacks and the shared error channel.</p>
+                <h2 id="lazy">{locale.text("Lazy route components", "懒加载路由组件")}</h2>
+                <CodeBlock code={lazyCode} />
+                <p><code>lazy</code>{locale.text(" accepts a checked dynamic VelarScript import, literal component export name, and optional loading/failure components. It caches success, retries failure, owns child lifetimes, and handles module/component construction failure through accessible fallbacks and shared error channel.", " 接受受检查的动态 VelarScript 导入、字面量组件导出名与可选加载/失败组件。它缓存成功、重试失败、拥有子生命周期，并通过无障碍回退与共享错误通道处理模块/组件构造失败。")}</p>
 
-                <h2 id="accessibility">Announcements and DOM IDs</h2>
-                <p><code>announce(message, priority="polite")</code> writes to a compiler-owned live region. <code>domId(prefix="velar")</code> creates an application-local monotonic ID for label, description, and accessible-name relationships without requiring a cryptographic UUID.</p>
-                <Callout title="Base paths are one contract"><p>With <code>web.base</code> set to <code>/studio/</code>, navigating to <code>/settings</code> writes <code>/studio/settings</code> in the browser while Router still matches <code>/settings</code>. Development, production assets, links, fallback, and verification use the same base.</p></Callout>
+                <h2 id="accessibility">{locale.text("Announcements and DOM IDs", "播报与 DOM ID")}</h2>
+                <p><code>announce(message, priority="polite")</code>{locale.text(" writes to a compiler-owned live region. ", " 写入编译器拥有的 live region。")}<code>domId(prefix="velar")</code>{locale.text(" creates an application-local monotonic ID for label, description, and accessible-name relationships without cryptographic UUID.", " 创建应用局部单调 ID，用于标签、描述与无障碍名称关系，无需密码学 UUID。")}</p>
+                <Callout title={locale.text("Base paths are one contract", "基础路径是一份契约")}><p>{locale.text("With ", "当 ")}<code>web.base</code>{locale.text(" set to ", " 为 ")}<code>/studio/</code>{locale.text(", navigating to ", " 时，导航到 ")}<code>/settings</code>{locale.text(" writes ", " 会在浏览器写入 ")}<code>/studio/settings</code>{locale.text(" while Router still matches ", "，而 Router 仍匹配 ")}<code>/settings</code>{locale.text(". Development, assets, links, fallback, and verification use the same base.", "。开发、资源、链接、回退与验证使用同一 base。")}</p></Callout>
 
-                <div class="next-links"><Link to="/docs/web/data"><strong>Next: Forms, HTTP and storage</strong><span>Load, validate, submit, and persist application data.</span></Link><Link to="/docs/web/browser"><strong>Browser capabilities</strong><span>Use timers, focus, dialogs, files, and realtime explicitly.</span></Link></div>
+                <div class="next-links"><Link to="/docs/web/data"><strong>{locale.text("Next: Forms, HTTP and storage", "下一步：表单、HTTP 与存储")}</strong><span>{locale.text("Load, validate, submit, and persist application data.", "加载、验证、提交并持久化应用数据。")}</span></Link><Link to="/docs/web/browser"><strong>{locale.text("Browser capabilities", "浏览器能力")}</strong><span>{locale.text("Use timers, focus, dialogs, files, and realtime explicitly.", "显式使用定时器、焦点、对话框、文件与实时连接。")}</span></Link></div>
             </Prose>
         </DocsShell>
     </main>

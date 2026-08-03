@@ -62,7 +62,7 @@ async function buildAndVerify(directory) {
   if (manifest?.formatVersion !== 3
     || manifest?.kind !== "velar-framework-build"
     || manifest?.framework?.id !== "@velarscript/web"
-    || manifest?.framework?.apiVersion !== "0.8"
+    || manifest?.framework?.apiVersion !== "0.9"
     || manifest?.sourceMaps !== false
     || typeof manifest?.buildId !== "string"
     || !/^[0-9a-f]{64}$/u.test(manifest.buildId)

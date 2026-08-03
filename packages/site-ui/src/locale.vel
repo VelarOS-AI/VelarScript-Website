@@ -1,0 +1,55 @@
+import {environment} from "velar/browser"
+import {storage} from "velar/storage"
+import {lower, startsWith} from "velar/text"
+
+export type LocaleComposer:
+    locale: () -> string
+    languageTag: () -> string
+    isChinese: () -> bool
+    text: (string, string) -> string
+    setLocale: (string) -> none
+    toggle: () -> none
+
+type LocalePreference:
+    locale: string
+
+const preferences = storage.scope("velarscript-site")
+
+def detectedLocale() -> string:
+    try:
+        const saved = preferences.get("preference", LocalePreference, {locale: ""}).locale
+        if saved == "zh":
+            return "zh"
+        if saved == "en":
+            return "en"
+    catch error:
+        pass
+
+    try:
+        const browserLanguage = lower(environment().language)
+        return startsWith(browserLanguage, "zh") ? "zh" : "en"
+    catch error:
+        return "en"
+
+export state siteLocale = detectedLocale()
+
+def updateLocale(value: string):
+    const normalized = value == "zh" ? "zh" : "en"
+    siteLocale = normalized
+    try:
+        preferences.set("preference", {locale: normalized})
+    catch error:
+        pass
+
+def toggleLocale():
+    updateLocale(siteLocale == "en" ? "zh" : "en")
+
+export def useLocale() -> LocaleComposer:
+    return {
+        locale: () => siteLocale,
+        languageTag: () => siteLocale == "zh" ? "zh-CN" : "en",
+        isChinese: () => siteLocale == "zh",
+        text: (english, chinese) => siteLocale == "zh" ? chinese : english,
+        setLocale: updateLocale,
+        toggle: toggleLocale,
+    }

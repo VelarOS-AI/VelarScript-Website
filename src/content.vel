@@ -9,69 +9,83 @@ export type SiteRuntimeConfig:
 export type NavItem:
     path: string
     label: string
+    labelZh: string
 
 export type Feature:
     number: string
     title: string
+    titleZh: string
     summary: string
+    summaryZh: string
     detail: string
+    detailZh: string
 
 export type LearningStep:
     number: string
     title: string
+    titleZh: string
     summary: string
+    summaryZh: string
     path: string
 
 export type ExampleSummary:
     slug: string
     eyebrow: string
+    eyebrowZh: string
     title: string
+    titleZh: string
     summary: string
+    summaryZh: string
     code: string
     traits: List<string>
+    traitsZh: List<string>
 
 export const primaryNav: List<NavItem> = [
-    {path: "/learn", label: "Learn"},
-    {path: "/docs", label: "Docs"},
-    {path: "/examples", label: "Examples"},
+    {path: "/learn", label: "Learn", labelZh: "学习"},
+    {path: "/docs", label: "Docs", labelZh: "文档"},
+    {path: "/examples", label: "Examples", labelZh: "示例"},
 ]
 
 export const docsNav: List<DocsNavGroup> = [
     {
         label: "Start",
+        labelZh: "开始",
         items: [
-            {path: "/docs", label: "Overview"},
-            {path: "/docs/getting-started", label: "Getting started"},
-            {path: "/docs/project", label: "Project and CLI"},
+            {path: "/docs", label: "Overview", labelZh: "概览"},
+            {path: "/docs/getting-started", label: "Getting started", labelZh: "快速开始"},
+            {path: "/docs/project", label: "Project and CLI", labelZh: "项目与 CLI"},
         ],
     },
     {
         label: "Language",
+        labelZh: "语言",
         items: [
-            {path: "/docs/language", label: "Syntax and values"},
-            {path: "/docs/language/types", label: "Types and data"},
-            {path: "/docs/language/functions", label: "Functions and flow"},
-            {path: "/docs/language/collections", label: "Collections"},
-            {path: "/docs/language/classes", label: "Classes"},
-            {path: "/docs/language/modules", label: "Modules and JavaScript"},
+            {path: "/docs/language", label: "Syntax and values", labelZh: "语法与值"},
+            {path: "/docs/language/types", label: "Types and data", labelZh: "类型与数据"},
+            {path: "/docs/language/functions", label: "Functions and flow", labelZh: "函数与控制流"},
+            {path: "/docs/language/collections", label: "Collections", labelZh: "集合"},
+            {path: "/docs/language/classes", label: "Classes", labelZh: "类"},
+            {path: "/docs/language/modules", label: "Modules and JavaScript", labelZh: "模块与 JavaScript"},
         ],
     },
     {
         label: "Web framework",
+        labelZh: "Web 框架",
         items: [
-            {path: "/docs/web", label: "Web overview"},
-            {path: "/docs/web/components", label: "Components and JSX"},
-            {path: "/docs/web/reactivity", label: "State and lifecycle"},
-            {path: "/docs/web/routing", label: "Routing and metadata"},
-            {path: "/docs/web/data", label: "Forms, HTTP and storage"},
-            {path: "/docs/web/browser", label: "Browser capabilities"},
+            {path: "/docs/web", label: "Web overview", labelZh: "Web 概览"},
+            {path: "/docs/web/components", label: "Components and JSX", labelZh: "组件与 JSX"},
+            {path: "/docs/web/reactivity", label: "State and lifecycle", labelZh: "状态与生命周期"},
+            {path: "/docs/web/routing", label: "Routing and metadata", labelZh: "路由与元数据"},
+            {path: "/docs/web/data", label: "Forms, HTTP and storage", labelZh: "表单、HTTP 与存储"},
+            {path: "/docs/web/browser", label: "Browser capabilities", labelZh: "浏览器能力"},
         ],
     },
     {
         label: "Reference",
+        labelZh: "参考",
         items: [
-            {path: "/docs/core", label: "Core modules"},
-            {path: "/docs/testing", label: "Testing and deployment"},
+            {path: "/docs/core", label: "Core modules", labelZh: "Core 模块"},
+            {path: "/docs/testing", label: "Testing and deployment", labelZh: "测试与部署"},
         ],
     },
 ]
@@ -80,53 +94,74 @@ export const features: List<Feature> = [
     {
         number: "01",
         title: "Familiar, without the baggage.",
+        titleZh: "熟悉，但不背负历史包袱。",
         summary: "Keep JavaScript's runtime model. Replace its accidental complexity with one clear language surface.",
+        summaryZh: "保留 JavaScript 的运行时模型，用一套清晰的语言表面替代偶然累积的复杂性。",
         detail: "let and const stay. Loose equality, implicit globals, prototype mutation, and ambient browser APIs do not.",
+        detailZh: "保留 let 与 const；去掉宽松相等、隐式全局变量、原型修改和无边界的浏览器 API。",
     },
     {
         number: "02",
         title: "Useful types, not a second language.",
+        titleZh: "有用的类型，而不是第二门语言。",
         summary: "Types document data boundaries and catch ordinary mistakes without turning application code into type gymnastics.",
+        summaryZh: "类型用于说明数据边界并捕获常见错误，不把应用代码变成类型体操。",
         detail: "One type declaration validates compile-time use and runtime data. No duplicate schema system.",
+        detailZh: "同一个 type 声明同时检查编译期使用和运行时数据，不再维护重复的 schema。",
     },
     {
         number: "03",
         title: "The Web belongs in the language.",
-        summary: "Components, JSX, scoped CSS, state, resources, routing, forms, and browser services share one coherent model.",
+        titleZh: "Web 能力属于语言的一部分。",
+        summary: "Components, JSX, controlled Look values, state, resources, routing, forms, and browser services share one coherent model.",
+        summaryZh: "组件、JSX、受控 Look、状态、资源、路由、表单和浏览器服务共享同一套模型。",
         detail: "No virtual DOM and no React-style effect cleanup. mounted and cleanup remain explicit lifecycle siblings.",
+        detailZh: "没有虚拟 DOM，也没有 React 式 effect 清理；mounted 与 cleanup 是明确、并列的生命周期。",
     },
 ]
 
 export const learningSteps: List<LearningStep> = [
-    {number: "01", title: "Read VelarScript", summary: "Learn values, functions, control flow, data types, classes, and modules through small examples.", path: "/learn"},
-    {number: "02", title: "Build a component", summary: "Mix checked data, native JSX, scoped CSS, and direct state updates in one readable unit.", path: "/docs/language"},
-    {number: "03", title: "Ship a web app", summary: "Add routes, forms, HTTP, storage, tests, and a production build through @velarscript/web.", path: "/docs/web"},
+    {number: "01", title: "Read VelarScript", titleZh: "读懂 VelarScript", summary: "Learn values, functions, control flow, data types, classes, and modules through small examples.", summaryZh: "通过小型示例学习值、函数、控制流、数据类型、类和模块。", path: "/learn"},
+    {number: "02", title: "Build a component", titleZh: "构建一个组件", summary: "Mix checked data, native JSX, controlled Look values, and direct state updates in one readable unit.", summaryZh: "把受检查的数据、原生 JSX、受控 Look 和直接状态更新放进一个易读单元。", path: "/docs/language"},
+    {number: "03", title: "Ship a web app", titleZh: "交付 Web 应用", summary: "Add routes, forms, HTTP, storage, tests, and a production build through @velarscript/web.", summaryZh: "通过 @velarscript/web 加入路由、表单、HTTP、存储、测试和生产构建。", path: "/docs/web"},
 ]
 
 export const examples: List<ExampleSummary> = [
     {
         slug: "counter",
         eyebrow: "State",
+        eyebrowZh: "状态",
         title: "A counter without ceremony",
+        titleZh: "没有仪式感的计数器",
         summary: "State is local, updates are ordinary assignments, and cleanup is not hidden inside an effect callback.",
+        summaryZh: "状态保持局部，更新就是普通赋值，清理逻辑不会藏在 effect 回调里。",
         code: "component Counter:\n    state count = 0\n\n    return <button on:click={() => count += 1}>\n        Count: {count}\n    </button>",
         traits: ["state", "events", "JSX"],
+        traitsZh: ["状态", "事件", "JSX"],
     },
     {
         slug: "profile",
         eyebrow: "Data",
+        eyebrowZh: "数据",
         title: "One type, end to end",
+        titleZh: "一个类型贯穿端到端",
         summary: "The same readable declaration checks your source and validates the response entering your application.",
+        summaryZh: "同一个易读声明既检查源代码，也验证进入应用的响应数据。",
         code: "type Profile:\n    id: string\n    name: string\n\nasync def loadProfile() -> Profile:\n    return await http.get(\"/api/profile\").parse(Profile)",
         traits: ["types", "HTTP", "runtime validation"],
+        traitsZh: ["类型", "HTTP", "运行时验证"],
     },
     {
         slug: "lifecycle",
         eyebrow: "Lifecycle",
+        eyebrowZh: "生命周期",
         title: "Cleanup has one obvious home",
+        titleZh: "清理逻辑只有一个明确归宿",
         summary: "Start browser subscriptions during setup and release them in the sibling cleanup block.",
+        summaryZh: "在初始化时启动浏览器订阅，并在并列的 cleanup 块中释放。",
         code: "component OnlineStatus:\n    state online = environment().online\n    const stop = watchOnline(value => online = value)\n\n    cleanup:\n        stop()\n\n    return <span>{online ? \"Online\" : \"Offline\"}</span>",
         traits: ["cleanup", "browser", "reactivity"],
+        traitsZh: ["清理", "浏览器", "响应式"],
     },
 ]
 

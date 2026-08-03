@@ -1,5 +1,6 @@
 import {Head, Link} from "velar/web"
-import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
 const collectionsCode = "import {enumerate, groupBy, range, sortBy} from \"velar/collections\"\n\nconst pages = enumerate(range(1, 4), 10)\nconst byRole = groupBy(users, user => user.role)\nconst ordered = sortBy(users, user => user.name)"
@@ -11,64 +12,65 @@ const timeCode = "import {iso, now, parts, utc} from \"velar/time\"\n\nconst lau
 const idLogCode = "import {isUuid, uuid} from \"velar/id\"\nimport {logger, setLevel, useSink} from \"velar/log\"\n\nconst requestId = uuid()\nconst buildLog = logger(\"build\")\nsetLevel(\"debug\")\nbuildLog.info(\"Compilation ready\")"
 
 export component CoreLibrary:
+    const locale = useLocale()
     return <main data-core-library>
-        <Head title="Core modules · VelarScript" description="The complete VelarScript Core standard library: collections, text, math, JSON, async, URL, time, IDs, and structured logging." themeColor="#f7f5f0" />
+        <Head title={locale.text("Core modules · VelarScript", "Core 模块 · VelarScript")} description={locale.text("The complete VelarScript Core standard library: collections, text, math, JSON, async, URL, time, IDs, and structured logging.", "完整的 VelarScript Core 标准库：集合、文本、数学、JSON、异步、URL、时间、ID 与结构化日志。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker="Reference / Core API 0.4" title="Small explicit modules for everyday programs." summary="Core combines practical Python and modern JavaScript ideas without globals, prototype patches, hidden coercion, or a second runtime." tags={["9 modules", "tree-shakeable", "bounded", "typed inference"]} />
+            <PageHeader kicker={locale.text("Reference / Core API 0.4", "参考 / Core API 0.4")} title={locale.text("Small explicit modules for everyday programs.", "为日常程序提供小而明确的模块。")} summary={locale.text("Core combines practical Python and modern JavaScript ideas without globals, prototype patches, hidden coercion, or a second runtime.", "Core 结合 Python 与现代 JavaScript 的实用思想，不提供全局、不修改原型、不做隐藏强制转换，也不引入第二套运行时。")} tags={["9 modules", "tree-shakeable", "bounded", "typed inference"]} />
             <Prose>
-                <h2 id="contract">Shared contract</h2>
+                <h2 id="contract">{locale.text("Shared contract", "共同契约")}</h2>
                 <ul>
-                    <li>Import every capability from an official <code>velar/*</code> module.</li>
-                    <li>Transforms return new values unless the name explicitly describes mutation.</li>
-                    <li>Missing results use <code>none</code>, never source-level undefined.</li>
-                    <li>The compiler preserves element, callback, Map, optional, runtime Type, and Promise results without exposing user-defined generic syntax.</li>
-                    <li>Known mistakes are diagnostics; unsafe dynamic misuse throws TypeError or RangeError before hidden coercion or host effects.</li>
-                    <li>Lists are dense and bounded, text/JSON are bounded, and validators never invoke getters merely to inspect data.</li>
+                    <li>{locale.text("Import every capability from an official ", "每项能力都从官方 ")}<code>velar/*</code>{locale.text(" module.", " 模块导入。")}</li>
+                    <li>{locale.text("Transforms return new values unless the name explicitly describes mutation.", "除非名称明确描述修改，否则变换返回新值。")}</li>
+                    <li>{locale.text("Missing results use ", "缺失结果使用 ")}<code>none</code>{locale.text(", never source-level undefined.", "，不使用源码层 undefined。")}</li>
+                    <li>{locale.text("Compiler preserves element, callback, Map, optional, runtime Type, and Promise results without user-defined generic syntax.", "编译器保留元素、回调、Map、可选、运行时 Type 与 Promise 结果类型，而不暴露用户泛型语法。")}</li>
+                    <li>{locale.text("Known mistakes are diagnostics; unsafe dynamic misuse throws before hidden coercion or host effects.", "已知错误产生诊断；不安全动态误用在隐藏强制转换或宿主副作用前抛错。")}</li>
+                    <li>{locale.text("Lists, text, and JSON are bounded; validators never invoke getters merely to inspect data.", "List、文本与 JSON 都有界；验证器不会只为检查数据而调用 getter。")}</li>
                 </ul>
 
                 <h2 id="collections">velar/collections</h2>
-                <pre><code>{collectionsCode}</code></pre>
-                <p><strong>Iteration and shape:</strong> <code>range</code>, <code>enumerate</code>, <code>zip</code>, <code>unique</code>, <code>chunk</code>, <code>flatten</code>, <code>compact</code>, <code>reverse</code>, <code>repeat</code>.</p>
-                <p><strong>Windows and lookup:</strong> <code>take</code>, <code>drop</code>, <code>first</code>, <code>last</code>, <code>find</code>, <code>findIndex</code>, <code>contains</code>, <code>count</code>.</p>
-                <p><strong>Predicates and grouping:</strong> <code>any</code>, <code>all</code>, <code>partition</code>, <code>groupBy</code>, <code>keyBy</code>, <code>countBy</code>.</p>
-                <p><strong>Ordering and aggregation:</strong> <code>sortBy</code>, <code>minBy</code>, <code>maxBy</code>, <code>sum</code>, <code>join</code>. Ordering keys are uniformly strings or finite numbers and stable order is preserved.</p>
+                <CodeBlock code={collectionsCode} />
+                <p><strong>{locale.text("Iteration and shape:", "迭代与形状：")}</strong> <code>range</code>, <code>enumerate</code>, <code>zip</code>, <code>unique</code>, <code>chunk</code>, <code>flatten</code>, <code>compact</code>, <code>reverse</code>, <code>repeat</code>.</p>
+                <p><strong>{locale.text("Windows and lookup:", "窗口与查找：")}</strong> <code>take</code>, <code>drop</code>, <code>first</code>, <code>last</code>, <code>find</code>, <code>findIndex</code>, <code>contains</code>, <code>count</code>.</p>
+                <p><strong>{locale.text("Predicates and grouping:", "谓词与分组：")}</strong> <code>any</code>, <code>all</code>, <code>partition</code>, <code>groupBy</code>, <code>keyBy</code>, <code>countBy</code>.</p>
+                <p><strong>{locale.text("Ordering and aggregation:", "排序与聚合：")}</strong> <code>sortBy</code>, <code>minBy</code>, <code>maxBy</code>, <code>sum</code>, <code>join</code>. {locale.text("Keys are uniformly strings or finite numbers and stable order is preserved.", "键必须统一为字符串或有限数字，并保留稳定顺序。")}</p>
 
                 <h2 id="text">velar/text</h2>
-                <pre><code>{textCode}</code></pre>
-                <p><strong>Whitespace and case:</strong> <code>trim</code>, <code>trimStart</code>, <code>trimEnd</code>, <code>lower</code>, <code>upper</code>, <code>capitalize</code>, <code>title</code>, <code>normalizeWhitespace</code>, <code>isBlank</code>.</p>
-                <p><strong>Search and construction:</strong> <code>startsWith</code>, <code>endsWith</code>, <code>includes</code>, <code>split</code>, <code>replace</code>, <code>replaceAll</code>, <code>repeat</code>, <code>padStart</code>, <code>padEnd</code>, <code>lines</code>, <code>words</code>, <code>slug</code>, <code>truncate</code>, <code>indent</code>, <code>dedent</code>, <code>escapeHtml</code>.</p>
-                <p><strong>Stateless patterns:</strong> <code>matches</code>, <code>findMatch</code>, <code>findMatches</code>, <code>replaceMatches</code>, <code>splitPattern</code>. Each call creates a fresh Unicode pattern. Options are only <code>ignoreCase</code>, <code>multiline</code>, and <code>dotAll</code>; mutable RegExp objects and replacement interpolation never enter source.</p>
+                <CodeBlock code={textCode} />
+                <p><strong>{locale.text("Whitespace and case:", "空白与大小写：")}</strong> <code>trim</code>, <code>trimStart</code>, <code>trimEnd</code>, <code>lower</code>, <code>upper</code>, <code>capitalize</code>, <code>title</code>, <code>normalizeWhitespace</code>, <code>isBlank</code>.</p>
+                <p><strong>{locale.text("Search and construction:", "搜索与构造：")}</strong> <code>startsWith</code>, <code>endsWith</code>, <code>includes</code>, <code>split</code>, <code>replace</code>, <code>replaceAll</code>, <code>repeat</code>, <code>padStart</code>, <code>padEnd</code>, <code>lines</code>, <code>words</code>, <code>slug</code>, <code>truncate</code>, <code>indent</code>, <code>dedent</code>, <code>escapeHtml</code>.</p>
+                <p><strong>{locale.text("Stateless patterns:", "无状态模式：")}</strong> <code>matches</code>, <code>findMatch</code>, <code>findMatches</code>, <code>replaceMatches</code>, <code>splitPattern</code>. {locale.text("Each call creates fresh Unicode pattern. Options are only ignoreCase, multiline, and dotAll; mutable RegExp and replacement interpolation do not enter source.", "每次调用都创建新的 Unicode 模式。选项只有 ignoreCase、multiline 与 dotAll；可变 RegExp 与替换插值不会进入源码。")}</p>
 
                 <h2 id="math">velar/math</h2>
-                <p><strong>Constants:</strong> <code>pi</code>, <code>e</code>, <code>tau</code>, <code>infinity</code>.</p>
-                <p><strong>Bounds and rounding:</strong> <code>abs</code>, <code>min</code>, <code>max</code>, <code>clamp</code>, <code>sign</code>, <code>round</code>, <code>floor</code>, <code>ceil</code>, <code>trunc</code>.</p>
-                <p><strong>Powers and logarithms:</strong> <code>sqrt</code>, <code>cbrt</code>, <code>pow</code>, <code>exp</code>, <code>log</code>, <code>log2</code>, <code>log10</code>.</p>
-                <p><strong>Trigonometry:</strong> <code>sin</code>, <code>cos</code>, <code>tan</code>, <code>asin</code>, <code>acos</code>, <code>atan</code>, <code>atan2</code>, <code>degrees</code>, <code>radians</code>.</p>
-                <p><strong>Numeric helpers:</strong> <code>hypot</code>, <code>random</code>, <code>randomInt</code>, <code>isFinite</code>, <code>isInteger</code>, <code>gcd</code>, <code>lcm</code>. Arguments must already be real numbers; random uses host Math.random and is not cryptographic.</p>
+                <p><strong>{locale.text("Constants:", "常量：")}</strong> <code>pi</code>, <code>e</code>, <code>tau</code>, <code>infinity</code>.</p>
+                <p><strong>{locale.text("Bounds and rounding:", "边界与舍入：")}</strong> <code>abs</code>, <code>min</code>, <code>max</code>, <code>clamp</code>, <code>sign</code>, <code>round</code>, <code>floor</code>, <code>ceil</code>, <code>trunc</code>.</p>
+                <p><strong>{locale.text("Powers and logarithms:", "幂与对数：")}</strong> <code>sqrt</code>, <code>cbrt</code>, <code>pow</code>, <code>exp</code>, <code>log</code>, <code>log2</code>, <code>log10</code>.</p>
+                <p><strong>{locale.text("Trigonometry:", "三角函数：")}</strong> <code>sin</code>, <code>cos</code>, <code>tan</code>, <code>asin</code>, <code>acos</code>, <code>atan</code>, <code>atan2</code>, <code>degrees</code>, <code>radians</code>.</p>
+                <p><strong>{locale.text("Numeric helpers:", "数值辅助：")}</strong> <code>hypot</code>, <code>random</code>, <code>randomInt</code>, <code>isFinite</code>, <code>isInteger</code>, <code>gcd</code>, <code>lcm</code>. {locale.text("Arguments are already real numbers; random uses host Math.random and is not cryptographic.", "参数必须已经是实数；随机数使用宿主 Math.random，不具密码学安全性。")}</p>
 
                 <h2 id="json">velar/json</h2>
-                <pre><code>{jsonCode}</code></pre>
-                <p><code>parse</code> parses and optionally validates through a VelarScript Type. <code>tryParse</code> returns a validated value, fallback, or none. <code>stringify</code> strictly encodes data, <code>stableStringify</code> recursively sorts record keys, <code>clone</code> JSON-clones and optionally validates, <code>isSerializable</code> checks lossless representation, and <code>deepEqual</code> owns structural data comparison.</p>
-                <p>Maps/Sets compare under native key/membership identity in <code>deepEqual</code>; class instances and functions stay reference values. Encoded data is limited to finite primitives, none, dense Lists, and plain records with bounded size/depth.</p>
+                <CodeBlock code={jsonCode} />
+                <p><code>parse</code>{locale.text(" parses and optionally validates through a Type. ", " 解析并可选通过 Type 验证。")}<code>tryParse</code>{locale.text(" returns value, fallback, or none. ", " 返回值、fallback 或 none。")}<code>stringify</code>{locale.text(" strictly encodes, ", " 严格编码，")}<code>stableStringify</code>{locale.text(" sorts keys recursively, ", " 递归排序键，")}<code>clone</code>{locale.text(" clones/validates, ", " 克隆/验证，")}<code>isSerializable</code>{locale.text(" checks losslessness, and ", " 检查无损表示，")}<code>deepEqual</code>{locale.text(" owns structural comparison.", " 负责结构比较。")}</p>
+                <p>{locale.text("Maps/Sets compare under native key/membership identity in deepEqual; class instances/functions remain references. Encoded data is finite primitives, none, dense Lists, and plain records with bounded size/depth.", "Map/Set 在 deepEqual 中按原生键/成员身份比较；类实例/函数保持引用。编码数据限于有限基础值、none、稠密 List 与具有有界大小/深度的普通记录。")}</p>
 
                 <h2 id="async">velar/async</h2>
-                <pre><code>{asyncCode}</code></pre>
-                <p><code>sleep</code> delays, <code>all</code>/<code>race</code> compose Promise Lists, <code>timeout</code> bounds settlement time, <code>retry</code> repeats a failing task, <code>map</code> runs a sync/async worker with bounded concurrency while preserving order, and <code>series</code> runs tasks sequentially. These helpers use native Promises; they do not create threads or pretend to cancel arbitrary work.</p>
+                <CodeBlock code={asyncCode} />
+                <p>{locale.text("These helpers use native Promises: sleep delays; all/race compose lists; timeout bounds settlement; retry repeats failure; map preserves order with bounded concurrency; series runs sequentially. They create no threads and do not pretend to cancel arbitrary work.", "这些辅助函数使用原生 Promise：sleep 延迟；all/race 组合列表；timeout 限制结算时间；retry 重试失败；map 以有界并发保序；series 顺序运行。它们不创建线程，也不假装能取消任意工作。")}</p>
 
                 <h2 id="url">velar/url</h2>
-                <pre><code>{urlCode}</code></pre>
-                <p><code>parse</code>, <code>join</code>, <code>query</code>, <code>parseQuery</code>, <code>withQuery</code>, <code>withHash</code>, <code>isExternal</code>, <code>encode</code>, <code>decode</code>, and <code>normalize</code> own explicit URL text work. Query values are string/number/bool scalars, none, or Lists of them; arbitrary objects never become <code>[object Object]</code>.</p>
+                <CodeBlock code={urlCode} />
+                <p>{locale.text("The module owns explicit URL parse, join, query, hash, external checks, encode/decode, and normalization. Query values are string/number/bool scalars, none, or Lists; arbitrary objects never become ", "该模块负责显式 URL 解析、连接、查询、hash、外部检查、编解码与规范化。查询值是 string/number/bool 标量、none 或其 List；任意对象绝不会变成 ")}<code>[object Object]</code>{locale.text(".", "。")}</p>
 
                 <h2 id="time">velar/time</h2>
-                <pre><code>{timeCode}</code></pre>
-                <p><code>now</code>, <code>monotonic</code>, deterministic ISO <code>parse</code>, <code>iso</code>, locale <code>format</code>, strict local <code>date</code>, strict <code>utc</code>, and <code>parts</code> use epoch milliseconds instead of mutable Date objects. Invalid calendar values never roll over, months are one-based, and datetime parsing requires Z or a numeric offset.</p>
+                <CodeBlock code={timeCode} />
+                <p>{locale.text("Time APIs use epoch milliseconds instead of mutable Date objects: now, monotonic, deterministic ISO parse, iso, locale format, strict local date/utc, and parts. Invalid calendar values never roll over, months are one-based, and datetime input requires Z or numeric offset.", "时间 API 使用 epoch 毫秒而不是可变 Date 对象：now、monotonic、确定性 ISO parse、iso、本地化 format、严格本地 date/utc 与 parts。无效日历值绝不滚动，月份从 1 开始，datetime 输入必须带 Z 或数字偏移。")}</p>
 
                 <h2 id="id-log">velar/id and velar/log</h2>
-                <pre><code>{idLogCode}</code></pre>
-                <p><code>uuid()</code> requires a cryptographically secure host UUID and never falls back to timestamps or Math.random; <code>isUuid</code> checks canonical text. Logging exports unscoped <code>log</code>, <code>logger(scope, fields)</code>, <code>setLevel</code>, <code>level</code>, and <code>useSink</code>. Loggers provide debug/info/warn/error; custom sinks return cleanup, receive isolated field snapshots, and never trigger automatic telemetry.</p>
+                <CodeBlock code={idLogCode} />
+                <p><code>uuid()</code>{locale.text(" requires cryptographically secure host UUID and never falls back to timestamps/Math.random; ", " 要求密码学安全宿主 UUID，绝不回退到时间戳/Math.random；")}<code>isUuid</code>{locale.text(" checks canonical text. Logging exports log, scoped logger, level control, and useSink. Custom sinks return cleanup, receive isolated snapshots, and never trigger telemetry.", " 检查规范文本。日志导出 log、带作用域 logger、级别控制与 useSink。自定义 sink 返回 cleanup、接收隔离快照，绝不触发遥测。")}</p>
 
-                <Callout title="Deliberate omissions"><p>Core does not copy Node filesystem/process APIs, Python OS/subprocess/reflection/pickle/import machinery, or JavaScript's legacy prototype surface. Browser capabilities belong to the independently versioned Web framework.</p></Callout>
-                <div class="next-links"><Link to="/docs/web"><strong>Web capability modules</strong><span>Add components, routing, data, files, and browser lifetimes.</span></Link><Link to="/docs/testing"><strong>Testing and deployment</strong><span>Verify both source semantics and delivered artifacts.</span></Link></div>
+                <Callout title={locale.text("Deliberate omissions", "有意省略")}><p>{locale.text("Core does not copy Node filesystem/process APIs, Python OS/subprocess/reflection/pickle/import machinery, or JavaScript legacy prototypes. Browser capabilities belong to independently versioned Web framework.", "Core 不复制 Node 文件系统/进程 API、Python OS/子进程/反射/pickle/import 机制或 JavaScript 旧原型表面。浏览器能力属于独立版本化 Web 框架。")}</p></Callout>
+                <div class="next-links"><Link to="/docs/web"><strong>{locale.text("Web capability modules", "Web 能力模块")}</strong><span>{locale.text("Add components, routing, data, files, and browser lifetimes.", "加入组件、路由、数据、文件与浏览器生命周期。")}</span></Link><Link to="/docs/testing"><strong>{locale.text("Testing and deployment", "测试与部署")}</strong><span>{locale.text("Verify source semantics and delivered artifacts.", "验证源码语义与交付产物。")}</span></Link></div>
             </Prose>
         </DocsShell>
     </main>

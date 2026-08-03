@@ -1,8 +1,9 @@
 import {Head, Link} from "velar/web"
-import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
-const functionCode = "def greet(name: string, punctuation: string = \"!\") -> string:\n    return f\"Hello, {name}{punctuation}\"\n\ndef notify(message: string):\n    print(message)\n\nconst greetUser: (string, string) -> string = greet"
+const functionCode = "def greet(name: string, punctuation: string = \"!\") -> string:\n    return f\"Hello, {name}{punctuation}\"\n\nconst message = greet(punctuation: \"?\", name: \"Ada\")\n\ndef notify(message: string):\n    print(message)\n\nconst greetUser: (string, string) -> string = greet"
 const arrowCode = "const names = users.map(user => user.name)\nconst point = value => {x: value, y: value ** 2}\nconst load: (string) -> Promise<User> = async id => await loadUser(id)"
 const asyncCode = "async def loadUser(id: string) -> User:\n    const response = await http.get(f\"/api/users/{id}\")\n    return await response.parse(User)\n\nasync def loadAll(ids: List<string>) -> List<User>:\n    return await map(ids, async id => await loadUser(id), 4)"
 const restCode = "def total(first: number, ...values: number) -> number:\n    let result = first\n    for value in values:\n        result += value\n    return result\n\nconst subtotal = total(1, 2, 3)\nconst final = total(subtotal, ...moreValues)"
@@ -11,48 +12,50 @@ const matchCode = "match task.status:\n    case TaskStatus.todo:\n        showBa
 const errorCode = "class SaveError(const message: string) extends Error(message):\n    pass\n\ntry:\n    await save(document)\ncatch error:\n    if error is SaveError:\n        showSaveFailure(error.message)\n    else:\n        throw error\nfinally:\n    releaseLock()"
 
 export component LanguageFunctions:
+    const locale = useLocale()
     return <main>
-        <Head title="Functions and flow · VelarScript" description="VelarScript functions, callbacks, async and await, rest parameters, control flow, match, assertions, and errors." themeColor="#f7f5f0" />
+        <Head title={locale.text("Functions and flow · VelarScript", "函数与控制流 · VelarScript")} description={locale.text("VelarScript functions, callbacks, async and await, rest parameters, control flow, match, assertions, and errors.", "VelarScript 的函数、回调、async/await、剩余参数、控制流、match、断言与错误。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker="Language / 03" title="Named work stays obvious." summary="Use def for statement bodies, expression arrows for small callbacks, and one native Promise model for all asynchronous code." tags={["def", "async + await", "else if", "match"]} />
+            <PageHeader kicker={locale.text("Language / 03", "语言 / 03")} title={locale.text("Named work stays obvious.", "让命名工作始终清晰。")} summary={locale.text("Use def for statement bodies, expression arrows for small callbacks, and one native Promise model for all asynchronous code.", "语句体使用 def，小回调使用表达式箭头，所有异步代码共用一套原生 Promise 模型。")} tags={["def", "async + await", "else if", "match"]} />
             <Prose>
-                <h2 id="functions">Named functions</h2>
-                <pre><code>{functionCode}</code></pre>
-                <p>Parameters always declare their types. A function with no result annotation means <code>-&gt; none</code>, may end naturally, and returns the single empty value. A function returning data declares <code>-&gt; T</code> and must return a value on every reachable path. Default parameters are evaluated before the body and make an argument omittable without making its type optional.</p>
-                <p>Function values use <code>(ParameterTypes) -&gt; Result</code>. A final rest element uses <code>...Type</code>. Multiline imports, parameters, type arguments, objects, constructors, Lists, and calls accept a trailing comma.</p>
+                <h2 id="functions">{locale.text("Named functions", "命名函数")}</h2>
+                <CodeBlock code={functionCode} />
+                <p>{locale.text("Parameters always declare their types. No result annotation means ", "参数始终声明类型。没有结果标注表示 ")}<code>-&gt; none</code>{locale.text(", may end naturally, and returns the one empty value. A data-returning function declares ", "，函数可以自然结束并返回唯一空值。返回数据的函数声明 ")}<code>-&gt; T</code>{locale.text(" and must return on every reachable path. Defaults are evaluated before the body and make an argument omittable without making its type optional.", "，并必须在每条可达路径上返回值。默认参数在函数体前求值，让参数可省略但不会让类型变为可选。")}</p>
+                <p>{locale.text("Function values use ", "函数值使用 ")}<code>(ParameterTypes) -&gt; Result</code>{locale.text(". A final rest element uses ", "。末尾剩余元素使用 ")}<code>...Type</code>{locale.text(". Multiline imports, parameters, type arguments, objects, constructors, Lists, and calls accept a trailing comma.", "。多行导入、参数、类型参数、对象、构造、List 与调用都接受尾随逗号。")}</p>
+                <p>{locale.text("Calls may name parameters with ", "调用可以使用 ")}<code>name: value</code>{locale.text(". Positional arguments come first; names must exist and appear once. Expressions still evaluate once in written order before values are passed in declaration order, so naming never changes side-effect order. Rest parameters remain positional.", " 具名参数。位置参数必须在前；名称必须存在且只能出现一次。表达式仍按源码书写顺序求值一次，再按声明顺序传值，因此具名不会改变副作用顺序。剩余参数仍是位置形式。")}</p>
 
-                <h2 id="arrows">Expression callbacks</h2>
-                <pre><code>{arrowCode}</code></pre>
-                <p>An arrow body is exactly one expression. The object form after <code>=&gt;</code> is unambiguously an object expression, not a JavaScript block. Use a named <code>def</code> when a callback needs statements, local control flow, or multiple returns.</p>
+                <h2 id="arrows">{locale.text("Expression callbacks", "表达式回调")}</h2>
+                <CodeBlock code={arrowCode} />
+                <p>{locale.text("An arrow body is exactly one expression. The object form after ", "箭头函数体严格只有一个表达式。")}<code>=&gt;</code>{locale.text(" is unambiguously an object expression, not a JavaScript block. Use a named ", " 后的对象形式明确是对象表达式，不是 JavaScript 代码块。回调需要语句、局部控制流或多个 return 时，请使用命名 ")}<code>def</code>{locale.text(" when a callback needs statements, local control flow, or multiple returns.", "。")}</p>
 
-                <h2 id="async">Asynchronous work</h2>
-                <pre><code>{asyncCode}</code></pre>
+                <h2 id="async">{locale.text("Asynchronous work", "异步工作")}</h2>
+                <CodeBlock code={asyncCode} />
                 <ul>
-                    <li>On <code>async def</code>, async methods, actions, and async arrows, <code>-&gt; T</code> names the resolved value; callers receive <code>Promise&lt;T&gt;</code>.</li>
-                    <li>Returning either <code>T</code> or <code>Promise&lt;T&gt;</code> is valid because native Promise adoption flattens the result.</li>
-                    <li>Writing <code>-&gt; Promise&lt;T&gt;</code> on an async declaration is rejected to keep one spelling.</li>
-                    <li><code>await</code> belongs to the nearest async boundary and cannot leak into a synchronous callback or parameter default.</li>
-                    <li>A Promise must be awaited before it becomes a JSX child.</li>
+                    <li>{locale.text("For ", "对于 ")}<code>async def</code>{locale.text(", async methods, actions, and async arrows, ", "、异步方法、action 与异步箭头，")}<code>-&gt; T</code>{locale.text(" names the resolved value; callers receive ", " 表示解析后的值，调用方收到 ")}<code>Promise&lt;T&gt;</code>{locale.text(".", "。")}</li>
+                    <li>{locale.text("Returning either ", "返回 ")}<code>T</code>{locale.text(" or ", " 或 ")}<code>Promise&lt;T&gt;</code>{locale.text(" is valid because native Promise adoption flattens the result.", " 都有效，因为原生 Promise 接纳会展平结果。")}</li>
+                    <li>{locale.text("Writing ", "异步声明写成 ")}<code>-&gt; Promise&lt;T&gt;</code>{locale.text(" on an async declaration is rejected to preserve one spelling.", " 会被拒绝，以保持唯一写法。")}</li>
+                    <li><code>await</code>{locale.text(" belongs to the nearest async boundary and cannot leak into a synchronous callback or parameter default.", " 属于最近的异步边界，不能泄漏进同步回调或参数默认值。")}</li>
+                    <li>{locale.text("A Promise must be awaited before becoming a JSX child.", "Promise 成为 JSX 子内容前必须先 await。")}</li>
                 </ul>
 
-                <h2 id="rest">Rest parameters and spreads</h2>
-                <pre><code>{restCode}</code></pre>
-                <p>The rest annotation is the element type, so <code>values</code> is a <code>List&lt;number&gt;</code>. Rest parameters must be final, typed, and without a default. Functions, methods, expression arrows, and extern functions support them; components keep named JSX props and class constructors keep fixed arity.</p>
+                <h2 id="rest">{locale.text("Rest parameters and spreads", "剩余参数与展开")}</h2>
+                <CodeBlock code={restCode} />
+                <p>{locale.text("The rest annotation is the element type, so ", "剩余参数标注的是元素类型，因此 ")}<code>values</code>{locale.text(" is a ", " 是 ")}<code>List&lt;number&gt;</code>{locale.text(". Rest parameters must be final, typed, and have no default. Functions, methods, expression arrows, and extern functions support them; components retain named JSX props and class constructors fixed arity.", "。剩余参数必须位于末尾、有类型且无默认值。函数、方法、表达式箭头与 extern 函数支持它；组件保留命名 JSX 属性，类构造器保留固定参数数量。")}</p>
 
-                <h2 id="control">Block control flow</h2>
-                <pre><code>{flowCode}</code></pre>
-                <p>Blocks use a colon and indentation. The middle conditional branch is <code>else if</code>, not Python <code>elif</code>. <code>for</code> iterates Lists, strings, Set values, or Map keys. <code>break</code> and <code>continue</code> stay inside their loop boundary. Conditions use the strict boolean/optional rules from the language.</p>
+                <h2 id="control">{locale.text("Block control flow", "块级控制流")}</h2>
+                <CodeBlock code={flowCode} />
+                <p>{locale.text("Blocks use a colon and indentation. The middle branch is ", "代码块使用冒号与缩进。中间条件分支写 ")}<code>else if</code>{locale.text(", not Python ", "，而不是 Python 的 ")}<code>elif</code>{locale.text(". ", "。")}<code>for</code>{locale.text(" iterates Lists, strings, Set values, or Map keys. ", " 迭代 List、字符串、Set 值或 Map 键。")}<code>break</code>{locale.text(" and ", " 与 ")}<code>continue</code>{locale.text(" stay inside their loop. Conditions use strict boolean/optional rules.", " 保持在所属循环内。条件使用严格布尔/可选规则。")}</p>
 
-                <h2 id="match">Finite matching</h2>
-                <pre><code>{matchCode}</code></pre>
-                <p><code>match</code> evaluates its input once and never falls through. Cases accept one or more compatible primitive literals or enum members. An enum match without <code>else</code> must be exhaustive and then participates in return-completeness analysis. Destructuring patterns, guards, wildcards, and expression-valued matches are intentionally absent.</p>
+                <h2 id="match">{locale.text("Finite matching", "有限匹配")}</h2>
+                <CodeBlock code={matchCode} />
+                <p><code>match</code>{locale.text(" evaluates input once and never falls through. Cases accept compatible primitive literals or enum members. An enum match without ", " 只求值输入一次且绝不贯穿。case 接受兼容的基础字面量或枚举成员。没有 ")}<code>else</code>{locale.text(" must be exhaustive and participates in return completeness. Destructuring patterns, guards, wildcards, and expression-valued matches are intentionally absent.", " 的枚举匹配必须穷尽，并参与返回完整性分析。语言有意不提供解构模式、守卫、通配符或产生表达式值的 match。")}</p>
 
-                <h2 id="errors">Errors, cleanup, and assertions</h2>
-                <pre><code>{errorCode}</code></pre>
-                <p><code>throw</code> accepts an <code>Error</code> or subclass. <code>catch</code> always receives a reliable Error; foreign JavaScript throws are wrapped and retained as the cause. <code>try</code> requires <code>catch</code>, <code>finally</code>, or both. <code>assert condition, message</code> remains active in production, narrows proven optionals, and throws an <code>AssertionError</code> when the invariant fails.</p>
-                <Callout title="Document the public surface"><p>Contiguous <code>///</code> comments attach Markdown documentation to the next declaration and flow through module metadata into editor hover and completion. They do not emit runtime docstrings or create a second type language.</p></Callout>
+                <h2 id="errors">{locale.text("Errors, cleanup, and assertions", "错误、清理与断言")}</h2>
+                <CodeBlock code={errorCode} />
+                <p><code>throw</code>{locale.text(" accepts an ", " 接受 ")}<code>Error</code>{locale.text(" or subclass. ", " 或其子类。")}<code>catch</code>{locale.text(" always receives a reliable Error; foreign JavaScript throws are wrapped and retained as cause. ", " 始终收到可靠 Error；外部 JavaScript 抛值会被包装并保留为 cause。")}<code>try</code>{locale.text(" requires ", " 必须有 ")}<code>catch</code>, <code>finally</code>{locale.text(", or both. ", " 或两者。")}<code>assert condition, message</code>{locale.text(" stays active in production, narrows proven optionals, and throws ", " 在生产中仍然有效，会收窄被证明的可选值，并在不变量失败时抛出 ")}<code>AssertionError</code>{locale.text(" on failure.", "。")}</p>
+                <Callout title={locale.text("Document the public surface", "为公开表面编写文档")}><p>{locale.text("Contiguous ", "连续的 ")}<code>///</code>{locale.text(" comments attach Markdown docs to the next declaration and flow through module metadata into editor hover and completion. They do not emit runtime docstrings or create a second type language.", " 注释把 Markdown 文档附加到下一个声明，并通过模块元数据进入编辑器悬停与补全。它们不会生成运行时 docstring，也不创建第二套类型语言。")}</p></Callout>
 
-                <div class="next-links"><Link to="/docs/language/collections"><strong>Next: Collections</strong><span>Choose List, Map, Set, and the official helper modules.</span></Link><Link to="/docs/language/classes"><strong>Classes</strong><span>Use nominal identity and explicit inheritance.</span></Link></div>
+                <div class="next-links"><Link to="/docs/language/collections"><strong>{locale.text("Next: Collections", "下一步：集合")}</strong><span>{locale.text("Choose List, Map, Set, and official helper modules.", "选择 List、Map、Set 与官方辅助模块。")}</span></Link><Link to="/docs/language/classes"><strong>{locale.text("Classes", "类")}</strong><span>{locale.text("Use nominal identity and explicit inheritance.", "使用名义身份与显式继承。")}</span></Link></div>
             </Prose>
         </DocsShell>
     </main>

@@ -1,6 +1,30 @@
 import {clearErrors, focusFirstError, setError, textValue} from "velar/forms"
 import {isBlank, trim} from "velar/text"
 import {Disclosure, ModalDialog, Status, TextField} from "@velarscript/ui"
+import {controlSurface, foundationInk as ink, foundationInkSoft as inkSoft, foundationPaperPure as paperPure, foundationRule as rule} from "@velarscript/site-ui"
+
+const playgroundLook = look:
+    display = grid
+    gap = 18px
+    padding = 22px
+    border = line(1px, rule)
+    radius = 9px
+    background = paperPure
+
+const formLook = look:
+    display = grid
+    gap = 14px
+
+const buttonLook = look:
+    ...controlSurface(radius: pill, padding: space(9px, 14px))
+    justifySelf = start
+    border = line(1px, ink)
+    color = paperPure
+    background = ink
+
+const statusLook = look:
+    margin = 0
+    color = inkSoft
 
 export component InteractionPlayground:
     let form: Element? = none
@@ -17,44 +41,12 @@ export component InteractionPlayground:
             else:
                 message = f"Hello, {name}. This form stayed inside checked VelarScript APIs."
 
-    style:
-        .playground {
-            display: grid;
-            gap: 18px;
-            padding: 22px;
-            border: 1px solid var(--velar-line);
-            border-radius: var(--velar-radius-small);
-            background: var(--velar-paper-pure);
-        }
-
-        .playground form {
-            display: grid;
-            gap: 14px;
-        }
-
-        .playground button {
-            justify-self: start;
-            padding: 9px 14px;
-            border: 1px solid var(--velar-ink);
-            border-radius: 999px;
-            color: var(--velar-paper-pure);
-            background: var(--velar-ink);
-            font: inherit;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .playground [role="status"] {
-            margin: 0;
-            color: var(--velar-ink-soft);
-        }
-
-    return <section class="playground" data-interaction-playground aria-label="VelarScript interaction primitives">
+    return <section class="playground" look={playgroundLook} data-interaction-playground aria-label="VelarScript interaction primitives">
         <Disclosure summary="Why does Disclosure use details and summary?"><p data-disclosure-answer>Native disclosure behavior already owns keyboard activation and its open state. VelarScript styles and composes it instead of rebuilding browser semantics.</p></Disclosure>
         <ModalDialog title="A checked dialog boundary" triggerLabel="Inspect the dialog" closeLabel="Return to the page"><p>The component uses a typed DialogElement ref and explicit browser helpers. Closing it returns focus to the trigger.</p></ModalDialog>
-        <form ref={form} on:submit.prevent={submitExample} novalidate>
+        <form look={formLook} ref={form} on:submit.prevent={submitExample} novalidate>
             <TextField name="name" label="Your name" hint="Errors are owned by velar/forms and keep this hint relationship." autocomplete="name" placeholder="Ada" required={true} />
-            <button type="submit">Run the form example</button>
+            <button look={buttonLook} type="submit">Run the form example</button>
         </form>
-        <Status message={message} />
+        <Status message={message} look={statusLook} />
     </section>

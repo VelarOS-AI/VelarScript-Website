@@ -1,53 +1,70 @@
 import {Head, Link} from "velar/web"
-import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
-const componentCode = "export component ProfileCard(user: User, compact: bool = false, children: WebNode = none):\n    style:\n        .card {\n            display: grid;\n            gap: 12px;\n        }\n\n    return <article class=\"card\" class:compact={compact}>\n        <h2>{user.name}</h2>\n        {children}\n    </article>"
+const componentCode = "const cardLook = look:\n    display = grid\n    gap = 12px\n    padding = 16px\n    radius = 14px\n    background = rgb(255, 255, 255)\n\ndef profileLook(compact: bool) -> Look:\n    return look:\n        ...cardLook\n        padding = compact ? 12px : 16px\n\nexport component ProfileCard(user: User, compact: bool = false, children: WebNode = none):\n    return <article class=\"profile-card\" look={profileLook(compact)}>\n        <h2>{user.name}</h2>\n        {children}\n    </article>"
 const branchesCode = "return <main>\n    <Loading if={profile.loading} />\n    <ErrorMessage else-if={profile.error} error={profile.error} />\n    <Profile else-if={profile.value} user={profile.value} />\n    <EmptyState else />\n</main>"
 const listCode = "return <ul>\n    {users.map(user =>\n        <UserRow key={user.id} user={user} />\n    )}\n</ul>"
 const eventsCode = "def addOnEnter(event: KeyboardEvent):\n    if event.key == \"Enter\":\n        event.preventDefault()\n        addItem()\n\nreturn <form on:submit.prevent.stop={save}>\n    <input bind:value={query} on:keydown={addOnEnter} />\n    <button type=\"submit\">Save</button>\n</form>"
 const svgCode = "return <svg viewBox=\"0 0 200 100\" aria-labelledby={titleId}>\n    <title id={titleId}>Weekly activity</title>\n    {bars.map(bar =>\n        <rect key={bar.id} x={bar.x} y={bar.y} width={bar.width} height={bar.height} />\n    )}\n</svg>"
+const styleCode = "// controls.vel\nexport const controlSurface = look:\n    display = inlineGrid\n    alignItems = center\n    padding = space(8px, 12px)\n    border = line(1px, rgba(17, 18, 22, 0.16))\n    background = rgb(255, 255, 255)\n\nexport def actionLook(radius: Length = 10px) -> Look:\n    return look:\n        ...controlSurface\n        radius = radius\n        cursor = pointer\n\n        if @hover and not @disabled:\n            translateY = -2px\n\n        if viewport.width <= 720px:\n            width = 100%\n\n// action-button.vel\nimport {actionLook} from \"./controls.vel\"\n\ncomponent ActionButton:\n    return <button class=\"action\" look={actionLook(radius=999px)}>Continue</button>"
+const unsafeCode = "import css unsafe \"./foundation.css\" before look\nimport css unsafe \"./vendor-overrides.css\" after look"
 
 export component WebComponents:
+    const locale = useLocale()
     return <main>
-        <Head title="Components and JSX · VelarScript" description="VelarScript Web components, props, children, native HTML and SVG JSX, branches, keyed lists, events, bindings, refs, and scoped CSS." themeColor="#f7f5f0" />
+        <Head title={locale.text("Components and JSX · VelarScript", "组件与 JSX · VelarScript")} description={locale.text("VelarScript Web components, props, children, native HTML and SVG JSX, branches, keyed lists, events, bindings, refs, and controlled Look values.", "学习 VelarScript Web 的组件、属性、子内容、HTML 与 SVG JSX、分支、列表、事件、绑定、引用和受控 Look。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker="Web framework / 01" title="Components create native Web structure." summary="Props are checked, JSX is native, dynamic regions are precise, and styles stay close to the component without becoming JavaScript objects." tags={["checked props", "HTML + SVG", "keyed lists", "scoped CSS"]} />
+            <PageHeader kicker={locale.text("Web framework / 01", "Web 框架 / 01")} title={locale.text("Components create native Web structure.", "组件直接创建原生 Web 结构。")} summary={locale.text("Props are checked, JSX is native, dynamic regions are precise, and Look forms a controlled language instead of JavaScript objects.", "属性会被检查，JSX 保持原生，动态区域更新精确，Look 则是一门受控语言，而不是 JavaScript 对象。")} tags={["checked props", "HTML + SVG", "Look"]} />
             <Prose>
-                <h2 id="component">Declare a component</h2>
-                <pre><code>{componentCode}</code></pre>
-                <p>Component parameters are JSX props. Defaults make props omittable, function types describe callbacks, and the special <code>children: WebNode</code> prop receives nested JSX content. Components may be exported, imported, aliased, navigated, and renamed through the same compiler-owned symbol graph as functions and types.</p>
-                <p>Native elements use platform names such as <code>class</code> and <code>for</code>. Text and expressions are escaped. Raw HTML is available only through the explicit <code>unsafe:html</code> directive.</p>
+                <h2 id="component">{locale.text("Declare a component", "声明组件")}</h2>
+                <CodeBlock code={componentCode} />
+                <p>{locale.text("Component parameters are JSX props. Defaults make props omittable, function types describe callbacks, and the special ", "组件参数就是 JSX 属性。默认值让属性可以省略，函数类型描述回调，特殊的 ")}<code>children: WebNode</code>{locale.text(" prop receives nested JSX content. Components share the compiler-owned export, import, alias, navigation, and rename graph used by functions and types.", " 属性接收嵌套 JSX 内容。组件与函数、类型共用编译器维护的导出、导入、别名、跳转和重命名关系图。")}</p>
+                <p>{locale.text("Native elements use platform names such as ", "原生元素沿用平台名称，例如 ")}<code>class</code>{locale.text(" and ", " 与 ")}<code>for</code>{locale.text(". Text and expressions are escaped. Raw HTML is available only through the explicit ", "。文本和表达式会被转义；原始 HTML 只能通过显式的 ")}<code>unsafe:html</code>{locale.text(" directive.", " 指令进入。")}</p>
 
-                <h2 id="branches">Conditional views</h2>
-                <pre><code>{branchesCode}</code></pre>
-                <p>Small value choices use <code>? :</code>. Whole views use adjacent <code>if</code>, <code>else-if</code>, and valueless <code>else</code> control attributes. Only whitespace may separate the sequence. Conditions follow normal strict rules and narrow optionals inside attributes, descendants, and component props.</p>
-                <p>Branch replacement is transactional: the next branch is built before commit, and each branch owns its nested components, events, resources, watchers, and refs.</p>
+                <h2 id="branches">{locale.text("Conditional views", "条件视图")}</h2>
+                <CodeBlock code={branchesCode} />
+                <p>{locale.text("Small value choices use ", "小范围的值选择使用 ")}<code>? :</code>{locale.text(". Whole views use adjacent ", "；完整视图使用相邻的 ")}<code>if</code>{locale.text(", ", "、")}<code>else-if</code>{locale.text(", and valueless ", " 与无值的 ")}<code>else</code>{locale.text(" control attributes. Only whitespace may separate the sequence. Conditions use normal strict rules and narrow optionals through attributes, descendants, and component props.", " 控制属性，序列之间只能出现空白。条件遵循普通严格规则，并会在属性、后代与组件属性中收窄可选类型。")}</p>
+                <p>{locale.text("Branch replacement is transactional: the next branch is built before commit, and each branch owns its nested components, events, resources, watchers, and refs.", "分支替换是事务性的：新分支会先构建再提交，每个分支独立拥有其子组件、事件、资源、监听器与引用。")}</p>
 
-                <h2 id="lists">Dynamic lists</h2>
-                <pre><code>{listCode}</code></pre>
-                <p>A dynamic JSX list requires a stable <code>key</code> unless the compiler can prove the list is static. Keys let the runtime retain native DOM and component identity while moving, inserting, or removing items. Promise-producing maps must be awaited before their result enters JSX.</p>
+                <h2 id="lists">{locale.text("Dynamic lists", "动态列表")}</h2>
+                <CodeBlock code={listCode} />
+                <p>{locale.text("A dynamic JSX list requires a stable ", "动态 JSX 列表必须提供稳定的 ")}<code>key</code>{locale.text(" unless the compiler can prove the list is static. Keys let the runtime retain native DOM and component identity while moving, inserting, or removing items. Promise-producing maps must be awaited before their result enters JSX.", "，除非编译器能证明列表是静态的。键让运行时在移动、插入或删除项目时保留原生 DOM 与组件身份。产生 Promise 的映射必须先等待完成，结果才能进入 JSX。")}</p>
 
-                <h2 id="events">Events, bindings, and modifiers</h2>
-                <pre><code>{eventsCode}</code></pre>
+                <h2 id="events">{locale.text("Events, bindings, and modifiers", "事件、绑定与修饰符")}</h2>
+                <CodeBlock code={eventsCode} />
                 <ul>
-                    <li>Events are the browser's native objects, not framework wrappers.</li>
-                    <li>Handlers may take zero parameters or one checked <code>Event</code>, <code>KeyboardEvent</code>, <code>PointerEvent</code>, or <code>InputEvent</code>.</li>
-                    <li>Modifiers are <code>prevent</code>, <code>stop</code>, <code>once</code>, <code>capture</code>, and <code>self</code>.</li>
-                    <li><code>bind:value</code> supports natural text/select values and numeric input numbers; <code>bind:checked</code> supports booleans.</li>
-                    <li>Bindings require writable component state.</li>
+                    <li>{locale.text("Events are the browser's native objects, not framework wrappers.", "事件就是浏览器原生对象，不是框架包装对象。")}</li>
+                    <li>{locale.text("Handlers may take zero parameters or one checked ", "处理器可以不接参数，也可以接收一个受检查的 ")}<code>Event</code>, <code>KeyboardEvent</code>, <code>PointerEvent</code>{locale.text(", or ", " 或 ")}<code>InputEvent</code>{locale.text(".", "。")}</li>
+                    <li>{locale.text("Modifiers are ", "修饰符包括 ")}<code>prevent</code>, <code>stop</code>, <code>once</code>, <code>capture</code>{locale.text(", and ", " 与 ")}<code>self</code>{locale.text(".", "。")}</li>
+                    <li><code>bind:value</code>{locale.text(" supports natural text/select values and numeric input numbers; ", " 支持自然的文本、选择值与数字输入；")}<code>bind:checked</code>{locale.text(" supports booleans.", " 支持布尔值。")}</li>
+                    <li>{locale.text("Bindings require writable component state.", "绑定目标必须是可写的组件状态。")}</li>
                 </ul>
 
-                <h2 id="classes">Classes, styles, and refs</h2>
-                <p><code>{"class:active={condition}"}</code> toggles a class and <code>{"style:--progress={value}"}</code> updates a CSS custom property. A <code>ref</code> target is an optional typed element binding; it becomes present after insertion and returns to <code>none</code> when its owner is destroyed.</p>
-                <p>Component <code>style</code> blocks are scoped by default and extracted for production. Parent selectors may reach only a child component's top-level root. Use <code>style global</code> for document tokens, resets, and intentionally global rules.</p>
+                <h2 id="classes">{locale.text("Classes, Look, and refs", "类名、Look 与引用")}</h2>
+                <p><code>{"class:active={condition}"}</code>{locale.text(" toggles a stable semantic class. Every native element and component accepts ", " 用来切换稳定的语义类名。每个原生元素和组件都接收 ")}<code>class</code>{locale.text(" and ", " 与 ")}<code>look</code>{locale.text("; a component forwards both to its single native root. A multi-root component marks exactly one native root with valueless ", "；组件会把两者转发到唯一原生根节点。多根组件必须用无值的 ")}<code>host</code>{locale.text(". A ", " 标记唯一原生根节点。")}<code>ref</code>{locale.text(" target is an optional typed binding that exists after insertion and returns to ", " 目标是可选的类型化绑定，插入后存在，所有者销毁后重新变为 ")}<code>none</code>{locale.text(" on destruction.", "。")}</p>
+                <h2 id="style-language">{locale.text("Look, the controlled visual language", "Look：受控视觉语言")}</h2>
+                <CodeBlock code={styleCode} />
+                <p>{locale.text("Look uses ordinary Velar constants, functions, imports, exports, defaults, and named arguments. Properties and builders carry visual types such as Length, Color, Border, Shadow, and TrackList. There is no second variable or function syntax, and no random CSS-module class name.", "Look 直接使用普通 Velar 的常量、函数、导入导出、默认参数与具名参数。属性和构建器携带 Length、Color、Border、Shadow 与 TrackList 等视觉类型。它不引入第二套变量或函数语法，也不会生成随机的 CSS Module 类名。")}</p>
+                <ul>
+                    <li>{locale.text("Composition uses outer-level ", "组合使用最外层的 ")}<code>...baseLook</code>{locale.text("; later entries visibly win. Spreads inside conditions or targets are rejected.", "；后出现的条目明确覆盖前者。条件或目标中的 spread 会被拒绝。")}</li>
+                    <li>{locale.text("Normal ", "响应式与状态视觉直接使用普通 ")}<code>if</code>, <code>and</code>, <code>or</code>{locale.text(", and ", " 与 ")}<code>not</code>{locale.text(" express responsive and state visuals. Browser hooks begin with ", "。浏览器状态钩子以 ")}<code>@</code>{locale.text(", such as ", " 开头，例如 ")}<code>@hover</code>{locale.text(" and ", " 与 ")}<code>@disabled</code>{locale.text(".", "。")}</li>
+                    <li>{locale.text("Targets such as ", "伪元素与平台目标写成 ")}<code>@before</code>, <code>@after</code>{locale.text(", and ", " 与 ")}<code>@backdrop</code>{locale.text(" form nested blocks. Complex condition expansion is bounded.", " 等嵌套块；复杂条件的展开数量有固定上限。")}</li>
+                    <li><code>none</code>{locale.text(" removes a composed property; ", " 表示移除组合后的属性；")}<code>gone</code>{locale.text(" intentionally emits the native CSS value ", " 则明确输出原生 CSS 值 ")}<code>none</code>{locale.text(".", "。")}</li>
+                    <li>{locale.text("Inline ", "受控组件禁止内联 ")}<code>style</code>{locale.text(" is rejected. Stable ", "。稳定的 ")}<code>class</code>{locale.text(" names remain available for testing, inspection, and deliberate external overrides.", " 类名继续用于测试、检查和有意的外部覆盖。")}</li>
+                </ul>
 
-                <h2 id="svg">Native SVG</h2>
-                <pre><code>{svgCode}</code></pre>
-                <p>SVG namespace flows through fragments, branches, keyed lists, ordinary components, and lazy components. <code>foreignObject</code> returns its children to HTML. Case-sensitive attributes such as <code>viewBox</code> are preserved. Every non-decorative SVG root requires an accessible name through <code>title</code>, <code>aria-label</code>, or <code>aria-labelledby</code>; decorative SVG uses <code>aria-hidden="true"</code>.</p>
-                <Callout title="No virtual DOM"><p>Static nodes stay native. State changes schedule only the text, attribute, branch, or keyed region that read that state.</p></Callout>
+                <h2 id="unsafe-css">{locale.text("Explicit raw CSS boundary", "显式原生 CSS 边界")}</h2>
+                <CodeBlock code={unsafeCode} />
+                <p>{locale.text("Raw CSS is opt-in and outside Look's guarantees. Every import must say ", "原生 CSS 必须显式选择，并处于 Look 保证之外。每个导入都必须写明 ")}<code>before look</code>{locale.text(" or ", " 或 ")}<code>after look</code>{locale.text(". These words define source order only; they do not create priority, layers, or ", "。它们只定义源码顺序，不创造优先级、layer 或 ")}<code>!important</code>{locale.text(" semantics. A stylesheet has one project owner, cannot hide ", " 语义。一个样式表只能有一个项目所有者，不能隐藏 ")}<code>@import</code>{locale.text(", and uses project-public or absolute asset URLs.", "，资源地址必须使用项目公开路径或绝对 URL。")}</p>
 
-                <div class="next-links"><Link to="/docs/web/reactivity"><strong>Next: State and lifecycle</strong><span>Understand when setup, updates, resources, and cleanup run.</span></Link><Link to="/docs/web/routing"><strong>Routing and metadata</strong><span>Compose components into a complete application.</span></Link></div>
+                <h2 id="svg">{locale.text("Native SVG", "原生 SVG")}</h2>
+                <CodeBlock code={svgCode} />
+                <p>{locale.text("SVG namespace flows through fragments, branches, keyed lists, ordinary components, and lazy components. ", "SVG 命名空间会穿过片段、分支、带键列表、普通组件与懒加载组件。")}<code>foreignObject</code>{locale.text(" returns its children to HTML. Case-sensitive attributes such as ", " 会让子内容回到 HTML。像 ")}<code>viewBox</code>{locale.text(" are preserved. Every non-decorative SVG root requires an accessible name through ", " 这样的大小写敏感属性会被保留。每个非装饰 SVG 根节点必须通过 ")}<code>title</code>, <code>aria-label</code>{locale.text(", or ", " 或 ")}<code>aria-labelledby</code>{locale.text("; decorative SVG uses ", " 获得无障碍名称；装饰 SVG 使用 ")}<code>aria-hidden="true"</code>{locale.text(".", "。")}</p>
+                <Callout title={locale.text("No virtual DOM", "没有虚拟 DOM")}><p>{locale.text("Static nodes stay native. State changes schedule only the text, attribute, branch, or keyed region that read that state.", "静态节点始终保持原生。状态变化只会调度读取该状态的文本、属性、分支或带键区域。")}</p></Callout>
+
+                <div class="next-links"><Link to="/docs/web/reactivity"><strong>{locale.text("Next: State and lifecycle", "下一步：状态与生命周期")}</strong><span>{locale.text("Understand when setup, updates, resources, and cleanup run.", "理解初始化、更新、资源与清理何时运行。")}</span></Link><Link to="/docs/web/routing"><strong>{locale.text("Routing and metadata", "路由与元数据")}</strong><span>{locale.text("Compose components into a complete application.", "把组件组合成完整应用。")}</span></Link></div>
             </Prose>
         </DocsShell>
     </main>
