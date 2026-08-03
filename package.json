@@ -8,7 +8,7 @@
     "type": "git",
     "url": "git+https://github.com/VelarOS-AI/VelarScript-Website.git"
   },
-  "homepage": "https://velarscript.org",
+  "homepage": "https://github.com/VelarOS-AI/VelarScript-Website",
   "engines": {
     "node": ">=24"
   },
@@ -28,7 +28,8 @@
     "build": "velar build",
     "verify": "velar verify",
     "preview": "velar preview",
-    "verify:deployment": "velar verify-deployment",
+    "preview:prepare": "velar build velar.netlify.json && velar verify dist-netlify",
+    "verify:deployment": "velar verify-deployment dist-netlify",
     "validate": "npm run format:check && npm run check && npm test && npm run packages:check && npm run build && npm run verify"
   },
   "dependencies": {

@@ -33,5 +33,7 @@ jobs:
         working-directory: website
       - run: npm run validate
         working-directory: website
+      - run: npm run preview:prepare
+        working-directory: website
       - run: npm run test:browser:all
         working-directory: website

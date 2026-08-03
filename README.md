@@ -35,3 +35,18 @@ errors.
 The public CI pins the toolchain checkout to one exact source commit and runs
 the same bootstrap, validation, production verification, and Chromium/Firefox/
 WebKit browser suite used locally.
+
+Prepare the provider-specific but still local external-preview candidate with:
+
+```sh
+npm run preview:prepare
+```
+
+This produces and verifies `dist-netlify` with Velar-owned `_headers`,
+`_redirects`, CSP, asset hashes, and SPA fallback rules. It does not deploy.
+After an explicitly authorized deployment, compare the hosted bytes, routes,
+MIME types, and headers with the local candidate using:
+
+```sh
+npm run verify:deployment -- --url https://preview.example.com
+```
