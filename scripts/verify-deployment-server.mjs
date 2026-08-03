@@ -7,7 +7,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const websiteRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const candidate = join(websiteRoot, "release", "external-preview", "site");
+const candidate = join(websiteRoot, "release", "deployment", "site");
 const cli = join(websiteRoot, "node_modules", "@velarscript", "cli", "dist", "cli.js");
 const manifest = JSON.parse(await readFile(join(candidate, "velar-build.json"), "utf8"));
 const port = await availablePort();
@@ -42,10 +42,10 @@ try {
     || !Number.isSafeInteger(report?.checks?.files) || report.checks.files <= 0
     || !Number.isSafeInteger(report?.checks?.routes) || report.checks.routes <= 0
     || !Number.isSafeInteger(report?.checks?.headers) || report.checks.headers <= 0) {
-    throw new Error("the preview server returned an incomplete deployment-verification report");
+    throw new Error("the local deployment server returned an incomplete verification report");
   }
   process.stdout.write(
-    `Verified Website preview ${manifest.buildId} over HTTP `
+    `Verified Website deployment ${manifest.buildId} over HTTP `
     + `(${report.checks.files} files, ${report.checks.routes} routes, ${report.checks.headers} headers)\n`,
   );
 } finally {
@@ -60,7 +60,7 @@ function availablePort() {
       const address = server.address();
       if (!address || typeof address === "string") {
         server.close();
-        rejectPort(new Error("could not reserve a loopback preview port"));
+        rejectPort(new Error("could not reserve a loopback deployment port"));
         return;
       }
       server.close((error) => error ? rejectPort(error) : resolvePort(address.port));
@@ -85,9 +85,9 @@ function waitUntilReady(child, ready) {
     };
     const failed = (error) => finish(error);
     const exited = (code, signal) => finish(new Error(
-      `preview exited before readiness${signal ? ` with signal ${signal}` : ` with exit code ${code}`}\n${previewOutput}\n${previewError}`,
+      `deployment server exited before readiness${signal ? ` with signal ${signal}` : ` with exit code ${code}`}\n${previewOutput}\n${previewError}`,
     ));
-    const timer = setTimeout(() => finish(new Error(`preview did not become ready within 15 seconds\n${previewOutput}\n${previewError}`)), 15_000);
+    const timer = setTimeout(() => finish(new Error(`deployment server did not become ready within 15 seconds\n${previewOutput}\n${previewError}`)), 15_000);
     child.stdout.on("data", inspect);
     child.once("error", failed);
     child.once("exit", exited);
@@ -130,5 +130,5 @@ function appendBounded(current, chunk) {
   const next = current + chunk.toString("utf8");
   return next.length <= 1_048_576
     ? next
-    : `${next.slice(0, 1_048_550)}\n[preview output truncated]`;
+    : `${next.slice(0, 1_048_550)}\n[deployment output truncated]`;
 }

@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           repository: VelarOS-AI/VelarScript
-          ref: 0faf7d577df4dd8f6302432feb34600e784a742a
+          ref: d80c62c932f59db4e219d10dd9fb390344b6ece2
           path: toolchain
       - uses: actions/setup-node@v6
         with:
@@ -36,19 +36,19 @@ jobs:
         working-directory: website
       - run: npm run validate
         working-directory: website
-      - run: npm run preview:prepare
+      - run: npm run deploy:prepare
         working-directory: website
-      - run: npm run preview:smoke
+      - run: npm run deploy:smoke
         working-directory: website
       - run: npm run test:browser:all
         working-directory: website
       - uses: actions/attest@v4
         with:
-          subject-path: website/release/external-preview/site/velar-build.json
+          subject-path: website/release/deployment/site/velar-build.json
       - uses: actions/upload-artifact@v7
         with:
-          name: velarscript-website-netlify-${{ github.sha }}
-          path: website/release/external-preview/site
+          name: velarscript-website-self-hosted-${{ github.sha }}
+          path: website/release/deployment/site
           if-no-files-found: error
           retention-days: 14
           compression-level: 9

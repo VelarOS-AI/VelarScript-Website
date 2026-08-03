@@ -15,11 +15,11 @@ import { basename, dirname, isAbsolute, join, relative, resolve } from "node:pat
 import { fileURLToPath } from "node:url";
 
 const websiteRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const previewManifest = join(websiteRoot, "velar.netlify.json");
-const defaultOutput = join(websiteRoot, "release", "external-preview", "site");
+const projectManifest = join(websiteRoot, "velar.json");
+const defaultOutput = join(websiteRoot, "release", "deployment", "site");
 const cli = join(websiteRoot, "node_modules", "@velarscript", "cli", "dist", "cli.js");
 
-export async function prepareExternalPreview(outputDirectory = defaultOutput) {
+export async function prepareDeployment(outputDirectory = defaultOutput) {
   const output = resolve(outputDirectory);
   await assertReplaceableOutput(output);
   const parent = dirname(output);
@@ -32,13 +32,13 @@ export async function prepareExternalPreview(outputDirectory = defaultOutput) {
     const firstBuild = await buildAndVerify(first);
     const secondBuild = await buildAndVerify(second);
     if (firstBuild.buildId !== secondBuild.buildId) {
-      throw new Error("external preview builds produced different build identities");
+      throw new Error("deployment builds produced different build identities");
     }
 
     const firstInventory = await inventory(first);
     const secondInventory = await inventory(second);
     if (JSON.stringify(firstInventory) !== JSON.stringify(secondInventory)) {
-      throw new Error("external preview builds are not byte-for-byte reproducible");
+      throw new Error("deployment builds are not byte-for-byte reproducible");
     }
 
     await assertReplaceableOutput(output);
@@ -55,7 +55,7 @@ export async function prepareExternalPreview(outputDirectory = defaultOutput) {
 }
 
 async function buildAndVerify(directory) {
-  await runCli(["build", previewManifest, "--out-dir", directory]);
+  await runCli(["build", projectManifest, "--out-dir", directory]);
   await runCli(["verify", directory]);
   const manifest = JSON.parse(await readFile(join(directory, "velar-build.json"), "utf8"));
   const deployment = JSON.parse(await readFile(join(directory, "velar-deploy.json"), "utf8"));
@@ -69,8 +69,8 @@ async function buildAndVerify(directory) {
     || deployment?.formatVersion !== 2
     || deployment?.kind !== "velar-static-deployment"
     || deployment?.base !== "/"
-    || deployment?.adapter?.name !== "netlify") {
-    throw new Error("external preview does not match the Website deployment contract");
+    || deployment?.adapter !== null) {
+    throw new Error("deployment candidate does not match the self-hosted Website contract");
   }
   return manifest;
 }
@@ -80,13 +80,13 @@ async function assertReplaceableOutput(output) {
   if (dirname(output) === output
     || rootWithinOutput === ""
     || (!rootWithinOutput.startsWith("..") && !isAbsolute(rootWithinOutput))) {
-    throw new Error(`refusing unsafe external preview output '${output}'`);
+    throw new Error(`refusing unsafe deployment output '${output}'`);
   }
 
   try {
     const information = await lstat(output);
     if (information.isSymbolicLink() || !information.isDirectory()) {
-      throw new Error(`external preview output '${output}' exists and is not a real directory`);
+      throw new Error(`deployment output '${output}' exists and is not a real directory`);
     }
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") return;
@@ -96,9 +96,9 @@ async function assertReplaceableOutput(output) {
   try {
     await runCli(["verify", output]);
     const deployment = JSON.parse(await readFile(join(output, "velar-deploy.json"), "utf8"));
-    if (deployment?.adapter?.name !== "netlify" || deployment?.base !== "/") throw new Error("wrong adapter");
+    if (deployment?.adapter !== null || deployment?.base !== "/") throw new Error("wrong deployment contract");
   } catch {
-    throw new Error(`refusing to replace '${output}' because it is not an existing Website preview`);
+    throw new Error(`refusing to replace '${output}' because it is not an existing Website deployment candidate`);
   }
 }
 
@@ -107,7 +107,7 @@ async function inventory(root) {
   const visit = async (directory) => {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name);
-      if (entry.isSymbolicLink()) throw new Error("external preview output cannot contain symbolic links");
+      if (entry.isSymbolicLink()) throw new Error("deployment output cannot contain symbolic links");
       if (entry.isDirectory()) {
         await visit(path);
       } else if (entry.isFile()) {
@@ -118,7 +118,7 @@ async function inventory(root) {
           sha256: createHash("sha256").update(body).digest("hex"),
         });
       } else {
-        throw new Error("external preview output can contain only files and directories");
+        throw new Error("deployment output can contain only files and directories");
       }
     }
   };
@@ -149,13 +149,13 @@ function parseArguments(arguments_) {
   if (arguments_.length === 2 && arguments_[0] === "--output-dir" && arguments_[1]) {
     return resolve(websiteRoot, arguments_[1]);
   }
-  throw new Error("Usage: npm run preview:prepare -- [--output-dir <directory>]");
+  throw new Error("Usage: npm run deploy:prepare -- [--output-dir <directory>]");
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    const result = await prepareExternalPreview(parseArguments(process.argv.slice(2)));
-    process.stdout.write(`Prepared reproducible Velar Website preview ${result.buildId} (${result.files} files) -> ${result.outputDirectory}\n`);
+    const result = await prepareDeployment(parseArguments(process.argv.slice(2)));
+    process.stdout.write(`Prepared reproducible Velar Website deployment ${result.buildId} (${result.files} files) -> ${result.outputDirectory}\n`);
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;

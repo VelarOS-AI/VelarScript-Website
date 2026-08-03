@@ -9,7 +9,8 @@ repository and run:
 ```sh
 npm run bootstrap:local -- ../VelarScript
 npm run validate
-npm run preview:prepare
+npm run deploy:prepare
+npm run deploy:smoke
 npm run test:browser:all
 ```
 
