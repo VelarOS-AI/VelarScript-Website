@@ -52,7 +52,9 @@ This builds the site twice, verifies byte-for-byte reproducibility, then
 atomically writes `release/external-preview/site` with Velar-owned `_headers`,
 `_redirects`, CSP, asset hashes, and SPA fallback rules. It refuses to replace
 an unrelated directory and does not deploy. Successful CI runs retain that
-exact directory as a commit-named downloadable artifact.
+exact directory as a commit-named downloadable artifact and publish a signed
+GitHub/Sigstore provenance attestation for its `velar-build.json`; that manifest
+contains the SHA-256 identity of every deployable asset.
 `preview:smoke` serves that candidate on an ephemeral loopback port and runs the
 deployment verifier across the real HTTP file, route, MIME, and security-header
 boundary; it always tears the preview process down afterward.

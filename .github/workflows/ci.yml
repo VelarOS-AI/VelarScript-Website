@@ -6,6 +6,9 @@ on:
 
 permissions:
   contents: read
+  id-token: write
+  attestations: write
+  artifact-metadata: write
 
 jobs:
   validate:
@@ -39,6 +42,9 @@ jobs:
         working-directory: website
       - run: npm run test:browser:all
         working-directory: website
+      - uses: actions/attest@v4
+        with:
+          subject-path: website/release/external-preview/site/velar-build.json
       - uses: actions/upload-artifact@v7
         with:
           name: velarscript-website-netlify-${{ github.sha }}

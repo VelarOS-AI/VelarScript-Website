@@ -22,3 +22,8 @@ new verified source identity instead of hiding it here.
 
 Do not deploy the Website, change its future canonical domain, or publish its
 component packages without explicit authorization.
+
+For delivery review, download the commit-named CI artifact, run `velar verify`
+against the extracted directory, and verify `velar-build.json` with GitHub's
+artifact-attestation command. A provider must deploy those verified bytes
+without rebuilding them.
