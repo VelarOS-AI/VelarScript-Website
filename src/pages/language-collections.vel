@@ -1,0 +1,47 @@
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const listCode = "const users: List<User> = [ada, grace]\nusers.append(linus)\nusers.extend(moreUsers)\n\nconst first = users.get(0)\nconst page = users.slice(10, 20)\nconst names = users.map(user => user.name)\nconst active = users.filter(user => user.active)"
+const mapCode = "const users: Map<string, User> = Map()\nusers.set(ada.id, ada)\n\nconst user = users.get(\"ada\")\nconst ids = users.keys()\nconst entries = users.entries()\n\nfor id in users:\n    print(id)"
+const setCode = "const tags: Set<string> = Set([\"web\", \"language\", \"web\"])\ntags.add(\"compiler\")\n\nif tags.has(\"web\"):\n    print(tags.size)\n\nconst values = tags.values()"
+const helpersCode = "import {enumerate, groupBy, range, sortBy, sum, zip} from \"velar/collections\"\n\nconst pages = range(1, 5)\nconst numbered = enumerate(users, 1)\nconst byRole = groupBy(users, user => user.role)\nconst ordered = sortBy(users, user => user.name)\nconst total = sum(scores)\nconst pairs = zip(labels, values)"
+
+export component LanguageCollections:
+    return <main>
+        <Head title="Collections · VelarScript" description="VelarScript List, Map, Set, iteration, mutation, slices, functional transforms, and collection helpers." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Language / 04" title="Three native collections, one clear vocabulary." summary="Lists preserve order, Maps own dynamic keys, and Sets own unique membership. All keep JavaScript reference identity and predictable bounded behavior." tags={["List<T>", "Map<K, V>", "Set<T>", "dense data"]} />
+            <Prose>
+                <h2 id="list">List</h2>
+                <pre><code>{listCode}</code></pre>
+                <ul>
+                    <li><code>list[index]</code> throws <code>IndexError</code> outside the valid range; <code>get(index)</code> returns an optional value.</li>
+                    <li><code>append(value)</code> adds one value and <code>extend(list)</code> adds a typed List atomically. Both return <code>none</code>.</li>
+                    <li><code>slice()</code>, <code>slice(start)</code>, and <code>slice(start, end)</code> return shallow copies. Negative positions count from the end and out-of-range positions clamp.</li>
+                    <li>An empty unannotated List learns its element type from the first direct append or extension, then rejects incompatible writes.</li>
+                    <li>Standard <code>map</code>, <code>filter</code>, and <code>reduce</code> callbacks preserve checked element and result types.</li>
+                </ul>
+                <Callout title="No JavaScript push surface"><p>VelarScript uses <code>append</code> and <code>extend</code> instead of a variadic, length-returning <code>push</code>. Every List is dense and bounded to 1,000,000 items.</p></Callout>
+
+                <h2 id="map">Map</h2>
+                <pre><code>{mapCode}</code></pre>
+                <p>Use a Map for keys chosen at runtime. <code>get</code> returns <code>none</code> when a key is absent. <code>set</code> and <code>clear</code> return <code>none</code>; <code>has</code> and <code>remove</code> return booleans. <code>keys</code>, <code>values</code>, and <code>entries</code> return ordered List snapshots, with each entry shaped as <code>{"{key, value}"}</code>. Iterating a Map yields keys.</p>
+                <p><code>Map()</code> creates an empty map; <code>Map(existing)</code> creates a typed shallow copy. Put type arguments on the binding, not the constructor.</p>
+
+                <h2 id="set">Set</h2>
+                <pre><code>{setCode}</code></pre>
+                <p><code>Set()</code> creates an empty set and <code>Set(list)</code> constructs from a typed List. Duplicate values collapse under native JavaScript SameValueZero membership and insertion order is preserved. <code>add</code> and <code>clear</code> return <code>none</code>; <code>has</code> and <code>remove</code> return booleans.</p>
+
+                <h2 id="iteration">Iteration and destructuring</h2>
+                <p><code>for value in list</code> visits List or Set values in order. <code>for key in map</code> visits Map keys. Object and List patterns may destructure each iteration value. Collection snapshots are ordinary typed Lists, so they compose with every List operation.</p>
+
+                <h2 id="helpers">velar/collections</h2>
+                <pre><code>{helpersCode}</code></pre>
+                <p>The module includes <code>range</code>, <code>enumerate</code>, <code>zip</code>, <code>unique</code>, <code>chunk</code>, <code>flatten</code>, <code>compact</code>, <code>reverse</code>, <code>take</code>, <code>drop</code>, <code>first</code>, <code>last</code>, <code>find</code>, <code>findIndex</code>, <code>contains</code>, <code>count</code>, <code>any</code>, <code>all</code>, <code>partition</code>, <code>groupBy</code>, <code>keyBy</code>, <code>countBy</code>, <code>sortBy</code>, <code>minBy</code>, <code>maxBy</code>, <code>sum</code>, <code>join</code>, and <code>repeat</code>.</p>
+                <p>Transforms return new collections unless the name explicitly says otherwise. Predicates must return a real bool. Ordering keys must be uniformly strings or finite numbers, equal-key order stays stable, and missing lookups use <code>none</code>.</p>
+
+                <div class="next-links"><Link to="/docs/core"><strong>Core module reference</strong><span>See every collections export and the rest of the standard library.</span></Link><Link to="/docs/language/classes"><strong>Next: Classes</strong><span>Model nominal behavior while keeping collection fields explicit.</span></Link></div>
+            </Prose>
+        </DocsShell>
+    </main>

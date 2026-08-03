@@ -1,35 +1,62 @@
-import {Head} from "velar/web"
-import {DocsShell, PageHeader, Prose, Callout} from "@velarscript/docs-kit"
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
 import {docsNav} from "../content.vel"
 
-const declarationsCode = "const origin = Point(x: 0, y: 0)\nlet attempts = 0\n\ntype Point:\n    x: number\n    y: number"
-const flowCode = "if score >= 90:\n    grade = \"A\"\nelse if score >= 80:\n    grade = \"B\"\nelse:\n    grade = \"C\"\n\nfor item in items:\n    print(item.name)"
-const classCode = "abstract class Shape:\n    abstract def area() -> number\n\nclass Circle(const radius: number) extends Shape:\n    override def area() -> number:\n        return 3.14159 * self.radius * self.radius"
-const lifecycleCode = "import {every} from \"velar/browser\"\nimport {announce} from \"velar/web\"\n\ncomponent Heartbeat:\n    state ticks = 0\n    const stop = every(1000, () => ticks += 1)\n\n    mounted:\n        announce(\"Heartbeat ready\")\n\n    cleanup:\n        stop()\n\n    return <output>{ticks}</output>"
+const bindingsCode = "const product = \"VelarScript\"\nlet downloads = 0\n\ndownloads += 1\n\nconst {name, version} = release\nconst [first, ...rest] = builds"
+const valuesCode = "const title: string = \"Release\"\nconst progress: number = 0.75\nconst ready: bool = true\nconst failure: Error? = none\n\nconst label = ready ? \"Ready\" : \"Waiting\"\nconst message = f\"{title}: {progress * 100}%\""
+const optionalCode = "const avatar = user?.profile.avatar ?? \"/default.png\"\n\nif user != none:\n    print(user.name)\nelse:\n    print(\"Guest\")\n\nassert draft.estimate, \"Estimate is required\"\nsave(draft.estimate)"
+const expressionCode = "const inside = 0 <= index < items.length\nconst present = value in values\nconst squared = value ** 2\nconst visible = enabled and not hidden\n\n// Explicit conversion; no ambient coercion.\nconst text = str(42)\nconst parsed = number(\"42.5\")"
+const objectCode = "const name = \"Ada\"\nconst active = true\nconst user = {name, active, role: \"admin\"}\nconst updated = {...user, active: false}"
 
 export component LanguageDocs:
-    return <main>
-        <Head title="Language reference · Velar" description="The Velar language: bindings, control flow, functions, types, classes, modules, JSX, and lifecycle." themeColor="#f7f5f0" />
+    return <main data-language-docs>
+        <Head title="Syntax and values · VelarScript" description="VelarScript bindings, primitive values, references, optionals, expressions, objects, and strict conditions." themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker="Reference / Language" title="Clear syntax over JavaScript semantics." summary="Velar keeps the flexible browser runtime while narrowing the source language to readable, intentional constructs." tags={["let + const", "indentation", "simple types", "native JSX"]} />
+            <PageHeader kicker="Language / 01" title="Readable source, JavaScript runtime facts." summary="VelarScript keeps JavaScript values, references, closures, promises, garbage collection, and Number semantics while removing its accidental source-level traps." tags={["const + let", "indentation", "none", "strict conditions"]} />
             <Prose>
-                <h2>Bindings and data</h2>
-                <p>Use const by default and let when a binding must be reassigned. Values retain JavaScript's underlying value and reference behavior, but source-level coercion traps and implicit declarations are not part of Velar.</p>
-                <pre><code>{declarationsCode}</code></pre>
-                <Callout title="Types stay practical"><p>type describes records, function boundaries, and external data. It is intentionally smaller than TypeScript's type system and remains available for runtime parsing where data enters the application.</p></Callout>
-                <h2>Control flow</h2>
-                <p>Blocks use Python-like indentation. Conditions keep explicit parentheses-free syntax, while expressions use familiar operators and compact conditional expressions where they remain readable.</p>
-                <pre><code>{flowCode}</code></pre>
-                <h2>Functions and modules</h2>
-                <p>Functions use def, async def, typed parameters, and an optional return type. Imports and exports are explicit. JavaScript packages enter through an explicit js import boundary rather than becoming ambient untyped values.</p>
-                <h2>Classes and inheritance</h2>
-                <p>Classes support initialization, fields, methods, inheritance, abstract members, overrides, access control, static members, getters, and super calls without exposing direct prototype mutation as everyday syntax.</p>
-                <pre><code>{classCode}</code></pre>
-                <h2>Components and lifecycle</h2>
-                <p>Components combine native JSX with scoped CSS and explicit reactive declarations. mounted runs after insertion. cleanup is a sibling block, so resource ownership remains visible instead of being hidden inside an effect callback.</p>
-                <pre><code>{lifecycleCode}</code></pre>
-                <h2>Deliberate exclusions</h2>
-                <p>Loose equality, implicit globals, with, eval-style source execution, arbitrary prototype mutation, ambient DOM globals, and framework-specific synthetic events are outside the normal language. Unsafe interoperability remains possible only through an explicit JavaScript boundary.</p>
+                <h2 id="runtime">Runtime model</h2>
+                <p>Compiled programs run on the existing JavaScript engine. Objects and collections are references, primitive values behave as JavaScript primitives, numbers use IEEE 754, closures capture bindings, and asynchronous work uses the native event loop and Promise queue. VelarScript adds no VM, garbage collector, virtual DOM, or second memory model.</p>
+                <p>The source language deliberately omits <code>var</code>, <code>undefined</code>, dynamic <code>this</code>, <code>new</code>, prototype mutation, <code>eval</code>, <code>with</code>, <code>arguments</code>, implicit globals, ambient coercion functions, and automatic semicolon insertion.</p>
+
+                <h2 id="bindings">Bindings</h2>
+                <pre><code>{bindingsCode}</code></pre>
+                <ul>
+                    <li>Use <code>const</code> unless the binding itself must be reassigned; use <code>let</code> for intentional reassignment.</li>
+                    <li>Both forms are block scoped and must be initialized.</li>
+                    <li><code>const</code> prevents rebinding but does not freeze a referenced object, List, Map, or Set.</li>
+                    <li>Assignment is a statement, never a value-producing expression.</li>
+                    <li>Declarations and <code>for</code> bindings support object/List destructuring. Spreads use <code>...</code>.</li>
+                </ul>
+
+                <h2 id="values">Primitive values and strings</h2>
+                <pre><code>{valuesCode}</code></pre>
+                <p>The four Core primitive types are <code>string</code>, <code>number</code>, <code>bool</code>, and <code>none</code>. Interpolated strings use <code>f"..."</code>. Short expression choices use JavaScript's readable <code>condition ? yes : no</code> ordering; Python's reversed inline conditional is not part of the language.</p>
+                <Callout title="Number means JavaScript Number"><p>VelarScript does not claim Python arbitrary-precision integers or decimal arithmetic. APIs that require integers check the safe-integer range explicitly.</p></Callout>
+
+                <h2 id="empty">One empty value</h2>
+                <pre><code>{optionalCode}</code></pre>
+                <p>Source uses <code>none</code> instead of <code>null</code> or <code>undefined</code>. A type ending in <code>?</code> may contain <code>none</code>. One <code>?.</code> begins a continuous optional chain across later field reads, checked indexes, calls, and compiler-owned collection operations; skipped arguments are not evaluated.</p>
+                <p><code>if</code>, <code>while</code>, <code>not</code>, explicit comparisons with <code>none</code>, <code>is</code>, and successful <code>assert</code> narrow stable local names and dotted record fields. The proof stays in its lexical branch and never crosses a shadowed binding or deferred callback.</p>
+
+                <h2 id="conditions">Strict conditions and operators</h2>
+                <pre><code>{expressionCode}</code></pre>
+                <ul>
+                    <li>Conditions accept only <code>bool</code> or an optional value, where the test means “present.” Numbers, strings, and collections have no implicit truthiness.</li>
+                    <li><code>==</code> and <code>!=</code> are already strict. Primitive values compare by value; objects, Lists, functions, and class instances compare by reference.</li>
+                    <li><code>and</code>, <code>or</code>, and <code>not</code> return booleans rather than arbitrary operands.</li>
+                    <li>Comparison chains evaluate each operand once from left to right and stop at the first false link.</li>
+                    <li><code>in</code> tests List/string containment or Set/Map membership; it never inspects an object prototype chain.</li>
+                    <li><code>%</code> keeps JavaScript remainder semantics. <code>**</code> is right-associative and handles signed exponents predictably.</li>
+                </ul>
+
+                <h2 id="conversion">Explicit conversion</h2>
+                <p><code>str(value)</code> produces display text. <code>number(text) -&gt; number?</code> accepts one complete finite decimal and returns <code>none</code> for empty, partial, hexadecimal, NaN, or infinite input. <code>print(value)</code> is the small Core output function. These compiler-owned bindings cannot be shadowed.</p>
+
+                <h2 id="objects">Objects and immutable updates</h2>
+                <pre><code>{objectCode}</code></pre>
+                <p>Object literals have a fixed known shape. An identifier may stand for a same-named field, explicit duplicate fields are rejected, and ordered spread followed by an explicit field is the normal immutable-update spelling. Use a <code>Map</code> when keys are dynamic.</p>
+
+                <div class="next-links"><Link to="/docs/language/types"><strong>Next: Types and data</strong><span>Record shapes, aliases, unions, enums, and runtime validation.</span></Link><Link to="/docs/language/functions"><strong>Functions and flow</strong><span>Named work, callbacks, async code, matching, and errors.</span></Link></div>
             </Prose>
         </DocsShell>
     </main>

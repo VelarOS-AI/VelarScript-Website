@@ -1,0 +1,51 @@
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const configCode = "import {publicConfig} from \"velar/config\"\n\ntype RuntimeConfig:\n    apiBase: string\n    releaseChannel: string\n\nconst config = publicConfig(RuntimeConfig)"
+const httpCode = "import {HttpAbortError, HttpError, http} from \"velar/http\"\n\ntype Project:\n    id: string\n    name: string\n\nconst request = http.get(\"/api/projects/1\", {timeout: 5000, maxBytes: 1048576})\nconst project = await request.parse(Project)\nrequest.cancel()"
+const uploadCode = "import {formBody, http} from \"velar/http\"\nimport {pick} from \"velar/files\"\n\nconst selected = await pick({accept: \"image/*\", multiple: true})\nconst body = formBody()\nbody.field(\"title\", \"Profile images\")\nbody.files(\"images\", selected)\nconst result = await http.post(\"/api/images\", {body}).parse(UploadResult)"
+const formsCode = "import {clearErrors, focusFirstError, read, setError, setPending} from \"velar/forms\"\n\ntype SignupDraft:\n    name: string\n    role: AccountRole\n    updates: bool\n    age: number?\n\nlet form: Element? = none\n\ndef submit():\n    if form:\n        clearErrors(form)\n        const draft = read(form, SignupDraft)\n        if draft.name == \"\":\n            setError(form, \"name\", \"Enter your name\")\n            focusFirstError(form)\n            return none\n        setPending(form, true)\n\nreturn <form ref={form} on:submit.prevent={submit}>...</form>"
+const storageCode = "import {database, storage} from \"velar/storage\"\n\ntype Settings:\n    theme: string\n\nconst preferences = storage.scope(\"studio\")\nconst settings = preferences.get(\"settings\", Settings, {theme: \"system\"})\npreferences.set(\"settings\", settings)\n\nconst cache = database(\"studio\")\nawait cache.set(\"settings\", settings)\nconst saved = await cache.get(\"settings\", Settings)"
+
+export component WebData:
+    return <main>
+        <Head title="Forms, HTTP and storage · VelarScript" description="VelarScript public config, typed HTTP, multipart uploads, native forms, runtime validation, local/session storage, and IndexedDB." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Web framework / 04" title="External data crosses checked boundaries." summary="One record type validates public configuration, HTTP responses, form input, storage, and IndexedDB without duplicating schemas." tags={["velar/config", "velar/http", "velar/forms", "velar/storage"]} />
+            <Prose>
+                <h2 id="config">velar/config</h2>
+                <pre><code>{configCode}</code></pre>
+                <p><code>publicConfig(Type)</code> validates the complete <code>velar.json.web.publicConfig</code> object and returns the named type. <code>has(key)</code> and sorted <code>keys()</code> support optional discovery. Configuration is JSON-only, recursively frozen, bounded to 64 KiB, baked into the hashed entry, and never reads <code>.env</code>, process state, server configuration, or secrets.</p>
+
+                <h2 id="http">velar/http</h2>
+                <pre><code>{httpCode}</code></pre>
+                <p><code>request</code>, <code>get</code>, <code>post</code>, <code>put</code>, <code>patch</code>, <code>delete</code>, and <code>head</code> create lazy requests. Options include string Map headers, body, timeout, maximum bytes, credentials, and cache policy. Requests expose <code>response</code>, <code>json</code>, <code>text</code>, <code>blob</code>, <code>parse(Type)</code>, and idempotent <code>cancel</code>.</p>
+                <ul>
+                    <li>The first body read starts fetch; cancelling before it prevents fetch entirely.</li>
+                    <li>Timeout/cancellation reject with <code>HttpAbortError</code> and stable reasons <code>timeout</code> or <code>cancelled</code>.</li>
+                    <li>Non-2xx responses throw <code>HttpError</code> with status, URL, and unknown body.</li>
+                    <li>Responses are streamed up to <code>maxBytes</code>, then cached so repeated readers are stable.</li>
+                    <li>Object request bodies use strict lossless JSON; unsupported values fail before fetch starts.</li>
+                    <li>Headers, methods, options, credentials, cache modes, returned metadata, and URL sizes are validated before native coercion.</li>
+                </ul>
+
+                <h2 id="multipart">Multipart form bodies</h2>
+                <pre><code>{uploadCode}</code></pre>
+                <p><code>formBody()</code> exposes <code>field</code>, <code>file</code>, <code>files</code>, <code>remove</code>, <code>has</code>, and <code>names</code>. Files must be opaque records returned by <code>velar/files.pick</code>; a forged structural object has no native authority. The browser owns the multipart boundary, so manually supplying a content-type header is rejected.</p>
+
+                <h2 id="forms">velar/forms</h2>
+                <pre><code>{formsCode}</code></pre>
+                <p><code>values</code> and <code>fieldValue</code> expose raw native form shapes. <code>textValue</code>, <code>numberValue</code>, <code>checkedValue</code>, and <code>fieldValues</code> provide common typed reads. <code>read(form, Type)</code> decodes flat string, finite number, bool checkbox, enum, repeated <code>List&lt;string&gt;</code>, and optional scalar fields into the existing record type.</p>
+                <p><code>setError</code>, <code>clearError</code>, <code>clearErrors</code>, <code>errors</code>, and <code>focusFirstError</code> own accessible field error relationships. <code>setPending</code> owns <code>aria-busy</code> and temporary disabled state. <code>reset</code> restores pending/error ownership before the native reset. Business validation, trimming, submission, and nested object construction remain application code.</p>
+
+                <h2 id="storage">velar/storage</h2>
+                <pre><code>{storageCode}</code></pre>
+                <p><code>storage</code> and <code>session</code> expose scoped or unscoped <code>get</code>, <code>set</code>, <code>has</code>, <code>keys</code>, <code>remove</code>, <code>clear</code>, and <code>watch</code>. Typed reads and watches use a real compiler-registered Type. Watches observe same-page writes and browser storage events, return cleanup functions, and report callback failure through <code>velar/app</code>.</p>
+                <p><code>database(name)</code> provides asynchronous IndexedDB operations with the same names. Writes resolve only after transaction commit, failed/blocked opens may retry, version changes close stale handles, key lists are sorted, and every value obeys the strict JSON contract.</p>
+                <Callout title="Strict JSON everywhere"><p>Network and persistence accept only finite primitives, <code>none</code>, dense Lists, and plain records recursively. Maps, Sets, classes, functions, sparse/accessor Lists, non-finite numbers, and cycles fail instead of being silently omitted or converted.</p></Callout>
+
+                <div class="next-links"><Link to="/docs/web/browser"><strong>Next: Browser capabilities</strong><span>Own platform effects and resource lifetimes explicitly.</span></Link><Link to="/docs/core"><strong>Core modules</strong><span>Parse, compare, transform, schedule, and format data.</span></Link></div>
+            </Prose>
+        </DocsShell>
+    </main>

@@ -1,0 +1,52 @@
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const recordCode = "type User:\n    id: string\n    name: string\n    avatar: string?\n    roles: List<string>\n\ntype Identifier = string\ntype Users = List<User>\ntype UserHandler = (User) -> none"
+const validationCode = "const user = User.parse(raw)\n\nif raw is User:\n    print(raw.name)\n\nimport {parse as parseJson} from \"velar/json\"\nconst decoded = parseJson(source, User)"
+const recursiveCode = "type TreeNode:\n    label: string\n    children: List<TreeNode>\n\ntype Comment:\n    body: string\n    reply: Comment?"
+const unionCode = "type DisplayValue = string | number | bool\n\ndef display(value: DisplayValue) -> string:\n    if value is string:\n        return value\n    else if value is number:\n        return str(value)\n    else:\n        return value ? \"yes\" : \"no\""
+const enumCode = "enum TaskStatus:\n    todo\n    doing\n    done\n\nconst status: TaskStatus = TaskStatus.todo\nconst parsed = TaskStatus.parse(rawStatus)"
+
+export component LanguageTypes:
+    return <main>
+        <Head title="Types and data · VelarScript" description="VelarScript record types, aliases, optionals, unions, enums, inference, and runtime validation without a second schema language." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Language / 02" title="Useful types, not type-level programming." summary="Types document application boundaries, guide the editor, catch ordinary mistakes, and optionally validate incoming runtime data." tags={["one type keyword", "runtime parse", "simple unions", "enums"]} />
+            <Prose>
+                <h2 id="record">Records and aliases</h2>
+                <pre><code>{recordCode}</code></pre>
+                <p>The colon form declares a structural record. The equals form gives a readable transparent name to an existing type. Aliases expand for checking, may cross module boundaries, and can participate in runtime validation, but they do not create nominal wrappers or accept type parameters.</p>
+                <p>Fields may use primitives, optionals, Lists, Maps, Sets, functions, records, classes, enums, or bounded unions. Function signatures omit parameter names because names do not affect assignability. An optional function requires grouping: <code>((string) -&gt; string)?</code>.</p>
+                <Callout title="One declaration system"><p>VelarScript has no separate <code>schema</code> or <code>interface</code> keyword. The same named <code>type</code> serves static checking, editor help, JSON/HTTP/storage/form boundaries, and explicit runtime validation.</p></Callout>
+
+                <h2 id="validation">Runtime validation</h2>
+                <pre><code>{validationCode}</code></pre>
+                <ul>
+                    <li><code>Type.parse(value)</code> returns the checked value or throws <code>ValidationError</code>.</li>
+                    <li><code>value is Type</code> checks and narrows without throwing.</li>
+                    <li>Runtime code is emitted only when a type is actually used at runtime.</li>
+                    <li>Every emitted record Type, alias, and enum is frozen and registered under one module-independent identity.</li>
+                    <li>Forged objects with lookalike <code>parse</code> or <code>is</code> fields cannot bypass validation.</li>
+                </ul>
+                <p>JSON-shaped validation accepts finite primitives, <code>none</code>, dense Lists, and plain records recursively. It rejects sparse/accessor Lists, symbols, cycles, class instances, functions, Map, Set, Promise, and non-finite numbers when those values cross strict data boundaries.</p>
+
+                <h2 id="recursive">Recursive records</h2>
+                <pre><code>{recursiveCode}</code></pre>
+                <p>A record may refer to itself or another record when a finite value can terminate through an optional, List, Map, or real union branch. Required cycles such as <code>type Loop: next: Loop</code> are rejected. Runtime validation accepts finite acyclic trees and shared subtrees, but rejects cyclic graphs and excessive depth safely.</p>
+
+                <h2 id="union">Simple unions and narrowing</h2>
+                <pre><code>{unionCode}</code></pre>
+                <p>Unions describe a small finite set of runtime alternatives. Each rejected <code>is</code> check removes the covered member for the following <code>else if</code> or <code>else</code> branch. The same bounded narrowing works for inline branches, assertions, stable record fields, and adjacent JSX branches. VelarScript does not add conditional, mapped, or user-programmable type subtraction.</p>
+
+                <h2 id="enum">Enums</h2>
+                <pre><code>{enumCode}</code></pre>
+                <p>Enums are nominal string-backed workflow values. Members serialize as their names and may flow out to string-based Web/storage boundaries, but an arbitrary string is not assignable back. Use <code>Enum.parse</code> for dynamic input and <code>match</code> for exhaustive handling.</p>
+
+                <h2 id="inference">Inference and deliberate limits</h2>
+                <p>Local values, callback arguments/results, collection transforms, Promise results, runtime parsing, and empty collection first writes are inferred. Public function parameters, non-<code>none</code> results, class fields, and important application boundaries remain explicitly typed. The language intentionally omits user-defined generics, overloads, declaration merging, conditional types, mapped types, metaprogramming, and complex constraints.</p>
+
+                <div class="next-links"><Link to="/docs/language/functions"><strong>Next: Functions and flow</strong><span>Use those types across synchronous and asynchronous work.</span></Link><Link to="/docs/language/collections"><strong>Collections</strong><span>Lists, Maps, Sets, iteration, and transformations.</span></Link></div>
+            </Prose>
+        </DocsShell>
+    </main>

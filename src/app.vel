@@ -4,11 +4,25 @@ import {Container, SiteFoundation} from "@velarscript/site-ui"
 import {primaryNav, SiteRuntimeConfig} from "./content.vel"
 import {SiteFooter, SiteHeader} from "./components/site-shell.vel"
 import {DocsOverview} from "./pages/docs-overview.vel"
+import {DocsGettingStarted} from "./pages/docs-getting-started.vel"
+import {DocsProject} from "./pages/docs-project.vel"
 import {Examples} from "./pages/examples.vel"
 import {Home} from "./pages/home.vel"
+import {CoreLibrary} from "./pages/core-library.vel"
+import {LanguageClasses} from "./pages/language-classes.vel"
+import {LanguageCollections} from "./pages/language-collections.vel"
 import {LanguageDocs} from "./pages/language-docs.vel"
+import {LanguageFunctions} from "./pages/language-functions.vel"
+import {LanguageModules} from "./pages/language-modules.vel"
+import {LanguageTypes} from "./pages/language-types.vel"
 import {Learn} from "./pages/learn.vel"
+import {TestingDeployment} from "./pages/testing-deployment.vel"
+import {WebBrowser} from "./pages/web-browser.vel"
+import {WebComponents} from "./pages/web-components.vel"
+import {WebData} from "./pages/web-data.vel"
 import {WebDocs} from "./pages/web-docs.vel"
+import {WebReactivity} from "./pages/web-reactivity.vel"
+import {WebRouting} from "./pages/web-routing.vel"
 
 const config = publicConfig(SiteRuntimeConfig)
 
@@ -42,14 +56,28 @@ component NotFound(route: RouteContext):
             font-size: 1.1rem;
         }
 
-    return <main class="missing" data-not-found><Head title="Page not found · Velar" description="The requested Velar documentation page does not exist." /><Container><span class="code">404 / UNKNOWN ROUTE</span><h1>Nothing is written here yet.</h1><p>No Velar page matches {route.path}.</p></Container></main>
+    return <main class="missing" data-not-found><Head title="Page not found · VelarScript" description="The requested VelarScript documentation page does not exist." /><Container><span class="code">404 / UNKNOWN ROUTE</span><h1>Nothing is written here yet.</h1><p>No VelarScript page matches {route.path}.</p></Container></main>
 
 const routes = [
     route("/", Home),
     route("/learn", Learn),
     route("/docs", DocsOverview),
+    route("/docs/getting-started", DocsGettingStarted),
+    route("/docs/project", DocsProject),
     route("/docs/language", LanguageDocs),
+    route("/docs/language/types", LanguageTypes),
+    route("/docs/language/functions", LanguageFunctions),
+    route("/docs/language/collections", LanguageCollections),
+    route("/docs/language/classes", LanguageClasses),
+    route("/docs/language/modules", LanguageModules),
     route("/docs/web", WebDocs),
+    route("/docs/web/components", WebComponents),
+    route("/docs/web/reactivity", WebReactivity),
+    route("/docs/web/routing", WebRouting),
+    route("/docs/web/data", WebData),
+    route("/docs/web/browser", WebBrowser),
+    route("/docs/core", CoreLibrary),
+    route("/docs/testing", TestingDeployment),
     route("/examples", Examples),
 ]
 

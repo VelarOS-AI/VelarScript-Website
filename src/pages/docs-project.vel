@@ -1,0 +1,62 @@
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const treeCode = "my-app/\n├── src/\n│   ├── main.vel\n│   ├── app.vel\n│   ├── app.test.vel\n│   └── app.browser.test.vel\n├── public/\n├── velar.json\n├── package.json\n└── package-lock.json"
+const manifestCode = "{\n  \"formatVersion\": 2,\n  \"entry\": \"src/main.vel\",\n  \"outDir\": \"dist\",\n  \"publicDir\": \"public\",\n  \"extensions\": [\"@velarscript/web\"],\n  \"web\": {\n    \"title\": \"My App\",\n    \"base\": \"/\",\n    \"publicConfig\": {\"apiBase\": \"/api\"},\n    \"build\": {\"sourceMaps\": false},\n    \"security\": {\"contentSecurityPolicy\": true},\n    \"deployment\": {\"spaFallback\": true, \"adapter\": \"neutral\"}\n  }\n}"
+const packageCode = "velar install\nvelar add chart-library\nvelar add test-helper --dev\nvelar update\nvelar remove chart-library"
+const commandsCode = "velar dev\nvelar format --check\nvelar check\nvelar test\nvelar test --browser all\nvelar build\nvelar verify\nvelar preview\nvelar verify-deployment --url https://app.example.com"
+const libraryCode = "{\n  \"name\": \"my-velar-library\",\n  \"version\": \"1.0.0\",\n  \"velar\": {\"entry\": \"src/index.vel\"},\n  \"files\": [\"src\"]\n}"
+
+export component DocsProject:
+    return <main>
+        <Head title="Project and CLI · VelarScript" description="VelarScript project structure, manifest, package workflow, templates, CLI commands, and source packages." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Start / 02" title="One project contract, from editor to production." summary="The manifest selects language extensions and production behavior; npm owns dependencies; the local VelarScript CLI owns checking, testing, building, and verification." tags={["format 2", "local toolchain", "npm packages", "verified builds"]} />
+            <Prose>
+                <h2 id="structure">Project structure</h2>
+                <pre><code>{treeCode}</code></pre>
+                <p>Keep authored VelarScript in <code>src</code>, browser-served static files in <code>public</code>, and generated output in <code>dist</code>. Tests live beside the modules they exercise and are discovered recursively by suffix.</p>
+
+                <h2 id="manifest">The velar.json manifest</h2>
+                <pre><code>{manifestCode}</code></pre>
+                <ul>
+                    <li><code>formatVersion</code> is exactly 2. Legacy and unknown future formats fail closed.</li>
+                    <li><code>entry</code>, <code>outDir</code>, and <code>publicDir</code> are project-confined paths.</li>
+                    <li><code>extensions</code> activates compiler/framework contracts. Core projects use an empty list; Web projects declare <code>@velarscript/web</code>.</li>
+                    <li><code>web.base</code> is the canonical application path used by routing, assets, development, preview, and deployment.</li>
+                    <li><code>publicConfig</code> contains public build-time values only. It never reads secrets or environment variables implicitly.</li>
+                    <li><code>sourceMaps</code> is intentionally opt-in for production.</li>
+                    <li><code>contentSecurityPolicy</code> and <code>spaFallback</code> become verifiable deployment contracts.</li>
+                </ul>
+                <Callout title="Unknown fields are errors"><p>A misspelled manifest option never silently falls back to a default. The project contract is small enough to validate completely.</p></Callout>
+
+                <h2 id="packages">Package workflow</h2>
+                <pre><code>{packageCode}</code></pre>
+                <p>These commands delegate registry resolution and lockfile changes to npm, then synchronize extension activation from package metadata. They accept registry package names and versions, not arbitrary shell flags, Git URLs, aliases, or local paths. Initial project installation remains the explicit <code>npm install</code> step.</p>
+
+                <h2 id="commands">Everyday commands</h2>
+                <pre><code>{commandsCode}</code></pre>
+                <ul>
+                    <li><code>dev</code> runs the extension-provided development host and last-good-build overlay.</li>
+                    <li><code>format</code> owns <code>.vel</code> formatting across the project.</li>
+                    <li><code>check</code> runs the same compiler semantics used by the language server.</li>
+                    <li><code>test</code> runs <code>.test.vel</code>; <code>--browser</code> runs <code>.browser.test.vel</code>.</li>
+                    <li><code>build</code> creates deterministic hashed output and manifests in an isolated staging directory.</li>
+                    <li><code>verify</code> refuses modified, missing, extra, or contract-incompatible build files.</li>
+                    <li><code>preview</code> serves only verified output with the declared base, headers, MIME types, and fallback.</li>
+                    <li><code>verify-deployment</code> compares the verified local build with an HTTPS deployment byte-for-byte.</li>
+                    <li><code>lsp</code> exposes diagnostics, completion, hover, definition, references, rename, semantic tokens, and checked fixes to any editor host.</li>
+                </ul>
+
+                <h2 id="templates">Templates</h2>
+                <p><code>web</code> creates a routed-capable browser application. <code>docs</code> creates a documentation-oriented Web project. <code>library</code> creates a Core source package. <code>component</code> creates a Web component package with a separate preview app and an explicit Web peer contract. The future <code>game</code> name is reserved and intentionally unavailable.</p>
+
+                <h2 id="source-packages">VelarScript source packages</h2>
+                <pre><code>{libraryCode}</code></pre>
+                <p>A reusable package publishes <code>.vel</code> source through <code>velar.entry</code>. The consumer's compiler resolves, checks, and bundles it as part of the project graph. Relative imports cannot escape the package root. VelarScript does not invent a private registry or a second declaration format.</p>
+
+                <div class="next-links"><Link to="/docs/language"><strong>Next: Syntax and values</strong><span>Read the source language from its smallest pieces.</span></Link><Link to="/docs/testing"><strong>Testing and deployment</strong><span>Follow the complete production path.</span></Link></div>
+            </Prose>
+        </DocsShell>
+    </main>

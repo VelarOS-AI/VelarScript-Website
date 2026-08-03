@@ -38,7 +38,7 @@ export component Brand(compact: bool = false):
             font-weight: 650;
         }
 
-    return <span class="brand"><Link to="/"><img src="/brand/velar-sail.png" alt="" /><span class="brand-name">Velar</span>{compact ? none : <span class="brand-label">Language + Web</span>}</Link></span>
+    return <span class="brand"><Link to="/"><img src="/brand/velar-sail.png" alt="" /><span class="brand-name">VelarScript</span>{compact ? none : <span class="brand-label">Language + Web</span>}</Link></span>
 
 export component Container(children: WebNode, narrow: bool = false):
     style:
@@ -182,6 +182,9 @@ export component CodeWindow(code: string, label: string = "main.vel"):
     style:
         .window {
             overflow: hidden;
+            width: 100%;
+            min-width: 0;
+            margin: 0;
             border: 1px solid var(--velar-line-strong);
             border-radius: var(--velar-radius-large);
             background: #111216;
@@ -204,6 +207,7 @@ export component CodeWindow(code: string, label: string = "main.vel"):
 
         pre {
             overflow: auto;
+            max-width: 100%;
             min-height: 260px;
             margin: 0;
             padding: clamp(20px, 4vw, 34px);

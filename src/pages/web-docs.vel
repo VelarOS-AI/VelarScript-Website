@@ -1,35 +1,51 @@
-import {Head} from "velar/web"
-import {DocsShell, PageHeader, Prose, Callout} from "@velarscript/docs-kit"
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
 import {InteractionPlayground} from "../components/interaction-playground.vel"
 import {docsNav} from "../content.vel"
 
-const routerCode = "import {Head, Router, route} from \"velar/web\"\n\nconst routes = [\n    route(\"/\", Home),\n    route(\"/projects/:id\", Project),\n]\n\ncomponent App:\n    return <>\n        <Head title=\"My app\" />\n        <Router routes={routes} />\n    </>"
-const dataCode = "import {http} from \"velar/http\"\n\ntype Project:\n    id: string\n    name: string\n\nasync def loadProject(id: string) -> Project:\n    return await http.get(f\"/api/projects/{id}\").parse(Project)"
-const testCode = "import {expect} from \"velar/test\"\nimport {browser} from \"velar/web-test\"\n\nasync def test_project_navigation():\n    await browser.open(\"/projects/velar\")\n    expect(await browser.text(\"h1\")).toBe(\"Velar\")\n    await browser.click(\"[data-star]\")\n    expect(await browser.text(\"[data-status]\")).toBe(\"Starred\")"
+const activateCode = "{\n  \"formatVersion\": 2,\n  \"entry\": \"src/main.vel\",\n  \"extensions\": [\"@velarscript/web\"],\n  \"web\": {\n    \"title\": \"My App\",\n    \"base\": \"/\",\n    \"build\": {\"sourceMaps\": false},\n    \"security\": {\"contentSecurityPolicy\": true},\n    \"deployment\": {\"spaFallback\": true}\n  }\n}"
+const importsCode = "import {Head, Link, Router, route} from \"velar/web\"\nimport {http} from \"velar/http\"\nimport {read} from \"velar/forms\"\nimport {storage} from \"velar/storage\"\nimport {after, focus} from \"velar/browser\""
 
 export component WebDocs:
     return <main data-web-docs>
-        <Head title="Web framework · Velar" description="The official @velarscript/web framework and browser capability modules." themeColor="#f7f5f0" />
+        <Head title="Web framework · VelarScript" description="The official @velarscript/web framework: native JSX, components, reactivity, routing, data, browser capabilities, tests, and production." themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker="Reference / Web" title="The official framework is part of the language story." summary="@velarscript/web provides the checked compiler and runtime boundary for browser applications without a virtual DOM or ambient globals." tags={["Web API 0.8", "native DOM", "scoped CSS", "real browser tests"]} />
+            <PageHeader kicker="Web framework / Overview" title="One official path from component to production." summary="@velarscript/web adds checked browser authoring without changing the JavaScript engine, exposing ambient globals, or introducing a virtual DOM." tags={["Web API 0.8", "native DOM", "scoped CSS", "explicit capabilities"]} />
             <Prose>
-                <h2>Components render native JSX</h2>
-                <p>Velar JSX creates native DOM and SVG nodes. Component state updates only the dynamic regions that depend on it. Static production CSS is extracted from scoped style blocks rather than recreated as JavaScript objects at runtime.</p>
-                <h2>Native interaction, composed</h2>
-                <p>The private UI dogfood layer builds disclosure, dialog, status, and field primitives from native elements. Web 0.8 adds checked DOM IDs so accessible relationships do not depend on handwritten global names or cryptographic UUIDs.</p>
+                <h2 id="activate">Activate the extension</h2>
+                <pre><code>{activateCode}</code></pre>
+                <p>The npm dependency provides a compiler entry and a separate Web host entry. The compiler contribution owns JSX, components, state, lifecycle, DOM types, scoped CSS, diagnostics, and editor semantics. The host contribution owns browser documents, development reload, CSP, production assets, deployment projection, and browser-test metadata. The generic CLI stays framework-independent.</p>
+
+                <h2 id="model">Rendering model</h2>
+                <p>JSX creates native HTML and SVG nodes. Static DOM and CSS are emitted once; reactive expressions subscribe only to the state they read and patch their owned text, attribute, branch, or keyed-list region. Components set up once and do not rerun as render functions.</p>
+                <p>Component CSS is scoped and extracted in production. The parent scope may style a child component's top-level DOM root while arbitrary child internals remain private. Global rules require an explicit <code>style global</code> block.</p>
+
+                <h2 id="modules">Capability modules</h2>
+                <pre><code>{importsCode}</code></pre>
+                <ul>
+                    <li><code>velar/app</code> owns application error reports and recovery.</li>
+                    <li><code>velar/config</code> validates explicit public build configuration.</li>
+                    <li><code>velar/web</code> owns routing, links, document metadata, navigation, announcements, and DOM IDs.</li>
+                    <li><code>velar/http</code> owns lazy bounded requests, strict data, typed responses, multipart bodies, timeout, and cancellation.</li>
+                    <li><code>velar/storage</code> owns local/session namespaces, watches, and IndexedDB.</li>
+                    <li><code>velar/forms</code> owns native form reads, typed record decoding, accessible errors, pending state, focus, and reset.</li>
+                    <li><code>velar/browser</code> owns snapshots, timers, media, visibility, clipboard, focus, scrolling, layout, frames, and dialogs.</li>
+                    <li><code>velar/files</code> owns cross-browser file selection, bounded reads, and downloads.</li>
+                    <li><code>velar/realtime</code> owns explicit WebSocket and server-sent-event lifetimes.</li>
+                    <li><code>velar/web-test</code> drives the delivered CSP application through a restricted typed browser controller.</li>
+                </ul>
+
+                <h2 id="native-interaction">Native interaction, composed</h2>
+                <p>The framework uses native anchors, forms, dialogs, focus, events, and accessibility relationships. Components can build higher-level UI without replacing platform semantics.</p>
                 <InteractionPlayground />
-                <h2>Routing and document metadata</h2>
-                <p>Router, Link, NavLink, Head, and navigation functions understand the application's configured base path. Route parameters, queries, and hashes arrive through a checked RouteContext.</p>
-                <pre><code>{routerCode}</code></pre>
-                <h2>Capability modules</h2>
-                <ul><li><strong>velar/forms</strong> owns typed form reads, errors, focus, reset, and pending state.</li><li><strong>velar/http</strong> owns lazy requests, timeouts, cancellation, size bounds, strict JSON, and typed parsing.</li><li><strong>velar/storage</strong> owns local, session, and IndexedDB persistence through JSON-safe typed values.</li><li><strong>velar/browser</strong> owns environment snapshots, clipboard, dialogs, layout, timers, media, online, and visibility.</li><li><strong>velar/files</strong> and <strong>velar/realtime</strong> provide explicit file and connection lifetimes.</li><li><strong>velar/app</strong> unifies framework error reporting and recoverable rendering behavior.</li></ul>
-                <pre><code>{dataCode}</code></pre>
-                <Callout title="No ambient browser globals"><p>Direct window, document, fetch, location, history, JSON, Math, and Date access is rejected in ordinary Velar source. Use JSX, Core modules, Web capability modules, or an explicit JavaScript adapter.</p></Callout>
-                <h2>Testing the delivered application</h2>
-                <p>Core tests run quickly without a browser. Browser tests execute an isolated CSP production build through the typed browser controller, so the same routing, assets, chunks, and runtime behavior users receive are exercised.</p>
-                <pre><code>{testCode}</code></pre>
-                <h2>Production contract</h2>
-                <p>velar build emits content-hashed assets and a deployment contract. velar verify checks the output locally. Hosts must provide the emitted single-page application fallback, base path, content types, and security behavior.</p>
+
+                <h2 id="globals">No ambient browser globals</h2>
+                <Callout title="Capabilities stay visible"><p>Direct <code>window</code>, <code>document</code>, <code>navigator</code>, <code>location</code>, <code>history</code>, <code>fetch</code>, <code>JSON</code>, <code>Math</code>, <code>Date</code>, and <code>console</code> are rejected in ordinary source. Diagnostics point to JSX, Core modules, Web modules, or an explicit JavaScript adapter.</p></Callout>
+
+                <h2 id="boundaries">Current boundary</h2>
+                <p>Web API 0.8 does not define SSR, hydration, server execution, workers, service workers/PWA, WebRTC, WebGPU, directory handles, persistent file handles, or a game runtime. <code>velar/game</code> remains a future Canvas-oriented framework built on this Web platform.</p>
+
+                <div class="next-links"><Link to="/docs/web/components"><strong>Next: Components and JSX</strong><span>Build native, accessible view trees.</span></Link><Link to="/docs/web/reactivity"><strong>State and lifecycle</strong><span>Own updates, resources, actions, watchers, and cleanup.</span></Link></div>
             </Prose>
         </DocsShell>
     </main>

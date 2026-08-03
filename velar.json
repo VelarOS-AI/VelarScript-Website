@@ -5,7 +5,7 @@
   "publicDir": "public",
   "extensions": ["@velarscript/web"],
   "web": {
-    "title": "Velar — The Web, written clearly",
+    "title": "VelarScript — The Web, written clearly",
     "base": "/",
     "publicConfig": {
       "repositoryUrl": "https://github.com/VelarOS-AI/VelarScript",

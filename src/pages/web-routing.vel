@@ -1,0 +1,49 @@
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const routeCode = "import {Head, RouteContext, Router, route} from \"velar/web\"\n\ncomponent ProjectPage(route: RouteContext):\n    const id = route.params.get(\"id\")\n    return <main><Head title=\"Project\" /><h1>{id ?? \"Missing\"}</h1></main>\n\nconst routes = [\n    route(\"/\", Home),\n    route(\"/projects/:id\", ProjectPage),\n    route(\"/files/*\", FileBrowser),\n]\n\ncomponent App:\n    return <Router routes={routes} fallback={NotFound} />"
+const linkCode = "return <nav aria-label=\"Primary\">\n    <NavLink to=\"/\" exact={true}>Home</NavLink>\n    <NavLink to=\"/projects\">Projects</NavLink>\n    <Link to=\"/settings\">Settings</Link>\n</nav>"
+const navigationCode = "navigate(\"/projects/new\")\nnavigate(\"/projects\", {replace: true, scroll: false})\nredirect(\"/sign-in\")\nback()\nforward()\nreload()\nconst route = currentRoute()"
+const headCode = "component ArticlePage(article: Article):\n    return <main>\n        <Head\n            title={article.title}\n            description={article.summary}\n            canonical={article.url}\n            robots=\"index,follow\"\n            image={article.image}\n            themeColor=\"#f7f5f0\"\n        />\n        <article>...</article>\n    </main>"
+const lazyCode = "const Reports = lazy(\n    () => import(\"./pages/reports.vel\"),\n    \"Reports\",\n    ReportsLoading,\n    ReportsFailed,\n)\n\nconst routes = [route(\"/reports\", Reports)]"
+
+export component WebRouting:
+    return <main>
+        <Head title="Routing and metadata · VelarScript" description="VelarScript Router, routes, RouteContext, Link, NavLink, navigation, Head, lazy components, announcements, and DOM IDs." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Web framework / 03" title="Routes are checked component boundaries." summary="Patterns, route props, links, base paths, navigation, metadata, lazy chunks, fallbacks, and recovery use one application-relative model." tags={["Router", "RouteContext", "Head", "lazy"]} />
+            <Prose>
+                <h2 id="routes">Declare routes</h2>
+                <pre><code>{routeCode}</code></pre>
+                <p>A route pattern begins with <code>/</code> and contains only a pathname. <code>:name</code> captures one decoded segment and a final <code>*</code> captures the remaining path under <code>route.params.get("wildcard")</code>. Queries, hashes, backslashes, empty segments, duplicate parameters, non-terminal wildcards, and redundant trailing slashes are rejected.</p>
+                <p><code>RouteContext</code> contains the application-relative <code>path</code>, string <code>params</code>/<code>query</code> Maps, and <code>hash</code>. A route component may require only <code>route: RouteContext</code>. The compiler checks that contract before browser execution.</p>
+
+                <h2 id="router">Router behavior</h2>
+                <p><code>Router</code> renders the first match. An unmatched route renders an accessible default 404 or a checked fallback component. A malformed percent-encoded parameter becomes a normal non-match rather than a fatal render.</p>
+                <p>Navigation is transactional: Router constructs the target before destroying the current page. If construction fails, the incomplete target cleans up, the previous page remains mounted, and <code>velar/app</code> receives a recoverable <code>render/router</code> report. An initial route failure still reaches the root fatal boundary.</p>
+
+                <h2 id="links">Link and NavLink</h2>
+                <pre><code>{linkCode}</code></pre>
+                <p><code>Link</code> preserves native anchor behavior and intercepts only an unmodified primary click on an internal path. <code>NavLink</code> adds <code>aria-current="page"</code>; non-exact links match descendants while <code>/</code> remains exact by design. Both understand <code>web.base</code>, trailing slashes, history changes, and component cleanup.</p>
+
+                <h2 id="navigation">Intentional history operations</h2>
+                <pre><code>{navigationCode}</code></pre>
+                <p><code>navigate</code> accepts checked <code>replace</code> and <code>scroll</code> booleans. <code>redirect</code>, <code>back</code>, <code>forward</code>, and <code>reload</code> make history intent explicit. <code>currentRoute()</code> returns the same typed application-relative snapshot used by Router.</p>
+
+                <h2 id="head">Document metadata</h2>
+                <pre><code>{headCode}</code></pre>
+                <p><code>Head</code> owns title, description, canonical URL, robots, social image, and theme color for its component lifetime and restores the previous values on cleanup. It composes with routes and lazy pages rather than relying on document globals.</p>
+
+                <h2 id="lazy">Lazy route components</h2>
+                <pre><code>{lazyCode}</code></pre>
+                <p><code>lazy</code> accepts one checked dynamic VelarScript import, a literal component export name, and optional loading/failure components. It caches a successful module load, retries after failure, owns loading/resolved child lifetimes, and handles both module-load and component-construction failure through accessible fallbacks and the shared error channel.</p>
+
+                <h2 id="accessibility">Announcements and DOM IDs</h2>
+                <p><code>announce(message, priority="polite")</code> writes to a compiler-owned live region. <code>domId(prefix="velar")</code> creates an application-local monotonic ID for label, description, and accessible-name relationships without requiring a cryptographic UUID.</p>
+                <Callout title="Base paths are one contract"><p>With <code>web.base</code> set to <code>/studio/</code>, navigating to <code>/settings</code> writes <code>/studio/settings</code> in the browser while Router still matches <code>/settings</code>. Development, production assets, links, fallback, and verification use the same base.</p></Callout>
+
+                <div class="next-links"><Link to="/docs/web/data"><strong>Next: Forms, HTTP and storage</strong><span>Load, validate, submit, and persist application data.</span></Link><Link to="/docs/web/browser"><strong>Browser capabilities</strong><span>Use timers, focus, dialogs, files, and realtime explicitly.</span></Link></div>
+            </Prose>
+        </DocsShell>
+    </main>
