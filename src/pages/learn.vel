@@ -1,0 +1,120 @@
+import {Head, Link} from "velar/web"
+import {ActionLink, CodeWindow, Container, Eyebrow, Section, Surface} from "@velarscript/site-ui"
+
+const createCode = "npm create velar@latest my-app\ncd my-app\nnpm install\nnpm run dev"
+const dependencyCode = "velar install\nvelar add chart-library\nvelar add test-helper --dev\nvelar update\nvelar remove chart-library"
+const valuesCode = "type Player:\n    name: string\n    score: number\n\nconst player: Player = {name: \"Mira\", score: 12}\nlet bonus = 3\n\nif player.score > 10:\n    bonus += 2\n\nprint(f\"{player.name}: {player.score + bonus}\")"
+const componentCode = "export component ScoreCard(player: Player):\n    state expanded = false\n    computed total = player.score + 5\n\n    style:\n        .card {\n            display: grid;\n            gap: 12px;\n        }\n\n    return <article class=\"card\">\n        <h2>{player.name}</h2>\n        <strong>{total} points</strong>\n        <button on:click={() => expanded = not expanded}>\n            {expanded ? \"Hide\" : \"Show\"} details\n        </button>\n    </article>"
+const shipCode = "velar format --check\nvelar check\nvelar test\nvelar test --browser\nvelar build\nvelar verify"
+
+export component Learn:
+    style:
+        .hero {
+            padding: clamp(76px, 11vw, 144px) 0 clamp(56px, 8vw, 96px);
+        }
+
+        h1, .intro {
+            margin: 0;
+        }
+
+        h1 {
+            max-width: 1080px;
+            margin-top: 18px;
+            font-size: clamp(4rem, 10vw, 9rem);
+            line-height: 0.88;
+            letter-spacing: -0.07em;
+        }
+
+        .intro {
+            max-width: 740px;
+            margin-top: 30px;
+            color: var(--velar-ink-soft);
+            font-size: clamp(1.12rem, 2.2vw, 1.4rem);
+            line-height: 1.65;
+        }
+
+        .chapter {
+            display: grid;
+            grid-template-columns: minmax(230px, 0.42fr) minmax(0, 1fr);
+            gap: clamp(40px, 8vw, 110px);
+        }
+
+        .chapter-copy {
+            display: grid;
+            align-content: start;
+            gap: 18px;
+        }
+
+        .number, h2, .chapter p {
+            margin: 0;
+        }
+
+        .number {
+            color: var(--velar-sea);
+            font: 0.74rem "SFMono-Regular", Consolas, monospace;
+        }
+
+        h2 {
+            font-size: clamp(2rem, 4vw, 3.7rem);
+            line-height: 1;
+            letter-spacing: -0.055em;
+        }
+
+        .chapter p {
+            color: var(--velar-ink-soft);
+            line-height: 1.7;
+        }
+
+        .note {
+            padding: 20px;
+            color: var(--velar-ink-soft);
+            line-height: 1.65;
+        }
+
+        .note strong {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--velar-ink);
+        }
+
+        .next {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: end;
+            gap: 40px;
+            padding: clamp(38px, 6vw, 70px);
+        }
+
+        .next h2, .next p {
+            margin: 0;
+        }
+
+        .next p {
+            max-width: 650px;
+            margin-top: 16px;
+            color: var(--velar-ink-soft);
+            line-height: 1.7;
+        }
+
+        @media (max-width: 800px) {
+            .chapter, .next {
+                grid-template-columns: 1fr;
+            }
+        }
+
+    return <main>
+        <Head title="Learn Velar" description="Learn the Velar language and its integrated Web framework from the first project to a verified production build." themeColor="#f7f5f0" />
+        <section class="hero" data-learn-page><Container><Eyebrow label="Learn Velar" /><h1>Readable from the first line.</h1><p class="intro">If you know a little Python or JavaScript, Velar should feel familiar in minutes. This path introduces only the ideas you need, in the order you need them.</p></Container></section>
+
+        <Section ruled={true}><Container><div class="chapter"><div class="chapter-copy"><span class="number">01 / CREATE</span><h2>Start with a complete Web project.</h2><p>The standard creator gives you a small application, a Velar project manifest, Core tests, browser tests, and production scripts. Dedicated docs, Core library, and reusable Web component templates keep each project focused.</p><Surface><div class="note"><strong>Development line</strong>The public npm packages are not released yet. The commands shown here are the stable package contract being validated locally.</div></Surface></div><CodeWindow code={createCode} label="terminal" /></div></Container></Section>
+
+        <Section ruled={true}><Container><div class="chapter" data-package-workflow><div class="chapter-copy"><span class="number">02 / PACKAGES</span><h2>Use one dependency graph.</h2><p>npm remains the registry and lockfile authority. Velar adds project-aware commands that validate the result and activate compiler or framework extensions from package metadata—without maintaining a second registry.</p><p>Use npm directly for local paths, Git sources, aliases, audits, and advanced workspace operations.</p></div><CodeWindow code={dependencyCode} label="terminal" /></div></Container></Section>
+
+        <Section ruled={true}><Container><div class="chapter"><div class="chapter-copy"><span class="number">03 / LANGUAGE</span><h2>Use ordinary data and obvious control flow.</h2><p>const names a value that will not be rebound. let marks a binding that can change. Indentation makes blocks visible, while expressions remain compact and JavaScript-like.</p><p>A single type declaration helps the compiler and can also validate data when it crosses a runtime boundary.</p></div><CodeWindow code={valuesCode} label="player.vel" /></div></Container></Section>
+
+        <Section ruled={true}><Container><div class="chapter"><div class="chapter-copy"><span class="number">04 / COMPONENTS</span><h2>Keep behavior, markup, and style close.</h2><p>A component is a checked function with a rendered result. state is directly assignable, computed values remain derived, native JSX describes the DOM, and CSS is scoped unless you explicitly mark it global.</p><Link to="/docs/language">Explore the language reference →</Link></div><CodeWindow code={componentCode} label="score-card.vel" /></div></Container></Section>
+
+        <Section ruled={true}><Container><div class="chapter"><div class="chapter-copy"><span class="number">05 / SHIP</span><h2>Verify the same application users receive.</h2><p>The CLI formats and checks source, runs fast Core tests, exercises a CSP production build in real browsers, emits static assets, and verifies the deployment contract.</p><Link to="/docs/web">Explore the Web framework →</Link></div><CodeWindow code={shipCode} label="terminal" /></div></Container></Section>
+
+        <Section ruled={true}><Container><Surface><div class="next"><div><h2>Now read by capability.</h2><p>The reference separates the language from browser application services, while keeping their design intentionally connected.</p></div><ActionLink to="/docs" label="Open documentation" /></div></Surface></Container></Section>
+    </main>

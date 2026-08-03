@@ -1,0 +1,185 @@
+import {closeDialog, focus, showDialog} from "velar/browser"
+import {domId} from "velar/web"
+
+export const UI_API_VERSION = "0.2"
+
+export component VisuallyHidden(children: WebNode):
+    style:
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            margin: -1px;
+            padding: 0;
+            border: 0;
+            clip: rect(0 0 0 0);
+            clip-path: inset(50%);
+            white-space: nowrap;
+        }
+
+    return <span class="visually-hidden">{children}</span>
+
+export component SkipLink(target: string, label: string = "Skip to content"):
+    style:
+        .skip-link {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 2147483647;
+            padding: 10px 14px;
+            border: 2px solid currentColor;
+            border-radius: 8px;
+            color: CanvasText;
+            background: Canvas;
+            font: 600 0.92rem/1.2 ui-sans-serif, system-ui, sans-serif;
+            text-decoration: none;
+            transform: translateY(calc(-100% - 24px));
+            transition: transform 120ms ease-out;
+        }
+
+        .skip-link:focus-visible {
+            transform: translateY(0);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .skip-link {
+                transition: none;
+            }
+        }
+
+    return <a class="skip-link" href={target}>{label}</a>
+
+export component Stack(children: WebNode, tight: bool = false):
+    style:
+        .stack {
+            display: grid;
+            gap: var(--velar-ui-stack-gap, 1rem);
+        }
+
+        .stack.tight {
+            gap: var(--velar-ui-stack-gap-tight, 0.5rem);
+        }
+
+    return <div class="stack" class:tight={tight}>{children}</div>
+
+export component Inline(children: WebNode, centered: bool = false):
+    style:
+        .inline {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--velar-ui-inline-gap, 0.5rem);
+        }
+
+        .inline.centered {
+            justify-content: center;
+        }
+
+    return <div class="inline" class:centered={centered}>{children}</div>
+
+export component Status(message: string, assertive: bool = false):
+    return <p role={assertive ? "alert" : "status"} aria-live={assertive ? "assertive" : "polite"} aria-atomic="true">{message}</p>
+
+export component Disclosure(summary: string, children: WebNode, open: bool = false):
+    style:
+        .disclosure {
+            border: 1px solid currentColor;
+            border-radius: 12px;
+        }
+
+        summary {
+            padding: 14px 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .disclosure-content {
+            padding: 0 16px 16px;
+        }
+
+    return <details class="disclosure" open={open}><summary>{summary}</summary><div class="disclosure-content">{children}</div></details>
+
+export component ModalDialog(title: string, triggerLabel: string, children: WebNode, closeLabel: string = "Close"):
+    let dialog: DialogElement? = none
+    let trigger: Element? = none
+    const titleId = domId("velar-dialog-title")
+
+    def openDialog():
+        if dialog:
+            showDialog(dialog)
+
+    def dismissDialog():
+        if dialog:
+            closeDialog(dialog)
+
+    def restoreTriggerFocus():
+        if trigger:
+            focus(trigger, true)
+
+    style:
+        .dialog-control {
+            display: block;
+        }
+
+        dialog {
+            width: min(560px, calc(100% - 32px));
+            padding: 0;
+            border: 1px solid currentColor;
+            border-radius: 16px;
+            color: CanvasText;
+            background: Canvas;
+        }
+
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.48);
+        }
+
+        .dialog-body {
+            display: grid;
+            gap: 18px;
+            padding: 24px;
+        }
+
+        h2 {
+            margin: 0;
+        }
+
+        button {
+            justify-self: start;
+            font: inherit;
+        }
+
+    return <div class="dialog-control"><button type="button" ref={trigger} on:click={openDialog}>{triggerLabel}</button><dialog ref={dialog} aria-labelledby={titleId} on:close={restoreTriggerFocus}><div class="dialog-body"><h2 id={titleId}>{title}</h2>{children}<button type="button" on:click={dismissDialog}>{closeLabel}</button></div></dialog></div>
+
+export component TextField(name: string, label: string, hint: string = "", inputType: string = "text", autocomplete: string = "", placeholder: string = "", required: bool = false):
+    const controlId = domId("velar-field")
+    const hintId = f"{controlId}-hint"
+
+    style:
+        .field {
+            display: grid;
+            gap: 7px;
+        }
+
+        label {
+            font-weight: 700;
+        }
+
+        input {
+            min-height: 42px;
+            padding: 9px 11px;
+            border: 1px solid currentColor;
+            border-radius: 9px;
+            color: inherit;
+            background: transparent;
+            font: inherit;
+        }
+
+        .hint {
+            margin: 0;
+            opacity: 0.72;
+            font-size: 0.9em;
+        }
+
+    return <div class="field" data-velar-ui-field><label for={controlId}>{label}</label><input id={controlId} name={name} type={inputType} autocomplete={autocomplete != "" ? autocomplete : none} placeholder={placeholder != "" ? placeholder : none} required={required} aria-describedby={hint != "" ? hintId : none} />{hint != "" ? <p class="hint" id={hintId}>{hint}</p> : none}</div>

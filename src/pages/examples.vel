@@ -1,0 +1,75 @@
+import {Head} from "velar/web"
+import {CodeWindow, Container, Eyebrow, Section, Tag} from "@velarscript/site-ui"
+import {examples} from "../content.vel"
+
+export component Examples:
+    style:
+        .hero {
+            padding: clamp(76px, 11vw, 144px) 0 clamp(48px, 7vw, 84px);
+        }
+
+        h1, .intro {
+            margin: 0;
+        }
+
+        h1 {
+            max-width: 1040px;
+            margin-top: 18px;
+            font-size: clamp(4rem, 10vw, 9rem);
+            line-height: 0.88;
+            letter-spacing: -0.07em;
+        }
+
+        .intro {
+            max-width: 760px;
+            margin-top: 30px;
+            color: var(--velar-ink-soft);
+            font-size: clamp(1.1rem, 2.2vw, 1.38rem);
+            line-height: 1.65;
+        }
+
+        .example {
+            display: grid;
+            grid-template-columns: minmax(250px, 0.48fr) minmax(0, 1fr);
+            gap: clamp(40px, 8vw, 100px);
+            align-items: start;
+        }
+
+        .copy {
+            display: grid;
+            gap: 17px;
+        }
+
+        .copy h2, .copy p {
+            margin: 0;
+        }
+
+        .copy h2 {
+            font-size: clamp(2rem, 4.5vw, 4.1rem);
+            line-height: 1;
+            letter-spacing: -0.055em;
+        }
+
+        .copy p {
+            color: var(--velar-ink-soft);
+            line-height: 1.72;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 820px) {
+            .example {
+                grid-template-columns: 1fr;
+            }
+        }
+
+    return <main data-examples-page>
+        <Head title="Examples · Velar" description="Small Velar examples showing state, typed data, browser capabilities, and explicit lifecycle." themeColor="#f7f5f0" />
+        <section class="hero"><Container><Eyebrow label="Examples" /><h1>Small programs, honest ideas.</h1><p class="intro">These examples isolate the language decisions that matter in larger applications: direct state, one data model, native Web behavior, and visible resource ownership.</p></Container></section>
+        {examples.map(example => <Section key={example.slug} ruled={true}><Container><article class="example"><div class="copy"><Eyebrow label={example.eyebrow} /><h2>{example.title}</h2><p>{example.summary}</p><div class="tags">{example.traits.map(trait => <Tag key={trait} label={trait} />)}</div></div><CodeWindow code={example.code} label={example.slug + ".vel"} /></article></Container></Section>)}
+    </main>

@@ -1,0 +1,112 @@
+import {DocsNavItem} from "@velarscript/docs-kit"
+
+export type SiteRuntimeConfig:
+    repositoryUrl: string
+    releaseChannel: string
+    languageVersion: string
+    webApiVersion: string
+
+export type NavItem:
+    path: string
+    label: string
+
+export type Feature:
+    number: string
+    title: string
+    summary: string
+    detail: string
+
+export type LearningStep:
+    number: string
+    title: string
+    summary: string
+    path: string
+
+export type ExampleSummary:
+    slug: string
+    eyebrow: string
+    title: string
+    summary: string
+    code: string
+    traits: List<string>
+
+export const primaryNav: List<NavItem> = [
+    {path: "/learn", label: "Learn"},
+    {path: "/docs", label: "Docs"},
+    {path: "/examples", label: "Examples"},
+]
+
+export const docsNav: List<DocsNavItem> = [
+    {path: "/docs", label: "Overview", section: "Start"},
+    {path: "/docs/language", label: "Language", section: "Reference"},
+    {path: "/docs/web", label: "Web framework", section: "Reference"},
+]
+
+export const features: List<Feature> = [
+    {
+        number: "01",
+        title: "Familiar, without the baggage.",
+        summary: "Keep JavaScript's runtime model. Replace its accidental complexity with one clear language surface.",
+        detail: "let and const stay. Loose equality, implicit globals, prototype mutation, and ambient browser APIs do not.",
+    },
+    {
+        number: "02",
+        title: "Useful types, not a second language.",
+        summary: "Types document data boundaries and catch ordinary mistakes without turning application code into type gymnastics.",
+        detail: "One type declaration validates compile-time use and runtime data. No duplicate schema system.",
+    },
+    {
+        number: "03",
+        title: "The Web belongs in the language.",
+        summary: "Components, JSX, scoped CSS, state, resources, routing, forms, and browser services share one coherent model.",
+        detail: "No virtual DOM and no React-style effect cleanup. mounted and cleanup remain explicit lifecycle siblings.",
+    },
+]
+
+export const learningSteps: List<LearningStep> = [
+    {number: "01", title: "Read Velar", summary: "Learn values, functions, control flow, data types, classes, and modules through small examples.", path: "/learn"},
+    {number: "02", title: "Build a component", summary: "Mix checked data, native JSX, scoped CSS, and direct state updates in one readable unit.", path: "/docs/language"},
+    {number: "03", title: "Ship a web app", summary: "Add routes, forms, HTTP, storage, tests, and a production build through @velarscript/web.", path: "/docs/web"},
+]
+
+export const examples: List<ExampleSummary> = [
+    {
+        slug: "counter",
+        eyebrow: "State",
+        title: "A counter without ceremony",
+        summary: "State is local, updates are ordinary assignments, and cleanup is not hidden inside an effect callback.",
+        code: "component Counter:\n    state count = 0\n\n    return <button on:click={() => count += 1}>\n        Count: {count}\n    </button>",
+        traits: ["state", "events", "JSX"],
+    },
+    {
+        slug: "profile",
+        eyebrow: "Data",
+        title: "One type, end to end",
+        summary: "The same readable declaration checks your source and validates the response entering your application.",
+        code: "type Profile:\n    id: string\n    name: string\n\nasync def loadProfile() -> Profile:\n    return await http.get(\"/api/profile\").parse(Profile)",
+        traits: ["types", "HTTP", "runtime validation"],
+    },
+    {
+        slug: "lifecycle",
+        eyebrow: "Lifecycle",
+        title: "Cleanup has one obvious home",
+        summary: "Start browser subscriptions during setup and release them in the sibling cleanup block.",
+        code: "component OnlineStatus:\n    state online = environment().online\n    const stop = watchOnline(value => online = value)\n\n    cleanup:\n        stop()\n\n    return <span>{online ? \"Online\" : \"Offline\"}</span>",
+        traits: ["cleanup", "browser", "reactivity"],
+    },
+]
+
+export def pageTitle(path: string) -> string:
+    if path == "/":
+        return "The Web, written clearly"
+    if path == "/learn":
+        return "Learn Velar"
+    if path == "/docs":
+        return "Documentation"
+    if path == "/docs/language":
+        return "Language reference"
+    if path == "/docs/web":
+        return "Web framework"
+    if path == "/examples":
+        return "Examples"
+    return "Page not found"

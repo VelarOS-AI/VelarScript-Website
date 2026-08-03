@@ -1,0 +1,28 @@
+import {Head, Link} from "velar/web"
+import {DocsShell, PageHeader, Prose, Callout} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const projectTree = "my-app/\n├── src/\n│   ├── main.vel\n│   ├── app.vel\n│   ├── app.test.vel\n│   └── app.browser.test.vel\n├── public/\n├── velar.json\n└── package.json"
+
+export component DocsOverview:
+    return <main data-docs-page>
+        <Head title="Documentation · Velar" description="Language, Web framework, project structure, and toolchain documentation for Velar." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Documentation" title="A small system with clear boundaries." summary="Velar is a language, compiler, Web framework, and focused toolchain designed to be learned as one coherent stack." tags={["Language 0.9", "Web API 0.8", "Development"]} />
+            <Prose>
+                <h2>Choose your layer</h2>
+                <p>The <Link to="/docs/language">language reference</Link> covers values, control flow, functions, classes, modules, types, JSX, reactivity, and component lifecycle. The <Link to="/docs/web">Web framework reference</Link> covers routing, forms, HTTP, storage, browser services, files, realtime, testing, and production behavior.</p>
+                <Callout title="One data model"><p>Velar does not split a data shape into a compile-time interface and a second runtime schema. A named type can serve both jobs at the boundary.</p></Callout>
+                <h2>Project structure</h2>
+                <p>A normal application keeps Velar source in src, static assets in public, and one intentionally small project manifest at the root.</p>
+                <pre><code>{projectTree}</code></pre>
+                <h2>Package boundaries</h2>
+                <ul><li><strong>@velarscript/compiler</strong> parses, checks, and compiles Velar.</li><li><strong>@velarscript/web</strong> supplies the official compiler and browser runtime boundary for Web applications.</li><li><strong>@velarscript/ui</strong> is a private dogfood layer for theme-neutral accessibility and layout primitives; it is not part of the public framework contract yet.</li><li><strong>@velarscript/site-ui</strong> adds the Velar brand system, while <strong>@velarscript/docs-kit</strong> owns documentation product patterns.</li><li><strong>@velarscript/cli</strong> owns development, testing, builds, verification, and the language server.</li><li><strong>create-velar</strong> creates transactional starter projects without hidden setup.</li></ul>
+                <h2>One package graph</h2>
+                <p>npm remains the registry, dependency resolver, installer, and lockfile authority. Velar provides install, add, remove, and update commands that validate the project and synchronize extension activation from package metadata. There is no private Velar registry or hidden dependency file.</p>
+                <p>Use <code>--template library</code> for a Core source package or <code>--template component</code> for a Web component source package with a separate preview application and an explicit Web peer contract.</p>
+                <h2>Runtime promise</h2>
+                <p>Velar compiles to JavaScript and uses the browser's existing runtime. It does not introduce a new virtual machine, a virtual DOM, or a second memory model. The language prevents selected unsafe or confusing source patterns and lowers the clearer surface into browser JavaScript.</p>
+            </Prose>
+        </DocsShell>
+    </main>

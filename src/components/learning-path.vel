@@ -1,0 +1,55 @@
+import {Link} from "velar/web"
+import {LearningStep} from "../content.vel"
+
+export component LearningPath(steps: List<LearningStep>):
+    style:
+        .path {
+            display: grid;
+            border-bottom: 1px solid var(--velar-line-strong);
+        }
+
+        .step {
+            display: grid;
+            grid-template-columns: 72px minmax(180px, 0.55fr) minmax(280px, 1fr) auto;
+            align-items: center;
+            gap: 24px;
+            padding: 24px 0;
+            border-top: 1px solid var(--velar-line);
+        }
+
+        .number {
+            color: var(--velar-sea);
+            font: 0.76rem "SFMono-Regular", Consolas, monospace;
+        }
+
+        h3, p {
+            margin: 0;
+        }
+
+        h3 {
+            font-size: clamp(1.25rem, 3vw, 2rem);
+            letter-spacing: -0.04em;
+        }
+
+        p {
+            color: var(--velar-ink-soft);
+            line-height: 1.6;
+        }
+
+        a {
+            color: var(--velar-ink);
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        @media (max-width: 760px) {
+            .step {
+                grid-template-columns: 44px 1fr auto;
+            }
+
+            .step p {
+                grid-column: 2 / -1;
+            }
+        }
+
+    return <div class="path">{steps.map(step => <article key={step.number} class="step"><span class="number">{step.number}</span><h3>{step.title}</h3><p>{step.summary}</p><Link to={step.path}>Continue →</Link></article>)}</div>

@@ -1,0 +1,35 @@
+import {Head} from "velar/web"
+import {DocsShell, PageHeader, Prose, Callout} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const declarationsCode = "const origin = Point(x: 0, y: 0)\nlet attempts = 0\n\ntype Point:\n    x: number\n    y: number"
+const flowCode = "if score >= 90:\n    grade = \"A\"\nelse if score >= 80:\n    grade = \"B\"\nelse:\n    grade = \"C\"\n\nfor item in items:\n    print(item.name)"
+const classCode = "abstract class Shape:\n    abstract def area() -> number\n\nclass Circle(const radius: number) extends Shape:\n    override def area() -> number:\n        return 3.14159 * self.radius * self.radius"
+const lifecycleCode = "import {every} from \"velar/browser\"\nimport {announce} from \"velar/web\"\n\ncomponent Heartbeat:\n    state ticks = 0\n    const stop = every(1000, () => ticks += 1)\n\n    mounted:\n        announce(\"Heartbeat ready\")\n\n    cleanup:\n        stop()\n\n    return <output>{ticks}</output>"
+
+export component LanguageDocs:
+    return <main>
+        <Head title="Language reference · Velar" description="The Velar language: bindings, control flow, functions, types, classes, modules, JSX, and lifecycle." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Reference / Language" title="Clear syntax over JavaScript semantics." summary="Velar keeps the flexible browser runtime while narrowing the source language to readable, intentional constructs." tags={["let + const", "indentation", "simple types", "native JSX"]} />
+            <Prose>
+                <h2>Bindings and data</h2>
+                <p>Use const by default and let when a binding must be reassigned. Values retain JavaScript's underlying value and reference behavior, but source-level coercion traps and implicit declarations are not part of Velar.</p>
+                <pre><code>{declarationsCode}</code></pre>
+                <Callout title="Types stay practical"><p>type describes records, function boundaries, and external data. It is intentionally smaller than TypeScript's type system and remains available for runtime parsing where data enters the application.</p></Callout>
+                <h2>Control flow</h2>
+                <p>Blocks use Python-like indentation. Conditions keep explicit parentheses-free syntax, while expressions use familiar operators and compact conditional expressions where they remain readable.</p>
+                <pre><code>{flowCode}</code></pre>
+                <h2>Functions and modules</h2>
+                <p>Functions use def, async def, typed parameters, and an optional return type. Imports and exports are explicit. JavaScript packages enter through an explicit js import boundary rather than becoming ambient untyped values.</p>
+                <h2>Classes and inheritance</h2>
+                <p>Classes support initialization, fields, methods, inheritance, abstract members, overrides, access control, static members, getters, and super calls without exposing direct prototype mutation as everyday syntax.</p>
+                <pre><code>{classCode}</code></pre>
+                <h2>Components and lifecycle</h2>
+                <p>Components combine native JSX with scoped CSS and explicit reactive declarations. mounted runs after insertion. cleanup is a sibling block, so resource ownership remains visible instead of being hidden inside an effect callback.</p>
+                <pre><code>{lifecycleCode}</code></pre>
+                <h2>Deliberate exclusions</h2>
+                <p>Loose equality, implicit globals, with, eval-style source execution, arbitrary prototype mutation, ambient DOM globals, and framework-specific synthetic events are outside the normal language. Unsafe interoperability remains possible only through an explicit JavaScript boundary.</p>
+            </Prose>
+        </DocsShell>
+    </main>

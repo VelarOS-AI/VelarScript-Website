@@ -1,0 +1,16 @@
+import {expect} from "velar/test"
+import {UI_API_VERSION} from "@velarscript/ui"
+import {docsNav, examples, features, learningSteps, pageTitle, primaryNav} from "./content.vel"
+
+def test_primary_information_architecture():
+    expect(UI_API_VERSION).toBe("0.2")
+    expect(primaryNav).toHaveLength(3)
+    expect(docsNav).toHaveLength(3)
+    expect(pageTitle("/docs/web")).toBe("Web framework")
+    expect(pageTitle("/missing")).toBe("Page not found")
+
+def test_home_content_has_real_depth():
+    expect(features).toHaveLength(3)
+    expect(learningSteps).toHaveLength(3)
+    expect(examples).toHaveLength(3)
+    expect(examples[1].traits).toContain("runtime validation")

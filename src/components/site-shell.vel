@@ -1,0 +1,134 @@
+import {NavLink} from "velar/web"
+import {Brand, Container} from "@velarscript/site-ui"
+import {NavItem} from "../content.vel"
+
+export component SiteHeader(items: List<NavItem>, repositoryUrl: string, version: string):
+    style:
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            border-bottom: 1px solid var(--velar-line);
+            background: rgba(247, 245, 240, 0.9);
+            backdrop-filter: blur(18px);
+        }
+
+        .inner {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 28px;
+            min-height: 66px;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        nav a, .source {
+            padding: 8px 11px;
+            border-radius: 8px;
+            color: var(--velar-ink-soft);
+            font-size: 0.88rem;
+            font-weight: 650;
+            text-decoration: none;
+        }
+
+        nav a[aria-current="page"] {
+            color: var(--velar-ink);
+            background: var(--velar-sea-soft);
+        }
+
+        .meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .version {
+            color: var(--velar-ink-faint);
+            font: 0.72rem "SFMono-Regular", Consolas, monospace;
+        }
+
+        .source {
+            border: 1px solid var(--velar-line);
+            color: var(--velar-ink);
+            background: var(--velar-paper-pure);
+        }
+
+        @media (max-width: 760px) {
+            .inner {
+                grid-template-columns: auto 1fr;
+                gap: 12px;
+            }
+
+            nav {
+                justify-content: end;
+                overflow: auto;
+            }
+
+            .meta {
+                display: none;
+            }
+        }
+
+        @media (max-width: 520px) {
+            nav a {
+                padding-inline: 7px;
+                font-size: 0.8rem;
+            }
+        }
+
+    return <header class="header"><Container><div class="inner"><Brand compact={true} /><nav aria-label="Primary navigation">{items.map(item => <NavLink key={item.path} to={item.path}>{item.label}</NavLink>)}</nav><div class="meta"><span class="version">v{version}</span><a class="source" href={repositoryUrl}>Source</a></div></div></Container></header>
+
+export component SiteFooter(repositoryUrl: string, version: string):
+    style:
+        .footer {
+            border-top: 1px solid var(--velar-line);
+            background: var(--velar-paper-pure);
+        }
+
+        .inner {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: end;
+            gap: 30px;
+            padding: 48px 0;
+        }
+
+        .statement, .meta {
+            margin: 0;
+        }
+
+        .statement {
+            max-width: 620px;
+            font-size: clamp(1.3rem, 3vw, 2.2rem);
+            font-weight: 720;
+            line-height: 1.14;
+            letter-spacing: -0.045em;
+        }
+
+        .meta {
+            color: var(--velar-ink-faint);
+            font-size: 0.78rem;
+            line-height: 1.7;
+            text-align: right;
+        }
+
+        .meta a {
+            color: var(--velar-ink-soft);
+        }
+
+        @media (max-width: 640px) {
+            .inner {
+                grid-template-columns: 1fr;
+            }
+
+            .meta {
+                text-align: left;
+            }
+        }
+
+    return <footer class="footer"><Container><div class="inner"><p class="statement">A small, coherent language for ambitious work on the Web.</p><p class="meta">Velar {version}<br /><a href={repositoryUrl}>Apache-2.0 on GitHub</a></p></div></Container></footer>

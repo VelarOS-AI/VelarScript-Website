@@ -1,0 +1,217 @@
+import {Link} from "velar/web"
+import {SkipLink} from "@velarscript/ui"
+import {FoundationFrame} from "./foundation.vel"
+
+export component SiteFoundation(children: WebNode):
+    return <FoundationFrame><SkipLink target="#main-content" />{children}</FoundationFrame>
+
+export component Brand(compact: bool = false):
+    style:
+        .brand {
+            display: inline-flex;
+            color: var(--velar-ink);
+            text-decoration: none;
+        }
+
+        .brand a {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .brand img {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+        }
+
+        .brand-name {
+            font-size: 1.02rem;
+            font-weight: 760;
+            letter-spacing: -0.035em;
+        }
+
+        .brand-label {
+            color: var(--velar-ink-faint);
+            font-size: 0.78rem;
+            font-weight: 650;
+        }
+
+    return <span class="brand"><Link to="/"><img src="/brand/velar-sail.png" alt="" /><span class="brand-name">Velar</span>{compact ? none : <span class="brand-label">Language + Web</span>}</Link></span>
+
+export component Container(children: WebNode, narrow: bool = false):
+    style:
+        .container {
+            width: min(var(--velar-content), calc(100% - var(--velar-page) * 2));
+            margin: 0 auto;
+        }
+
+        .container.narrow {
+            max-width: 900px;
+        }
+
+    return <div class="container" class:narrow={narrow}>{children}</div>
+
+export component Eyebrow(label: string):
+    style:
+        .eyebrow {
+            margin: 0;
+            color: var(--velar-sea);
+            font-size: 0.76rem;
+            font-weight: 760;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+    return <p class="eyebrow">{label}</p>
+
+export component Section(children: WebNode, ruled: bool = false):
+    style:
+        .section {
+            padding: clamp(72px, 10vw, 132px) 0;
+        }
+
+        .section.ruled {
+            border-top: 1px solid var(--velar-line);
+        }
+
+    return <section class="section" class:ruled={ruled}>{children}</section>
+
+export component SectionHeading(kicker: string, title: string, summary: string):
+    style:
+        .heading {
+            display: grid;
+            grid-template-columns: minmax(0, 0.82fr) minmax(280px, 0.5fr);
+            align-items: end;
+            gap: clamp(28px, 6vw, 88px);
+            margin-bottom: clamp(42px, 6vw, 76px);
+        }
+
+        h2, p {
+            margin: 0;
+        }
+
+        h2 {
+            margin-top: 14px;
+            max-width: 850px;
+            font-size: clamp(2.5rem, 6vw, 5.4rem);
+            line-height: 0.98;
+            letter-spacing: -0.06em;
+        }
+
+        .summary {
+            color: var(--velar-ink-soft);
+            font-size: 1.04rem;
+            line-height: 1.7;
+        }
+
+        @media (max-width: 760px) {
+            .heading {
+                grid-template-columns: 1fr;
+            }
+        }
+
+    return <header class="heading"><div><Eyebrow label={kicker} /><h2>{title}</h2></div><p class="summary">{summary}</p></header>
+
+export component Surface(children: WebNode, dark: bool = false):
+    style:
+        .surface {
+            border: 1px solid var(--velar-line);
+            border-radius: var(--velar-radius-large);
+            background: var(--velar-paper-pure);
+        }
+
+        .surface.dark {
+            border-color: #111216;
+            color: var(--velar-paper-pure);
+            background: var(--velar-ink);
+        }
+
+    return <div class="surface" class:dark={dark}>{children}</div>
+
+export component ActionLink(to: string, label: string, quiet: bool = false, inverse: bool = false):
+    style:
+        .action {
+            display: inline-flex;
+            border: 1px solid var(--velar-ink);
+            border-radius: 999px;
+            color: var(--velar-paper-pure);
+            background: var(--velar-ink);
+            transition: transform 220ms var(--velar-ease), background 220ms var(--velar-ease);
+        }
+
+        .action.quiet {
+            color: var(--velar-ink);
+            background: transparent;
+        }
+
+        .action.inverse {
+            border-color: var(--velar-paper-pure);
+            color: var(--velar-ink);
+            background: var(--velar-paper-pure);
+        }
+
+        .action:hover {
+            transform: translateY(-2px);
+        }
+
+        .action a {
+            padding: 10px 16px;
+            text-decoration: none;
+        }
+
+    return <span class="action" class:quiet={quiet} class:inverse={inverse}><Link to={to}>{label}</Link></span>
+
+export component Tag(label: string):
+    style:
+        .tag {
+            display: inline-flex;
+            padding: 5px 9px;
+            border: 1px solid var(--velar-line);
+            border-radius: 999px;
+            color: var(--velar-ink-soft);
+            background: var(--velar-paper-pure);
+            font-size: 0.78rem;
+            font-weight: 650;
+        }
+
+    return <span class="tag">{label}</span>
+
+export component CodeWindow(code: string, label: string = "main.vel"):
+    style:
+        .window {
+            overflow: hidden;
+            border: 1px solid var(--velar-line-strong);
+            border-radius: var(--velar-radius-large);
+            background: #111216;
+            box-shadow: 0 24px 80px rgba(17, 18, 22, 0.14);
+        }
+
+        .bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.11);
+            color: rgba(255, 255, 255, 0.62);
+            font-size: 0.74rem;
+        }
+
+        .dots {
+            letter-spacing: 0.2em;
+        }
+
+        pre {
+            overflow: auto;
+            min-height: 260px;
+            margin: 0;
+            padding: clamp(20px, 4vw, 34px);
+            color: #f3f0e8;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: clamp(0.78rem, 1.5vw, 0.92rem);
+            line-height: 1.75;
+            tab-size: 4;
+        }
+
+    return <figure class="window"><figcaption class="bar"><span class="dots">● ● ●</span><span>{label}</span></figcaption><pre><code>{code}</code></pre></figure>

@@ -1,0 +1,180 @@
+import {NavLink} from "velar/web"
+import {Brand, Container, Eyebrow, Tag} from "@velarscript/site-ui"
+import {Inline, Stack} from "@velarscript/ui"
+
+export type DocsNavItem:
+    path: string
+    label: string
+    section: string
+
+export component DocsShell(items: List<DocsNavItem>, children: WebNode):
+    style:
+        .docs {
+            display: grid;
+            grid-template-columns: 248px minmax(0, 1fr);
+            min-height: calc(100vh - 66px);
+        }
+
+        aside {
+            position: sticky;
+            top: 66px;
+            align-self: start;
+            height: calc(100vh - 66px);
+            overflow: auto;
+            padding: 30px 22px;
+            border-right: 1px solid var(--velar-line);
+            background: var(--velar-paper-pure);
+        }
+
+        .nav {
+            display: grid;
+            gap: 5px;
+            margin-top: 26px;
+        }
+
+        .nav-item {
+            display: grid;
+        }
+
+        .nav-item a {
+            padding: 8px 10px;
+            border-radius: 8px;
+            color: var(--velar-ink-soft);
+            text-decoration: none;
+        }
+
+        .nav-item a[aria-current="page"] {
+            color: var(--velar-ink);
+            background: var(--velar-sea-soft);
+        }
+
+        .content {
+            min-width: 0;
+            padding: clamp(48px, 8vw, 96px) 0;
+        }
+
+        @media (max-width: 840px) {
+            .docs {
+                grid-template-columns: 1fr;
+            }
+
+            aside {
+                position: static;
+                width: 100%;
+                height: auto;
+                border-right: 0;
+                border-bottom: 1px solid var(--velar-line);
+            }
+
+            .nav {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+    return <div class="docs"><aside><Brand compact={true} /><nav class="nav" aria-label="Documentation sections">{items.map(item => <span key={item.path} class="nav-item"><NavLink to={item.path} exact={true}>{item.label}</NavLink></span>)}</nav></aside><section class="content"><Container narrow={true}>{children}</Container></section></div>
+
+export component PageHeader(kicker: string, title: string, summary: string, tags: List<string> = []):
+    style:
+        .header {
+            display: grid;
+            gap: 16px;
+            padding-bottom: 44px;
+            border-bottom: 1px solid var(--velar-line);
+        }
+
+        h1 {
+            max-width: 850px;
+            margin: 0;
+            font-size: clamp(3rem, 8vw, 6.5rem);
+            line-height: 0.94;
+            letter-spacing: -0.065em;
+        }
+
+        .summary {
+            max-width: 720px;
+            margin: 0;
+            color: var(--velar-ink-soft);
+            font-size: clamp(1.08rem, 2vw, 1.3rem);
+            line-height: 1.65;
+        }
+
+    return <header class="header"><Eyebrow label={kicker} /><h1>{title}</h1><p class="summary">{summary}</p>{tags.length > 0 ? <Inline>{tags.map(tag => <Tag key={tag} label={tag} />)}</Inline> : none}</header>
+
+export component Prose(children: WebNode):
+    style global:
+        .velar-docs-prose {
+            display: grid;
+            gap: 22px;
+            padding: 42px 0;
+            color: var(--velar-ink-soft);
+            font-size: 1.02rem;
+            line-height: 1.75;
+        }
+
+        .velar-docs-prose h2, .velar-docs-prose h3, .velar-docs-prose p, .velar-docs-prose ul, .velar-docs-prose ol, .velar-docs-prose pre {
+            margin: 0;
+        }
+
+        .velar-docs-prose h2, .velar-docs-prose h3 {
+            color: var(--velar-ink);
+            letter-spacing: -0.035em;
+        }
+
+        .velar-docs-prose h2 {
+            margin-top: 24px;
+            font-size: clamp(1.8rem, 4vw, 2.7rem);
+        }
+
+        .velar-docs-prose h3 {
+            font-size: 1.25rem;
+        }
+
+        .velar-docs-prose p, .velar-docs-prose li {
+            max-width: 800px;
+        }
+
+        .velar-docs-prose ul, .velar-docs-prose ol {
+            display: grid;
+            gap: 8px;
+            padding-left: 1.3rem;
+        }
+
+        .velar-docs-prose a {
+            color: var(--velar-sea);
+            font-weight: 680;
+        }
+
+        .velar-docs-prose code {
+            font-family: "SFMono-Regular", Consolas, monospace;
+            font-size: 0.9em;
+        }
+
+        .velar-docs-prose pre {
+            overflow: auto;
+            padding: 20px;
+            border: 1px solid var(--velar-line);
+            border-radius: var(--velar-radius-small);
+            color: #f3f0e8;
+            background: #111216;
+        }
+
+    return <article class="velar-docs-prose">{children}</article>
+
+export component Callout(title: string, children: WebNode):
+    style global:
+        .velar-docs-callout {
+            padding: 18px 20px;
+            border-left: 3px solid var(--velar-sea);
+            border-radius: 0 var(--velar-radius-small) var(--velar-radius-small) 0;
+            background: var(--velar-sea-soft);
+        }
+
+        .velar-docs-callout strong {
+            color: var(--velar-ink);
+        }
+
+        .velar-docs-callout p {
+            margin: 0;
+        }
+
+    return <aside class="velar-docs-callout"><Stack tight={true}><strong>{title}</strong>{children}</Stack></aside>

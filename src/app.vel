@@ -1,0 +1,57 @@
+import {publicConfig} from "velar/config"
+import {Head, RouteContext, Router, route} from "velar/web"
+import {Container, SiteFoundation} from "@velarscript/site-ui"
+import {primaryNav, SiteRuntimeConfig} from "./content.vel"
+import {SiteFooter, SiteHeader} from "./components/site-shell.vel"
+import {DocsOverview} from "./pages/docs-overview.vel"
+import {Examples} from "./pages/examples.vel"
+import {Home} from "./pages/home.vel"
+import {LanguageDocs} from "./pages/language-docs.vel"
+import {Learn} from "./pages/learn.vel"
+import {WebDocs} from "./pages/web-docs.vel"
+
+const config = publicConfig(SiteRuntimeConfig)
+
+component NotFound(route: RouteContext):
+    style:
+        .missing {
+            min-height: 70vh;
+            padding: clamp(90px, 14vw, 180px) 0;
+        }
+
+        .code, h1, p {
+            margin: 0;
+        }
+
+        .code {
+            color: var(--velar-sea);
+            font: 0.76rem "SFMono-Regular", Consolas, monospace;
+        }
+
+        h1 {
+            max-width: 900px;
+            margin-top: 16px;
+            font-size: clamp(4rem, 10vw, 9rem);
+            line-height: 0.9;
+            letter-spacing: -0.07em;
+        }
+
+        p {
+            margin-top: 26px;
+            color: var(--velar-ink-soft);
+            font-size: 1.1rem;
+        }
+
+    return <main class="missing" data-not-found><Head title="Page not found · Velar" description="The requested Velar documentation page does not exist." /><Container><span class="code">404 / UNKNOWN ROUTE</span><h1>Nothing is written here yet.</h1><p>No Velar page matches {route.path}.</p></Container></main>
+
+const routes = [
+    route("/", Home),
+    route("/learn", Learn),
+    route("/docs", DocsOverview),
+    route("/docs/language", LanguageDocs),
+    route("/docs/web", WebDocs),
+    route("/examples", Examples),
+]
+
+export component App:
+    return <SiteFoundation><SiteHeader items={primaryNav} repositoryUrl={config.repositoryUrl} version={config.languageVersion} /><div id="main-content" tabindex="-1"><Router routes={routes} fallback={NotFound} /></div><SiteFooter repositoryUrl={config.repositoryUrl} version={config.languageVersion} /></SiteFoundation>

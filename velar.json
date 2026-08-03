@@ -1,0 +1,28 @@
+{
+  "formatVersion": 2,
+  "entry": "src/main.vel",
+  "outDir": "dist",
+  "publicDir": "public",
+  "extensions": ["@velarscript/web"],
+  "web": {
+    "title": "Velar — The Web, written clearly",
+    "base": "/",
+    "publicConfig": {
+      "repositoryUrl": "https://github.com/VelarOS-AI/VelarScript",
+      "releaseChannel": "development",
+      "languageVersion": "0.9.0-dev",
+      "webApiVersion": "0.8"
+    },
+    "build": {
+      "sourceMaps": false
+    },
+    "security": {
+      "contentSecurityPolicy": true,
+      "connectSources": [],
+      "imageSources": []
+    },
+    "deployment": {
+      "spaFallback": true
+    }
+  }
+}

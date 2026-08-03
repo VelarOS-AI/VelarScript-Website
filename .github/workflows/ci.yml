@@ -1,0 +1,37 @@
+name: Velar Website CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: website
+      - uses: actions/checkout@v6
+        with:
+          repository: VelarOS-AI/VelarScript
+          ref: 0faf7d577df4dd8f6302432feb34600e784a742a
+          path: toolchain
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          cache: npm
+          cache-dependency-path: toolchain/package-lock.json
+      - run: npm ci
+        working-directory: toolchain
+      - run: npm run bootstrap:local -- ../toolchain
+        working-directory: website
+      - run: npx playwright install --with-deps chromium firefox webkit
+        working-directory: website
+      - run: npm run validate
+        working-directory: website
+      - run: npm run test:browser:all
+        working-directory: website

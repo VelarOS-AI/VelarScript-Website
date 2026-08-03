@@ -1,0 +1,43 @@
+{
+  "name": "@velarscript/website",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VelarOS-AI/VelarScript-Website.git"
+  },
+  "homepage": "https://velarscript.org",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "bootstrap:local": "node scripts/bootstrap-toolchain.mjs",
+    "check": "velar check",
+    "format": "velar format",
+    "format:check": "velar format --check",
+    "dev": "velar dev",
+    "test": "velar test",
+    "test:browser": "velar test --browser",
+    "test:browser:all": "velar test --browser all",
+    "packages:check": "npm pack --dry-run --json --workspace @velarscript/ui --workspace @velarscript/site-ui --workspace @velarscript/docs-kit",
+    "build": "velar build",
+    "verify": "velar verify",
+    "preview": "velar preview",
+    "verify:deployment": "velar verify-deployment",
+    "validate": "npm run format:check && npm run check && npm test && npm run packages:check && npm run build && npm run verify"
+  },
+  "dependencies": {
+    "@velarscript/docs-kit": "0.1.0",
+    "@velarscript/site-ui": "0.1.0",
+    "@velarscript/ui": "0.2.0",
+    "@velarscript/web": "0.9.0-dev"
+  },
+  "devDependencies": {
+    "@velarscript/cli": "0.9.0-dev"
+  }
+}
