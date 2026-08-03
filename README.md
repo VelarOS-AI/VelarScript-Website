@@ -1,8 +1,13 @@
 # Velar Website
 
+[![Velar Website CI](https://github.com/VelarOS-AI/VelarScript-Website/actions/workflows/ci.yml/badge.svg)](https://github.com/VelarOS-AI/VelarScript-Website/actions/workflows/ci.yml)
+
 The official Velar language and Web framework website. Runtime, components,
 styles, content, tests, and pages are written in Velar; npm manifests and static
 brand assets are the only non-Velar project files.
+
+Contribution and private security-reporting expectations are recorded in
+[CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 ```sh
 npm run bootstrap:local -- ../VelarScript
