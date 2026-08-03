@@ -5,9 +5,12 @@ import {Inline, Stack} from "@velarscript/ui"
 export type DocsNavItem:
     path: string
     label: string
-    section: string
 
-export component DocsShell(items: List<DocsNavItem>, children: WebNode):
+export type DocsNavGroup:
+    label: string
+    items: List<DocsNavItem>
+
+export component DocsShell(items: List<DocsNavGroup>, children: WebNode):
     style:
         .docs {
             display: grid;
@@ -26,10 +29,30 @@ export component DocsShell(items: List<DocsNavItem>, children: WebNode):
             background: var(--velar-paper-pure);
         }
 
-        .nav {
+        .nav, .nav-group, .nav-items {
             display: grid;
+        }
+
+        .nav {
+            gap: 24px;
+            margin-top: 28px;
+        }
+
+        .nav-group {
+            gap: 9px;
+        }
+
+        .nav-label {
+            padding-inline: 10px;
+            color: var(--velar-ink-faint);
+            font: 0.68rem "SFMono-Regular", Consolas, monospace;
+            font-weight: 700;
+            letter-spacing: 0.11em;
+            text-transform: uppercase;
+        }
+
+        .nav-items {
             gap: 5px;
-            margin-top: 26px;
         }
 
         .nav-item {
@@ -48,6 +71,10 @@ export component DocsShell(items: List<DocsNavItem>, children: WebNode):
             background: var(--velar-sea-soft);
         }
 
+        .mobile-docs-nav {
+            display: none;
+        }
+
         .content {
             min-width: 0;
             padding: clamp(48px, 8vw, 96px) 0;
@@ -62,16 +89,46 @@ export component DocsShell(items: List<DocsNavItem>, children: WebNode):
                 position: static;
                 width: 100%;
                 height: auto;
+                padding-block: 18px;
                 border-right: 0;
                 border-bottom: 1px solid var(--velar-line);
             }
 
-            .nav {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+            aside .brand {
+                display: none;
+            }
+
+            .desktop-docs-nav {
+                display: none;
+            }
+
+            .mobile-docs-nav {
+                display: block;
+            }
+
+            .mobile-docs-nav summary {
+                padding: 11px 12px;
+                border: 1px solid var(--velar-line);
+                border-radius: 10px;
+                color: var(--velar-ink);
+                background: var(--velar-paper-pure);
+                font-weight: 700;
+                cursor: pointer;
+            }
+
+            .mobile-docs-nav .nav {
+                max-height: 62vh;
+                margin-top: 14px;
+                overflow: auto;
+                padding: 4px;
+            }
+
+            .mobile-docs-nav .nav-group {
+                gap: 6px;
             }
         }
 
-    return <div class="docs"><aside><Brand compact={true} /><nav class="nav" aria-label="Documentation sections">{items.map(item => <span key={item.path} class="nav-item"><NavLink to={item.path} exact={true}>{item.label}</NavLink></span>)}</nav></aside><section class="content"><Container narrow={true}>{children}</Container></section></div>
+    return <div class="docs"><aside><Brand compact={true} /><nav class="nav desktop-docs-nav" aria-label="Documentation sections">{items.map(group => <section key={group.label} class="nav-group"><span class="nav-label">{group.label}</span><div class="nav-items">{group.items.map(item => <span key={item.path} class="nav-item"><NavLink to={item.path} exact={true}>{item.label}</NavLink></span>)}</div></section>)}</nav><details class="mobile-docs-nav"><summary>Browse documentation</summary><nav class="nav" aria-label="Mobile documentation sections">{items.map(group => <section key={group.label} class="nav-group"><span class="nav-label">{group.label}</span><div class="nav-items">{group.items.map(item => <span key={item.path} class="nav-item"><NavLink to={item.path} exact={true}>{item.label}</NavLink></span>)}</div></section>)}</nav></details></aside><section class="content"><Container narrow={true}>{children}</Container></section></div>
 
 export component PageHeader(kicker: string, title: string, summary: string, tags: List<string> = []):
     style:
@@ -116,6 +173,10 @@ export component Prose(children: WebNode):
         }
 
         .velar-docs-prose h2, .velar-docs-prose h3 {
+            scroll-margin-top: 92px;
+        }
+
+        .velar-docs-prose h2, .velar-docs-prose h3 {
             color: var(--velar-ink);
             letter-spacing: -0.035em;
         }
@@ -151,11 +212,67 @@ export component Prose(children: WebNode):
 
         .velar-docs-prose pre {
             overflow: auto;
+            max-width: 100%;
             padding: 20px;
             border: 1px solid var(--velar-line);
             border-radius: var(--velar-radius-small);
             color: #f3f0e8;
             background: #111216;
+        }
+
+        .velar-docs-prose :not(pre) > code {
+            padding: 0.16em 0.42em;
+            border: 1px solid var(--velar-line);
+            border-radius: 6px;
+            color: var(--velar-ink);
+            background: var(--velar-paper-pure);
+        }
+
+        .velar-docs-prose table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.94rem;
+        }
+
+        .velar-docs-prose th, .velar-docs-prose td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--velar-line);
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .velar-docs-prose th {
+            color: var(--velar-ink);
+            background: var(--velar-paper-pure);
+        }
+
+        .velar-docs-prose .next-links {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .velar-docs-prose .next-links a {
+            display: grid;
+            gap: 5px;
+            padding: 18px;
+            border: 1px solid var(--velar-line);
+            border-radius: var(--velar-radius-small);
+            color: var(--velar-ink);
+            background: var(--velar-paper-pure);
+            text-decoration: none;
+        }
+
+        @media (max-width: 620px) {
+            .velar-docs-prose {
+                padding-top: 32px;
+                font-size: 0.98rem;
+            }
+
+            .velar-docs-prose .next-links {
+                grid-template-columns: 1fr;
+            }
         }
 
     return <article class="velar-docs-prose">{children}</article>

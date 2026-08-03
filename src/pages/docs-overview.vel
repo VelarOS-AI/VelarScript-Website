@@ -1,28 +1,59 @@
 import {Head, Link} from "velar/web"
-import {DocsShell, PageHeader, Prose, Callout} from "@velarscript/docs-kit"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
 import {docsNav} from "../content.vel"
 
-const projectTree = "my-app/\n├── src/\n│   ├── main.vel\n│   ├── app.vel\n│   ├── app.test.vel\n│   └── app.browser.test.vel\n├── public/\n├── velar.json\n└── package.json"
+const firstRunCode = "npm create velar@latest my-app\ncd my-app\nnpm install\nnpm run dev"
+const stackCode = "VelarScript source (.vel)\n        ↓\nVelar Compiler + @velarscript/web\n        ↓\nModern JavaScript + extracted CSS + Web assets\n        ↓\nExisting browser JavaScript engine"
 
 export component DocsOverview:
     return <main data-docs-page>
-        <Head title="Documentation · Velar" description="Language, Web framework, project structure, and toolchain documentation for Velar." themeColor="#f7f5f0" />
+        <Head title="Documentation · VelarScript" description="Complete VelarScript documentation: start a project, learn the language, use every Core and Web module, test, build, and deploy." themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker="Documentation" title="A small system with clear boundaries." summary="Velar is a language, compiler, Web framework, and focused toolchain designed to be learned as one coherent stack." tags={["Language 0.9", "Web API 0.8", "Development"]} />
+            <PageHeader kicker="Documentation" title="Learn the whole stack, from first value to verified deployment." summary="These guides describe the implemented language and framework contract—not a conceptual mockup. Every chapter uses the same syntax and modules exercised by real VelarScript applications." tags={["Language 0.9", "Core API 0.4", "Web API 0.8", "Node 24+"]} />
             <Prose>
-                <h2>Choose your layer</h2>
-                <p>The <Link to="/docs/language">language reference</Link> covers values, control flow, functions, classes, modules, types, JSX, reactivity, and component lifecycle. The <Link to="/docs/web">Web framework reference</Link> covers routing, forms, HTTP, storage, browser services, files, realtime, testing, and production behavior.</p>
-                <Callout title="One data model"><p>Velar does not split a data shape into a compile-time interface and a second runtime schema. A named type can serve both jobs at the boundary.</p></Callout>
-                <h2>Project structure</h2>
-                <p>A normal application keeps Velar source in src, static assets in public, and one intentionally small project manifest at the root.</p>
-                <pre><code>{projectTree}</code></pre>
-                <h2>Package boundaries</h2>
-                <ul><li><strong>@velarscript/compiler</strong> parses, checks, and compiles Velar.</li><li><strong>@velarscript/web</strong> supplies the official compiler and browser runtime boundary for Web applications.</li><li><strong>@velarscript/ui</strong> is a private dogfood layer for theme-neutral accessibility and layout primitives; it is not part of the public framework contract yet.</li><li><strong>@velarscript/site-ui</strong> adds the Velar brand system, while <strong>@velarscript/docs-kit</strong> owns documentation product patterns.</li><li><strong>@velarscript/cli</strong> owns development, testing, builds, verification, and the language server.</li><li><strong>create-velar</strong> creates transactional starter projects without hidden setup.</li></ul>
-                <h2>One package graph</h2>
-                <p>npm remains the registry, dependency resolver, installer, and lockfile authority. Velar provides install, add, remove, and update commands that validate the project and synchronize extension activation from package metadata. There is no private Velar registry or hidden dependency file.</p>
-                <p>Use <code>--template library</code> for a Core source package or <code>--template component</code> for a Web component source package with a separate preview application and an explicit Web peer contract.</p>
-                <h2>Runtime promise</h2>
-                <p>Velar compiles to JavaScript and uses the browser's existing runtime. It does not introduce a new virtual machine, a virtual DOM, or a second memory model. The language prevents selected unsafe or confusing source patterns and lowers the clearer surface into browser JavaScript.</p>
+                <h2 id="start">Start here</h2>
+                <pre><code>{firstRunCode}</code></pre>
+                <p>The <Link to="/docs/getting-started">getting-started guide</Link> creates a Web project, explains every generated file, builds a component, and walks through development, tests, build, verification, and preview. <Link to="/docs/project">Project and CLI</Link> then covers the complete manifest, npm-backed package workflow, templates, commands, and source packages.</p>
+
+                <h2 id="language">Learn the language in order</h2>
+                <ol>
+                    <li><Link to="/docs/language">Syntax and values</Link> — runtime facts, const/let, primitives, none, optional chains, strict conditions, operators, conversion, and objects.</li>
+                    <li><Link to="/docs/language/types">Types and data</Link> — records, aliases, functions, optionals, recursive types, unions, enums, inference, and runtime parse/is.</li>
+                    <li><Link to="/docs/language/functions">Functions and flow</Link> — def, arrows, async/await, rest parameters, if/else if, loops, match, Error, try/catch/finally, and assert.</li>
+                    <li><Link to="/docs/language/collections">Collections</Link> — List, Map, Set, mutation, snapshots, iteration, functional transforms, and velar/collections.</li>
+                    <li><Link to="/docs/language/classes">Classes</Link> — construction, fields, init, methods, getters, private/static members, inheritance, abstract contracts, override, super, and Error subclasses.</li>
+                    <li><Link to="/docs/language/modules">Modules and JavaScript</Link> — static/dynamic VelarScript modules, npm source packages, declaration bridging, extern modules, safe unknown, and explicit unsafe adapters.</li>
+                </ol>
+
+                <h2 id="web">Build Web applications</h2>
+                <ol>
+                    <li><Link to="/docs/web">Web overview</Link> — extension boundary, runtime model, capability modules, and deliberate platform scope.</li>
+                    <li><Link to="/docs/web/components">Components and JSX</Link> — checked props/children, native HTML/SVG, conditional views, keyed lists, events, bindings, refs, and scoped CSS.</li>
+                    <li><Link to="/docs/web/reactivity">State and lifecycle</Link> — state, computed, watch, tick, mounted, cleanup, resources, actions, and transactional recovery.</li>
+                    <li><Link to="/docs/web/routing">Routing and metadata</Link> — patterns, RouteContext, Router, Link/NavLink, navigation, Head, lazy chunks, live announcements, and DOM IDs.</li>
+                    <li><Link to="/docs/web/data">Forms, HTTP and storage</Link> — public config, bounded requests, strict JSON, multipart uploads, typed form decoding, accessible errors, local/session storage, and IndexedDB.</li>
+                    <li><Link to="/docs/web/browser">Browser capabilities</Link> — snapshots, timers, watchers, clipboard, layout, focus, dialogs, files, WebSocket/SSE, and application error ownership.</li>
+                </ol>
+
+                <h2 id="reference">Use every official module</h2>
+                <p>The <Link to="/docs/core">Core module reference</Link> lists and explains all public groups in <code>velar/collections</code>, <code>velar/text</code>, <code>velar/math</code>, <code>velar/json</code>, <code>velar/async</code>, <code>velar/url</code>, <code>velar/time</code>, <code>velar/id</code>, and <code>velar/log</code>. Web modules are explained by ownership across the six Web chapters rather than presented as disconnected function names.</p>
+                <p><Link to="/docs/testing">Testing and deployment</Link> completes the path with Core/browser matchers, the typed browser controller, three-engine runs, deterministic builds, local verification, preview, deployment manifests, and byte-for-byte remote verification.</p>
+
+                <h2 id="runtime">Understand the boundary</h2>
+                <pre><code>{stackCode}</code></pre>
+                <p>VelarScript does not replace browser memory, object identity, garbage collection, promises, the event loop, or JavaScript Number. It replaces the source surface and adds checked compiler/framework contracts around the platform.</p>
+                <Callout title="Language and framework are separate"><p>Core projects contain no JSX, lifecycle, or browser surface. A format-2 project opts into <code>@velarscript/web</code>, which contributes those semantics and its own host behavior. The generic CLI remains independent.</p></Callout>
+
+                <h2 id="packages">Package ownership</h2>
+                <ul>
+                    <li><strong>@velarscript/compiler</strong> parses, resolves, checks, indexes, and compiles Core source.</li>
+                    <li><strong>@velarscript/web</strong> owns the Web compiler extension, browser runtime, host, JSX, components, CSS, modules, and editor contribution.</li>
+                    <li><strong>@velarscript/cli</strong> owns generic command routing, filesystem/bundling mechanics, tests, verification, and language-server transport.</li>
+                    <li><strong>create-velar</strong> creates transactional web/docs/library/component starters.</li>
+                    <li><strong>@velarscript/ui</strong>, <strong>@velarscript/site-ui</strong>, and <strong>@velarscript/docs-kit</strong> are this website's dogfood layers, not hidden compiler implementation.</li>
+                </ul>
+
+                <div class="next-links"><Link to="/docs/getting-started"><strong>Begin the tutorial</strong><span>Create and understand your first complete project.</span></Link><Link to="/docs/language"><strong>Read the language</strong><span>Start with source syntax and runtime behavior.</span></Link></div>
             </Prose>
         </DocsShell>
     </main>

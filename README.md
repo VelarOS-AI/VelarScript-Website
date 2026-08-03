@@ -1,10 +1,10 @@
-# Velar Website
+# VelarScript Website
 
-[![Velar Website CI](https://github.com/VelarOS-AI/VelarScript-Website/actions/workflows/ci.yml/badge.svg)](https://github.com/VelarOS-AI/VelarScript-Website/actions/workflows/ci.yml)
+[![VelarScript Website CI](https://github.com/VelarOS-AI/VelarScript-Website/actions/workflows/ci.yml/badge.svg)](https://github.com/VelarOS-AI/VelarScript-Website/actions/workflows/ci.yml)
 
-The official Velar language and Web framework website. Runtime, components,
-styles, content, tests, and pages are written in Velar; npm manifests and static
-brand assets are the only non-Velar project files.
+The official VelarScript language and Web framework website. Runtime, components,
+styles, content, tests, and pages are written in VelarScript; npm manifests and static
+brand assets are the only non-VelarScript project files.
 
 Contribution and private security-reporting expectations are recorded in
 [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
@@ -49,7 +49,7 @@ npm run deploy:smoke
 ```
 
 This builds the site twice, verifies byte-for-byte reproducibility, then
-atomically writes `release/deployment/site` with the Velar-owned neutral host
+atomically writes `release/deployment/site` with the VelarScript-owned neutral host
 contract, CSP, asset hashes, caching, and SPA fallback rules. It refuses to replace
 an unrelated directory and does not deploy. Successful CI runs retain that
 exact directory as a commit-named downloadable artifact and publish a signed

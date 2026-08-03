@@ -1,4 +1,4 @@
-import {DocsNavItem} from "@velarscript/docs-kit"
+import {DocsNavGroup} from "@velarscript/docs-kit"
 
 export type SiteRuntimeConfig:
     repositoryUrl: string
@@ -36,10 +36,44 @@ export const primaryNav: List<NavItem> = [
     {path: "/examples", label: "Examples"},
 ]
 
-export const docsNav: List<DocsNavItem> = [
-    {path: "/docs", label: "Overview", section: "Start"},
-    {path: "/docs/language", label: "Language", section: "Reference"},
-    {path: "/docs/web", label: "Web framework", section: "Reference"},
+export const docsNav: List<DocsNavGroup> = [
+    {
+        label: "Start",
+        items: [
+            {path: "/docs", label: "Overview"},
+            {path: "/docs/getting-started", label: "Getting started"},
+            {path: "/docs/project", label: "Project and CLI"},
+        ],
+    },
+    {
+        label: "Language",
+        items: [
+            {path: "/docs/language", label: "Syntax and values"},
+            {path: "/docs/language/types", label: "Types and data"},
+            {path: "/docs/language/functions", label: "Functions and flow"},
+            {path: "/docs/language/collections", label: "Collections"},
+            {path: "/docs/language/classes", label: "Classes"},
+            {path: "/docs/language/modules", label: "Modules and JavaScript"},
+        ],
+    },
+    {
+        label: "Web framework",
+        items: [
+            {path: "/docs/web", label: "Web overview"},
+            {path: "/docs/web/components", label: "Components and JSX"},
+            {path: "/docs/web/reactivity", label: "State and lifecycle"},
+            {path: "/docs/web/routing", label: "Routing and metadata"},
+            {path: "/docs/web/data", label: "Forms, HTTP and storage"},
+            {path: "/docs/web/browser", label: "Browser capabilities"},
+        ],
+    },
+    {
+        label: "Reference",
+        items: [
+            {path: "/docs/core", label: "Core modules"},
+            {path: "/docs/testing", label: "Testing and deployment"},
+        ],
+    },
 ]
 
 export const features: List<Feature> = [
@@ -64,7 +98,7 @@ export const features: List<Feature> = [
 ]
 
 export const learningSteps: List<LearningStep> = [
-    {number: "01", title: "Read Velar", summary: "Learn values, functions, control flow, data types, classes, and modules through small examples.", path: "/learn"},
+    {number: "01", title: "Read VelarScript", summary: "Learn values, functions, control flow, data types, classes, and modules through small examples.", path: "/learn"},
     {number: "02", title: "Build a component", summary: "Mix checked data, native JSX, scoped CSS, and direct state updates in one readable unit.", path: "/docs/language"},
     {number: "03", title: "Ship a web app", summary: "Add routes, forms, HTTP, storage, tests, and a production build through @velarscript/web.", path: "/docs/web"},
 ]
@@ -100,13 +134,41 @@ export def pageTitle(path: string) -> string:
     if path == "/":
         return "The Web, written clearly"
     if path == "/learn":
-        return "Learn Velar"
+        return "Learn VelarScript"
     if path == "/docs":
         return "Documentation"
+    if path == "/docs/getting-started":
+        return "Getting started"
+    if path == "/docs/project":
+        return "Project and CLI"
     if path == "/docs/language":
-        return "Language reference"
+        return "Syntax and values"
+    if path == "/docs/language/types":
+        return "Types and data"
+    if path == "/docs/language/functions":
+        return "Functions and flow"
+    if path == "/docs/language/collections":
+        return "Collections"
+    if path == "/docs/language/classes":
+        return "Classes"
+    if path == "/docs/language/modules":
+        return "Modules and JavaScript"
     if path == "/docs/web":
         return "Web framework"
+    if path == "/docs/web/components":
+        return "Components and JSX"
+    if path == "/docs/web/reactivity":
+        return "State and lifecycle"
+    if path == "/docs/web/routing":
+        return "Routing and metadata"
+    if path == "/docs/web/data":
+        return "Forms, HTTP and storage"
+    if path == "/docs/web/browser":
+        return "Browser capabilities"
+    if path == "/docs/core":
+        return "Core modules"
+    if path == "/docs/testing":
+        return "Testing and deployment"
     if path == "/examples":
         return "Examples"
     return "Page not found"

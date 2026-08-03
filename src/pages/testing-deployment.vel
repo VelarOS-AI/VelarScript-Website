@@ -1,0 +1,53 @@
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const coreTestCode = "import {expect} from \"velar/test\"\n\ndef test_total_is_stable():\n    expect(total([1, 2, 3])).toBe(6)\n    expect({name: \"VelarScript\"}).toEqual({name: \"VelarScript\"})\n\nasync def test_rejection():\n    await expect(() => loadMissing()).toReject(\"Not found\")"
+const browserTestCode = "import {expect} from \"velar/test\"\nimport {browser} from \"velar/web-test\"\n\nasync def test_project_navigation():\n    await browser.viewport(390, 844)\n    await browser.open(\"/projects/velar\")\n    await browser.waitForText(\"h1\", \"VelarScript\")\n    expect(await browser.currentPath()).toBe(\"/projects/velar\")\n    await browser.click(\"[data-star]\")\n    expect(await browser.text(\"[data-status]\")).toBe(\"Starred\")"
+const buildCode = "velar format --check\nvelar check\nvelar test\nvelar test --browser all\nvelar build\nvelar verify\nvelar preview"
+const deployCode = "# Deploy dist/ with its generated contract, then:\nvelar verify-deployment --url https://app.example.com\nvelar verify-deployment --url https://app.example.com --json"
+
+export component TestingDeployment:
+    return <main data-testing-docs>
+        <Head title="Testing and deployment · VelarScript" description="VelarScript unit tests, browser tests, formatting, checking, deterministic production builds, local verification, preview, and remote deployment verification." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Reference / Delivery" title="Test the source; verify the artifact users receive." summary="Fast Core tests cover domain logic. Browser tests run the real CSP application. Production verification turns output and hosting behavior into exact contracts." tags={["velar/test", "velar/web-test", "3 browsers", "SHA-256"]} />
+            <Prose>
+                <h2 id="core-tests">Core tests</h2>
+                <pre><code>{coreTestCode}</code></pre>
+                <p>Files ending in <code>.test.vel</code> are discovered recursively. Top-level <code>test_*</code> functions need not be exported. <code>expect</code> provides <code>toBe</code>, <code>toEqual</code>, <code>toBeTruthy</code>, <code>toBeFalsy</code>, <code>toContain</code>, <code>toMatch</code>, <code>toHaveLength</code>, <code>toThrow</code>, and <code>toReject</code>.</p>
+                <p><code>toBe</code> follows VelarScript strict value/reference equality. <code>toEqual</code> uses the public <code>velar/json.deepEqual</code> data contract. Boolean matchers require actual booleans, and subject-specific matchers remain checked so a synchronous throw cannot masquerade as a rejected Promise.</p>
+
+                <h2 id="browser-tests">Browser application tests</h2>
+                <pre><code>{browserTestCode}</code></pre>
+                <p>Files ending in <code>.browser.test.vel</code> run only through <code>velar test --browser</code>. The CLI builds a real isolated CSP production site and opens a fresh browser context per test. Page errors and console warnings/errors fail automatically.</p>
+                <p>The compact controller exposes <code>open</code>, <code>reload</code>, <code>click</code>, <code>fill</code>, <code>select</code>, <code>press</code>, <code>text</code>, <code>attribute</code>, <code>namespace</code>, <code>count</code>, <code>visible</code>, <code>waitFor</code>, <code>waitForText</code>, <code>currentPath</code>, and <code>viewport</code>. It is intentionally not a raw DOM or Playwright escape hatch.</p>
+                <p>Chromium is the local default. Choose <code>chromium</code>, <code>firefox</code>, <code>webkit</code>, or <code>all</code> explicitly. Browser binaries remain an explicit Playwright installation outside project creation.</p>
+
+                <h2 id="quality-gate">Recommended delivery gate</h2>
+                <pre><code>{buildCode}</code></pre>
+                <ul>
+                    <li><code>format --check</code> prevents source formatting drift.</li>
+                    <li><code>check</code> runs parser, resolution, type, Web, accessibility, and extension diagnostics.</li>
+                    <li>Core and browser tests cover logic and delivered behavior separately.</li>
+                    <li><code>build</code> stages, bundles, tree-shakes, minifies, splits checked dynamic modules, extracts CSS, hashes assets, and writes deterministic manifests.</li>
+                    <li><code>verify</code> compares the exact file inventory, paths, sizes, SHA-256 identities, roles, build ID, compiler/API versions, source-map policy, CSP, cache, fallback, and adapter files.</li>
+                    <li><code>preview</code> refuses unverified output and never turns a missing asset into the SPA shell.</li>
+                </ul>
+
+                <h2 id="artifacts">Production files</h2>
+                <p><code>velar-build.json</code> records deterministic build identity, compiler/framework/API versions, module composition, deployment files, asset roles, byte sizes, hashes, source-map policy, and VelarScript/JavaScript dependency summaries. <code>velar-deploy.json</code> declares base path, SPA fallback, security headers, cache policy, and static-host adapter behavior.</p>
+                <p>Compiler-owned HTML, manifests, and adapter files cannot be overridden by <code>publicDir</code>. Production source maps are off by default and must be enabled explicitly.</p>
+
+                <h2 id="remote">Verify the deployment</h2>
+                <pre><code>{deployCode}</code></pre>
+                <p>Remote verification first verifies the local output, then downloads every declared file from the HTTPS origin and compares byte sizes and SHA-256 after transfer decoding. It checks MIME types, security/cache headers, the configured base, SPA navigation, and a missing hashed-asset 404. Redirects, login pages, stale files, host rewrites, and provider transformations fail closed.</p>
+                <Callout title="Deployment is not a rebuild"><p>Build once, verify once, deploy the exact directory, then verify that exact identity remotely. A hosting problem should be fixed at the hosting layer instead of silently producing a different application artifact.</p></Callout>
+
+                <h2 id="ci">CI shape</h2>
+                <p>A complete CI pipeline uses Node 24, installs from the lockfile, runs formatting/check/Core tests, runs the browser matrix where required, builds once, verifies the output, and preserves manifests as evidence. Deployment remains a separate authorized operation; remote verification proves the selected origin after activation.</p>
+
+                <div class="next-links"><Link to="/docs/getting-started"><strong>Build the tutorial app</strong><span>Return to the first project and apply the full delivery gate.</span></Link><Link to="/docs"><strong>Documentation overview</strong><span>Choose another language or framework chapter.</span></Link></div>
+            </Prose>
+        </DocsShell>
+    </main>

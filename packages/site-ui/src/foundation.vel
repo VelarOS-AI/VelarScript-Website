@@ -9,11 +9,11 @@ export component FoundationFrame(children: WebNode):
             --velar-paper-pure: #fbfaf7;
             --velar-ink: #111216;
             --velar-ink-soft: #5e6066;
-            --velar-ink-faint: #8b8d92;
+            --velar-ink-faint: #6e7075;
             --velar-line: rgba(17, 18, 22, 0.14);
             --velar-line-strong: rgba(17, 18, 22, 0.26);
-            --velar-sea: #447b9f;
-            --velar-sea-soft: rgba(68, 123, 159, 0.12);
+            --velar-sea: #3f7396;
+            --velar-sea-soft: rgba(63, 115, 150, 0.12);
             --velar-success: #177744;
             --velar-danger: #a33a2b;
             --velar-page: clamp(20px, 4vw, 56px);
@@ -55,7 +55,7 @@ export component FoundationFrame(children: WebNode):
         }
 
         :focus-visible {
-            outline: 3px solid rgba(68, 123, 159, 0.38);
+            outline: 3px solid rgba(63, 115, 150, 0.42);
             outline-offset: 3px;
         }
 

@@ -1,0 +1,47 @@
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const timersCode = "import {after, environment, every, watchOnline, watchVisibility} from \"velar/browser\"\n\ncomponent EnvironmentStatus:\n    const stopReady = after(250, () => print(\"ready\"))\n    const stopHeartbeat = every(1000, () => refresh())\n    const stopOnline = watchOnline(value => print(value))\n    const stopVisibility = watchVisibility(value => print(value))\n\n    cleanup:\n        stopReady()\n        stopHeartbeat()\n        stopOnline()\n        stopVisibility()\n\n    return <p>{environment().online ? \"Online\" : \"Offline\"}</p>"
+const dialogCode = "let dialog: DialogElement? = none\nlet trigger: Element? = none\n\ndef openInspector():\n    showDialog(dialog)\n\ndef closeInspector():\n    closeDialog(dialog, \"done\")\n    focus(trigger)\n\nreturn <>\n    <button ref={trigger} on:click={openInspector}>Inspect</button>\n    <dialog ref={dialog}>\n        <button on:click={closeInspector}>Close</button>\n    </dialog>\n</>"
+const filesCode = "import {download, pick, readText} from \"velar/files\"\n\nconst selected = await pick({accept: \".json\", multiple: false})\nif selected.length > 0:\n    const source = await readText(selected[0])\n    download(\"copy.json\", source, \"application/json\")"
+const realtimeCode = "import {eventStream, socket} from \"velar/realtime\"\n\ncomponent LiveStatus:\n    const chat = socket(\"wss://example.test/chat\", {\n        message: text => print(text),\n        error: message => print(message),\n    })\n    const updates = eventStream(\"/api/updates\", {message: text => print(text)})\n\n    cleanup:\n        chat.close()\n        updates.close()\n\n    return <p>{chat.state()}</p>"
+const appCode = "import {onError, reportError} from \"velar/app\"\n\ncomponent ErrorStatus:\n    state message = \"ready\"\n    const stopErrors = onError(report => message = report.phase + \":\" + report.error.message)\n\n    cleanup:\n        stopErrors()\n\n    return <output>{message}</output>"
+
+export component WebBrowser:
+    return <main>
+        <Head title="Browser capabilities · VelarScript" description="VelarScript browser snapshots, timers, focus, layout, dialogs, clipboard, files, realtime, and application error handling." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Web framework / 05" title="Browser effects have names and lifetimes." summary="Typed capability modules replace ambient globals. Anything that keeps running returns a handle that component cleanup owns." tags={["velar/browser", "velar/files", "velar/realtime", "velar/app"]} />
+            <Prose>
+                <h2 id="browser">velar/browser snapshots and watchers</h2>
+                <pre><code>{timersCode}</code></pre>
+                <p><code>location()</code> and <code>environment()</code> return typed snapshots. <code>media</code>, <code>watchMedia</code>, <code>watchOnline</code>, and <code>watchVisibility</code> expose changing environment state; every watcher returns cleanup. <code>copyText</code> and <code>readClipboardText</code> remain subject to browser security and user-gesture policy.</p>
+                <p><code>after</code> schedules once and <code>every</code> schedules repeatedly. Both return idempotent stop functions. Repeating work waits for a synchronous or asynchronous callback to settle before scheduling the next turn, so slow polling never overlaps itself. Callback errors report through <code>velar/app</code>.</p>
+
+                <h2 id="layout">Layout, scrolling, frames, and focus</h2>
+                <p><code>open</code>, <code>scrollTo</code>, <code>scrollIntoView</code>, <code>measure</code>, and <code>frame</code> expose intentional window/layout work with checked strings, finite coordinates, and bounded return values. <code>focus(element, preventScroll=false)</code> and <code>blur(element)</code> require real HTML element refs and invoke native prototype operations without exposing document globals.</p>
+
+                <h2 id="dialogs">Native dialogs</h2>
+                <pre><code>{dialogCode}</code></pre>
+                <p>A dialog ref narrows to <code>DialogElement?</code>. <code>showDialog</code> opens a mounted native dialog modally, <code>closeDialog</code> closes it with an optional string result, and <code>dialogResult</code> reads that result. The application remains responsible for accessible naming, initial focus, Escape behavior, and returning focus to the trigger.</p>
+
+                <h2 id="files">velar/files</h2>
+                <pre><code>{filesCode}</code></pre>
+                <p><code>pick</code> returns opaque stable records with name, size, type, and modified time. Only those records may enter <code>readText</code>, <code>readDataUrl</code>, or an HTTP multipart body. Reads inspect size before loading and use an explicit ceiling up to 64 MiB. <code>download</code> creates a bounded text download. Directory and persistent file-handle access are outside Web API 0.8.</p>
+
+                <h2 id="realtime">velar/realtime</h2>
+                <pre><code>{realtimeCode}</code></pre>
+                <p><code>socket</code> wraps text WebSockets and exposes <code>state</code>, <code>send</code>, <code>sendJson</code>, and <code>close</code>. <code>eventStream</code> wraps server-sent events with <code>state</code> and <code>close</code>. URLs, handlers, message sizes, close codes, and reasons are validated before native effects. JSON sends use the strict lossless data boundary.</p>
+                <p>Handler throws and rejected promises enter the shared application error channel. Oversized inbound data closes its channel. Components explicitly close every connection during cleanup.</p>
+
+                <h2 id="app">velar/app</h2>
+                <pre><code>{appCode}</code></pre>
+                <p><code>onError(callback)</code> receives normalized reports with error, phase, detail, component, and timestamp and returns cleanup. <code>reportError(error, phase="manual", detail="")</code> submits a deliberate failure without throwing it again.</p>
+                <p>The channel owns mount, render, watch, event, mounted, cleanup, resource, action, timer, storage, and realtime failures. With no handler, automatic failures surface through the host rather than disappearing. Initial mount failure renders a compiler-owned accessible fatal state; later transactional render failures retain the last valid UI.</p>
+                <Callout title="Acquire, retain, release"><p>If an API returns <code>stop</code>, <code>close</code>, or another lifetime handle, keep it in component scope and call it from the sibling <code>cleanup</code> block.</p></Callout>
+
+                <div class="next-links"><Link to="/docs/testing"><strong>Next: Testing and deployment</strong><span>Prove these browser paths in the production artifact.</span></Link><Link to="/docs/web"><strong>Web overview</strong><span>Return to the complete framework map.</span></Link></div>
+            </Prose>
+        </DocsShell>
+    </main>

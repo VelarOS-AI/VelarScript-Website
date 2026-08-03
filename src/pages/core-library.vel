@@ -1,0 +1,74 @@
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const collectionsCode = "import {enumerate, groupBy, range, sortBy} from \"velar/collections\"\n\nconst pages = enumerate(range(1, 4), 10)\nconst byRole = groupBy(users, user => user.role)\nconst ordered = sortBy(users, user => user.name)"
+const textCode = "import {findMatch, matches, slug, splitPattern, truncate} from \"velar/text\"\n\nconst valid = matches(\"VelarScript 42\", \"^velarscript [0-9]+$\", {ignoreCase: true})\nconst ticket = findMatch(\"ticket-42\", \"[0-9]+\")\nconst path = slug(\"Language and Web\")\nconst fields = splitPattern(\"one, two; three\", \" *[,;] *\")"
+const jsonCode = "import {deepEqual, parse as parseJson, stableStringify} from \"velar/json\"\n\ntype User:\n    id: string\n    name: string\n\nconst user = parseJson(source, User)\nconst changed = not deepEqual(user, previousUser)\nconst cacheKey = stableStringify(user)"
+const asyncCode = "import {all, map, retry, sleep, timeout} from \"velar/async\"\n\nconst users = await map(ids, async id => await loadUser(id), 4)\nconst result = await timeout(retry(() => save(), 3), 5000)\nawait sleep(250)"
+const urlCode = "import {parse, query, withHash, withQuery} from \"velar/url\"\n\nconst search = query({q: \"velar\", page: 2})\nconst target = withQuery(\"/docs\", {q: \"types\"})\nconst section = withHash(target, \"records\")\nconst parts = parse(section, \"https://example.com\")"
+const timeCode = "import {iso, now, parts, utc} from \"velar/time\"\n\nconst launched = utc(2026, 8, 1)\nprint(iso(launched))\nprint(parts(now(), \"UTC\").year)"
+const idLogCode = "import {isUuid, uuid} from \"velar/id\"\nimport {logger, setLevel, useSink} from \"velar/log\"\n\nconst requestId = uuid()\nconst buildLog = logger(\"build\")\nsetLevel(\"debug\")\nbuildLog.info(\"Compilation ready\")"
+
+export component CoreLibrary:
+    return <main data-core-library>
+        <Head title="Core modules · VelarScript" description="The complete VelarScript Core standard library: collections, text, math, JSON, async, URL, time, IDs, and structured logging." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Reference / Core API 0.4" title="Small explicit modules for everyday programs." summary="Core combines practical Python and modern JavaScript ideas without globals, prototype patches, hidden coercion, or a second runtime." tags={["9 modules", "tree-shakeable", "bounded", "typed inference"]} />
+            <Prose>
+                <h2 id="contract">Shared contract</h2>
+                <ul>
+                    <li>Import every capability from an official <code>velar/*</code> module.</li>
+                    <li>Transforms return new values unless the name explicitly describes mutation.</li>
+                    <li>Missing results use <code>none</code>, never source-level undefined.</li>
+                    <li>The compiler preserves element, callback, Map, optional, runtime Type, and Promise results without exposing user-defined generic syntax.</li>
+                    <li>Known mistakes are diagnostics; unsafe dynamic misuse throws TypeError or RangeError before hidden coercion or host effects.</li>
+                    <li>Lists are dense and bounded, text/JSON are bounded, and validators never invoke getters merely to inspect data.</li>
+                </ul>
+
+                <h2 id="collections">velar/collections</h2>
+                <pre><code>{collectionsCode}</code></pre>
+                <p><strong>Iteration and shape:</strong> <code>range</code>, <code>enumerate</code>, <code>zip</code>, <code>unique</code>, <code>chunk</code>, <code>flatten</code>, <code>compact</code>, <code>reverse</code>, <code>repeat</code>.</p>
+                <p><strong>Windows and lookup:</strong> <code>take</code>, <code>drop</code>, <code>first</code>, <code>last</code>, <code>find</code>, <code>findIndex</code>, <code>contains</code>, <code>count</code>.</p>
+                <p><strong>Predicates and grouping:</strong> <code>any</code>, <code>all</code>, <code>partition</code>, <code>groupBy</code>, <code>keyBy</code>, <code>countBy</code>.</p>
+                <p><strong>Ordering and aggregation:</strong> <code>sortBy</code>, <code>minBy</code>, <code>maxBy</code>, <code>sum</code>, <code>join</code>. Ordering keys are uniformly strings or finite numbers and stable order is preserved.</p>
+
+                <h2 id="text">velar/text</h2>
+                <pre><code>{textCode}</code></pre>
+                <p><strong>Whitespace and case:</strong> <code>trim</code>, <code>trimStart</code>, <code>trimEnd</code>, <code>lower</code>, <code>upper</code>, <code>capitalize</code>, <code>title</code>, <code>normalizeWhitespace</code>, <code>isBlank</code>.</p>
+                <p><strong>Search and construction:</strong> <code>startsWith</code>, <code>endsWith</code>, <code>includes</code>, <code>split</code>, <code>replace</code>, <code>replaceAll</code>, <code>repeat</code>, <code>padStart</code>, <code>padEnd</code>, <code>lines</code>, <code>words</code>, <code>slug</code>, <code>truncate</code>, <code>indent</code>, <code>dedent</code>, <code>escapeHtml</code>.</p>
+                <p><strong>Stateless patterns:</strong> <code>matches</code>, <code>findMatch</code>, <code>findMatches</code>, <code>replaceMatches</code>, <code>splitPattern</code>. Each call creates a fresh Unicode pattern. Options are only <code>ignoreCase</code>, <code>multiline</code>, and <code>dotAll</code>; mutable RegExp objects and replacement interpolation never enter source.</p>
+
+                <h2 id="math">velar/math</h2>
+                <p><strong>Constants:</strong> <code>pi</code>, <code>e</code>, <code>tau</code>, <code>infinity</code>.</p>
+                <p><strong>Bounds and rounding:</strong> <code>abs</code>, <code>min</code>, <code>max</code>, <code>clamp</code>, <code>sign</code>, <code>round</code>, <code>floor</code>, <code>ceil</code>, <code>trunc</code>.</p>
+                <p><strong>Powers and logarithms:</strong> <code>sqrt</code>, <code>cbrt</code>, <code>pow</code>, <code>exp</code>, <code>log</code>, <code>log2</code>, <code>log10</code>.</p>
+                <p><strong>Trigonometry:</strong> <code>sin</code>, <code>cos</code>, <code>tan</code>, <code>asin</code>, <code>acos</code>, <code>atan</code>, <code>atan2</code>, <code>degrees</code>, <code>radians</code>.</p>
+                <p><strong>Numeric helpers:</strong> <code>hypot</code>, <code>random</code>, <code>randomInt</code>, <code>isFinite</code>, <code>isInteger</code>, <code>gcd</code>, <code>lcm</code>. Arguments must already be real numbers; random uses host Math.random and is not cryptographic.</p>
+
+                <h2 id="json">velar/json</h2>
+                <pre><code>{jsonCode}</code></pre>
+                <p><code>parse</code> parses and optionally validates through a VelarScript Type. <code>tryParse</code> returns a validated value, fallback, or none. <code>stringify</code> strictly encodes data, <code>stableStringify</code> recursively sorts record keys, <code>clone</code> JSON-clones and optionally validates, <code>isSerializable</code> checks lossless representation, and <code>deepEqual</code> owns structural data comparison.</p>
+                <p>Maps/Sets compare under native key/membership identity in <code>deepEqual</code>; class instances and functions stay reference values. Encoded data is limited to finite primitives, none, dense Lists, and plain records with bounded size/depth.</p>
+
+                <h2 id="async">velar/async</h2>
+                <pre><code>{asyncCode}</code></pre>
+                <p><code>sleep</code> delays, <code>all</code>/<code>race</code> compose Promise Lists, <code>timeout</code> bounds settlement time, <code>retry</code> repeats a failing task, <code>map</code> runs a sync/async worker with bounded concurrency while preserving order, and <code>series</code> runs tasks sequentially. These helpers use native Promises; they do not create threads or pretend to cancel arbitrary work.</p>
+
+                <h2 id="url">velar/url</h2>
+                <pre><code>{urlCode}</code></pre>
+                <p><code>parse</code>, <code>join</code>, <code>query</code>, <code>parseQuery</code>, <code>withQuery</code>, <code>withHash</code>, <code>isExternal</code>, <code>encode</code>, <code>decode</code>, and <code>normalize</code> own explicit URL text work. Query values are string/number/bool scalars, none, or Lists of them; arbitrary objects never become <code>[object Object]</code>.</p>
+
+                <h2 id="time">velar/time</h2>
+                <pre><code>{timeCode}</code></pre>
+                <p><code>now</code>, <code>monotonic</code>, deterministic ISO <code>parse</code>, <code>iso</code>, locale <code>format</code>, strict local <code>date</code>, strict <code>utc</code>, and <code>parts</code> use epoch milliseconds instead of mutable Date objects. Invalid calendar values never roll over, months are one-based, and datetime parsing requires Z or a numeric offset.</p>
+
+                <h2 id="id-log">velar/id and velar/log</h2>
+                <pre><code>{idLogCode}</code></pre>
+                <p><code>uuid()</code> requires a cryptographically secure host UUID and never falls back to timestamps or Math.random; <code>isUuid</code> checks canonical text. Logging exports unscoped <code>log</code>, <code>logger(scope, fields)</code>, <code>setLevel</code>, <code>level</code>, and <code>useSink</code>. Loggers provide debug/info/warn/error; custom sinks return cleanup, receive isolated field snapshots, and never trigger automatic telemetry.</p>
+
+                <Callout title="Deliberate omissions"><p>Core does not copy Node filesystem/process APIs, Python OS/subprocess/reflection/pickle/import machinery, or JavaScript's legacy prototype surface. Browser capabilities belong to the independently versioned Web framework.</p></Callout>
+                <div class="next-links"><Link to="/docs/web"><strong>Web capability modules</strong><span>Add components, routing, data, files, and browser lifetimes.</span></Link><Link to="/docs/testing"><strong>Testing and deployment</strong><span>Verify both source semantics and delivered artifacts.</span></Link></div>
+            </Prose>
+        </DocsShell>
+    </main>

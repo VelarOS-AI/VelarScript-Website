@@ -153,7 +153,7 @@ export component Home:
 
         @media (max-width: 980px) {
             .hero-grid, .manifesto {
-                grid-template-columns: 1fr;
+                grid-template-columns: minmax(0, 1fr);
             }
 
             .hero {
@@ -161,7 +161,9 @@ export component Home:
             }
 
             .code-column {
-                width: min(680px, 100%);
+                width: 100%;
+                min-width: 0;
+                max-width: 680px;
                 transform: none;
             }
         }
@@ -183,14 +185,14 @@ export component Home:
         }
 
     return <main>
-        <Head title="Velar — The Web, written clearly" description="A clear, compact language and integrated framework for modern web applications." themeColor="#f7f5f0" />
+        <Head title="VelarScript — The Web, written clearly" description="A clear, compact language and integrated framework for modern web applications." themeColor="#f7f5f0" />
         <section class="hero" data-home-hero>
             <Container>
                 <div class="hero-grid">
                     <div>
                         <Eyebrow label="Language + Web framework" />
                         <h1>The Web,<span>written clearly.</span></h1>
-                        <p class="lead">Velar combines Python's readability with JavaScript's flexible runtime model, then makes components, styles, data, and browser capabilities feel like one language.</p>
+                        <p class="lead">VelarScript combines Python's readability with JavaScript's flexible runtime model, then makes components, styles, data, and browser capabilities feel like one language.</p>
                         <div class="actions"><ActionLink to="/learn" label="Start learning" /><ActionLink to="/docs" label="Read the docs" quiet={true} /></div>
                         <p class="proof"><span>Compiles to JavaScript</span><span>Native JSX and CSS</span><span>Apache-2.0</span></p>
                     </div>
@@ -201,7 +203,7 @@ export component Home:
 
         <Section ruled={true}>
             <Container>
-                <div class="manifesto"><h2>Less language between you and the idea.</h2><p>Velar does not invent a new virtual machine or disguise how the browser works. Values, references, closures, promises, and the prototype-based JavaScript runtime remain underneath. The source language simply gives you a cleaner place to think.</p></div>
+                <div class="manifesto"><h2>Less language between you and the idea.</h2><p>VelarScript does not invent a new virtual machine or disguise how the browser works. Values, references, closures, promises, and the prototype-based JavaScript runtime remain underneath. The source language simply gives you a cleaner place to think.</p></div>
             </Container>
         </Section>
 
@@ -215,7 +217,7 @@ export component Home:
         <Section ruled={true}>
             <Container>
                 <SectionHeading kicker="One coherent stack" title="Language and framework, designed together." summary="The compiler owns the language. @velarscript/web owns browser application capabilities. The browser still runs ordinary JavaScript." />
-                <Surface dark={true}><div class="layers"><div class="layer"><span>01 / SOURCE</span><strong>Velar language</strong></div><div class="layer"><span>02 / FRAMEWORK</span><strong>@velarscript/web</strong></div><div class="layer"><span>03 / RUNTIME</span><strong>Browser JavaScript</strong></div></div></Surface>
+                <Surface dark={true}><div class="layers"><div class="layer"><span>01 / SOURCE</span><strong>VelarScript language</strong></div><div class="layer"><span>02 / FRAMEWORK</span><strong>@velarscript/web</strong></div><div class="layer"><span>03 / RUNTIME</span><strong>Browser JavaScript</strong></div></div></Surface>
             </Container>
         </Section>
 
@@ -227,6 +229,6 @@ export component Home:
         </Section>
 
         <Section ruled={true}>
-            <Container><Surface dark={true}><div class="closing"><div><h2>Write the app, not the ceremony.</h2><p>The current line is a development release. The language, compiler, Web framework, CLI, and this site advance as one tested system.</p></div><ActionLink to="/learn" label="Meet Velar" inverse={true} /></div></Surface></Container>
+            <Container><Surface dark={true}><div class="closing"><div><h2>Write the app, not the ceremony.</h2><p>The current line is a development release. The language, compiler, Web framework, CLI, and this site advance as one tested system.</p></div><ActionLink to="/learn" label="Meet VelarScript" inverse={true} /></div></Surface></Container>
         </Section>
     </main>

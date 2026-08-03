@@ -1,0 +1,53 @@
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const componentCode = "export component ProfileCard(user: User, compact: bool = false, children: WebNode = none):\n    style:\n        .card {\n            display: grid;\n            gap: 12px;\n        }\n\n    return <article class=\"card\" class:compact={compact}>\n        <h2>{user.name}</h2>\n        {children}\n    </article>"
+const branchesCode = "return <main>\n    <Loading if={profile.loading} />\n    <ErrorMessage else-if={profile.error} error={profile.error} />\n    <Profile else-if={profile.value} user={profile.value} />\n    <EmptyState else />\n</main>"
+const listCode = "return <ul>\n    {users.map(user =>\n        <UserRow key={user.id} user={user} />\n    )}\n</ul>"
+const eventsCode = "def addOnEnter(event: KeyboardEvent):\n    if event.key == \"Enter\":\n        event.preventDefault()\n        addItem()\n\nreturn <form on:submit.prevent.stop={save}>\n    <input bind:value={query} on:keydown={addOnEnter} />\n    <button type=\"submit\">Save</button>\n</form>"
+const svgCode = "return <svg viewBox=\"0 0 200 100\" aria-labelledby={titleId}>\n    <title id={titleId}>Weekly activity</title>\n    {bars.map(bar =>\n        <rect key={bar.id} x={bar.x} y={bar.y} width={bar.width} height={bar.height} />\n    )}\n</svg>"
+
+export component WebComponents:
+    return <main>
+        <Head title="Components and JSX · VelarScript" description="VelarScript Web components, props, children, native HTML and SVG JSX, branches, keyed lists, events, bindings, refs, and scoped CSS." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Web framework / 01" title="Components create native Web structure." summary="Props are checked, JSX is native, dynamic regions are precise, and styles stay close to the component without becoming JavaScript objects." tags={["checked props", "HTML + SVG", "keyed lists", "scoped CSS"]} />
+            <Prose>
+                <h2 id="component">Declare a component</h2>
+                <pre><code>{componentCode}</code></pre>
+                <p>Component parameters are JSX props. Defaults make props omittable, function types describe callbacks, and the special <code>children: WebNode</code> prop receives nested JSX content. Components may be exported, imported, aliased, navigated, and renamed through the same compiler-owned symbol graph as functions and types.</p>
+                <p>Native elements use platform names such as <code>class</code> and <code>for</code>. Text and expressions are escaped. Raw HTML is available only through the explicit <code>unsafe:html</code> directive.</p>
+
+                <h2 id="branches">Conditional views</h2>
+                <pre><code>{branchesCode}</code></pre>
+                <p>Small value choices use <code>? :</code>. Whole views use adjacent <code>if</code>, <code>else-if</code>, and valueless <code>else</code> control attributes. Only whitespace may separate the sequence. Conditions follow normal strict rules and narrow optionals inside attributes, descendants, and component props.</p>
+                <p>Branch replacement is transactional: the next branch is built before commit, and each branch owns its nested components, events, resources, watchers, and refs.</p>
+
+                <h2 id="lists">Dynamic lists</h2>
+                <pre><code>{listCode}</code></pre>
+                <p>A dynamic JSX list requires a stable <code>key</code> unless the compiler can prove the list is static. Keys let the runtime retain native DOM and component identity while moving, inserting, or removing items. Promise-producing maps must be awaited before their result enters JSX.</p>
+
+                <h2 id="events">Events, bindings, and modifiers</h2>
+                <pre><code>{eventsCode}</code></pre>
+                <ul>
+                    <li>Events are the browser's native objects, not framework wrappers.</li>
+                    <li>Handlers may take zero parameters or one checked <code>Event</code>, <code>KeyboardEvent</code>, <code>PointerEvent</code>, or <code>InputEvent</code>.</li>
+                    <li>Modifiers are <code>prevent</code>, <code>stop</code>, <code>once</code>, <code>capture</code>, and <code>self</code>.</li>
+                    <li><code>bind:value</code> supports natural text/select values and numeric input numbers; <code>bind:checked</code> supports booleans.</li>
+                    <li>Bindings require writable component state.</li>
+                </ul>
+
+                <h2 id="classes">Classes, styles, and refs</h2>
+                <p><code>{"class:active={condition}"}</code> toggles a class and <code>{"style:--progress={value}"}</code> updates a CSS custom property. A <code>ref</code> target is an optional typed element binding; it becomes present after insertion and returns to <code>none</code> when its owner is destroyed.</p>
+                <p>Component <code>style</code> blocks are scoped by default and extracted for production. Parent selectors may reach only a child component's top-level root. Use <code>style global</code> for document tokens, resets, and intentionally global rules.</p>
+
+                <h2 id="svg">Native SVG</h2>
+                <pre><code>{svgCode}</code></pre>
+                <p>SVG namespace flows through fragments, branches, keyed lists, ordinary components, and lazy components. <code>foreignObject</code> returns its children to HTML. Case-sensitive attributes such as <code>viewBox</code> are preserved. Every non-decorative SVG root requires an accessible name through <code>title</code>, <code>aria-label</code>, or <code>aria-labelledby</code>; decorative SVG uses <code>aria-hidden="true"</code>.</p>
+                <Callout title="No virtual DOM"><p>Static nodes stay native. State changes schedule only the text, attribute, branch, or keyed region that read that state.</p></Callout>
+
+                <div class="next-links"><Link to="/docs/web/reactivity"><strong>Next: State and lifecycle</strong><span>Understand when setup, updates, resources, and cleanup run.</span></Link><Link to="/docs/web/routing"><strong>Routing and metadata</strong><span>Compose components into a complete application.</span></Link></div>
+            </Prose>
+        </DocsShell>
+    </main>

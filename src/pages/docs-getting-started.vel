@@ -1,0 +1,52 @@
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const createCode = "npm create velar@latest my-app\ncd my-app\nnpm install\nnpm run dev"
+const appCode = "import {mount} from \"velar/web\"\nimport {App} from \"./app.vel\"\n\nmount(<App />, \"#app\")"
+const componentCode = "export component App:\n    state count = 0\n\n    style:\n        .counter {\n            display: grid;\n            gap: 12px;\n            max-width: 320px;\n        }\n\n    return <main class=\"counter\">\n        <h1>Hello, VelarScript</h1>\n        <button type=\"button\" on:click={() => count += 1}>\n            Count: {count}\n        </button>\n    </main>"
+const scriptsCode = "npm run format\nnpm run check\nnpm test\nnpm run test:browser\nnpm run build\nnpm run verify\nnpm run preview"
+
+export component DocsGettingStarted:
+    return <main data-getting-started>
+        <Head title="Getting started · VelarScript" description="Install VelarScript, create a Web project, understand its files, and run the first checked component." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Start / 01" title="From an empty folder to a real Web app." summary="Create a project, read the generated files, change a component, test it, and produce a verified static build." tags={["Node 24+", "npm", ".vel", "Web API 0.8"]} />
+            <Prose>
+                <h2 id="requirements">Before you begin</h2>
+                <p>VelarScript currently requires Node.js 24 or later. npm remains the package registry, dependency resolver, installer, and lockfile authority. The VelarScript toolchain is installed into each project, so the compiler version used in development, CI, and production comes from that project's lockfile.</p>
+                <Callout title="No hidden global install"><p>You do not need a system-wide compiler. Project scripts call the local <code>velar</code> executable installed in <code>node_modules</code>.</p></Callout>
+
+                <h2 id="create">Create the application</h2>
+                <pre><code>{createCode}</code></pre>
+                <p>The default <code>web</code> template creates the project transactionally and refuses to overwrite a non-empty directory. Creation does not install packages, initialize Git, download browsers, or contact a hosting service; those choices stay visible.</p>
+                <p>Other starting points are <code>-- --template docs</code> for documentation sites, <code>-- --template library</code> for Core source packages, and <code>-- --template component</code> for reusable Web component packages.</p>
+
+                <h2 id="files">Know the generated files</h2>
+                <ul>
+                    <li><code>src/main.vel</code> is the browser entry and mounts the root component.</li>
+                    <li><code>src/app.vel</code> owns the first component and its UI.</li>
+                    <li><code>src/app.test.vel</code> contains fast Core tests.</li>
+                    <li><code>src/app.browser.test.vel</code> checks the delivered application in a real browser.</li>
+                    <li><code>public/</code> contains static files copied without becoming source modules.</li>
+                    <li><code>velar.json</code> declares the entry, output, Web extension, base path, public configuration, and production policy.</li>
+                    <li><code>package.json</code> and <code>package-lock.json</code> remain the dependency authority.</li>
+                </ul>
+                <pre><code>{appCode}</code></pre>
+
+                <h2 id="first-component">Write the first component</h2>
+                <pre><code>{componentCode}</code></pre>
+                <p>A component runs its setup once. <code>state</code> declares reactive data, assignment updates the dependent DOM region, JSX creates native DOM, and the <code>style</code> block emits scoped CSS. There is no virtual DOM and no React-style effect surface.</p>
+                <p>Use <code>const</code> for bindings that are not reassigned and <code>let</code> when reassignment is part of the design. Component <code>state</code> is reserved for values that participate in rendering or watchers.</p>
+
+                <h2 id="development">Development loop</h2>
+                <p><code>npm run dev</code> checks the project, starts the Web development host, and recompiles changed modules. A failed edit keeps the last working application visible and reports the diagnostic in the browser. Module state is recreated after hot replacement; persistence exists only when you use an explicit storage module.</p>
+
+                <h2 id="quality">Check and ship</h2>
+                <pre><code>{scriptsCode}</code></pre>
+                <p><code>check</code> performs semantic analysis. Core tests run without a browser. Browser tests build and open the real CSP application through a restricted typed controller. <code>build</code> writes hashed assets and deployment manifests; <code>verify</code> checks their exact file inventory, sizes, hashes, API versions, CSP, cache policy, and SPA fallback before <code>preview</code> will serve them.</p>
+
+                <div class="next-links"><Link to="/docs/project"><strong>Next: Project and CLI</strong><span>Understand the manifest, commands, packages, and templates.</span></Link><Link to="/docs/language"><strong>Start the language</strong><span>Learn bindings, values, expressions, and readable blocks.</span></Link></div>
+            </Prose>
+        </DocsShell>
+    </main>

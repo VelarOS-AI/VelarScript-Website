@@ -131,4 +131,4 @@ export component SiteFooter(repositoryUrl: string, version: string):
             }
         }
 
-    return <footer class="footer"><Container><div class="inner"><p class="statement">A small, coherent language for ambitious work on the Web.</p><p class="meta">Velar {version}<br /><a href={repositoryUrl}>Apache-2.0 on GitHub</a></p></div></Container></footer>
+    return <footer class="footer"><Container><div class="inner"><p class="statement">A small, coherent language for ambitious work on the Web.</p><p class="meta">VelarScript {version}<br /><a href={repositoryUrl}>Apache-2.0 on GitHub</a></p></div></Container></footer>

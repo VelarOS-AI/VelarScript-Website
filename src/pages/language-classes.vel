@@ -1,0 +1,50 @@
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const basicCode = "class Player(const id: string, let score: number = 0):\n    const achievements: List<string> = []\n    let sessions: number = 0\n\n    init:\n        assert id.length > 0, \"Player id cannot be empty\"\n\n    get label() -> string:\n        return f\"{self.id}: {self.score}\"\n\n    def add(points: number):\n        self.score += points\n\nconst player = Player(\"nova\")"
+const inheritanceCode = "abstract class Entity(const id: string):\n    abstract get label() -> string\n    abstract def describe() -> string\n\nclass Project(const id: string, const name: string) extends Entity(id):\n    override get label() -> string:\n        return self.name\n\n    override def describe() -> string:\n        return f\"{self.id}: {self.name}\""
+const privateCode = "class Session(private const token: string):\n    private static let active: number = 0\n\n    private def authorization() -> string:\n        return f\"Bearer {self.token}\"\n\n    def headers() -> Map<string, string>:\n        const headers: Map<string, string> = Map()\n        headers.set(\"authorization\", self.authorization())\n        return headers"
+const staticCode = "class User(const id: string):\n    static const guestId: string = \"guest\"\n\n    static def guest() -> User:\n        return User(User.guestId)"
+
+export component LanguageClasses:
+    return <main>
+        <Head title="Classes · VelarScript" description="VelarScript classes, construction, fields, init, methods, getters, private members, inheritance, abstract contracts, override, super, and Error subclasses." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Language / 05" title="Native identity without prototype ceremony." summary="Classes lower to JavaScript classes and preserve nominal runtime identity while exposing one smaller, explicit construction and inheritance model." tags={["explicit self", "single inheritance", "private", "native getters"]} />
+            <Prose>
+                <h2 id="construction">Construction, fields, and init</h2>
+                <pre><code>{basicCode}</code></pre>
+                <ul>
+                    <li>Construct with <code>Player(...)</code>; source never writes <code>new</code>.</li>
+                    <li>A constructor parameter prefixed with <code>const</code> or <code>let</code> also declares a public instance field.</li>
+                    <li>Body-owned <code>const</code>/<code>let</code> fields require explicit types and initialize once per instance.</li>
+                    <li>Construction order is base construction, parameter fields, body fields, bound methods, then one synchronous <code>init</code> block.</li>
+                    <li><code>init</code> may validate with <code>assert</code> and call methods, but it is not callable or inherited and cannot directly <code>return</code> or <code>await</code>.</li>
+                    <li>A failing <code>init</code> prevents the incomplete object from escaping.</li>
+                </ul>
+
+                <h2 id="methods">Methods and getters</h2>
+                <p>Instance methods use explicit <code>self</code>. Passing a method as a callback retains its instance. <code>get name() -&gt; Type</code> declares a read-only property evaluated on each read and lowered to a native JavaScript getter. Writable state stays an explicit <code>let</code> field; VelarScript does not add setters.</p>
+
+                <h2 id="inheritance">Inheritance and abstract contracts</h2>
+                <pre><code>{inheritanceCode}</code></pre>
+                <p>Classes use one base through <code>extends Base(arguments)</code>. Base construction is explicit. Replacing an inherited method or getter requires <code>override</code> with the same contract. Abstract classes cannot be constructed, and a concrete subclass must implement every inherited abstract member.</p>
+                <p><code>super.method()</code> calls an inherited method and <code>super.name</code> reads an inherited getter. A derived instance is assignable to its base and passes <code>value is Base</code> through native runtime identity.</p>
+
+                <h2 id="private">Private members</h2>
+                <pre><code>{privateCode}</code></pre>
+                <p>Fields, getters, and concrete instance/static methods are public by default. <code>private</code> is the only access modifier and lowers to native JavaScript private storage. Private members disappear from exported interfaces, outside completion, navigation, and rename; they are not inherited and cannot be abstract or overridden.</p>
+                <Callout title="A deliberately small hierarchy"><p>There is no redundant <code>public</code>, no <code>protected</code>, multiple inheritance, mixins, decorators, operator overloading, metaclasses, or parallel interface system.</p></Callout>
+
+                <h2 id="static">Static members</h2>
+                <pre><code>{staticCode}</code></pre>
+                <p><code>static const</code>/<code>static let</code> declare class-owned fields, <code>static def</code> declares class methods, and <code>static get</code> declares class properties. Static members use the class name instead of <code>self</code>.</p>
+
+                <h2 id="errors">Application errors</h2>
+                <p><code>Error</code> is the built-in nominal base for application error classes. Error subclasses use the same construction and inheritance rules and may be narrowed with <code>is</code> inside a catch block. Throwing values that are not Error instances is rejected in VelarScript source.</p>
+
+                <div class="next-links"><Link to="/docs/language/modules"><strong>Next: Modules and JavaScript</strong><span>Organize VelarScript source and cross the ecosystem boundary explicitly.</span></Link><Link to="/docs/web/components"><strong>Components and JSX</strong><span>Move from nominal domain behavior into the Web extension.</span></Link></div>
+            </Prose>
+        </DocsShell>
+    </main>

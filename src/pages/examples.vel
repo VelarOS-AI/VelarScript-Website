@@ -69,7 +69,7 @@ export component Examples:
         }
 
     return <main data-examples-page>
-        <Head title="Examples · Velar" description="Small Velar examples showing state, typed data, browser capabilities, and explicit lifecycle." themeColor="#f7f5f0" />
+        <Head title="Examples · VelarScript" description="Small VelarScript examples showing state, typed data, browser capabilities, and explicit lifecycle." themeColor="#f7f5f0" />
         <section class="hero"><Container><Eyebrow label="Examples" /><h1>Small programs, honest ideas.</h1><p class="intro">These examples isolate the language decisions that matter in larger applications: direct state, one data model, native Web behavior, and visible resource ownership.</p></Container></section>
         {examples.map(example => <Section key={example.slug} ruled={true}><Container><article class="example"><div class="copy"><Eyebrow label={example.eyebrow} /><h2>{example.title}</h2><p>{example.summary}</p><div class="tags">{example.traits.map(trait => <Tag key={trait} label={trait} />)}</div></div><CodeWindow code={example.code} label={example.slug + ".vel"} /></article></Container></Section>)}
     </main>

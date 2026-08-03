@@ -1,0 +1,58 @@
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const functionCode = "def greet(name: string, punctuation: string = \"!\") -> string:\n    return f\"Hello, {name}{punctuation}\"\n\ndef notify(message: string):\n    print(message)\n\nconst greetUser: (string, string) -> string = greet"
+const arrowCode = "const names = users.map(user => user.name)\nconst point = value => {x: value, y: value ** 2}\nconst load: (string) -> Promise<User> = async id => await loadUser(id)"
+const asyncCode = "async def loadUser(id: string) -> User:\n    const response = await http.get(f\"/api/users/{id}\")\n    return await response.parse(User)\n\nasync def loadAll(ids: List<string>) -> List<User>:\n    return await map(ids, async id => await loadUser(id), 4)"
+const restCode = "def total(first: number, ...values: number) -> number:\n    let result = first\n    for value in values:\n        result += value\n    return result\n\nconst subtotal = total(1, 2, 3)\nconst final = total(subtotal, ...moreValues)"
+const flowCode = "if score >= 90:\n    grade = \"A\"\nelse if score >= 80:\n    grade = \"B\"\nelse:\n    grade = \"C\"\n\nfor user in users:\n    print(user.name)\n\nwhile queue.length > 0:\n    process(queue[0])"
+const matchCode = "match task.status:\n    case TaskStatus.todo:\n        showBacklog()\n    case TaskStatus.doing:\n        showProgress()\n    case TaskStatus.done:\n        showResult()"
+const errorCode = "class SaveError(const message: string) extends Error(message):\n    pass\n\ntry:\n    await save(document)\ncatch error:\n    if error is SaveError:\n        showSaveFailure(error.message)\n    else:\n        throw error\nfinally:\n    releaseLock()"
+
+export component LanguageFunctions:
+    return <main>
+        <Head title="Functions and flow · VelarScript" description="VelarScript functions, callbacks, async and await, rest parameters, control flow, match, assertions, and errors." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Language / 03" title="Named work stays obvious." summary="Use def for statement bodies, expression arrows for small callbacks, and one native Promise model for all asynchronous code." tags={["def", "async + await", "else if", "match"]} />
+            <Prose>
+                <h2 id="functions">Named functions</h2>
+                <pre><code>{functionCode}</code></pre>
+                <p>Parameters always declare their types. A function with no result annotation means <code>-&gt; none</code>, may end naturally, and returns the single empty value. A function returning data declares <code>-&gt; T</code> and must return a value on every reachable path. Default parameters are evaluated before the body and make an argument omittable without making its type optional.</p>
+                <p>Function values use <code>(ParameterTypes) -&gt; Result</code>. A final rest element uses <code>...Type</code>. Multiline imports, parameters, type arguments, objects, constructors, Lists, and calls accept a trailing comma.</p>
+
+                <h2 id="arrows">Expression callbacks</h2>
+                <pre><code>{arrowCode}</code></pre>
+                <p>An arrow body is exactly one expression. The object form after <code>=&gt;</code> is unambiguously an object expression, not a JavaScript block. Use a named <code>def</code> when a callback needs statements, local control flow, or multiple returns.</p>
+
+                <h2 id="async">Asynchronous work</h2>
+                <pre><code>{asyncCode}</code></pre>
+                <ul>
+                    <li>On <code>async def</code>, async methods, actions, and async arrows, <code>-&gt; T</code> names the resolved value; callers receive <code>Promise&lt;T&gt;</code>.</li>
+                    <li>Returning either <code>T</code> or <code>Promise&lt;T&gt;</code> is valid because native Promise adoption flattens the result.</li>
+                    <li>Writing <code>-&gt; Promise&lt;T&gt;</code> on an async declaration is rejected to keep one spelling.</li>
+                    <li><code>await</code> belongs to the nearest async boundary and cannot leak into a synchronous callback or parameter default.</li>
+                    <li>A Promise must be awaited before it becomes a JSX child.</li>
+                </ul>
+
+                <h2 id="rest">Rest parameters and spreads</h2>
+                <pre><code>{restCode}</code></pre>
+                <p>The rest annotation is the element type, so <code>values</code> is a <code>List&lt;number&gt;</code>. Rest parameters must be final, typed, and without a default. Functions, methods, expression arrows, and extern functions support them; components keep named JSX props and class constructors keep fixed arity.</p>
+
+                <h2 id="control">Block control flow</h2>
+                <pre><code>{flowCode}</code></pre>
+                <p>Blocks use a colon and indentation. The middle conditional branch is <code>else if</code>, not Python <code>elif</code>. <code>for</code> iterates Lists, strings, Set values, or Map keys. <code>break</code> and <code>continue</code> stay inside their loop boundary. Conditions use the strict boolean/optional rules from the language.</p>
+
+                <h2 id="match">Finite matching</h2>
+                <pre><code>{matchCode}</code></pre>
+                <p><code>match</code> evaluates its input once and never falls through. Cases accept one or more compatible primitive literals or enum members. An enum match without <code>else</code> must be exhaustive and then participates in return-completeness analysis. Destructuring patterns, guards, wildcards, and expression-valued matches are intentionally absent.</p>
+
+                <h2 id="errors">Errors, cleanup, and assertions</h2>
+                <pre><code>{errorCode}</code></pre>
+                <p><code>throw</code> accepts an <code>Error</code> or subclass. <code>catch</code> always receives a reliable Error; foreign JavaScript throws are wrapped and retained as the cause. <code>try</code> requires <code>catch</code>, <code>finally</code>, or both. <code>assert condition, message</code> remains active in production, narrows proven optionals, and throws an <code>AssertionError</code> when the invariant fails.</p>
+                <Callout title="Document the public surface"><p>Contiguous <code>///</code> comments attach Markdown documentation to the next declaration and flow through module metadata into editor hover and completion. They do not emit runtime docstrings or create a second type language.</p></Callout>
+
+                <div class="next-links"><Link to="/docs/language/collections"><strong>Next: Collections</strong><span>Choose List, Map, Set, and the official helper modules.</span></Link><Link to="/docs/language/classes"><strong>Classes</strong><span>Use nominal identity and explicit inheritance.</span></Link></div>
+            </Prose>
+        </DocsShell>
+    </main>

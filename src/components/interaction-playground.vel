@@ -15,7 +15,7 @@ export component InteractionPlayground:
                 focusFirstError(form)
                 message = "The example needs one value."
             else:
-                message = f"Hello, {name}. This form stayed inside checked Velar APIs."
+                message = f"Hello, {name}. This form stayed inside checked VelarScript APIs."
 
     style:
         .playground {
@@ -49,8 +49,8 @@ export component InteractionPlayground:
             color: var(--velar-ink-soft);
         }
 
-    return <section class="playground" data-interaction-playground aria-label="Velar interaction primitives">
-        <Disclosure summary="Why does Disclosure use details and summary?"><p data-disclosure-answer>Native disclosure behavior already owns keyboard activation and its open state. Velar styles and composes it instead of rebuilding browser semantics.</p></Disclosure>
+    return <section class="playground" data-interaction-playground aria-label="VelarScript interaction primitives">
+        <Disclosure summary="Why does Disclosure use details and summary?"><p data-disclosure-answer>Native disclosure behavior already owns keyboard activation and its open state. VelarScript styles and composes it instead of rebuilding browser semantics.</p></Disclosure>
         <ModalDialog title="A checked dialog boundary" triggerLabel="Inspect the dialog" closeLabel="Return to the page"><p>The component uses a typed DialogElement ref and explicit browser helpers. Closing it returns focus to the trigger.</p></ModalDialog>
         <form ref={form} on:submit.prevent={submitExample} novalidate>
             <TextField name="name" label="Your name" hint="Errors are owned by velar/forms and keep this hint relationship." autocomplete="name" placeholder="Ada" required={true} />

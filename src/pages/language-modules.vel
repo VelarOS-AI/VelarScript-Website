@@ -1,0 +1,46 @@
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const moduleCode = "// src/models.vel\nexport type User:\n    id: string\n    name: string\n\nexport def displayName(user: User) -> string:\n    return user.name\n\n// src/app.vel\nimport {User, displayName} from \"./models.vel\""
+const dynamicCode = "const reports = await import(\"./pages/reports.vel\")\nconst summary = reports.createSummary()\n\nconst Reports = lazy(\n    () => import(\"./pages/reports.vel\"),\n    \"Reports\",\n    PageLoading,\n    PageFailed,\n)"
+const jsCode = "import js {marked} from \"marked\"\n\nconst html = marked(source) // checked from the package declaration\n\nimport js unsafe {legacyRender} from \"legacy-renderer\"\n// legacyRender enters as any only at this explicit unsafe boundary."
+const externCode = "extern module \"small-parser\":\n    export const version: string\n    export def parse(source: string) -> ParseResult\n\n    export class Parser(const source: string, let position: number = 0):\n        def parse() -> ParseResult\n        static def from(source: string) -> Parser"
+const packageCode = "{\n  \"name\": \"@example/velar-cards\",\n  \"version\": \"1.0.0\",\n  \"velar\": {\"entry\": \"src/index.vel\"},\n  \"files\": [\"src\"]\n}"
+
+export component LanguageModules:
+    return <main>
+        <Head title="Modules and JavaScript · VelarScript" description="VelarScript static and dynamic modules, npm source packages, JavaScript imports, declaration bridging, extern modules, and unsafe adapters." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Language / 06" title="Explicit boundaries, complete project knowledge." summary="Static VelarScript modules form the checked application graph. Dynamic VelarScript imports retain types and chunks. JavaScript enters only through a visible interop boundary." tags={["import + export", "checked chunks", "npm source", "import js"]} />
+            <Prose>
+                <h2 id="velar-modules">VelarScript modules</h2>
+                <pre><code>{moduleCode}</code></pre>
+                <p>Every <code>.vel</code> file is a module. Imports and exports are explicit, relative paths include the <code>.vel</code> suffix, and exported types, classes, functions, components, constants, aliases, enums, documentation, and symbol identities cross the same semantic graph used by the compiler and language server.</p>
+
+                <h2 id="dynamic">Checked dynamic imports</h2>
+                <pre><code>{dynamicCode}</code></pre>
+                <p>A dynamic VelarScript path is a literal relative <code>.vel</code> path. Its Promise resolves to the checked export object, participates in dependency confinement, incremental invalidation, editor navigation, production manifests, and deterministic code splitting. Runtime-computed paths, bare package names, and dynamic JavaScript imports are not accepted.</p>
+                <p>Dynamic modules cannot export top-level reactive state. Web <code>lazy</code> adds loading, failure, retry, route ownership, and component cleanup around a checked component export.</p>
+
+                <h2 id="packages">npm VelarScript source packages</h2>
+                <pre><code>{packageCode}</code></pre>
+                <p>A package declares one relative <code>velar.entry</code> inside its root and publishes source files. Consumer projects resolve and analyze that source directly. Package-relative imports remain root-confined, and the same package-lock version controls local development, CI, editor semantics, and production bundling.</p>
+
+                <h2 id="javascript">JavaScript packages</h2>
+                <pre><code>{jsCode}</code></pre>
+                <p>Safe <code>import js</code> reads a limited, practical subset of package TypeScript declarations. Understood functions, constants, records, promises, simple unions, aliases, and complete non-generic classes receive VelarScript types. Unsupported overloads, generics, recursive/type-level constructs, or unresolved hierarchies become <code>unknown</code> with a notice; unknown values cannot be called or inspected.</p>
+                <p><code>import js unsafe</code> is the only ordinary source of <code>any</code>. It is a visible trust boundary for code you have audited and adapted. Complex compatibility belongs in a separate <code>.js</code> adapter rather than embedded JavaScript inside a <code>.vel</code> file.</p>
+
+                <h2 id="extern">Manual declarations</h2>
+                <pre><code>{externCode}</code></pre>
+                <p>An <code>extern module</code> describes a small JavaScript surface in VelarScript syntax. Extern constants are read-only runtime exports, functions reuse ordinary signatures and rest parameters, and classes retain construction, field mutability, static/instance members, aliases, and nominal module identity.</p>
+
+                <h2 id="official">Official modules</h2>
+                <p>Core capabilities live under explicit <code>velar/*</code> imports. Web capabilities are contributed only when the project declares <code>@velarscript/web</code>. Nothing patches native prototypes or creates hidden global names. Core projects cannot accidentally use JSX, browser globals, or Web lifecycle syntax.</p>
+                <Callout title="JavaScript is the ABI, not the source authority"><p>VelarScript keeps the existing engine and ecosystem while deciding which source patterns are safe, clear, and supported. Interop never expands the language into “JavaScript with indentation.”</p></Callout>
+
+                <div class="next-links"><Link to="/docs/core"><strong>Core module reference</strong><span>Use collections, text, math, JSON, async, URL, time, IDs, and logs.</span></Link><Link to="/docs/web"><strong>Web framework overview</strong><span>Activate the official browser development layer.</span></Link></div>
+            </Prose>
+        </DocsShell>
+    </main>

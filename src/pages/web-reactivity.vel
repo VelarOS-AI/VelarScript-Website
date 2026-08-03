@@ -1,0 +1,53 @@
+import {Head, Link} from "velar/web"
+import {Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {docsNav} from "../content.vel"
+
+const stateCode = "component Counter(start: number = 0):\n    state count = start\n    computed doubled = count * 2\n\n    def increment():\n        count += 1\n\n    return <button on:click={increment}>\n        {count} / {doubled}\n    </button>"
+const watchCode = "watch query as current, previous:\n    print(f\"{previous} -> {current}\")\n\nasync def updateAndMeasure():\n    expanded = true\n    await tick()\n    const bounds = measure(panel)"
+const lifecycleCode = "component OnlineStatus:\n    state online = environment().online\n    const stopOnline = watchOnline(value => online = value)\n\n    mounted:\n        announce(\"Status ready\")\n\n    cleanup:\n        stopOnline()\n\n    return <output>{online ? \"Online\" : \"Offline\"}</output>"
+const resourceCode = "component TicketList:\n    resource catalog: List<Ticket> = loadTickets()\n    computed failure = catalog.error\n\n    return <main>\n        <p if={catalog.loading} aria-busy=\"true\">Loading…</p>\n        <p else-if={failure} role=\"alert\">{failure.message}</p>\n        <TicketTable else-if={catalog.value} tickets={catalog.value} />\n        <button type=\"button\" on:click={catalog.reload}>Reload</button>\n    </main>"
+const actionCode = "component SaveButton(draft: Draft):\n    action save() -> Receipt:\n        return await submit(draft)\n\n    return <button disabled={save.pending} on:click={save}>\n        {save.pending ? \"Saving…\" : \"Save\"}\n    </button>"
+
+export component WebReactivity:
+    return <main>
+        <Head title="State and lifecycle · VelarScript" description="VelarScript Web state, computed values, watches, DOM scheduling, mounted, cleanup, resources, actions, and application error ownership." themeColor="#f7f5f0" />
+        <DocsShell items={docsNav}>
+            <PageHeader kicker="Web framework / 02" title="Updates are direct; ownership stays visible." summary="Setup runs once. State drives precise DOM work. Resources and actions model common asynchronous UI work, and cleanup remains a sibling lifecycle block." tags={["state", "computed", "resource", "action"]} />
+            <Prose>
+                <h2 id="state">State and computed values</h2>
+                <pre><code>{stateCode}</code></pre>
+                <p><code>state</code> declares mutable reactive data. <code>computed</code> declares a cached pure value derived from reactive reads. State is not a deep Proxy: the compiler instruments visible assignments and supported direct mutations. Changing state does not rerun component setup.</p>
+
+                <h2 id="scheduling">Watch and DOM scheduling</h2>
+                <pre><code>{watchCode}</code></pre>
+                <p>A <code>watch expression</code> observes exactly that expression, not an implicit deep traversal. It does not run during initial setup, multiple synchronous changes produce one scheduled run, and it runs after the related DOM commit by default. The optional <code>as current, previous</code> binding makes change values explicit.</p>
+                <p>State writes are visible to source immediately; DOM commits batch until the current synchronous task ends. <code>await tick()</code> waits for managed DOM to reflect the current state.</p>
+
+                <h2 id="lifecycle">Mounted and cleanup</h2>
+                <pre><code>{lifecycleCode}</code></pre>
+                <ul>
+                    <li><code>mounted</code> runs once after the component's managed DOM is inserted and may await initialization.</li>
+                    <li><code>cleanup</code> runs synchronously once before destruction.</li>
+                    <li>They are sibling blocks. Cleanup is never returned from or nested inside mounted/watch.</li>
+                    <li>Acquire explicit stop/close handles in setup or mounted and release each handle in cleanup.</li>
+                    <li>Cleanup steps continue independently after one fails, and every failure enters the application error channel.</li>
+                </ul>
+                <Callout title="No source-level effect"><p>The compiler uses internal reactive effects, but <code>effect</code> is not an application API. Visible <code>watch</code>, <code>mounted</code>, <code>cleanup</code>, <code>resource</code>, and <code>action</code> constructs each own one clear job.</p></Callout>
+
+                <h2 id="resource">Resources for component data</h2>
+                <pre><code>{resourceCode}</code></pre>
+                <p>A resource initializer returns <code>Promise&lt;T&gt;</code>; its annotation names <code>T</code>. The binding exposes <code>value: T?</code>, <code>loading</code>, <code>ready</code>, <code>error: Error?</code>, and <code>reload()</code>. It starts after mount, does not implicitly track dependencies, retains the last good value while reloading, publishes only the newest generation, and ignores completion after destruction.</p>
+                <p>Failures normalize to Error and report through <code>velar/app</code> with phase <code>resource</code>. The runtime does not pretend it can cancel arbitrary Promises; it prevents obsolete completion from publishing.</p>
+
+                <h2 id="action">Actions for user operations</h2>
+                <pre><code>{actionCode}</code></pre>
+                <p>An <code>action</code> is an implicitly async component function with typed parameters/defaults/rest/result plus reactive <code>pending</code> and <code>error</code> fields. Pending remains true while any call is active, a new call clears the old error, and only the newest call may publish failure state.</p>
+                <p>A successful call resolves to its declared value. A failed value-returning action resolves to <code>none</code> after reporting through <code>velar/app</code>, so use an ordinary <code>async def</code> when rejection and explicit try/catch are the workflow contract.</p>
+
+                <h2 id="errors">Transactional recovery</h2>
+                <p>Component setup and initial JSX construction are transactional. If construction fails after a timer, watcher, or connection is acquired, sibling cleanup runs before the original error continues. Dynamic branch and keyed updates build replacements before committing, so a failed update retains the last valid DOM. Mount, render, watch, event, mounted, cleanup, timer, storage, and realtime failures share the <code>velar/app</code> channel.</p>
+
+                <div class="next-links"><Link to="/docs/web/routing"><strong>Next: Routing and metadata</strong><span>Give those component lifetimes an application structure.</span></Link><Link to="/docs/web/data"><strong>Forms, HTTP and storage</strong><span>Connect state to trusted external boundaries.</span></Link></div>
+            </Prose>
+        </DocsShell>
+    </main>
