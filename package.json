@@ -8,7 +8,7 @@
     "type": "git",
     "url": "git+https://github.com/VelarOS-AI/VelarScript-Website.git"
   },
-  "homepage": "https://github.com/VelarOS-AI/VelarScript-Website",
+  "homepage": "https://velarscript.velaros.cn",
   "engines": {
     "node": ">=24"
   },
@@ -28,10 +28,13 @@
     "build": "velar build",
     "verify": "velar verify",
     "preview": "velar preview",
-    "preview:prepare": "node scripts/prepare-external-preview.mjs",
-    "preview:smoke": "node scripts/verify-preview-server.mjs",
-    "verify:deployment": "velar verify-deployment release/external-preview/site",
-    "validate": "npm run format:check && npm run check && npm test && npm run packages:check && npm run build && npm run verify"
+    "deploy:prepare": "node scripts/prepare-deployment.mjs",
+    "deploy:smoke": "node scripts/verify-deployment-server.mjs",
+    "deploy:check": "bash -n scripts/deploy-production-local.sh deploy/activate-release.sh && node --check scripts/prepare-deployment.mjs && node --check scripts/verify-deployment-server.mjs",
+    "deploy:stage": "bash scripts/deploy-production-local.sh stage",
+    "deploy:local": "bash scripts/deploy-production-local.sh deploy",
+    "verify:deployment": "velar verify-deployment release/deployment/site",
+    "validate": "npm run deploy:check && npm run format:check && npm run check && npm test && npm run packages:check && npm run build && npm run verify"
   },
   "dependencies": {
     "@velarscript/docs-kit": "0.1.0",
