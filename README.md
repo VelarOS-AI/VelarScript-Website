@@ -45,6 +45,7 @@ Prepare the provider-specific but still local external-preview candidate with:
 
 ```sh
 npm run preview:prepare
+npm run preview:smoke
 ```
 
 This builds the site twice, verifies byte-for-byte reproducibility, then
@@ -52,6 +53,9 @@ atomically writes `release/external-preview/site` with Velar-owned `_headers`,
 `_redirects`, CSP, asset hashes, and SPA fallback rules. It refuses to replace
 an unrelated directory and does not deploy. Successful CI runs retain that
 exact directory as a commit-named downloadable artifact.
+`preview:smoke` serves that candidate on an ephemeral loopback port and runs the
+deployment verifier across the real HTTP file, route, MIME, and security-header
+boundary; it always tears the preview process down afterward.
 After an explicitly authorized deployment, compare the hosted bytes, routes,
 MIME types, and headers with the local candidate using:
 

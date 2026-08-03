@@ -29,6 +29,7 @@
     "verify": "velar verify",
     "preview": "velar preview",
     "preview:prepare": "node scripts/prepare-external-preview.mjs",
+    "preview:smoke": "node scripts/verify-preview-server.mjs",
     "verify:deployment": "velar verify-deployment release/external-preview/site",
     "validate": "npm run format:check && npm run check && npm test && npm run packages:check && npm run build && npm run verify"
   },
