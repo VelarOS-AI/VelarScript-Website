@@ -62,7 +62,7 @@ async function buildAndVerify(directory) {
   if (manifest?.formatVersion !== 3
     || manifest?.kind !== "velar-framework-build"
     || manifest?.framework?.id !== "@velarscript/web"
-    || manifest?.framework?.apiVersion !== "0.9"
+    || manifest?.framework?.apiVersion !== "0.10"
     || manifest?.sourceMaps !== false
     || typeof manifest?.buildId !== "string"
     || !/^[0-9a-f]{64}$/u.test(manifest.buildId)
@@ -155,7 +155,7 @@ function parseArguments(arguments_) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const result = await prepareDeployment(parseArguments(process.argv.slice(2)));
-    process.stdout.write(`Prepared reproducible Velar Website deployment ${result.buildId} (${result.files} files) -> ${result.outputDirectory}\n`);
+    process.stdout.write(`Prepared reproducible VelarScript Website deployment ${result.buildId} (${result.files} files) -> ${result.outputDirectory}\n`);
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;

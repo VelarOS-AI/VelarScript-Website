@@ -13,15 +13,15 @@ export type DocsNavGroup:
     items: List<DocsNavItem>
 
 const codeBlockLook = look:
-    overflow = auto
+    overflow = "auto"
     maxWidth = 100%
     margin = 0
     padding = 20px
-    border = line(1px, rule)
-    radius = 9px
+    border = border(1px, rule)
+    borderRadius = 9px
     color = rgb(243, 240, 232)
     background = rgb(17, 18, 22)
-    font = "SFMono-Regular, Consolas, Liberation Mono, monospace"
+    fontFamily = "SFMono-Regular, Consolas, Liberation Mono, monospace"
     fontSize = 0.9rem
     lineHeight = 1.72
 
@@ -29,66 +29,66 @@ export component CodeBlock(code: string):
     return <pre look={codeBlockLook}><SyntaxCode code={code} /></pre>
 
 const docsLook = look:
-    display = grid
-    columns = tracks(248px, minmax(0px, 1fr))
+    display = "grid"
+    gridTemplateColumns = tracks(248px, minmax(0px, 1fr))
     minHeight = 100vh - 66px
 
     if viewport.width <= 840px:
-        columns = tracks(1fr)
+        gridTemplateColumns = tracks(1fr)
 
 const asideLook = look:
-    position = sticky
+    position = "sticky"
     top = 66px
-    alignSelf = start
+    alignSelf = "start"
     height = 100vh - 66px
-    overflow = auto
-    padding = space(30px, 22px)
-    borderRight = line(1px, rule)
+    overflow = "auto"
+    padding = spacing(30px, 22px)
+    borderRight = border(1px, rule)
     background = paperPure
 
     if viewport.width <= 840px:
-        position = relative
+        position = "relative"
         top = 0px
         width = 100%
-        height = auto
+        height = "auto"
         paddingBlock = 18px
-        borderRight = line(0px, transparent)
-        borderBottom = line(1px, rule)
+        borderRight = border(0px, color("transparent"))
+        borderBottom = border(1px, rule)
 
 const asideBrandLook = look:
     if viewport.width <= 840px:
-        display = gone
+        display = "none"
 
 const navLook = look:
-    display = grid
+    display = "grid"
     gap = 24px
     marginTop = 28px
 
 const navGroupLook = look:
-    display = grid
+    display = "grid"
     gap = 9px
 
 const navLabelLook = look:
     paddingInline = 10px
     color = inkSoft
-    font = "SFMono-Regular, Consolas, monospace"
+    fontFamily = "SFMono-Regular, Consolas, monospace"
     fontSize = 0.68rem
     fontWeight = 700
     letterSpacing = 0.11em
-    textCase = uppercase
+    textTransform = "uppercase"
 
 const navItemsLook = look:
-    display = grid
+    display = "grid"
     gap = 5px
 
 const navItemLook = look:
-    display = grid
+    display = "grid"
 
 const navLinkLook = look:
-    padding = space(8px, 10px)
-    radius = 8px
+    padding = spacing(8px, 10px)
+    borderRadius = 8px
     color = inkSoft
-    textDecoration = undecorated
+    textDecoration = "none"
 
     if @current:
         color = ink
@@ -96,29 +96,29 @@ const navLinkLook = look:
 
 const desktopNavLook = look:
     if viewport.width <= 840px:
-        display = gone
+        display = "none"
 
 const mobileNavLook = look:
-    display = gone
+    display = "none"
 
     if viewport.width <= 840px:
-        display = block
+        display = "block"
 
 const mobileSummaryLook = look:
-    padding = space(11px, 12px)
-    border = line(1px, rule)
-    radius = 10px
+    padding = spacing(11px, 12px)
+    border = border(1px, rule)
+    borderRadius = 10px
     color = ink
     background = paperPure
     fontWeight = 700
-    cursor = pointer
+    cursor = "pointer"
 
 const mobileNavListLook = look:
-    display = grid
+    display = "grid"
     gap = 24px
     maxHeight = 62vh
     marginTop = 14px
-    overflow = auto
+    overflow = "auto"
     padding = 4px
 
 const contentLook = look:
@@ -142,10 +142,10 @@ export component DocsShell(items: List<DocsNavGroup>, children: WebNode):
     return <div class="docs" look={docsLook}><aside look={asideLook}><div look={asideBrandLook}><Brand compact={true} /></div><div look={desktopNavLook}><DocsNavigation items={localized} label={locale.text("Documentation sections", "文档章节")} /></div><details class="mobile-docs-nav" look={mobileNavLook}><summary look={mobileSummaryLook}>{locale.text("Browse documentation", "浏览文档目录")}</summary><DocsNavigation items={localized} label={locale.text("Mobile documentation sections", "移动端文档章节")} mobile={true} /></details></aside><section class="content" look={contentLook}><Container narrow={true}>{children}</Container></section></div>
 
 const pageHeaderLook = look:
-    display = grid
+    display = "grid"
     gap = 16px
     paddingBottom = 44px
-    borderBottom = line(1px, rule)
+    borderBottom = border(1px, rule)
 
 const pageTitleLook = look:
     maxWidth = 850px
@@ -162,7 +162,7 @@ const pageSummaryLook = look:
     lineHeight = 1.65
 
 export component PageHeader(kicker: string, title: string, summary: string, tags: List<string> = []):
-    return <header class="header" look={pageHeaderLook}><Eyebrow label={kicker} /><h1 look={pageTitleLook}>{title}</h1><p class="summary" look={pageSummaryLook}>{summary}</p>{tags.length > 0 ? <Inline>{tags.map(tag => <Tag key={tag} label={tag} />)}</Inline> : none}</header>
+    return <header class="header" look={pageHeaderLook}><Eyebrow label={kicker} /><h1 look={pageTitleLook}>{title}</h1><p class="summary" look={pageSummaryLook}>{summary}</p>{tags.size > 0 ? <Inline>{tags.map(tag => <Tag key={tag} label={tag} />)}</Inline> : null}</header>
 
 const proseLook = look:
     paddingBlock = 42px
@@ -178,9 +178,9 @@ export component Prose(children: WebNode):
     return <article class="velar-docs-prose" look={proseLook}>{children}</article>
 
 const calloutLook = look:
-    padding = space(18px, 20px)
-    borderLeft = line(3px, sea)
-    radius = 9px
+    padding = spacing(18px, 20px)
+    borderLeft = border(3px, sea)
+    borderRadius = 9px
     background = seaSoft
 
 const calloutTitleLook = look:

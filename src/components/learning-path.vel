@@ -3,23 +3,23 @@ import {foundationInk as ink, foundationInkSoft as inkSoft, foundationRule as ru
 import {LearningStep} from "../content.vel"
 
 const pathLook = look:
-    display = grid
-    borderBottom = line(1px, rule)
+    display = "grid"
+    borderBottom = border(1px, rule)
 
 const stepLook = look:
-    display = grid
-    columns = tracks(72px, minmax(180px, 0.55fr), minmax(280px, 1fr), auto)
-    alignItems = center
+    display = "grid"
+    gridTemplateColumns = tracks(72px, minmax(180px, 0.55fr), minmax(280px, 1fr), "auto")
+    alignItems = "center"
     gap = 24px
     paddingBlock = 24px
-    borderTop = line(1px, rule)
+    borderTop = border(1px, rule)
 
     if viewport.width <= 760px:
-        columns = tracks(44px, 1fr, auto)
+        gridTemplateColumns = tracks(44px, 1fr, "auto")
 
 const numberLook = look:
     color = sea
-    font = "SFMono-Regular, Consolas, monospace"
+    fontFamily = "SFMono-Regular, Consolas, monospace"
     fontSize = 0.76rem
 
 const titleLook = look:
@@ -38,7 +38,7 @@ const summaryLook = look:
 const linkLook = look:
     color = ink
     fontWeight = 700
-    textDecoration = undecorated
+    textDecoration = "none"
 
 export component LearningPath(steps: List<LearningStep>):
     const locale = useLocale()

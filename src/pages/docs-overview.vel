@@ -11,7 +11,7 @@ export component DocsOverview:
     return <main data-docs-page>
         <Head title={locale.text("Documentation · VelarScript", "文档 · VelarScript")} description={locale.text("Complete VelarScript documentation: start a project, learn the language, use every Core and Web module, test, build, and deploy.", "完整的 VelarScript 文档：创建项目、学习语言、使用 Core 与 Web 模块，并完成测试、构建和部署。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker={locale.text("Documentation", "文档")} title={locale.text("Learn the whole stack, from first value to verified deployment.", "从第一个值开始，学到经过验证的部署。")} summary={locale.text("These guides describe the implemented language and framework contract—not a conceptual mockup. Every chapter uses the syntax and modules exercised by real VelarScript applications.", "这些指南描述的是已经实现的语言与框架契约，而不是概念模型。每一章都使用真实 VelarScript 应用正在验证的语法与模块。")} tags={["Language 0.9", "Core API 0.4", "Web API 0.9", "Node 24+"]} />
+            <PageHeader kicker={locale.text("Documentation", "文档")} title={locale.text("Learn the whole stack, from first value to verified deployment.", "从第一个值开始，学到经过验证的部署。")} summary={locale.text("These guides describe the implemented language and framework contract—not a conceptual mockup. Every chapter uses the syntax and modules exercised by real VelarScript applications.", "这些指南描述的是已经实现的语言与框架契约，而不是概念模型。每一章都使用真实 VelarScript 应用正在验证的语法与模块。")} tags={["Language 0.10", "Core API 0.4", "Web API 0.10", "Node 24+"]} />
             <Prose>
                 <h2 id="start">{locale.text("Start here", "从这里开始")}</h2>
                 <CodeBlock code={firstRunCode} />
@@ -19,11 +19,11 @@ export component DocsOverview:
 
                 <h2 id="language">{locale.text("Learn the language in order", "按顺序学习语言")}</h2>
                 <ol>
-                    <li><Link to="/docs/language">{locale.text("Syntax and values", "语法与值")}</Link> — {locale.text("runtime facts, const/let, primitives, none, optional chains, strict conditions, operators, conversion, and objects.", "运行时事实、const/let、基础值、none、可选链、严格条件、运算符、转换与对象。")}</li>
+                    <li><Link to="/docs/language">{locale.text("Syntax and values", "语法与值")}</Link> — {locale.text("runtime facts, const/let, primitives, null, optional chains, strict conditions, operators, conversion, and objects.", "运行时事实、const/let、基础值、null、可选链、严格条件、运算符、转换与对象。")}</li>
                     <li><Link to="/docs/language/types">{locale.text("Types and data", "类型与数据")}</Link> — {locale.text("records, aliases, functions, optionals, recursive types, unions, enums, inference, and runtime parse/is.", "记录、别名、函数、可选类型、递归类型、联合、枚举、推断与运行时 parse/is。")}</li>
                     <li><Link to="/docs/language/functions">{locale.text("Functions and flow", "函数与控制流")}</Link> — {locale.text("def, arrows, async/await, rest parameters, if/else if, loops, match, Error, try/catch/finally, and assert.", "def、箭头函数、async/await、剩余参数、if/else if、循环、match、Error、try/catch/finally 与 assert。")}</li>
                     <li><Link to="/docs/language/collections">{locale.text("Collections", "集合")}</Link> — {locale.text("List, Map, Set, mutation, snapshots, iteration, functional transforms, and velar/collections.", "List、Map、Set、修改、快照、迭代、函数式变换与 velar/collections。")}</li>
-                    <li><Link to="/docs/language/classes">{locale.text("Classes", "类")}</Link> — {locale.text("construction, fields, init, methods, getters, private/static members, inheritance, abstract contracts, override, super, and Error subclasses.", "构造、字段、init、方法、getter、私有/静态成员、继承、抽象契约、override、super 与 Error 子类。")}</li>
+                    <li><Link to="/docs/language/classes">{locale.text("Classes", "类")}</Link> — {locale.text("fields, constructors, methods, getters, private/static members, inheritance, abstract contracts, override, super, and Error subclasses.", "字段、构造器、方法、getter、私有/静态成员、继承、抽象契约、override、super 与 Error 子类。")}</li>
                     <li><Link to="/docs/language/modules">{locale.text("Modules and JavaScript", "模块与 JavaScript")}</Link> — {locale.text("static/dynamic VelarScript modules, npm source packages, declaration bridging, extern modules, safe unknown, and explicit unsafe adapters.", "静态/动态 VelarScript 模块、npm 源码包、声明桥接、extern 模块、安全的 unknown 与显式 unsafe 适配器。")}</li>
                 </ol>
 

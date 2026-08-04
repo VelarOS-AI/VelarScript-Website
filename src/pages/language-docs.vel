@@ -4,9 +4,9 @@ import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
 const bindingsCode = "const product = \"VelarScript\"\nlet downloads = 0\n\ndownloads += 1\n\nconst {name, version} = release\nconst [first, ...rest] = builds"
-const valuesCode = "const title: string = \"Release\"\nconst progress: number = 0.75\nconst ready: bool = true\nconst failure: Error? = none\n\nconst label = ready ? \"Ready\" : \"Waiting\"\nconst message = f\"{title}: {progress * 100}%\""
-const optionalCode = "const avatar = user?.profile.avatar ?? \"/default.png\"\n\nif user != none:\n    print(user.name)\nelse:\n    print(\"Guest\")\n\nassert draft.estimate, \"Estimate is required\"\nsave(draft.estimate)"
-const expressionCode = "const inside = 0 <= index < items.length\nconst present = value in values\nconst squared = value ** 2\nconst visible = enabled and not hidden\n\n// Explicit conversion; no ambient coercion.\nconst text = str(42)\nconst parsed = number(\"42.5\")"
+const valuesCode = "const title: string = \"Release\"\nconst progress: number = 0.75\nconst ready: bool = true\nconst failure: Error? = null\n\nconst label = ready ? \"Ready\" : \"Waiting\"\nconst message = f\"{title}: {progress * 100}%\""
+const optionalCode = "const avatar = user?.profile?.avatar ?? \"/default.png\"\n\nif user != null:\n    print(user.name)\nelse:\n    print(\"Guest\")\n\nassert draft.estimate, \"Estimate is required\"\nsave(draft.estimate)"
+const expressionCode = "const inside = 0 <= index < items.size\nconst present = value in values\nconst squared = value ** 2\nconst visible = enabled and not hidden\n\n// Explicit conversion; no ambient coercion.\nconst text = str(42)\nconst parsed = number(\"42.5\")"
 const objectCode = "const name = \"Ada\"\nconst active = true\nconst user = {name, active, role: \"admin\"}\nconst updated = {...user, active: false}"
 
 export component LanguageDocs:
@@ -14,7 +14,7 @@ export component LanguageDocs:
     return <main data-language-docs>
         <Head title={locale.text("Syntax and values · VelarScript", "语法与值 · VelarScript")} description={locale.text("VelarScript bindings, primitive values, references, optionals, expressions, objects, and strict conditions.", "VelarScript 的绑定、基础值、引用、可选值、表达式、对象与严格条件。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker={locale.text("Language / 01", "语言 / 01")} title={locale.text("Readable source, JavaScript runtime facts.", "源码更易读，运行时仍遵循 JavaScript 事实。")} summary={locale.text("VelarScript keeps JavaScript values, references, closures, promises, garbage collection, and Number semantics while removing accidental source-level traps.", "VelarScript 保留 JavaScript 的值、引用、闭包、Promise、垃圾回收与 Number 语义，同时移除源码层面的偶然陷阱。")} tags={["const + let", "indentation", "none", "strict conditions"]} />
+            <PageHeader kicker={locale.text("Language / 01", "语言 / 01")} title={locale.text("Readable source, JavaScript runtime facts.", "源码更易读，运行时仍遵循 JavaScript 事实。")} summary={locale.text("VelarScript keeps JavaScript values, references, closures, promises, garbage collection, and Number semantics while removing accidental source-level traps.", "VelarScript 保留 JavaScript 的值、引用、闭包、Promise、垃圾回收与 Number 语义，同时移除源码层面的偶然陷阱。")} tags={["const + let", "indentation", "null", "strict conditions"]} />
             <Prose>
                 <h2 id="runtime">{locale.text("Runtime model", "运行时模型")}</h2>
                 <p>{locale.text("Compiled programs run on the existing JavaScript engine. Objects and collections are references, primitive values behave as JavaScript primitives, numbers use IEEE 754, closures capture bindings, and asynchronous work uses the native event loop and Promise queue. VelarScript adds no VM, garbage collector, virtual DOM, or second memory model.", "编译后的程序运行在现有 JavaScript 引擎上。对象与集合是引用，基础值遵循 JavaScript 行为，数字使用 IEEE 754，闭包捕获绑定，异步工作使用原生事件循环与 Promise 队列。VelarScript 不增加虚拟机、垃圾回收器、虚拟 DOM 或第二套内存模型。")}</p>
@@ -32,13 +32,13 @@ export component LanguageDocs:
 
                 <h2 id="values">{locale.text("Primitive values and strings", "基础值与字符串")}</h2>
                 <CodeBlock code={valuesCode} />
-                <p>{locale.text("The four Core primitive types are ", "Core 的四种基础类型是 ")}<code>string</code>, <code>number</code>, <code>bool</code>{locale.text(", and ", " 与 ")}<code>none</code>{locale.text(". Interpolated strings use ", "。插值字符串使用 ")}<code>f"..."</code>{locale.text(". Short choices use the readable ", "。短选择使用易读的 ")}<code>condition ? yes : no</code>{locale.text(" order; Python's reversed inline conditional is not included.", " 顺序；语言不采用 Python 反向的内联条件写法。")}</p>
+                <p>{locale.text("The four Core primitive types are ", "Core 的四种基础类型是 ")}<code>string</code>, <code>number</code>, <code>bool</code>{locale.text(", and ", " 与 ")}<code>null</code>{locale.text(". Interpolated strings use ", "。插值字符串使用 ")}<code>f"..."</code>{locale.text(". Short choices use the readable ", "。短选择使用易读的 ")}<code>condition ? yes : no</code>{locale.text(" order; Python's reversed inline conditional is not included.", " 顺序；语言不采用 Python 反向的内联条件写法。")}</p>
                 <Callout title={locale.text("Number means JavaScript Number", "number 就是 JavaScript Number")}><p>{locale.text("VelarScript does not claim Python arbitrary-precision integers or decimal arithmetic. APIs requiring integers explicitly check the safe-integer range.", "VelarScript 不声称拥有 Python 的任意精度整数或十进制运算。需要整数的 API 会显式检查安全整数范围。")}</p></Callout>
 
                 <h2 id="empty">{locale.text("One empty value", "唯一空值")}</h2>
                 <CodeBlock code={optionalCode} />
-                <p>{locale.text("Source uses ", "源码使用 ")}<code>none</code>{locale.text(" instead of ", "，而不是 ")}<code>null</code>{locale.text(" or ", " 或 ")}<code>undefined</code>{locale.text(". A type ending in ", "。以 ")}<code>?</code>{locale.text(" may contain ", " 结尾的类型可以包含 ")}<code>none</code>{locale.text(". One ", "。一次 ")}<code>?.</code>{locale.text(" begins a continuous optional chain across later field reads, indexes, calls, and collection operations; skipped arguments are not evaluated.", " 会开始连续可选链，覆盖后续字段读取、索引、调用与集合操作；被跳过的参数不会求值。")}</p>
-                <p><code>if</code>, <code>while</code>, <code>not</code>{locale.text(", explicit ", "、与 ")}<code>none</code>{locale.text(" comparisons, ", " 的显式比较、")}<code>is</code>{locale.text(", and successful ", " 与成功的 ")}<code>assert</code>{locale.text(" narrow stable local names and record fields. Proof remains inside its lexical branch and never crosses a shadowed binding or deferred callback.", " 会收窄稳定局部名称与记录字段。证明只停留在词法分支内，不跨越被遮蔽绑定或延迟回调。")}</p>
+                <p>{locale.text("Source has one empty value: ", "源码只有一个空值：")}<code>null</code>{locale.text(". A type ending in ", "。以 ")}<code>?</code>{locale.text(" may contain it. Every optional continuation stays explicit: write ", " 结尾的类型可以包含它。每一段可选访问都保持显式，例如 ")}<code>account?.profile?.address</code>{locale.text(", ", "、")}<code>values?.[0]</code>{locale.text(", or ", " 或 ")}<code>callback?.()</code>{locale.text(". A skipped index or call does not evaluate its arguments.", "。被跳过的索引或调用不会求值其参数。")}</p>
+                <p><code>if</code>, <code>while</code>, <code>not</code>{locale.text(", explicit ", "、与 ")}<code>null</code>{locale.text(" comparisons, ", " 的显式比较、")}<code>is</code>{locale.text(", and successful ", " 与成功的 ")}<code>assert</code>{locale.text(" narrow stable local names and record fields. Proof remains inside its lexical branch and never crosses a shadowed binding or deferred callback.", " 会收窄稳定局部名称与记录字段。证明只停留在词法分支内，不跨越被遮蔽绑定或延迟回调。")}</p>
 
                 <h2 id="conditions">{locale.text("Strict conditions and operators", "严格条件与运算符")}</h2>
                 <CodeBlock code={expressionCode} />
@@ -52,7 +52,7 @@ export component LanguageDocs:
                 </ul>
 
                 <h2 id="conversion">{locale.text("Explicit conversion", "显式转换")}</h2>
-                <p><code>str(value)</code>{locale.text(" produces display text. ", " 生成显示文本；")}<code>number(text) -&gt; number?</code>{locale.text(" accepts one complete finite decimal and returns ", " 接受完整有限十进制，对空值、残缺值、十六进制、NaN 或无穷返回 ")}<code>none</code>{locale.text(" for empty, partial, hexadecimal, NaN, or infinite input. ", "。")}<code>print(value)</code>{locale.text(" is the small Core output function. Compiler-owned bindings cannot be shadowed.", " 是小型 Core 输出函数。这些编译器拥有的绑定不能被遮蔽。")}</p>
+                <p><code>str(value)</code>{locale.text(" produces display text. ", " 生成显示文本；")}<code>number(text) -&gt; number?</code>{locale.text(" accepts one complete finite decimal and returns ", " 接受完整有限十进制，对空值、残缺值、十六进制、NaN 或无穷返回 ")}<code>null</code>{locale.text(" for empty, partial, hexadecimal, NaN, or infinite input. ", "。")}<code>print(value)</code>{locale.text(" is the small Core output function. Compiler-owned bindings cannot be shadowed.", " 是小型 Core 输出函数。这些编译器拥有的绑定不能被遮蔽。")}</p>
 
                 <h2 id="objects">{locale.text("Objects and immutable updates", "对象与不可变更新")}</h2>
                 <CodeBlock code={objectCode} />

@@ -63,7 +63,7 @@ try {
     "--",
     ...tarballs,
   ], websiteRoot);
-  process.stdout.write(`Installed verified Velar toolchain ${release.version}\n`);
+  process.stdout.write(`Installed verified VelarScript toolchain ${release.version}\n`);
 } finally {
   await rm(temporaryRoot, { recursive: true, force: true });
 }

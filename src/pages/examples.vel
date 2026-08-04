@@ -23,16 +23,16 @@ const introLook = look:
     lineHeight = 1.65
 
 const exampleLook = look:
-    display = grid
-    columns = tracks(minmax(250px, 0.48fr), minmax(0px, 1fr))
+    display = "grid"
+    gridTemplateColumns = tracks(minmax(250px, 0.48fr), minmax(0px, 1fr))
     gap = clamp(40px, 8vw, 100px)
-    alignItems = start
+    alignItems = "start"
 
     if viewport.width <= 820px:
-        columns = tracks(1fr)
+        gridTemplateColumns = tracks(1fr)
 
 const copyLook = look:
-    display = grid
+    display = "grid"
     gap = 17px
 
 const exampleTitleLook = look:
@@ -47,8 +47,8 @@ const exampleSummaryLook = look:
     lineHeight = 1.72
 
 const tagsLook = look:
-    display = flex
-    wrap = wrap
+    display = "flex"
+    flexWrap = "wrap"
     gap = 7px
     marginTop = 8px
 

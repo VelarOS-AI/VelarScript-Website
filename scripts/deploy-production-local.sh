@@ -86,7 +86,7 @@ mkdir -p "${source_root}"
 git archive --format=tar --output="${package_path}" "${release_sha}"
 tar -xf "${package_path}" -C "${source_root}"
 [[ -d "${project_root}/node_modules" ]] || {
-  echo "node_modules is missing; bootstrap the verified Velar toolchain first." >&2
+  echo "node_modules is missing; bootstrap the verified VelarScript toolchain first." >&2
   exit 1
 }
 ln -s "${project_root}/node_modules" "${source_root}/node_modules"

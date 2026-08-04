@@ -3,7 +3,7 @@ import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/doc
 import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
-const recordCode = "type User:\n    id: string\n    name: string\n    avatar: string?\n    roles: List<string>\n\ntype Identifier = string\ntype Users = List<User>\ntype UserHandler = (User) -> none"
+const recordCode = "type User:\n    id: string\n    name: string\n    avatar: string?\n    roles: List<string>\n\ntype Identifier = string\ntype Users = List<User>\ntype UserHandler = (User) -> null"
 const validationCode = "const user = User.parse(raw)\n\nif raw is User:\n    print(raw.name)\n\nimport {parse as parseJson} from \"velar/json\"\nconst decoded = parseJson(source, User)"
 const recursiveCode = "type TreeNode:\n    label: string\n    children: List<TreeNode>\n\ntype Comment:\n    body: string\n    reply: Comment?"
 const unionCode = "type DisplayValue = string | number | bool\n\ndef display(value: DisplayValue) -> string:\n    if value is string:\n        return value\n    else if value is number:\n        return str(value)\n    else:\n        return value ? \"yes\" : \"no\""
@@ -31,7 +31,7 @@ export component LanguageTypes:
                     <li>{locale.text("Every emitted record Type, alias, and enum is frozen and registered under one module-independent identity.", "每个生成的记录 Type、别名与枚举都会冻结，并以独立于模块的统一身份注册。")}</li>
                     <li>{locale.text("Forged objects with lookalike ", "伪造带有相似 ")}<code>parse</code>{locale.text(" or ", " 或 ")}<code>is</code>{locale.text(" fields cannot bypass validation.", " 字段的对象无法绕过验证。")}</li>
                 </ul>
-                <p>{locale.text("JSON-shaped validation recursively accepts finite primitives, ", "JSON 形状验证会递归接受有限基础值、")}<code>none</code>{locale.text(", dense Lists, and plain records. At strict data boundaries it rejects sparse/accessor Lists, symbols, cycles, class instances, functions, Map, Set, Promise, and non-finite numbers.", "、稠密 List 与普通记录。在严格数据边界上，它会拒绝稀疏/访问器 List、symbol、循环、类实例、函数、Map、Set、Promise 与非有限数字。")}</p>
+                <p>{locale.text("JSON-shaped validation recursively accepts finite primitives, ", "JSON 形状验证会递归接受有限基础值、")}<code>null</code>{locale.text(", dense Lists, and plain records. At strict data boundaries it rejects sparse/accessor Lists, symbols, cycles, class instances, functions, Map, Set, Promise, and non-finite numbers.", "、稠密 List 与普通记录。在严格数据边界上，它会拒绝稀疏/访问器 List、symbol、循环、类实例、函数、Map、Set、Promise 与非有限数字。")}</p>
 
                 <h2 id="recursive">{locale.text("Recursive records", "递归记录")}</h2>
                 <CodeBlock code={recursiveCode} />
@@ -39,14 +39,14 @@ export component LanguageTypes:
 
                 <h2 id="union">{locale.text("Simple unions and narrowing", "简单联合与收窄")}</h2>
                 <CodeBlock code={unionCode} />
-                <p>{locale.text("Unions describe a small finite set of runtime alternatives. Each rejected ", "联合描述一小组有限的运行时备选。每次失败的 ")}<code>is</code>{locale.text(" check removes that member for the following ", " 检查都会从后续 ")}<code>else if</code>{locale.text(" or ", " 或 ")}<code>else</code>{locale.text(" branch. The same bounded narrowing works for inline branches, assertions, stable record fields, and adjacent JSX branches. VelarScript does not add conditional, mapped, or programmable type subtraction.", " 分支中移除对应成员。同样的有界收窄适用于内联分支、断言、稳定记录字段与相邻 JSX 分支。VelarScript 不加入条件类型、映射类型或可编程类型减法。")}</p>
+                <p>{locale.text("Unions describe a small finite set of runtime alternatives. Each rejected ", "联合描述一小组有限的运行时备选。每次失败的 ")}<code>is</code>{locale.text(" check removes that member for the following ", " 检查都会从后续 ")}<code>else if</code>{locale.text(" or ", " 或 ")}<code>else</code>{locale.text(" branch. The same bounded narrowing works for inline branches, assertions, stable record fields, and ordinary component control flow. VelarScript does not add conditional, mapped, or programmable type subtraction.", " 分支中移除对应成员。同样的有界收窄适用于内联分支、断言、稳定记录字段与普通组件控制流。VelarScript 不加入条件类型、映射类型或可编程类型减法。")}</p>
 
                 <h2 id="enum">{locale.text("Enums", "枚举")}</h2>
                 <CodeBlock code={enumCode} />
                 <p>{locale.text("Enums are nominal string-backed workflow values. Members serialize as their names and may flow to string-based Web/storage boundaries, but arbitrary strings are not assignable back. Use ", "枚举是以字符串承载的名义工作流值。成员序列化为自身名称，可以流向基于字符串的 Web/存储边界，但任意字符串不能反向赋值。动态输入使用 ")}<code>Enum.parse</code>{locale.text(" for dynamic input and ", "，穷尽处理使用 ")}<code>match</code>{locale.text(" for exhaustive handling.", "。")}</p>
 
                 <h2 id="inference">{locale.text("Inference and deliberate limits", "推断与有意限制")}</h2>
-                <p>{locale.text("Local values, callback arguments/results, collection transforms, Promise results, runtime parsing, and first writes to empty collections are inferred. Public function parameters, non-", "局部值、回调参数/结果、集合变换、Promise 结果、运行时解析与空集合首次写入都可以推断。公开函数参数、非 ")}<code>none</code>{locale.text(" results, class fields, and important application boundaries stay explicit. The language intentionally omits user-defined generics, overloads, declaration merging, conditional/mapped types, metaprogramming, and complex constraints.", " 结果、类字段与重要应用边界仍需显式类型。语言有意省略用户泛型、重载、声明合并、条件/映射类型、元编程与复杂约束。")}</p>
+                <p>{locale.text("Local values, callback arguments/results, collection transforms, Promise results, runtime parsing, and first writes to empty collections are inferred. Public function parameters, non-", "局部值、回调参数/结果、集合变换、Promise 结果、运行时解析与空集合首次写入都可以推断。公开函数参数、非 ")}<code>null</code>{locale.text(" results, class fields, and important application boundaries stay explicit. The language intentionally omits user-defined generics, overloads, declaration merging, conditional/mapped types, metaprogramming, and complex constraints.", " 结果、类字段与重要应用边界仍需显式类型。语言有意省略用户泛型、重载、声明合并、条件/映射类型、元编程与复杂约束。")}</p>
 
                 <div class="next-links"><Link to="/docs/language/functions"><strong>{locale.text("Next: Functions and flow", "下一步：函数与控制流")}</strong><span>{locale.text("Use those types across synchronous and asynchronous work.", "在同步与异步工作中使用这些类型。")}</span></Link><Link to="/docs/language/collections"><strong>{locale.text("Collections", "集合")}</strong><span>{locale.text("Lists, Maps, Sets, iteration, and transformations.", "List、Map、Set、迭代与变换。")}</span></Link></div>
             </Prose>

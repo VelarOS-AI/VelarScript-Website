@@ -1,6 +1,6 @@
-# Contributing to the Velar Website
+# Contributing to the VelarScript Website
 
-The Website is both product documentation and a real Velar application. It
+The Website is both product documentation and a real VelarScript application. It
 must remain buildable from public source without local compiler links.
 
 During the pre-release phase, clone the VelarScript toolchain beside this

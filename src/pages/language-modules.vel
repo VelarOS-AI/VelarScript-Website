@@ -6,7 +6,7 @@ import {docsNav} from "../content.vel"
 const moduleCode = "// src/models.vel\nexport type User:\n    id: string\n    name: string\n\nexport def displayName(user: User) -> string:\n    return user.name\n\n// src/app.vel\nimport {User, displayName} from \"./models.vel\""
 const dynamicCode = "const reports = await import(\"./pages/reports.vel\")\nconst summary = reports.createSummary()\n\nconst Reports = lazy(\n    () => import(\"./pages/reports.vel\"),\n    \"Reports\",\n    PageLoading,\n    PageFailed,\n)"
 const jsCode = "import js {marked} from \"marked\"\n\nconst html = marked(source) // checked from the package declaration\n\nimport js unsafe {legacyRender} from \"legacy-renderer\"\n// legacyRender enters as any only at this explicit unsafe boundary."
-const externCode = "extern module \"small-parser\":\n    export const version: string\n    export def parse(source: string) -> ParseResult\n\n    export class Parser(const source: string, let position: number = 0):\n        def parse() -> ParseResult\n        static def from(source: string) -> Parser"
+const externCode = "extern module \"small-parser\":\n    export const version: string\n    export def parse(source: string) -> ParseResult\n\n    export class Parser:\n        const source: string\n        let position: number\n        constructor(source: string, position: number = 0)\n        def parse() -> ParseResult\n        static def from(source: string) -> Parser"
 const packageCode = "{\n  \"name\": \"@example/velar-cards\",\n  \"version\": \"1.0.0\",\n  \"velar\": {\"entry\": \"src/index.vel\"},\n  \"files\": [\"src\"]\n}"
 
 export component LanguageModules:

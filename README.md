@@ -2,9 +2,9 @@
 
 [![VelarScript Website CI](https://github.com/VelarOS-AI/VelarScript-Website/actions/workflows/ci.yml/badge.svg)](https://github.com/VelarOS-AI/VelarScript-Website/actions/workflows/ci.yml)
 
-The official VelarScript language and Web framework website. Runtime, components,
-styles, content, tests, and pages are written in VelarScript; npm manifests and static
-brand assets are the only non-VelarScript project files.
+The official VelarScript language and Web framework website. Its application,
+components, controlled Look styles, content, and tests are written in VelarScript.
+Repository automation stays in small explicit JavaScript and shell scripts.
 
 Contribution and private security-reporting expectations are recorded in
 [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).

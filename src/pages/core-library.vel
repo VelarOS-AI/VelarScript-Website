@@ -22,7 +22,7 @@ export component CoreLibrary:
                 <ul>
                     <li>{locale.text("Import every capability from an official ", "每项能力都从官方 ")}<code>velar/*</code>{locale.text(" module.", " 模块导入。")}</li>
                     <li>{locale.text("Transforms return new values unless the name explicitly describes mutation.", "除非名称明确描述修改，否则变换返回新值。")}</li>
-                    <li>{locale.text("Missing results use ", "缺失结果使用 ")}<code>none</code>{locale.text(", never source-level undefined.", "，不使用源码层 undefined。")}</li>
+                    <li>{locale.text("Missing results use ", "缺失结果使用 ")}<code>null</code>{locale.text(", never source-level undefined.", "，不使用源码层 undefined。")}</li>
                     <li>{locale.text("Compiler preserves element, callback, Map, optional, runtime Type, and Promise results without user-defined generic syntax.", "编译器保留元素、回调、Map、可选、运行时 Type 与 Promise 结果类型，而不暴露用户泛型语法。")}</li>
                     <li>{locale.text("Known mistakes are diagnostics; unsafe dynamic misuse throws before hidden coercion or host effects.", "已知错误产生诊断；不安全动态误用在隐藏强制转换或宿主副作用前抛错。")}</li>
                     <li>{locale.text("Lists, text, and JSON are bounded; validators never invoke getters merely to inspect data.", "List、文本与 JSON 都有界；验证器不会只为检查数据而调用 getter。")}</li>
@@ -30,9 +30,9 @@ export component CoreLibrary:
 
                 <h2 id="collections">velar/collections</h2>
                 <CodeBlock code={collectionsCode} />
-                <p><strong>{locale.text("Iteration and shape:", "迭代与形状：")}</strong> <code>range</code>, <code>enumerate</code>, <code>zip</code>, <code>unique</code>, <code>chunk</code>, <code>flatten</code>, <code>compact</code>, <code>reverse</code>, <code>repeat</code>.</p>
-                <p><strong>{locale.text("Windows and lookup:", "窗口与查找：")}</strong> <code>take</code>, <code>drop</code>, <code>first</code>, <code>last</code>, <code>find</code>, <code>findIndex</code>, <code>contains</code>, <code>count</code>.</p>
-                <p><strong>{locale.text("Predicates and grouping:", "谓词与分组：")}</strong> <code>any</code>, <code>all</code>, <code>partition</code>, <code>groupBy</code>, <code>keyBy</code>, <code>countBy</code>.</p>
+                <p><strong>{locale.text("Iteration and shape:", "迭代与形状：")}</strong> <code>range</code>, <code>enumerate</code>, <code>zip</code>, <code>unique</code>, <code>chunk</code>, <code>flatten</code>, <code>compact</code>, <code>reversed</code>, <code>repeat</code>.</p>
+                <p><strong>{locale.text("Windows and lookup:", "窗口与查找：")}</strong> <code>take</code>, <code>drop</code>, <code>first</code>, <code>last</code>, <code>find</code>, <code>index</code>, <code>has</code>, <code>count</code>.</p>
+                <p><strong>{locale.text("Predicates and grouping:", "谓词与分组：")}</strong> <code>some</code>, <code>every</code>, <code>partition</code>, <code>groupBy</code>, <code>keyBy</code>, <code>countBy</code>.</p>
                 <p><strong>{locale.text("Ordering and aggregation:", "排序与聚合：")}</strong> <code>sortBy</code>, <code>minBy</code>, <code>maxBy</code>, <code>sum</code>, <code>join</code>. {locale.text("Keys are uniformly strings or finite numbers and stable order is preserved.", "键必须统一为字符串或有限数字，并保留稳定顺序。")}</p>
 
                 <h2 id="text">velar/text</h2>
@@ -50,8 +50,8 @@ export component CoreLibrary:
 
                 <h2 id="json">velar/json</h2>
                 <CodeBlock code={jsonCode} />
-                <p><code>parse</code>{locale.text(" parses and optionally validates through a Type. ", " 解析并可选通过 Type 验证。")}<code>tryParse</code>{locale.text(" returns value, fallback, or none. ", " 返回值、fallback 或 none。")}<code>stringify</code>{locale.text(" strictly encodes, ", " 严格编码，")}<code>stableStringify</code>{locale.text(" sorts keys recursively, ", " 递归排序键，")}<code>clone</code>{locale.text(" clones/validates, ", " 克隆/验证，")}<code>isSerializable</code>{locale.text(" checks losslessness, and ", " 检查无损表示，")}<code>deepEqual</code>{locale.text(" owns structural comparison.", " 负责结构比较。")}</p>
-                <p>{locale.text("Maps/Sets compare under native key/membership identity in deepEqual; class instances/functions remain references. Encoded data is finite primitives, none, dense Lists, and plain records with bounded size/depth.", "Map/Set 在 deepEqual 中按原生键/成员身份比较；类实例/函数保持引用。编码数据限于有限基础值、none、稠密 List 与具有有界大小/深度的普通记录。")}</p>
+                <p><code>parse</code>{locale.text(" parses and optionally validates through a Type. ", " 解析并可选通过 Type 验证。")}<code>tryParse</code>{locale.text(" returns value, fallback, or null. ", " 返回值、fallback 或 null。")}<code>stringify</code>{locale.text(" strictly encodes, ", " 严格编码，")}<code>stableStringify</code>{locale.text(" sorts keys recursively, ", " 递归排序键，")}<code>clone</code>{locale.text(" clones/validates, ", " 克隆/验证，")}<code>isSerializable</code>{locale.text(" checks losslessness, and ", " 检查无损表示，")}<code>deepEqual</code>{locale.text(" owns structural comparison.", " 负责结构比较。")}</p>
+                <p>{locale.text("Maps/Sets compare under native key/membership identity in deepEqual; class instances/functions remain references. Encoded data is finite primitives, null, dense Lists, and plain records with bounded size/depth.", "Map/Set 在 deepEqual 中按原生键/成员身份比较；类实例/函数保持引用。编码数据限于有限基础值、null、稠密 List 与具有有界大小/深度的普通记录。")}</p>
 
                 <h2 id="async">velar/async</h2>
                 <CodeBlock code={asyncCode} />
@@ -59,7 +59,7 @@ export component CoreLibrary:
 
                 <h2 id="url">velar/url</h2>
                 <CodeBlock code={urlCode} />
-                <p>{locale.text("The module owns explicit URL parse, join, query, hash, external checks, encode/decode, and normalization. Query values are string/number/bool scalars, none, or Lists; arbitrary objects never become ", "该模块负责显式 URL 解析、连接、查询、hash、外部检查、编解码与规范化。查询值是 string/number/bool 标量、none 或其 List；任意对象绝不会变成 ")}<code>[object Object]</code>{locale.text(".", "。")}</p>
+                <p>{locale.text("The module owns explicit URL parse, join, query, hash, external checks, encode/decode, and normalization. Query values are string/number/bool scalars, null, or Lists; arbitrary objects never become ", "该模块负责显式 URL 解析、连接、查询、hash、外部检查、编解码与规范化。查询值是 string/number/bool 标量、null 或其 List；任意对象绝不会变成 ")}<code>[object Object]</code>{locale.text(".", "。")}</p>
 
                 <h2 id="time">velar/time</h2>
                 <CodeBlock code={timeCode} />

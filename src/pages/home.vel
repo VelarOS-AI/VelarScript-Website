@@ -4,24 +4,20 @@ import {features, learningSteps} from "../content.vel"
 import {FeatureGrid} from "../components/feature-grid.vel"
 import {LearningPath} from "../components/learning-path.vel"
 
-const heroCode = "type Project:\n    name: string\n    stars: int\n\nconst cardLook = look:\n    display = grid\n    gap = 12px\n\ncomponent ProjectCard(project: Project):\n    state starred = false\n\n    return <article look={cardLook}>\n        <h2>{project.name}</h2>\n        <p>{project.stars} stars</p>\n        <button on:click={() => starred = not starred}>\n            {starred ? \"Starred\" : \"Star\"}\n        </button>\n    </article>"
+const heroCode = "type Project:\n    name: string\n    stars: number\n\nconst cardLook = look:\n    display = \"grid\"\n    gap = 12px\n\ncomponent ProjectCard(project: Project):\n    state starred = false\n\n    def toggleStarred():\n        starred = not starred\n\n    return <article look={cardLook}>\n        <h2>{project.name}</h2>\n        <p>{project.stars} stars</p>\n        <button on:click={toggleStarred}>\n            {starred ? \"Starred\" : \"Star\"}\n        </button>\n    </article>"
 
 const heroLook = look:
-    minHeight = 100vh - 66px
     paddingTop = clamp(70px, 10vw, 128px)
-    paddingBottom = 64px
-
-    if viewport.width <= 980px:
-        minHeight = auto
+    paddingBottom = clamp(76px, 9vw, 116px)
 
 const heroGridLook = look:
-    display = grid
-    columns = tracks(minmax(0px, 1.05fr), minmax(420px, 0.72fr))
-    alignItems = center
+    display = "grid"
+    gridTemplateColumns = tracks(minmax(0px, 1.05fr), minmax(420px, 0.72fr))
+    alignItems = "center"
     gap = clamp(50px, 8vw, 120px)
 
     if viewport.width <= 980px:
-        columns = tracks(minmax(0px, 1fr))
+        gridTemplateColumns = tracks(minmax(0px, 1fr))
 
 const heroTitleLook = look:
     maxWidth = 900px
@@ -32,7 +28,7 @@ const heroTitleLook = look:
     letterSpacing = -0.075em
 
 const heroAccentLook = look:
-    display = block
+    display = "block"
     color = sea
     fontWeight = 520
 
@@ -45,15 +41,15 @@ const leadLook = look:
     lineHeight = 1.62
 
 const actionsLook = look:
-    display = flex
-    wrap = wrap
+    display = "flex"
+    flexWrap = "wrap"
     gap = 10px
     marginTop = 32px
 
 const proofLook = look:
-    display = flex
-    wrap = wrap
-    gap = space(8px, 20px)
+    display = "flex"
+    flexWrap = "wrap"
+    gap = spacing(8px, 20px)
     margin = 0
     marginTop = 27px
     color = inkFaint
@@ -76,13 +72,13 @@ const codeColumnLook = look:
         rotate = 0deg
 
 const manifestoLook = look:
-    display = grid
-    columns = tracks(minmax(0px, 0.9fr), minmax(280px, 0.48fr))
+    display = "grid"
+    gridTemplateColumns = tracks(minmax(0px, 0.9fr), minmax(280px, 0.48fr))
     gap = clamp(40px, 8vw, 120px)
-    alignItems = end
+    alignItems = "end"
 
     if viewport.width <= 980px:
-        columns = tracks(minmax(0px, 1fr))
+        gridTemplateColumns = tracks(minmax(0px, 1fr))
 
 const manifestoTitleLook = look:
     margin = 0
@@ -97,51 +93,51 @@ const manifestoTextLook = look:
     lineHeight = 1.75
 
 const layersLook = look:
-    display = grid
-    columns = repeat(3, minmax(0px, 1fr))
+    display = "grid"
+    gridTemplateColumns = repeat(3, minmax(0px, 1fr))
     marginTop = 70px
 
     if viewport.width <= 720px:
-        columns = tracks(1fr)
+        gridTemplateColumns = tracks(1fr)
 
 def layerLook(last: bool) -> Look:
     return look:
-        display = grid
+        display = "grid"
         gap = 28px
         minHeight = 250px
         padding = 28px
-        borderRight = line(1px, rgba(255, 255, 255, 0.16))
+        borderRight = border(1px, rgba(255, 255, 255, 0.16))
 
         if last:
-            borderRight = line(0px, transparent)
+            borderRight = border(0px, color("transparent"))
 
         if viewport.width <= 720px:
             minHeight = 190px
-            borderRight = line(0px, transparent)
-            borderBottom = line(1px, rgba(255, 255, 255, 0.16))
+            borderRight = border(0px, color("transparent"))
+            borderBottom = border(1px, rgba(255, 255, 255, 0.16))
 
             if last:
-                borderBottom = line(0px, transparent)
+                borderBottom = border(0px, color("transparent"))
 
 const layerIndexLook = look:
     color = rgba(255, 255, 255, 0.55)
-    font = "SFMono-Regular, Consolas, monospace"
+    fontFamily = "SFMono-Regular, Consolas, monospace"
     fontSize = 0.74rem
 
 const layerTitleLook = look:
-    alignSelf = end
+    alignSelf = "end"
     fontSize = clamp(1.5rem, 3vw, 2.7rem)
     letterSpacing = -0.045em
 
 const closingLook = look:
-    display = grid
-    columns = tracks(1fr, auto)
-    alignItems = end
+    display = "grid"
+    gridTemplateColumns = tracks(1fr, "auto")
+    alignItems = "end"
     gap = 40px
     padding = clamp(52px, 8vw, 86px)
 
     if viewport.width <= 720px:
-        columns = tracks(1fr)
+        gridTemplateColumns = tracks(1fr)
 
 const closingTitleLook = look:
     maxWidth = 760px

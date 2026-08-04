@@ -26,7 +26,7 @@ preview.stderr.on("data", (chunk) => {
 });
 
 try {
-  await waitUntilReady(preview, () => previewOutput.includes("Velar production preview:"));
+  await waitUntilReady(preview, () => previewOutput.includes("VelarScript production preview:"));
   const verification = await runCli([
     "verify-deployment",
     candidate,

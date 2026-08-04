@@ -3,13 +3,13 @@ import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/doc
 import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
-const functionCode = "def greet(name: string, punctuation: string = \"!\") -> string:\n    return f\"Hello, {name}{punctuation}\"\n\nconst message = greet(punctuation: \"?\", name: \"Ada\")\n\ndef notify(message: string):\n    print(message)\n\nconst greetUser: (string, string) -> string = greet"
+const functionCode = "def greet(name: string, punctuation: string = \"!\") -> string:\n    return f\"Hello, {name}{punctuation}\"\n\nconst message = greet(punctuation=\"?\", name=\"Ada\")\n\ndef notify(message: string):\n    print(message)\n\nconst greetUser: (string, string) -> string = greet"
 const arrowCode = "const names = users.map(user => user.name)\nconst point = value => {x: value, y: value ** 2}\nconst load: (string) -> Promise<User> = async id => await loadUser(id)"
 const asyncCode = "async def loadUser(id: string) -> User:\n    const response = await http.get(f\"/api/users/{id}\")\n    return await response.parse(User)\n\nasync def loadAll(ids: List<string>) -> List<User>:\n    return await map(ids, async id => await loadUser(id), 4)"
 const restCode = "def total(first: number, ...values: number) -> number:\n    let result = first\n    for value in values:\n        result += value\n    return result\n\nconst subtotal = total(1, 2, 3)\nconst final = total(subtotal, ...moreValues)"
-const flowCode = "if score >= 90:\n    grade = \"A\"\nelse if score >= 80:\n    grade = \"B\"\nelse:\n    grade = \"C\"\n\nfor user in users:\n    print(user.name)\n\nwhile queue.length > 0:\n    process(queue[0])"
-const matchCode = "match task.status:\n    case TaskStatus.todo:\n        showBacklog()\n    case TaskStatus.doing:\n        showProgress()\n    case TaskStatus.done:\n        showResult()"
-const errorCode = "class SaveError(const message: string) extends Error(message):\n    pass\n\ntry:\n    await save(document)\ncatch error:\n    if error is SaveError:\n        showSaveFailure(error.message)\n    else:\n        throw error\nfinally:\n    releaseLock()"
+const flowCode = "if score >= 90:\n    grade = \"A\"\nelse if score >= 80:\n    grade = \"B\"\nelse:\n    grade = \"C\"\n\nfor user in users:\n    print(user.name)\n\nwhile queue.size > 0:\n    process(queue.get(0))"
+const matchCode = "match task.status:\n    case TaskStatus.todo, TaskStatus.doing:\n        showOpenTask()\n    case TaskStatus.done:\n        showResult()\n\nmatch result:\n    case User as user if user.active:\n        show(user)\n    case User as user:\n        archive(user)\n    case Error as error:\n        throw error\n    case null:\n        pass\n    else:\n        print(\"Unsupported\")"
+const errorCode = "class SaveError extends Error:\n    const documentId: string\n\n    constructor(documentId: string, message: string):\n        super(message)\n        self.documentId = documentId\n\ntry:\n    await save(document)\ncatch error:\n    if error is SaveError:\n        showSaveFailure(error.message)\n    else:\n        throw error\nfinally:\n    releaseLock()"
 
 export component LanguageFunctions:
     const locale = useLocale()
@@ -20,9 +20,9 @@ export component LanguageFunctions:
             <Prose>
                 <h2 id="functions">{locale.text("Named functions", "命名函数")}</h2>
                 <CodeBlock code={functionCode} />
-                <p>{locale.text("Parameters always declare their types. No result annotation means ", "参数始终声明类型。没有结果标注表示 ")}<code>-&gt; none</code>{locale.text(", may end naturally, and returns the one empty value. A data-returning function declares ", "，函数可以自然结束并返回唯一空值。返回数据的函数声明 ")}<code>-&gt; T</code>{locale.text(" and must return on every reachable path. Defaults are evaluated before the body and make an argument omittable without making its type optional.", "，并必须在每条可达路径上返回值。默认参数在函数体前求值，让参数可省略但不会让类型变为可选。")}</p>
+                <p>{locale.text("Parameters always declare their types. No result annotation means ", "参数始终声明类型。没有结果标注表示 ")}<code>-&gt; null</code>{locale.text(", may end naturally, and returns the one empty value. A data-returning function declares ", "，函数可以自然结束并返回唯一空值。返回数据的函数声明 ")}<code>-&gt; T</code>{locale.text(" and must return on every reachable path. Defaults are evaluated before the body and make an argument omittable without making its type optional.", "，并必须在每条可达路径上返回值。默认参数在函数体前求值，让参数可省略但不会让类型变为可选。")}</p>
                 <p>{locale.text("Function values use ", "函数值使用 ")}<code>(ParameterTypes) -&gt; Result</code>{locale.text(". A final rest element uses ", "。末尾剩余元素使用 ")}<code>...Type</code>{locale.text(". Multiline imports, parameters, type arguments, objects, constructors, Lists, and calls accept a trailing comma.", "。多行导入、参数、类型参数、对象、构造、List 与调用都接受尾随逗号。")}</p>
-                <p>{locale.text("Calls may name parameters with ", "调用可以使用 ")}<code>name: value</code>{locale.text(". Positional arguments come first; names must exist and appear once. Expressions still evaluate once in written order before values are passed in declaration order, so naming never changes side-effect order. Rest parameters remain positional.", " 具名参数。位置参数必须在前；名称必须存在且只能出现一次。表达式仍按源码书写顺序求值一次，再按声明顺序传值，因此具名不会改变副作用顺序。剩余参数仍是位置形式。")}</p>
+                <p>{locale.text("Calls may name parameters with ", "调用可以使用 ")}<code>name=value</code>{locale.text(". Positional arguments come first; names must exist and appear once. Expressions still evaluate once in written order before values are passed in declaration order, so naming never changes side-effect order. Rest parameters remain positional.", " 具名参数。位置参数必须在前；名称必须存在且只能出现一次。表达式仍按源码书写顺序求值一次，再按声明顺序传值，因此具名不会改变副作用顺序。剩余参数仍是位置形式。")}</p>
 
                 <h2 id="arrows">{locale.text("Expression callbacks", "表达式回调")}</h2>
                 <CodeBlock code={arrowCode} />
@@ -48,7 +48,7 @@ export component LanguageFunctions:
 
                 <h2 id="match">{locale.text("Finite matching", "有限匹配")}</h2>
                 <CodeBlock code={matchCode} />
-                <p><code>match</code>{locale.text(" evaluates input once and never falls through. Cases accept compatible primitive literals or enum members. An enum match without ", " 只求值输入一次且绝不贯穿。case 接受兼容的基础字面量或枚举成员。没有 ")}<code>else</code>{locale.text(" must be exhaustive and participates in return completeness. Destructuring patterns, guards, wildcards, and expression-valued matches are intentionally absent.", " 的枚举匹配必须穷尽，并参与返回完整性分析。语言有意不提供解构模式、守卫、通配符或产生表达式值的 match。")}</p>
+                <p><code>match</code>{locale.text(" evaluates its subject once and never falls through. A case may group compatible literals or enum members, match a runtime type with ", " 只求值主体一次且绝不贯穿。case 可以组合兼容的字面量或枚举成员，也可以通过 ")}<code>Type as name</code>{locale.text(", and add an ", " 匹配并绑定运行时类型，还可以添加 ")}<code>if</code>{locale.text(" guard. Guards run only after the pattern matches and do not count as exhaustive. Complete enum matches participate in required-return analysis; use ", " 守卫。守卫只在模式匹配后运行，并且不计入穷尽性。完整枚举匹配参与必需返回分析；开放输入使用 ")}<code>else</code>{locale.text(" for open input. Destructuring patterns and expression-valued matches remain deliberately absent.", "。语言仍有意不提供解构模式或产生表达式值的 match。")}</p>
 
                 <h2 id="errors">{locale.text("Errors, cleanup, and assertions", "错误、清理与断言")}</h2>
                 <CodeBlock code={errorCode} />

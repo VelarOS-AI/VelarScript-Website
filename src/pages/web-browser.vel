@@ -4,10 +4,10 @@ import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
 const timersCode = "import {after, environment, every, watchOnline, watchVisibility} from \"velar/browser\"\n\ncomponent EnvironmentStatus:\n    const stopReady = after(250, () => print(\"ready\"))\n    const stopHeartbeat = every(1000, () => refresh())\n    const stopOnline = watchOnline(value => print(value))\n    const stopVisibility = watchVisibility(value => print(value))\n\n    cleanup:\n        stopReady()\n        stopHeartbeat()\n        stopOnline()\n        stopVisibility()\n\n    return <p>{environment().online ? \"Online\" : \"Offline\"}</p>"
-const dialogCode = "let dialog: DialogElement? = none\nlet trigger: Element? = none\n\ndef openInspector():\n    showDialog(dialog)\n\ndef closeInspector():\n    closeDialog(dialog, \"done\")\n    focus(trigger)\n\nreturn <>\n    <button ref={trigger} on:click={openInspector}>Inspect</button>\n    <dialog ref={dialog}>\n        <button on:click={closeInspector}>Close</button>\n    </dialog>\n</>"
-const filesCode = "import {download, pick, readText} from \"velar/files\"\n\nconst selected = await pick({accept: \".json\", multiple: false})\nif selected.length > 0:\n    const source = await readText(selected[0])\n    download(\"copy.json\", source, \"application/json\")"
+const dialogCode = "let dialog: DialogElement? = null\nlet trigger: Element? = null\n\ndef openInspector():\n    showDialog(dialog)\n\ndef closeInspector():\n    closeDialog(dialog, \"done\")\n    focus(trigger)\n\nreturn <>\n    <button ref={trigger} on:click={openInspector}>Inspect</button>\n    <dialog ref={dialog}>\n        <button on:click={closeInspector}>Close</button>\n    </dialog>\n</>"
+const filesCode = "import {download, pick, readText} from \"velar/files\"\n\nconst selected = await pick({accept: \".json\", multiple: false})\nif selected.size > 0:\n    const source = await readText(selected.get(0))\n    download(\"copy.json\", source, \"application/json\")"
 const realtimeCode = "import {eventStream, socket} from \"velar/realtime\"\n\ncomponent LiveStatus:\n    const chat = socket(\"wss://example.test/chat\", {\n        message: text => print(text),\n        error: message => print(message),\n    })\n    const updates = eventStream(\"/api/updates\", {message: text => print(text)})\n\n    cleanup:\n        chat.close()\n        updates.close()\n\n    return <p>{chat.state()}</p>"
-const appCode = "import {onError, reportError} from \"velar/app\"\n\ncomponent ErrorStatus:\n    state message = \"ready\"\n    const stopErrors = onError(report => message = report.phase + \":\" + report.error.message)\n\n    cleanup:\n        stopErrors()\n\n    return <output>{message}</output>"
+const appCode = "import {onError, reportError} from \"velar/app\"\n\ncomponent ErrorStatus:\n    state message = \"ready\"\n\n    def capture(phase: string, detail: string):\n        message = phase + \":\" + detail\n\n    const stopErrors = onError(report => capture(report.phase, report.error.message))\n\n    cleanup:\n        stopErrors()\n\n    return <output>{message}</output>"
 
 export component WebBrowser:
     const locale = useLocale()
@@ -30,7 +30,7 @@ export component WebBrowser:
 
                 <h2 id="files">velar/files</h2>
                 <CodeBlock code={filesCode} />
-                <p><code>pick</code>{locale.text(" returns opaque stable records with name, size, type, and modified time. Only those records may enter ", " 返回包含名称、大小、类型与修改时间的不透明稳定记录。只有这些记录能进入 ")}<code>readText</code>, <code>readDataUrl</code>{locale.text(", or HTTP multipart. Reads inspect size first and use explicit ceiling up to 64 MiB. ", " 或 HTTP multipart。读取先检查大小，并使用不超过 64 MiB 的显式上限。")}<code>download</code>{locale.text(" creates bounded text download. Directory/persistent handles remain outside Web API 0.9.", " 创建有界文本下载。目录/持久句柄仍在 Web API 0.9 范围外。")}</p>
+                <p><code>pick</code>{locale.text(" returns opaque stable records with name, size, type, and modified time. Only those records may enter ", " 返回包含名称、大小、类型与修改时间的不透明稳定记录。只有这些记录能进入 ")}<code>readText</code>, <code>readDataUrl</code>{locale.text(", or HTTP multipart. Reads inspect size first and use explicit ceiling up to 64 MiB. ", " 或 HTTP multipart。读取先检查大小，并使用不超过 64 MiB 的显式上限。")}<code>download</code>{locale.text(" creates bounded text download. Directory/persistent handles remain outside Web API 0.10.", " 创建有界文本下载。目录/持久句柄仍在 Web API 0.10 范围外。")}</p>
 
                 <h2 id="realtime">velar/realtime</h2>
                 <CodeBlock code={realtimeCode} />

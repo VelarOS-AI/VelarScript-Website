@@ -4,45 +4,45 @@ import {domId} from "velar/web"
 export const UI_API_VERSION = "0.2"
 
 const visuallyHiddenLook = look:
-    position = absolute
+    position = "absolute"
     width = 1px
     height = 1px
-    overflow = hidden
+    overflow = "hidden"
     margin = -1px
     padding = 0
-    border = line(0px, transparent)
+    border = border(0px, color("transparent"))
     clip = "rect(0 0 0 0)"
     clipPath = "inset(50%)"
-    whiteSpace = nowrap
+    whiteSpace = "nowrap"
 
 export component VisuallyHidden(children: WebNode):
     return <span class="visually-hidden" look={visuallyHiddenLook}>{children}</span>
 
 const skipLinkLook = look:
-    position = fixed
+    position = "fixed"
     top = 12px
     left = 12px
     zIndex = 2147483647
-    padding = space(10px, 14px)
-    border = line(2px, currentColor)
-    radius = 8px
-    color = canvasText
-    background = canvas
+    padding = spacing(10px, 14px)
+    border = border(2px, color("currentColor"))
+    borderRadius = 8px
+    color = "CanvasText"
+    background = "Canvas"
     fontSize = 0.92rem
     fontWeight = 600
     lineHeight = 1.2
-    textDecoration = undecorated
-    translateY = -100% - 24px
+    textDecoration = "none"
+    translate = spacing(0px, -100% - 24px)
 
     if @focusVisible:
-        translateY = 0px
+        translate = spacing(0px, 0px)
 
 export component SkipLink(target: string, label: string = "Skip to content"):
     return <a class="skip-link" look={skipLinkLook} href={target}>{label}</a>
 
 def stackLook(tight: bool) -> Look:
     return look:
-        display = grid
+        display = "grid"
         gap = tight ? 0.5rem : 1rem
 
 export component Stack(children: WebNode, tight: bool = false):
@@ -50,13 +50,13 @@ export component Stack(children: WebNode, tight: bool = false):
 
 def inlineLook(centered: bool) -> Look:
     return look:
-        display = flex
-        wrap = wrap
-        alignItems = center
+        display = "flex"
+        flexWrap = "wrap"
+        alignItems = "center"
         gap = 0.5rem
 
         if centered:
-            justifyContent = center
+            justifyContent = "center"
 
 export component Inline(children: WebNode, centered: bool = false):
     return <div class="inline" look={inlineLook(centered)}>{children}</div>
@@ -65,37 +65,37 @@ export component Status(message: string, assertive: bool = false):
     return <p role={assertive ? "alert" : "status"} aria-live={assertive ? "assertive" : "polite"} aria-atomic="true">{message}</p>
 
 const disclosureLook = look:
-    border = line(1px, currentColor)
-    radius = 12px
+    border = border(1px, color("currentColor"))
+    borderRadius = 12px
 
 const disclosureSummaryLook = look:
-    padding = space(14px, 16px)
+    padding = spacing(14px, 16px)
     fontWeight = 700
-    cursor = pointer
+    cursor = "pointer"
 
 const disclosureContentLook = look:
-    padding = edges(0px, 16px, 16px, 16px)
+    padding = spacing(0px, 16px, 16px, 16px)
 
 export component Disclosure(summary: string, children: WebNode, open: bool = false):
     return <details class="disclosure" look={disclosureLook} open={open}><summary look={disclosureSummaryLook}>{summary}</summary><div class="disclosure-content" look={disclosureContentLook}>{children}</div></details>
 
 const dialogControlLook = look:
-    display = block
+    display = "block"
 
 const dialogLook = look:
     width = 100%
     maxWidth = 560px
     padding = 0
-    border = line(1px, currentColor)
-    radius = 16px
-    color = canvasText
-    background = canvas
+    border = border(1px, color("currentColor"))
+    borderRadius = 16px
+    color = "CanvasText"
+    background = "Canvas"
 
     @backdrop:
         background = rgba(0, 0, 0, 0.48)
 
 const dialogBodyLook = look:
-    display = grid
+    display = "grid"
     gap = 18px
     padding = 24px
 
@@ -103,11 +103,11 @@ const dialogTitleLook = look:
     margin = 0
 
 const dialogButtonLook = look:
-    justifySelf = start
+    justifySelf = "start"
 
 export component ModalDialog(title: string, triggerLabel: string, children: WebNode, closeLabel: string = "Close"):
-    let dialog: DialogElement? = none
-    let trigger: Element? = none
+    let dialog: DialogElement? = null
+    let trigger: Element? = null
     const titleId = domId("velar-dialog-title")
 
     def openDialog():
@@ -125,7 +125,7 @@ export component ModalDialog(title: string, triggerLabel: string, children: WebN
     return <div class="dialog-control" look={dialogControlLook}><button type="button" look={dialogButtonLook} ref={trigger} on:click={openDialog}>{triggerLabel}</button><dialog look={dialogLook} ref={dialog} aria-labelledby={titleId} on:close={restoreTriggerFocus}><div class="dialog-body" look={dialogBodyLook}><h2 look={dialogTitleLook} id={titleId}>{title}</h2>{children}<button type="button" look={dialogButtonLook} on:click={dismissDialog}>{closeLabel}</button></div></dialog></div>
 
 const fieldLook = look:
-    display = grid
+    display = "grid"
     gap = 7px
 
 const fieldLabelLook = look:
@@ -133,11 +133,11 @@ const fieldLabelLook = look:
 
 const fieldInputLook = look:
     minHeight = 42px
-    padding = space(9px, 11px)
-    border = line(1px, currentColor)
-    radius = 9px
-    color = inherit
-    background = transparent
+    padding = spacing(9px, 11px)
+    border = border(1px, color("currentColor"))
+    borderRadius = 9px
+    color = "inherit"
+    background = "transparent"
 
 const fieldHintLook = look:
     margin = 0
@@ -148,4 +148,4 @@ export component TextField(name: string, label: string, hint: string = "", input
     const controlId = domId("velar-field")
     const hintId = f"{controlId}-hint"
 
-    return <div class="field" look={fieldLook} data-velar-ui-field><label look={fieldLabelLook} for={controlId}>{label}</label><input look={fieldInputLook} id={controlId} name={name} type={inputType} autocomplete={autocomplete != "" ? autocomplete : none} placeholder={placeholder != "" ? placeholder : none} required={required} aria-describedby={hint != "" ? hintId : none} />{hint != "" ? <p class="hint" look={fieldHintLook} id={hintId}>{hint}</p> : none}</div>
+    return <div class="field" look={fieldLook} data-velar-ui-field><label look={fieldLabelLook} for={controlId}>{label}</label><input look={fieldInputLook} id={controlId} name={name} type={inputType} autocomplete={autocomplete != "" ? autocomplete : null} placeholder={placeholder != "" ? placeholder : null} required={required} aria-describedby={hint != "" ? hintId : null} />{hint != "" ? <p class="hint" look={fieldHintLook} id={hintId}>{hint}</p> : null}</div>

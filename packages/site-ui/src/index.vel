@@ -12,20 +12,20 @@ export const foundationRule: Color = rule
 export const foundationSea: Color = sea
 export const foundationSeaSoft: Color = seaSoft
 
-export def controlSurface(radius: Length = 9px, padding: Spacing = space(8px, 11px)) -> Look:
+export def controlSurface(radius: Length = 9px, padding: Spacing = spacing(8px, 11px)) -> Look:
     return look:
-        display = inlineGrid
-        placeItems = center
+        display = "inline-grid"
+        placeItems = "center"
         padding = padding
-        border = line(1px, rule)
-        radius = radius
+        border = border(1px, rule)
+        borderRadius = radius
         color = ink
         background = paperPure
         fontSize = 0.88rem
         fontWeight = 650
-        textDecoration = undecorated
-        cursor = pointer
-        transition = change("background", 180ms, easeOut)
+        textDecoration = "none"
+        cursor = "pointer"
+        transition = transition("background", 180ms, "ease-out")
 
         if @hover:
             background = lighten(seaSoft, 0.08)
@@ -35,8 +35,8 @@ export type LocaleComposer:
     languageTag: () -> string
     isChinese: () -> bool
     text: (string, string) -> string
-    setLocale: (string) -> none
-    toggle: () -> none
+    setLocale: (string) -> null
+    toggle: () -> null
 
 export def useLocale() -> LocaleComposer:
     const composer: InternalLocaleComposer = createLocaleComposer()
@@ -50,16 +50,16 @@ export component SiteFoundation(children: WebNode):
     return <FoundationFrame><div lang={locale.languageTag()}><SkipLink target="#main-content" />{children}</div></FoundationFrame>
 
 const brandLinkLook = look:
-    display = inlineFlex
-    alignItems = center
+    display = "inline-flex"
+    alignItems = "center"
     gap = 10px
     color = ink
-    textDecoration = undecorated
+    textDecoration = "none"
 
 const brandImageLook = look:
     width = 28px
     height = 28px
-    objectFit = contain
+    objectFit = "contain"
 
 const brandNameLook = look:
     fontSize = 1.02rem
@@ -73,13 +73,13 @@ const brandLabelLook = look:
 
 export component Brand(compact: bool = false):
     const locale = useLocale()
-    return <span class="brand"><Link to="/" look={brandLinkLook}><img look={brandImageLook} src="/brand/velar-sail.png" alt="" /><span class="brand-name" look={brandNameLook}>VelarScript</span>{compact ? none : <span look={brandLabelLook}>{locale.text("Language + Web", "语言 + Web")}</span>}</Link></span>
+    return <span class="brand"><Link to="/" look={brandLinkLook}><img look={brandImageLook} src="/brand/velar-sail.png" alt="" /><span class="brand-name" look={brandNameLook}>VelarScript</span>{compact ? null : <span look={brandLabelLook}>{locale.text("Language + Web", "语言 + Web")}</span>}</Link></span>
 
 def containerLook(narrow: bool) -> Look:
     return look:
         width = 100%
         maxWidth = 1320px
-        marginInline = auto
+        marginInline = "auto"
         paddingInline = clamp(20px, 4vw, 56px)
 
         if narrow:
@@ -94,7 +94,7 @@ const eyebrowLook = look:
     fontSize = 0.76rem
     fontWeight = 760
     letterSpacing = 0.12em
-    textCase = uppercase
+    textTransform = "uppercase"
 
 export component Eyebrow(label: string):
     return <p look={eyebrowLook}>{label}</p>
@@ -104,20 +104,20 @@ def sectionLook(ruled: bool) -> Look:
         paddingBlock = clamp(72px, 10vw, 132px)
 
         if ruled:
-            borderTop = line(1px, rule)
+            borderTop = border(1px, rule)
 
 export component Section(children: WebNode, ruled: bool = false):
     return <section look={sectionLook(ruled)}>{children}</section>
 
 const headingLook = look:
-    display = grid
-    columns = tracks(minmax(0px, 0.82fr), minmax(280px, 0.5fr))
-    alignItems = end
+    display = "grid"
+    gridTemplateColumns = tracks(minmax(0px, 0.82fr), minmax(280px, 0.5fr))
+    alignItems = "end"
     gap = clamp(28px, 6vw, 88px)
     marginBottom = clamp(42px, 6vw, 76px)
 
     if viewport.width <= 760px:
-        columns = tracks(1fr)
+        gridTemplateColumns = tracks(1fr)
 
 const headingTitleLook = look:
     margin = 0
@@ -138,12 +138,12 @@ export component SectionHeading(kicker: string, title: string, summary: string):
 
 def surfaceLook(dark: bool) -> Look:
     return look:
-        border = line(1px, rule)
-        radius = 20px
+        border = border(1px, rule)
+        borderRadius = 20px
         background = paperPure
 
         if dark:
-            border = line(1px, ink)
+            border = border(1px, ink)
             color = paperPure
             background = ink
 
@@ -152,39 +152,39 @@ export component Surface(children: WebNode, dark: bool = false):
 
 def actionLook(quiet: bool, inverse: bool) -> Look:
     return look:
-        display = inlineFlex
-        border = line(1px, ink)
-        radius = pill
+        display = "inline-flex"
+        border = border(1px, ink)
+        borderRadius = 9999px
         color = paperPure
         background = ink
-        transition = change("translate", 220ms, easeOut)
+        transition = transition("translate", 220ms, "ease-out")
 
         if quiet:
             color = ink
-            background = transparent
+            background = "transparent"
 
         if inverse:
-            border = line(1px, paperPure)
+            border = border(1px, paperPure)
             color = ink
             background = paperPure
 
         if @hover:
-            translateY = -2px
+            translate = spacing(0px, -2px)
 
 const actionContentLook = look:
-    display = inlineFlex
-    padding = space(10px, 16px)
-    color = inherit
-    textDecoration = undecorated
+    display = "inline-flex"
+    padding = spacing(10px, 16px)
+    color = "inherit"
+    textDecoration = "none"
 
 export component ActionLink(to: string, label: string, quiet: bool = false, inverse: bool = false):
     return <span look={actionLook(quiet, inverse)}><Link to={to} look={actionContentLook}>{label}</Link></span>
 
 const tagLook = look:
-    display = inlineFlex
-    padding = space(5px, 9px)
-    border = line(1px, rule)
-    radius = pill
+    display = "inline-flex"
+    padding = spacing(5px, 9px)
+    border = border(1px, rule)
+    borderRadius = 9999px
     color = inkSoft
     background = paperPure
     fontSize = 0.78rem
@@ -194,21 +194,21 @@ export component Tag(label: string):
     return <span look={tagLook}>{label}</span>
 
 const codeWindowLook = look:
-    overflow = hidden
+    overflow = "hidden"
     width = 100%
     minWidth = 0
     margin = 0
-    border = line(1px, ruleStrong)
-    radius = 20px
+    border = border(1px, ruleStrong)
+    borderRadius = 20px
     background = ink
-    shadow = dropShadow(0px, 24px, 80px, rule)
+    boxShadow = shadow(0px, 24px, 80px, rule)
 
 const codeBarLook = look:
-    display = flex
-    alignItems = center
-    justifyContent = spaceBetween
-    padding = space(10px, 14px)
-    borderBottom = line(1px, rgba(255, 255, 255, 0.11))
+    display = "flex"
+    alignItems = "center"
+    justifyContent = "space-between"
+    padding = spacing(10px, 14px)
+    borderBottom = border(1px, rgba(255, 255, 255, 0.11))
     color = rgba(255, 255, 255, 0.62)
     fontSize = 0.74rem
 
@@ -216,13 +216,13 @@ const codeDotsLook = look:
     letterSpacing = 0.2em
 
 const codeBodyLook = look:
-    overflow = auto
+    overflow = "auto"
     maxWidth = 100%
     minHeight = 260px
     margin = 0
     padding = clamp(20px, 4vw, 34px)
     color = codeInk
-    font = "SFMono-Regular, Consolas, Liberation Mono, monospace"
+    fontFamily = "SFMono-Regular, Consolas, Liberation Mono, monospace"
     fontSize = clamp(0.78rem, 1.5vw, 0.92rem)
     lineHeight = 1.75
 

@@ -4,7 +4,7 @@ import {ActionLink, CodeWindow, Container, Eyebrow, Section, Surface, foundation
 const createCode = "npm create velar@latest my-app\ncd my-app\nnpm install\nnpm run dev"
 const dependencyCode = "velar install\nvelar add chart-library\nvelar add test-helper --dev\nvelar update\nvelar remove chart-library"
 const valuesCode = "type Player:\n    name: string\n    score: number\n\nconst player: Player = {name: \"Mira\", score: 12}\nlet bonus = 3\n\nif player.score > 10:\n    bonus += 2\n\nprint(f\"{player.name}: {player.score + bonus}\")"
-const componentCode = "const cardLook = look:\n    display = grid\n    gap = 12px\n\nexport component ScoreCard(player: Player):\n    state expanded = false\n    computed total = player.score + 5\n\n    return <article look={cardLook}>\n        <h2>{player.name}</h2>\n        <strong>{total} points</strong>\n        <button on:click={() => expanded = not expanded}>\n            {expanded ? \"Hide\" : \"Show\"} details\n        </button>\n    </article>"
+const componentCode = "type Player:\n    name: string\n    score: number\n\nconst cardLook = look:\n    display = \"grid\"\n    gap = 12px\n\nexport component ScoreCard(player: Player):\n    state expanded = false\n    computed total = player.score + 5\n\n    def toggleExpanded():\n        expanded = not expanded\n\n    return <article look={cardLook}>\n        <h2>{player.name}</h2>\n        <strong>{total} points</strong>\n        <button on:click={toggleExpanded}>\n            {expanded ? \"Hide\" : \"Show\"} details\n        </button>\n    </article>"
 const shipCode = "velar format --check\nvelar check\nvelar test\nvelar test --browser\nvelar build\nvelar verify"
 
 const heroLook = look:
@@ -28,22 +28,22 @@ const introLook = look:
     lineHeight = 1.65
 
 const chapterLook = look:
-    display = grid
-    columns = tracks(minmax(230px, 0.42fr), minmax(0px, 1fr))
+    display = "grid"
+    gridTemplateColumns = tracks(minmax(230px, 0.42fr), minmax(0px, 1fr))
     gap = clamp(40px, 8vw, 110px)
 
     if viewport.width <= 800px:
-        columns = tracks(1fr)
+        gridTemplateColumns = tracks(1fr)
 
 const chapterCopyLook = look:
-    display = grid
-    alignContent = start
+    display = "grid"
+    alignContent = "start"
     gap = 18px
 
 const chapterNumberLook = look:
     margin = 0
     color = sea
-    font = "SFMono-Regular, Consolas, monospace"
+    fontFamily = "SFMono-Regular, Consolas, monospace"
     fontSize = 0.74rem
 
 const chapterTitleLook = look:
@@ -63,19 +63,19 @@ const noteLook = look:
     lineHeight = 1.65
 
 const noteTitleLook = look:
-    display = block
+    display = "block"
     marginBottom = 7px
     color = ink
 
 const nextLook = look:
-    display = grid
-    columns = tracks(1fr, auto)
-    alignItems = end
+    display = "grid"
+    gridTemplateColumns = tracks(1fr, "auto")
+    alignItems = "end"
     gap = 40px
     padding = clamp(38px, 6vw, 70px)
 
     if viewport.width <= 800px:
-        columns = tracks(1fr)
+        gridTemplateColumns = tracks(1fr)
 
 const nextTitleLook = look:
     margin = 0

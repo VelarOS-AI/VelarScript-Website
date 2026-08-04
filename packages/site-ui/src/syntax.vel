@@ -5,8 +5,8 @@ type SyntaxToken:
     value: string
     kind: string
 
-const keywords = "|abstract|action|and|as|assert|async|await|break|case|catch|class|cleanup|component|computed|const|continue|def|else|enum|export|extends|extern|finally|for|from|if|import|in|init|is|let|look|match|mounted|none|not|or|override|pass|private|resource|return|state|static|super|throw|try|type|unsafe|watch|while|"
-const builtins = "|Angle|any|bool|Border|Color|Duration|Error|Event|Image|int|Length|List|Look|Map|none|number|Percentage|Promise|Set|Shadow|Spacing|string|Track|TrackList|Transition|unknown|WebNode|"
+const keywords = "|abstract|action|and|as|assert|async|await|break|case|catch|class|cleanup|component|computed|const|constructor|continue|def|else|enum|export|extends|extern|finally|for|from|if|import|in|is|let|look|match|mounted|null|not|or|override|pass|private|resource|return|state|static|super|throw|try|type|unsafe|watch|while|"
+const builtins = "|Angle|bool|Border|Color|Duration|Error|Event|Image|Length|List|Look|Map|number|Opacity|Percentage|Promise|Set|Shadow|Spacing|string|Track|TrackList|Transition|unknown|WebNode|"
 const tokenPattern = "#[^\\n]*|//[^\\n]*|\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|[A-Za-z_][A-Za-z0-9_]*|[0-9]+(?:\\.[0-9]+)?|[ \\t\\r\\n]+|."
 
 const syntaxLook = look:
@@ -25,7 +25,7 @@ def tokenLook(kind: string) -> Look:
             color = rgb(200, 167, 232)
         else if kind == "comment":
             color = rgb(133, 139, 150)
-            fontStyle = italic
+            fontStyle = "italic"
 
 def tokenKind(value: string) -> string:
     if startsWith(value, "#") or startsWith(value, "//"):

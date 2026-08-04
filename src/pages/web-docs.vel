@@ -12,7 +12,7 @@ export component WebDocs:
     return <main data-web-docs>
         <Head title={locale.text("Web framework · VelarScript", "Web 框架 · VelarScript")} description={locale.text("The official @velarscript/web framework: native JSX, components, Look, reactivity, routing, data, browser capabilities, tests, and production.", "官方 @velarscript/web 框架：原生 JSX、组件、Look、响应式、路由、数据、浏览器能力、测试与生产。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker={locale.text("Web framework / Overview", "Web 框架 / 概览")} title={locale.text("One official path from component to production.", "从组件到生产环境，只走一条官方路径。")} summary={locale.text("@velarscript/web adds checked browser authoring without changing the JavaScript engine, exposing ambient globals, or introducing a virtual DOM.", "@velarscript/web 提供受检查的浏览器开发能力，但不改变 JavaScript 引擎、不暴露环境全局，也不引入虚拟 DOM。")} tags={["Web API 0.9", "native DOM", "controlled Look", "explicit capabilities"]} />
+            <PageHeader kicker={locale.text("Web framework / Overview", "Web 框架 / 概览")} title={locale.text("One official path from component to production.", "从组件到生产环境，只走一条官方路径。")} summary={locale.text("@velarscript/web adds checked browser authoring without changing the JavaScript engine, exposing ambient globals, or introducing a virtual DOM.", "@velarscript/web 提供受检查的浏览器开发能力，但不改变 JavaScript 引擎、不暴露环境全局，也不引入虚拟 DOM。")} tags={["Web API 0.10", "native DOM", "controlled Look", "explicit capabilities"]} />
             <Prose>
                 <h2 id="activate">{locale.text("Activate the extension", "启用扩展")}</h2>
                 <CodeBlock code={activateCode} />
@@ -20,7 +20,7 @@ export component WebDocs:
 
                 <h2 id="model">{locale.text("Rendering model", "渲染模型")}</h2>
                 <p>{locale.text("JSX creates native HTML and SVG nodes. Static DOM and controlled Look rules emit once; reactive expressions subscribe only to state they read and patch their owned text, attribute, branch, keyed-list, or Look value. Components set up once and do not rerun as render functions.", "JSX 创建原生 HTML 与 SVG 节点。静态 DOM 与受控 Look 规则只生成一次；响应式表达式只订阅读取的状态，并更新自己拥有的文本、属性、分支、带键列表或 Look 值。组件只初始化一次，不会作为渲染函数反复执行。")}</p>
-                <p>{locale.text("Look is a typed Velar value that composes through ordinary constants and functions. Stable class names remain public hooks. Raw CSS requires an explicit unsafe import with mandatory before/after placement; inline style is rejected.", "Look 是类型化 Velar 值，通过普通常量与函数组合。稳定类名继续作为公开钩子。原生 CSS 必须显式 unsafe 导入并指定 before/after 位置；内联 style 会被拒绝。")}</p>
+                <p>{locale.text("Look is a typed VelarScript value that composes through ordinary constants and functions. Stable class names remain public hooks. Raw CSS requires an explicit unsafe import with mandatory before/after placement; inline style is rejected.", "Look 是类型化 VelarScript 值，通过普通常量与函数组合。稳定类名继续作为公开钩子。原生 CSS 必须显式 unsafe 导入并指定 before/after 位置；内联 style 会被拒绝。")}</p>
 
                 <h2 id="modules">{locale.text("Capability modules", "能力模块")}</h2>
                 <CodeBlock code={importsCode} />
@@ -45,7 +45,7 @@ export component WebDocs:
                 <Callout title={locale.text("Capabilities stay visible", "能力保持可见")}><p>{locale.text("Direct ", "普通源码直接使用 ")}<code>window</code>, <code>document</code>, <code>navigator</code>, <code>location</code>, <code>history</code>, <code>fetch</code>, <code>JSON</code>, <code>Math</code>, <code>Date</code>{locale.text(", and ", " 与 ")}<code>console</code>{locale.text(" are rejected in ordinary source. Diagnostics point to JSX, Core/Web modules, or an explicit JavaScript adapter.", " 会被拒绝。诊断会指向 JSX、Core/Web 模块或显式 JavaScript 适配器。")}</p></Callout>
 
                 <h2 id="boundaries">{locale.text("Current boundary", "当前边界")}</h2>
-                <p>{locale.text("Web API 0.9 does not define SSR, hydration, server execution, workers, service workers/PWA, WebRTC, WebGPU, directory handles, persistent file handles, or a game runtime. ", "Web API 0.9 尚不定义 SSR、hydration、服务器执行、worker、service worker/PWA、WebRTC、WebGPU、目录句柄、持久文件句柄或游戏运行时。")}<code>velar/game</code>{locale.text(" remains a future Canvas-oriented framework built on this Web platform.", " 仍是未来基于该 Web 平台构建、面向 Canvas 的框架。")}</p>
+                <p>{locale.text("Web API 0.10 does not define SSR, hydration, server execution, workers, service workers/PWA, WebRTC, WebGPU, directory handles, persistent file handles, or a game runtime. ", "Web API 0.10 尚不定义 SSR、hydration、服务器执行、worker、service worker/PWA、WebRTC、WebGPU、目录句柄、持久文件句柄或游戏运行时。")}<code>velar/game</code>{locale.text(" remains a future Canvas-oriented framework built on this Web platform.", " 仍是未来基于该 Web 平台构建、面向 Canvas 的框架。")}</p>
 
                 <div class="next-links"><Link to="/docs/web/components"><strong>{locale.text("Next: Components and JSX", "下一步：组件与 JSX")}</strong><span>{locale.text("Build native, accessible view trees.", "构建原生且无障碍的视图树。")}</span></Link><Link to="/docs/web/reactivity"><strong>{locale.text("State and lifecycle", "状态与生命周期")}</strong><span>{locale.text("Own updates, resources, actions, watchers, and cleanup.", "明确拥有更新、资源、动作、监听与清理。")}</span></Link></div>
             </Prose>

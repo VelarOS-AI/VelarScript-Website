@@ -3,22 +3,22 @@ import {Brand, Container, controlSurface, foundationInk as ink, foundationInkFai
 import {NavItem} from "../content.vel"
 
 const headerLook = look:
-    position = sticky
+    position = "sticky"
     top = 0px
     zIndex = 20
-    borderBottom = line(1px, rule)
+    borderBottom = border(1px, rule)
     background = rgba(247, 245, 240, 0.9)
     backdropFilter = "blur(18px)"
 
 const headerInnerLook = look:
-    display = grid
-    columns = tracks(auto, minmax(0px, 1fr), auto, auto)
-    alignItems = center
+    display = "grid"
+    gridTemplateColumns = tracks("auto", minmax(0px, 1fr), "auto", "auto")
+    alignItems = "center"
     gap = 28px
     minHeight = 66px
 
     if viewport.width <= 760px:
-        columns = tracks(minmax(0px, 1fr), auto)
+        gridTemplateColumns = tracks(minmax(0px, 1fr), "auto")
         gap = 12px
         paddingBlock = 10px
 
@@ -28,24 +28,24 @@ const headerBrandLook = look:
         gridRow = "1"
 
 const navLook = look:
-    display = flex
-    justifyContent = center
+    display = "flex"
+    justifyContent = "center"
     gap = 4px
 
     if viewport.width <= 760px:
         gridColumn = "1 / -1"
         gridRow = "2"
         width = 100%
-        justifyContent = start
-        overflow = auto
+        justifyContent = "start"
+        overflow = "auto"
 
 const navLinkLook = look:
-    padding = space(8px, 11px)
-    radius = 8px
+    padding = spacing(8px, 11px)
+    borderRadius = 8px
     color = inkSoft
     fontSize = 0.88rem
     fontWeight = 650
-    textDecoration = undecorated
+    textDecoration = "none"
 
     if @current:
         color = ink
@@ -56,7 +56,7 @@ const navLinkLook = look:
         fontSize = 0.8rem
 
 const languageLook = look:
-    ...controlSurface(radius: 9px, padding: space(0px, 0px))
+    ...controlSurface(radius = 9px, padding = spacing(0px, 0px))
     width = 38px
     height = 34px
     fontSize = 0.78rem
@@ -65,36 +65,36 @@ const languageLook = look:
     if viewport.width <= 760px:
         gridColumn = "2"
         gridRow = "1"
-        justifySelf = end
+        justifySelf = "end"
 
 const headerMetaLook = look:
-    display = flex
-    alignItems = center
+    display = "flex"
+    alignItems = "center"
     gap = 10px
 
     if viewport.width <= 760px:
-        display = gone
+        display = "none"
 
 const versionLook = look:
     color = inkFaint
-    font = "SFMono-Regular, Consolas, monospace"
+    fontFamily = "SFMono-Regular, Consolas, monospace"
     fontSize = 0.72rem
 
-const sourceLook = controlSurface(radius: 8px)
+const sourceLook = controlSurface(radius = 8px)
 
 const footerLook = look:
-    borderTop = line(1px, rule)
+    borderTop = border(1px, rule)
     background = paperPure
 
 const footerInnerLook = look:
-    display = grid
-    columns = tracks(1fr, auto)
-    alignItems = end
+    display = "grid"
+    gridTemplateColumns = tracks(1fr, "auto")
+    alignItems = "end"
     gap = 30px
     paddingBlock = 48px
 
     if viewport.width <= 640px:
-        columns = tracks(1fr)
+        gridTemplateColumns = tracks(1fr)
 
 const statementLook = look:
     maxWidth = 620px
@@ -109,10 +109,10 @@ const footerMetaLook = look:
     color = inkFaint
     fontSize = 0.78rem
     lineHeight = 1.7
-    textAlign = end
+    textAlign = "end"
 
     if viewport.width <= 640px:
-        textAlign = start
+        textAlign = "start"
 
 const footerLinkLook = look:
     color = inkSoft

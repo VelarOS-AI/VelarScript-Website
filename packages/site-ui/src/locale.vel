@@ -7,8 +7,8 @@ export type LocaleComposer:
     languageTag: () -> string
     isChinese: () -> bool
     text: (string, string) -> string
-    setLocale: (string) -> none
-    toggle: () -> none
+    setLocale: (string) -> null
+    toggle: () -> null
 
 type LocalePreference:
     locale: string

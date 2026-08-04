@@ -4,8 +4,8 @@ import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
 const createCode = "npm create velar@latest my-app\ncd my-app\nnpm install\nnpm run dev"
-const appCode = "import {mount} from \"velar/web\"\nimport {App} from \"./app.vel\"\n\nmount(<App />, \"#app\")"
-const componentCode = "const counterLook = look:\n    display = grid\n    gap = 12px\n    maxWidth = 320px\n\nconst buttonLook = look:\n    justifySelf = start\n    padding = space(10px, 16px)\n    border = line(0px, transparent)\n    radius = pill\n    color = rgb(255, 255, 255)\n    background = rgb(17, 18, 22)\n    cursor = pointer\n\nexport component App:\n    state count = 0\n\n    return <main class=\"counter\" look={counterLook}>\n        <h1>Hello, VelarScript</h1>\n        <button look={buttonLook} type=\"button\" on:click={() => count += 1}>\n            Count: {count}\n        </button>\n    </main>"
+const appCode = "import {App} from \"./app.vel\"\n\nmount(<App />, \"#app\")"
+const componentCode = "const counterLook = look:\n    display = \"grid\"\n    gap = 12px\n    maxWidth = 320px\n\nconst buttonLook = look:\n    justifySelf = \"start\"\n    padding = spacing(10px, 16px)\n    border = border(0px, color(\"transparent\"))\n    borderRadius = 9999px\n    color = rgb(255, 255, 255)\n    background = rgb(17, 18, 22)\n    cursor = \"pointer\"\n\nexport component App:\n    state count = 0\n\n    def increment():\n        count += 1\n\n    return <main class=\"counter\" look={counterLook}>\n        <h1>Hello, VelarScript</h1>\n        <button look={buttonLook} type=\"button\" on:click={increment}>\n            Count: {count}\n        </button>\n    </main>"
 const scriptsCode = "npm run format\nnpm run check\nnpm test\nnpm run test:browser\nnpm run build\nnpm run verify\nnpm run preview"
 
 export component DocsGettingStarted:
@@ -13,7 +13,7 @@ export component DocsGettingStarted:
     return <main data-getting-started>
         <Head title={locale.text("Getting started · VelarScript", "快速开始 · VelarScript")} description={locale.text("Install VelarScript, create a Web project, understand its files, and run the first checked component.", "安装 VelarScript，创建 Web 项目，理解项目文件并运行第一个受检查的组件。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
-            <PageHeader kicker={locale.text("Start / 01", "开始 / 01")} title={locale.text("From an empty folder to a real Web app.", "从空文件夹开始，构建真正的 Web 应用。")} summary={locale.text("Create a project, understand every generated file, change a component, test it, and produce a verified static build.", "创建项目，理解每个生成文件，修改组件、运行测试，并产出可验证的静态构建。")} tags={["Node 24+", "npm", ".vel", "Web API 0.9"]} />
+            <PageHeader kicker={locale.text("Start / 01", "开始 / 01")} title={locale.text("From an empty folder to a real Web app.", "从空文件夹开始，构建真正的 Web 应用。")} summary={locale.text("Create a project, understand every generated file, change a component, test it, and produce a verified static build.", "创建项目，理解每个生成文件，修改组件、运行测试，并产出可验证的静态构建。")} tags={["Node 24+", "npm", ".vel", "Web API 0.10"]} />
             <Prose>
                 <h2 id="requirements">{locale.text("Before you begin", "开始之前")}</h2>
                 <p>{locale.text("VelarScript currently requires Node.js 24 or later. npm remains the package registry, dependency resolver, installer, and lockfile authority. The toolchain is installed into each project, so development, CI, and production use the compiler version recorded by that project's lockfile.", "VelarScript 当前需要 Node.js 24 或更高版本。npm 继续负责包注册、依赖解析、安装和锁文件。工具链安装在每个项目中，因此开发、CI 与生产使用的编译器版本都由该项目的锁文件确定。")}</p>

@@ -33,7 +33,7 @@ const missingLook = look:
 const missingCodeLook = look:
     margin = 0
     color = sea
-    font = "SFMono-Regular, Consolas, monospace"
+    fontFamily = "SFMono-Regular, Consolas, monospace"
     fontSize = 0.76rem
 
 const missingTitleLook = look:

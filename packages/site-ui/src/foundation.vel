@@ -16,7 +16,7 @@ export const foundationLook = look:
     minHeight = 100vh
     color = ink
     background = paper
-    font = "Inter, SF Pro Display, SF Pro Text, PingFang SC, Noto Sans CJK SC, Microsoft YaHei, ui-sans-serif, system-ui, sans-serif"
+    fontFamily = "Inter, SF Pro Display, SF Pro Text, PingFang SC, Noto Sans CJK SC, Microsoft YaHei, ui-sans-serif, system-ui, sans-serif"
 
     @selection:
         color = paperPure

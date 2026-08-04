@@ -3,36 +3,36 @@ import {enumerate} from "velar/collections"
 import {foundationInkFaint as inkFaint, foundationInkSoft as inkSoft, foundationRule as rule, foundationSea as sea, useLocale} from "@velarscript/site-ui"
 
 const gridLook = look:
-    display = grid
-    columns = repeat(3, minmax(0px, 1fr))
-    borderTop = line(1px, rule)
+    display = "grid"
+    gridTemplateColumns = repeat(3, minmax(0px, 1fr))
+    borderTop = border(1px, rule)
 
     if viewport.width <= 850px:
-        columns = tracks(1fr)
+        gridTemplateColumns = tracks(1fr)
 
 def featureLook(last: bool) -> Look:
     return look:
-        display = grid
-        alignContent = start
+        display = "grid"
+        alignContent = "start"
         gap = 18px
         minHeight = 390px
         padding = 30px
-        borderRight = line(1px, rule)
+        borderRight = border(1px, rule)
 
         if last:
-            borderRight = line(0px, transparent)
+            borderRight = border(0px, color("transparent"))
 
         if viewport.width <= 850px:
-            minHeight = auto
-            borderRight = line(0px, transparent)
-            borderBottom = line(1px, rule)
+            minHeight = "auto"
+            borderRight = border(0px, color("transparent"))
+            borderBottom = border(1px, rule)
 
             if last:
-                borderBottom = line(0px, transparent)
+                borderBottom = border(0px, color("transparent"))
 
 const numberLook = look:
     color = sea
-    font = "SFMono-Regular, Consolas, monospace"
+    fontFamily = "SFMono-Regular, Consolas, monospace"
     fontSize = 0.76rem
 
 const titleLook = look:
@@ -49,7 +49,7 @@ const summaryLook = look:
     lineHeight = 1.65
 
 const detailLook = look:
-    alignSelf = end
+    alignSelf = "end"
     margin = 0
     color = inkFaint
     fontSize = 0.85rem
@@ -58,4 +58,4 @@ const detailLook = look:
 export component FeatureGrid(features: List<Feature>):
     const locale = useLocale()
     const numbered = enumerate(features)
-    return <div class="grid" look={gridLook}>{numbered.map(item => <article key={item.value.number} look={featureLook(item.index == features.length - 1)}><span class="number" look={numberLook}>{item.value.number}</span><h3 look={titleLook}>{locale.text(item.value.title, item.value.titleZh)}</h3><p class="summary" look={summaryLook}>{locale.text(item.value.summary, item.value.summaryZh)}</p><p class="detail" look={detailLook}>{locale.text(item.value.detail, item.value.detailZh)}</p></article>)}</div>
+    return <div class="grid" look={gridLook}>{numbered.map(item => <article key={item.value.number} look={featureLook(item.index == features.size - 1)}><span class="number" look={numberLook}>{item.value.number}</span><h3 look={titleLook}>{locale.text(item.value.title, item.value.titleZh)}</h3><p class="summary" look={summaryLook}>{locale.text(item.value.summary, item.value.summaryZh)}</p><p class="detail" look={detailLook}>{locale.text(item.value.detail, item.value.detailZh)}</p></article>)}</div>

@@ -3,27 +3,26 @@ import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/doc
 import {useLocale} from "@velarscript/site-ui"
 import {docsNav} from "../content.vel"
 
-const basicCode = "class Player(const id: string, let score: number = 0):\n    const achievements: List<string> = []\n    let sessions: number = 0\n\n    init:\n        assert id.length > 0, \"Player id cannot be empty\"\n\n    get label() -> string:\n        return f\"{self.id}: {self.score}\"\n\n    def add(points: number):\n        self.score += points\n\nconst player = Player(\"nova\")"
-const inheritanceCode = "abstract class Entity(const id: string):\n    abstract get label() -> string\n    abstract def describe() -> string\n\nclass Project(const id: string, const name: string) extends Entity(id):\n    override get label() -> string:\n        return self.name\n\n    override def describe() -> string:\n        return f\"{self.id}: {self.name}\""
-const privateCode = "class Session(private const token: string):\n    private static let active: number = 0\n\n    private def authorization() -> string:\n        return f\"Bearer {self.token}\"\n\n    def headers() -> Map<string, string>:\n        const headers: Map<string, string> = Map()\n        headers.set(\"authorization\", self.authorization())\n        return headers"
-const staticCode = "class User(const id: string):\n    static const guestId: string = \"guest\"\n\n    static def guest() -> User:\n        return User(User.guestId)"
+const basicCode = "class Player:\n    const id: string\n    let score: number\n    const achievements: List<string> = []\n    let sessions: number = 0\n\n    constructor(id: string, score: number = 0):\n        assert id.length > 0, \"Player id cannot be empty\"\n        self.id = id\n        self.score = score\n\n    get label() -> string:\n        return f\"{self.id}: {self.score}\"\n\n    def add(points: number):\n        self.score += points\n\nconst player = Player(\"nova\")"
+const inheritanceCode = "abstract class Entity:\n    const id: string\n\n    constructor(id: string):\n        self.id = id\n\n    abstract get label() -> string\n    abstract def describe() -> string\n\nclass Project extends Entity:\n    const name: string\n\n    constructor(id: string, name: string):\n        super(id)\n        self.name = name\n\n    override get label() -> string:\n        return self.name\n\n    override def describe() -> string:\n        return f\"{self.id}: {self.name}\""
+const privateCode = "class Session:\n    private const token: string\n    private static let active: number = 0\n\n    constructor(token: string):\n        self.token = token\n\n    private def authorization() -> string:\n        return f\"Bearer {self.token}\"\n\n    def headers() -> Map<string, string>:\n        const headers: Map<string, string> = Map()\n        headers.set(\"authorization\", self.authorization())\n        return headers"
+const staticCode = "class User:\n    const id: string\n    static const guestId: string = \"guest\"\n\n    constructor(id: string):\n        self.id = id\n\n    static def guest() -> User:\n        return User(User.guestId)"
 
 export component LanguageClasses:
     const locale = useLocale()
     return <main>
-        <Head title={locale.text("Classes · VelarScript", "类 · VelarScript")} description={locale.text("VelarScript classes, construction, fields, init, methods, getters, private members, inheritance, abstract contracts, override, super, and Error subclasses.", "VelarScript 的类、构造、字段、init、方法、getter、私有成员、继承、抽象契约、override、super 与 Error 子类。")} themeColor="#f7f5f0" />
+        <Head title={locale.text("Classes · VelarScript", "类 · VelarScript")} description={locale.text("VelarScript classes, constructors, fields, methods, getters, private members, inheritance, abstract contracts, override, super, and Error subclasses.", "VelarScript 的类、构造器、字段、方法、getter、私有成员、继承、抽象契约、override、super 与 Error 子类。")} themeColor="#f7f5f0" />
         <DocsShell items={docsNav}>
             <PageHeader kicker={locale.text("Language / 05", "语言 / 05")} title={locale.text("Native identity without prototype ceremony.", "保留原生身份，去掉原型仪式。")} summary={locale.text("Classes lower to JavaScript classes and preserve nominal runtime identity while exposing a smaller, explicit construction and inheritance model.", "类会降级为 JavaScript 类并保留名义运行时身份，同时只暴露更小、更明确的构造与继承模型。")} tags={["explicit self", "single inheritance", "private", "native getters"]} />
             <Prose>
-                <h2 id="construction">{locale.text("Construction, fields, and init", "构造、字段与 init")}</h2>
+                <h2 id="construction">{locale.text("Fields and construction", "字段与构造")}</h2>
                 <CodeBlock code={basicCode} />
                 <ul>
                     <li>{locale.text("Construct with ", "使用 ")}<code>Player(...)</code>{locale.text("; source never writes ", " 构造，源码不写 ")}<code>new</code>{locale.text(".", "。")}</li>
-                    <li>{locale.text("A constructor parameter prefixed with ", "构造参数前加 ")}<code>const</code>{locale.text(" or ", " 或 ")}<code>let</code>{locale.text(" also declares a public instance field.", "，同时声明公开实例字段。")}</li>
-                    <li>{locale.text("Body-owned ", "类体中的 ")}<code>const</code>/<code>let</code>{locale.text(" fields require explicit types and initialize once per instance.", " 字段需要显式类型，并为每个实例初始化一次。")}</li>
-                    <li>{locale.text("Construction order is base construction, parameter fields, body fields, bound methods, then one synchronous ", "构造顺序是：基类构造、参数字段、类体字段、绑定方法，最后执行一个同步 ")}<code>init</code>{locale.text(" block.", " 块。")}</li>
-                    <li><code>init</code>{locale.text(" may validate with ", " 可以用 ")}<code>assert</code>{locale.text(" and call methods, but is not callable or inherited and cannot directly ", " 验证并调用方法，但它不能被调用或继承，也不能直接 ")}<code>return</code>{locale.text(" or ", " 或 ")}<code>await</code>{locale.text(".", "。")}</li>
-                    <li>{locale.text("A failing ", "失败的 ")}<code>init</code>{locale.text(" prevents the incomplete object from escaping.", " 会阻止不完整对象逃逸。")}</li>
+                    <li>{locale.text("Instance fields live in the class body, use ", "实例字段写在类体中，使用 ")}<code>const</code>{locale.text(" or ", " 或 ")}<code>let</code>{locale.text(", and always declare a type. A field initializer is optional.", "，并且始终声明类型。字段初始化值可以省略。")}</li>
+                    <li><code>constructor(...)</code>{locale.text(" is the one explicit construction body. It initializes required fields with ", " 是唯一明确的构造体，通过 ")}<code>self.field = value</code>{locale.text(" and may validate with ", " 初始化必需字段，并可使用 ")}<code>assert</code>{locale.text(" or call methods.", " 验证或调用方法。")}</li>
+                    <li>{locale.text("A derived constructor calls ", "派生类构造器必须先调用 ")}<code>super(...)</code>{locale.text(" before using ", "，之后才能使用 ")}<code>self</code>{locale.text(". Constructors are synchronous and do not return a value.", "。构造器是同步的，也不返回值。")}</li>
+                    <li>{locale.text("A failed constructor prevents the incomplete object from escaping. There is no class-header field shorthand and no separate initialization block.", "构造失败会阻止不完整对象逃逸。语言没有类头字段简写，也没有第二种初始化代码块。")}</li>
                 </ul>
 
                 <h2 id="methods">{locale.text("Methods and getters", "方法与 getter")}</h2>
@@ -31,7 +30,7 @@ export component LanguageClasses:
 
                 <h2 id="inheritance">{locale.text("Inheritance and abstract contracts", "继承与抽象契约")}</h2>
                 <CodeBlock code={inheritanceCode} />
-                <p>{locale.text("Classes use one base through ", "类通过 ")}<code>extends Base(arguments)</code>{locale.text(". Base construction is explicit. Replacing an inherited method or getter requires ", " 使用单一基类，基类构造显式可见。替换继承的方法或 getter 必须写 ")}<code>override</code>{locale.text(" with the same contract. Abstract classes cannot be constructed; concrete subclasses implement every inherited abstract member.", " 并保持同一契约。抽象类不能构造；具体子类必须实现所有继承的抽象成员。")}</p>
+                <p>{locale.text("Classes use one base through ", "类通过 ")}<code>extends Base</code>{locale.text(". The derived constructor then calls ", " 使用单一基类，派生构造器再调用 ")}<code>super(...)</code>{locale.text(" explicitly. Replacing an inherited method or getter requires ", "。替换继承的方法或 getter 必须写 ")}<code>override</code>{locale.text(" with the same contract. Abstract classes cannot be constructed; concrete subclasses implement every inherited abstract member.", " 并保持同一契约。抽象类不能构造；具体子类必须实现所有继承的抽象成员。")}</p>
                 <p><code>super.method()</code>{locale.text(" calls an inherited method and ", " 调用继承方法，")}<code>super.name</code>{locale.text(" reads an inherited getter. A derived instance is assignable to its base and passes ", " 读取继承 getter。派生实例可赋值给基类，并通过原生运行时身份满足 ")}<code>value is Base</code>{locale.text(" through native runtime identity.", "。")}</p>
 
                 <h2 id="private">{locale.text("Private members", "私有成员")}</h2>
