@@ -27,7 +27,8 @@ export component LanguageDocs:
                     <li>{locale.text("Both forms are block scoped and must be initialized.", "两种形式都是块级作用域，并且必须初始化。")}</li>
                     <li><code>const</code>{locale.text(" prevents rebinding but does not freeze a referenced object, List, Map, or Set.", " 阻止重新绑定，但不会冻结引用的对象、List、Map 或 Set。")}</li>
                     <li>{locale.text("Assignment is a statement, never a value-producing expression.", "赋值是语句，永远不会成为产生值的表达式。")}</li>
-                    <li>{locale.text("Declarations and ", "声明与 ")}<code>for</code>{locale.text(" bindings support object/List destructuring. Spreads use ", " 绑定支持对象/List 解构；展开使用 ")}<code>...</code>{locale.text(".", "。")}</li>
+                    <li>{locale.text("Declarations and ", "声明与 ")}<code>for</code>{locale.text(" bindings share controlled object/List patterns. Object fields must be own enumerable data fields, so binding never invokes a getter; an absent field declared as ", " 绑定共用受控的对象/List 模式。对象字段必须是自身的可枚举数据字段，因此绑定不会调用 getter；声明为 ")}<code>T?</code>{locale.text(" binds ", " 的缺失字段会绑定为 ")}<code>null</code>{locale.text(" when absent.", "。")}</li>
+                    <li><code>[first, second]</code>{locale.text(" requires exactly two List items. ", " 要求 List 恰好有两项；")}<code>[first, ...rest]</code>{locale.text(" requires at least one and creates a fresh List for the remainder. Use ", " 至少要求一项，并为剩余部分创建新的 List。形状不匹配属于正常分支时，请使用 ")}<code>match</code>{locale.text(" when shape mismatch is an expected branch.", "。")}</li>
                 </ul>
 
                 <h2 id="values">{locale.text("Primitive values and strings", "基础值与字符串")}</h2>
