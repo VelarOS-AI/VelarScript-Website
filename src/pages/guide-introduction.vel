@@ -1,0 +1,117 @@
+import {Head, Link} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
+
+const surfaceCode = "type Release:\n    id: string\n    stage: string\n    blocking: number\n\n// Indentation blocks, `and`, `or`, `not`, and one spelling per idea. The\n// record is an ordinary JavaScript object and the List is an ordinary\n// JavaScript array: the writing surface changes, the runtime does not.\nexport def isReady(release: readonly Release) -> bool:\n    return release.stage == \"verifying\" and release.blocking == 0\n\nexport def describe(releases: readonly List<Release>) -> string:\n    const ready = releases.filter(release => isReady(release)).size\n    return f\"{ready} of {releases.size} ready\""
+const extensionCode = "import {rgb, spacing} from \"velar/look\"\n\n// Everything here that the language core does not have belongs to the Web\n// extension: `component`, JSX, `state`, `look`, and the reserved `mount`.\n// A Core project activates none of it and cannot spell any of it.\nconst buttonLook = look:\n    padding = spacing(10px, 14px)\n    borderRadius = 10px\n    color = rgb(24, 24, 24)\n\nexport component Counter(start: number = 0):\n    state count = start\n\n    def increment():\n        count += 1\n\n    return <button look={buttonLook} on:click={increment}>Count: {count}</button>"
+const truthinessErrorCode = `export def summary(items: List<string>) -> string:\n    if items:\n        return items[0]\n    return "empty"`
+
+const truthinessErrorOutput = "src/board.vel:2:8 error VEL4001: Condition must be bool, received List<string>\n    if items:\n       ^^^^^"
+
+const sections = [
+    {id: "definition", label: "What the language is", labelZh: "这门语言是什么"},
+    {id: "layers", label: "Language, extensions, toolchain", labelZh: "语言、扩展、工具链"},
+    {id: "teaching", label: "How this site teaches", labelZh: "本站如何讲授"},
+    {id: "boundaries", label: "Status and honest boundaries", labelZh: "状态与诚实边界"},
+]
+
+const inlineLinkLook = look:
+    color = sea
+
+export component GuideIntroduction:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/guide", locale.isChinese())}
+            description={locale.text("What VelarScript is, how the language, its extensions, and the toolchain divide the work, and how this guide teaches them.", "VelarScript 是什么，语言、扩展与工具链如何分工，以及本指南如何讲授它们。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Start / 01", "开始 / 01")}
+                title={locale.text("Introduction", "介绍")}
+                summary={locale.text("VelarScript is an application language that compiles to JavaScript: a Python-shaped writing surface over JavaScript's runtime semantics.", "VelarScript 是一门编译到 JavaScript 的应用语言：以 Python 的书写表面，承载 JavaScript 的运行时语义。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <h2 id="definition">{locale.text("What the language is", "这门语言是什么")}</h2>
+                <p>
+                    {locale.text("One source language, written as indentation-structured Python and running as ordinary JavaScript. VelarScript is built from the bones of JavaScript and Python — the two languages every model already knows best. JavaScript is where the program lives and runs, so behavior defers to it: objects, references, prototypes, garbage collection, Promises, the event loop, and browser APIs remain JavaScript. Python is the visible surface, so spelling and readability follow it. A semantic question asks JavaScript; a spelling question follows Python.", "同一门源语言，以缩进结构的 Python 形态书写，以普通 JavaScript 运行。VelarScript 建立在 JavaScript 与 Python 的骨架之上——这是每个模型都最熟悉的两门语言。程序活在并运行于 JavaScript 之中，因此行为以它为准：对象、引用、原型、垃圾回收、Promise、事件循环与浏览器 API 都仍然是 JavaScript。Python 是可见的表面，因此拼写与可读性跟随它。语义问题去问 JavaScript，拼写问题跟随 Python。")}
+                </p>
+                <p>
+                    {locale.text("Where an inherited behavior is a trap, VelarScript removes it rather than documenting it. There is no implicit coercion, no truthiness, no silently dropped statement, and no unowned promise failure. The language follows five rules: keep JavaScript's runtime semantics where the compiler cannot honestly replace them; remove source-level traps instead of adding compatibility aliases; prefer one obvious spelling over several nearly equivalent ones; use lightweight static checks that catch ordinary mistakes without adding type-level programming; and keep target capabilities in explicit extensions rather than hiding Web, Node, or Desktop behavior in the core.", "当某个继承来的行为是陷阱时，VelarScript 选择移除它，而不是把它写进文档。这里没有隐式强制转换、没有真值性、没有被静默丢弃的语句，也没有无主的 promise 失败。语言遵循五条规则：在编译器无法诚实替换之处，保留 JavaScript 的运行时语义；移除源码层的陷阱，而不是添加兼容别名；在若干近乎等价的拼写中只保留一种显然的拼写；使用轻量静态检查捕捉普通错误，而不引入类型层编程；把目标能力放进显式的扩展，而不是把 Web、Node 或 Desktop 的行为藏进语言核心。")}
+                </p>
+                <CodeBlock code={surfaceCode} />
+                <p>
+                    {locale.text("The purpose behind those rules is a division of labor: the human supplies intent and reads the result, the model writes the VelarScript and every later change to it, and the compiler guards each change. Uniform output is what makes a codebase maintainable by someone who did not write it — including the next session or the next model.", "这些规则背后的目的是一种分工：人提供意图并阅读结果，模型写下 VelarScript 以及此后的每一次修改，编译器守住每一次修改。统一的输出，正是让一份代码库能被并非其作者的人维护的原因——包括下一次会话，或下一个模型。")}
+                </p>
+
+                <h2 id="layers">{locale.text("Language, extensions, toolchain", "语言、扩展、工具链")}</h2>
+                <p>
+                    {locale.text("There are three layers, and the boundary between them is declared rather than inferred. The language core contains no JSX, no components, no reactivity, no lifecycle, and no styling; it is independently usable for a Core library with no framework installed at all. A project enables a target by naming its extension in velar.json, and extension selection is never inferred from source text.", "共有三层，而层与层之间的边界是声明出来的，不是推断出来的。语言核心不包含 JSX、不包含组件、不包含响应式、不包含生命周期、也不包含样式；它可以独立用于一个完全没有安装框架的 Core 库。项目通过在 velar.json 中写出扩展名来启用某个目标，扩展的选择绝不从源码文本推断。")}
+                </p>
+                <p>
+                    {locale.text("The Web extension's addition to the language is a closed list: ten contextual keywords — component, state, resource, action, watch, exposes, expose, look, keyframes, and css — plus JSX expressions, the two lifecycle hooks @mounted and @cleanup, the unsafe CSS import, the unit literals such as 12px and 200ms, and three reserved globals, computed, mount, and tick. Every contextual keyword remains available as an ordinary name; only those three globals and the media subjects viewport, scheme, and motion are refused as binding names. Those six words are the whole difference between what a Core module and a Web module accept.", "Web 扩展对语言的增补是一份封闭清单：十个上下文关键字——component、state、resource、action、watch、exposes、expose、look、keyframes 与 css——加上 JSX 表达式、两个生命周期钩子 @mounted 与 @cleanup、unsafe CSS 导入、12px 与 200ms 这类单位字面量，以及三个保留全局：computed、mount 与 tick。每个上下文关键字仍可作为普通名字使用；只有那三个全局，以及媒体主体 viewport、scheme、motion，会被拒绝作为绑定名。这六个词，就是 Core 模块与 Web 模块所接受内容的全部差别。")}
+                </p>
+                <CodeBlock code={extensionCode} />
+                <p>
+                    {locale.text("The Desktop extension composes the Web extension, so a desktop application uses one module graph with the same components, JSX, Look, state, derived values, and actions; files, paths, processes, HTTP, environment, and native window hosting arrive as permission-scoped capabilities. A future target such as Game must register its own syntax nodes, type families, lowering, modules, runtime, and host contract through the same public extension protocol — adding it must not add Game names to the core.", "桌面扩展组合了 Web 扩展，因此桌面应用使用同一张模块图，其中的组件、JSX、Look、状态、派生值与 action 完全相同；文件、路径、进程、HTTP、环境与原生窗口宿主，则以受权限约束的能力形式到来。将来的目标（例如 Game）必须通过同一套公开扩展协议注册自己的语法节点、类型族、降级、模块、运行时与宿主契约——加入它不得往核心里添加任何 Game 的名字。")}
+                </p>
+                <p>
+                    {locale.text("The toolchain is one executable with a small set of verbs: check, format, fix, dev, run, test, build, verify, preview, package, and skill. There is one canonical layout and no formatter options, because a second layout would be a second spelling.", "工具链是一个可执行文件，动词很少：check、format、fix、dev、run、test、build、verify、preview、package 与 skill。排版只有一种规范形式，并且没有格式化选项——因为第二套排版就是第二种拼写。")} <Link
+                        to="/reference/cli"
+                        look={inlineLinkLook}
+                    >
+                        {locale.text("The CLI reference lists every command.", "CLI 参考页列出了全部命令。")}
+                    </Link>
+                </p>
+
+                <h2 id="teaching">{locale.text("How this site teaches", "本站如何讲授")}</h2>
+                <p>
+                    {locale.text("Every VelarScript block on this site is compiled by the site's own gate before it can be published. A block that stopped compiling stops the build, so the code you read is code the current toolchain accepts, not code that was accepted when the page was written. Blocks that are not VelarScript — shell commands, JSON manifests, directory trees, and compiler output — are marked as such and are shown verbatim rather than compiled.", "本站每一个 VelarScript 代码块在发布之前都要经过本站自己的门禁编译。停止编译的代码块会让构建失败，因此你读到的代码就是当前工具链所接受的代码，而不是页面写作当时被接受的代码。非 VelarScript 的代码块——shell 命令、JSON 清单、目录树与编译器输出——会被标注，并原样展示而不参与编译。")}
+                </p>
+                <p>
+                    {locale.text("A teaching counter-example is held to the opposite rule: it must still produce at least one diagnostic, so it cannot quietly become legal code as the language changes. Where a page prints the compiler's answer, every diagnostic code quoted there must appear in the diagnostics that sample really produces. The example below is a JavaScript habit — a collection used as a condition — and the output beside it is what the compiler says about it.", "教学反例遵守相反的规则：它必须仍然产出至少一条诊断，因此它不会随着语言演进而悄悄变成合法代码。当页面展示编译器的回答时，其中引用的每一个诊断码，都必须真的出现在该样本实际产生的诊断里。下面的例子是一个 JavaScript 习惯——把集合当作条件——旁边的输出就是编译器对它的回答。")}
+                </p>
+                <CodeBlock code={truthinessErrorCode} />
+                <CodeBlock code={truthinessErrorOutput} />
+                <p>
+                    {locale.text("That shape is the shape of every diagnostic here: it names the one current spelling rather than listing possibilities. You do not have to know the language to fix it, and neither does a model — which is the point. This is measured rather than claimed: the release gate includes blind tests where a model that has never seen VelarScript must produce working programs with no documentation, guided only by diagnostics.", "这就是这里每一条诊断的形状：它给出当前唯一的那种拼写，而不是罗列可能性。你不需要懂这门语言就能改对它，模型也一样——这正是重点所在。这是被测量出来的，而不是被宣称的：发布门禁包含盲测，一个从未见过 VelarScript 的模型必须在没有任何文档、只靠诊断指引的情况下写出可运行的程序。")}
+                </p>
+                <p>
+                    {locale.text("The guide chapters draw their samples from the language repository's tour, where every spelling appears exactly once and every chapter is a compiled module rather than a prose listing. Where a page here and a tour chapter disagree, the tour chapter is the one the compiler checked.", "指南各章的样本取自语言仓的巡览，那里每种拼写恰好出现一次，每一章都是可编译的模块而不是散文清单。当本站页面与某个巡览章节不一致时，以经过编译器检查的巡览章节为准。")} <Link
+                        to="/examples"
+                        look={inlineLinkLook}
+                    >
+                        {locale.text("The examples page describes that corpus.", "示例页描述了这套语料。")}
+                    </Link>
+                </p>
+
+                <h2 id="boundaries">{locale.text("Status and honest boundaries", "状态与诚实边界")}</h2>
+                <p>
+                    {locale.text("This is a development release, and the boundaries below are part of the design rather than gaps in it.", "当前是开发期发布，下面这些边界是设计的一部分，而不是设计的缺口。")}
+                </p>
+                <Callout title={locale.text("There is no backward-compatibility promise", "这里没有向后兼容承诺")}>
+                    <p>
+                        {locale.text("The language absorbs lessons and breaks cleanly. A removed spelling gets a teaching diagnostic, never a silent alias and never permanent compatibility debt. Pin your toolchain version; migrations are guided. VelarScript is currently for products that move fast — prototypes, internal tools, short-lifecycle applications — anything where validation speed matters more than a ten-year support horizon. A stable channel for long-lived products is a future milestone, earned by evidence rather than declared by a version number.", "这门语言吸收教训，并干净地做出破坏性变更。被移除的拼写会得到一条教学诊断，绝不留下沉默的别名，也绝不留下永久的兼容债务。请固定你的工具链版本；迁移是有指引的。VelarScript 目前面向快速推进的产品——原型、内部工具、生命周期短的应用——凡是验证速度比十年支持周期更重要的场合。面向长寿产品的稳定通道是未来的里程碑，靠证据赢得，而不是靠版本号宣布。")}
+                    </p>
+                </Callout>
+                <p>
+                    {locale.text("A language for real products must never strand a project mid-development, so VelarScript maintains three exits, in order. The diagnostic teaches the fix, and most walls end there in one round. When the language or its standard surface lacks something, extern module declares a typed boundary to any npm package, import js unsafe admits a value as unchecked any to validate at the edge, and import css unsafe and unsafe:html cover the styling and markup boundaries. The escape playbook is part of the documentation rather than folklore.", "一门面向真实产品的语言绝不能把项目搁浅在半途，因此 VelarScript 维持着三级出口，按顺序排列。诊断教你怎么改，大多数墙一轮就到此为止。当语言或它的标准表面缺少某样东西时，extern module 为任何 npm 包声明一条带类型的边界，import js unsafe 以不受检的 any 接纳一个值并在边缘验证，import css unsafe 与 unsafe:html 覆盖样式与标记的边界。这套逃生手册属于文档，而不是坊间传闻。")}
+                </p>
+                <p>
+                    {locale.text("The final exit is the emitted JavaScript. A build produces legible, source-mapped modules with your own names in them; if VelarScript itself becomes the obstacle, take the output and keep shipping without us. This anti-lock-in property is enforced by a permanent acceptance gate that builds a program, copies only the emitted output into an empty directory, and runs it with Node alone.", "最终出口是产出的 JavaScript。构建会产生可读的、带 source map 的模块，里面是你自己的名字；如果 VelarScript 本身成了障碍，带走产物，不依赖我们继续交付。这条反锁定性质由一道常设的验收门禁保证：它构建一个程序，只把产出复制到一个空目录，然后仅用 Node 运行它。")} <Link
+                        to="/reference/escape-hatches"
+                        look={inlineLinkLook}
+                    >
+                        {locale.text("Each exit is documented in the escape-hatches reference.", "每一级出口都记录在逃生通道参考页。")}
+                    </Link>
+                </p>
+                <p>
+                    {locale.text("One boundary is worth stating plainly because it is easy to misread as a limitation: VelarScript keeps the JavaScript runtime it stands on — objects, references, Promises, the event loop, the browser. It replaces the source surface, not the world.", "有一条边界值得直白说出来，因为它很容易被误读为局限：VelarScript 保留了它所立足的 JavaScript 运行时——对象、引用、Promise、事件循环、浏览器。它替换的是源码表面，不是这个世界。")}
+                </p>
+            </Prose>
+            <DocsPager previous={guidePrevious("/guide")} next={guideNext("/guide")} />
+        </DocsShell>
+    </main>

@@ -1,5 +1,6 @@
 import {closeDialog, focus, showDialog} from "velar/browser"
 import {domId} from "velar/web"
+import {border, color, rgba, spacing} from "velar/look"
 
 export const UI_API_VERSION = "0.2"
 
@@ -26,8 +27,8 @@ const skipLinkLook = look:
     padding = spacing(10px, 14px)
     border = border(2px, color("currentColor"))
     borderRadius = 8px
-    color = "CanvasText"
-    background = "Canvas"
+    color = color("CanvasText")
+    background = color("Canvas")
     fontSize = 0.92rem
     fontWeight = 600
     lineHeight = 1.2
@@ -62,7 +63,9 @@ export component Inline(children: WebNode, centered: bool = false):
     return <div class="inline" look={inlineLook(centered)}>{children}</div>
 
 export component Status(message: string, assertive: bool = false):
-    return <p role={assertive ? "alert" : "status"} aria-live={assertive ? "assertive" : "polite"} aria-atomic="true">{message}</p>
+    return <p role={assertive ? "alert" : "status"} aria-live={assertive ? "assertive" : "polite"} aria-atomic="true">
+        {message}
+    </p>
 
 const disclosureLook = look:
     border = border(1px, color("currentColor"))
@@ -77,7 +80,10 @@ const disclosureContentLook = look:
     padding = spacing(0px, 16px, 16px, 16px)
 
 export component Disclosure(summary: string, children: WebNode, open: bool = false):
-    return <details class="disclosure" look={disclosureLook} open={open}><summary look={disclosureSummaryLook}>{summary}</summary><div class="disclosure-content" look={disclosureContentLook}>{children}</div></details>
+    return <details class="disclosure" look={disclosureLook} open={open}>
+        <summary look={disclosureSummaryLook}>{summary}</summary>
+        <div class="disclosure-content" look={disclosureContentLook}>{children}</div>
+    </details>
 
 const dialogControlLook = look:
     display = "block"
@@ -88,8 +94,8 @@ const dialogLook = look:
     padding = 0
     border = border(1px, color("currentColor"))
     borderRadius = 16px
-    color = "CanvasText"
-    background = "Canvas"
+    color = color("CanvasText")
+    background = color("Canvas")
 
     @backdrop:
         background = rgba(0, 0, 0, 0.48)
@@ -111,18 +117,27 @@ export component ModalDialog(title: string, triggerLabel: string, children: WebN
     const titleId = domId("velar-dialog-title")
 
     def openDialog():
-        if dialog:
+        if dialog != null:
             showDialog(dialog)
 
     def dismissDialog():
-        if dialog:
+        if dialog != null:
             closeDialog(dialog)
 
     def restoreTriggerFocus():
-        if trigger:
+        if trigger != null:
             focus(trigger, true)
 
-    return <div class="dialog-control" look={dialogControlLook}><button type="button" look={dialogButtonLook} ref={trigger} on:click={openDialog}>{triggerLabel}</button><dialog look={dialogLook} ref={dialog} aria-labelledby={titleId} on:close={restoreTriggerFocus}><div class="dialog-body" look={dialogBodyLook}><h2 look={dialogTitleLook} id={titleId}>{title}</h2>{children}<button type="button" look={dialogButtonLook} on:click={dismissDialog}>{closeLabel}</button></div></dialog></div>
+    return <div class="dialog-control" look={dialogControlLook}>
+        <button type="button" look={dialogButtonLook} ref={trigger} on:click={openDialog}>{triggerLabel}</button>
+        <dialog look={dialogLook} ref={dialog} aria-labelledby={titleId} on:close={restoreTriggerFocus}>
+            <div class="dialog-body" look={dialogBodyLook}>
+                <h2 look={dialogTitleLook} id={titleId}>{title}</h2>
+                {children}
+                <button type="button" look={dialogButtonLook} on:click={dismissDialog}>{closeLabel}</button>
+            </div>
+        </dialog>
+    </div>
 
 const fieldLook = look:
     display = "grid"
@@ -148,4 +163,17 @@ export component TextField(name: string, label: string, hint: string = "", input
     const controlId = domId("velar-field")
     const hintId = f"{controlId}-hint"
 
-    return <div class="field" look={fieldLook} data-velar-ui-field><label look={fieldLabelLook} for={controlId}>{label}</label><input look={fieldInputLook} id={controlId} name={name} type={inputType} autocomplete={autocomplete != "" ? autocomplete : null} placeholder={placeholder != "" ? placeholder : null} required={required} aria-describedby={hint != "" ? hintId : null} />{hint != "" ? <p class="hint" look={fieldHintLook} id={hintId}>{hint}</p> : null}</div>
+    return <div class="field" look={fieldLook} data-velar-ui-field>
+        <label look={fieldLabelLook} for={controlId}>{label}</label>
+        <input
+            look={fieldInputLook}
+            id={controlId}
+            name={name}
+            type={inputType}
+            autocomplete={autocomplete != "" ? autocomplete : null}
+            placeholder={placeholder != "" ? placeholder : null}
+            required={required}
+            aria-describedby={hint != "" ? hintId : null}
+        />
+        {hint != "" ? <p class="hint" look={fieldHintLook} id={hintId}>{hint}</p> : null}
+    </div>

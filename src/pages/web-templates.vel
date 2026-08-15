@@ -1,0 +1,186 @@
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
+
+const eventTypesCode = `// The six event value types the Web extension publishes, one handler each.\n// event.target, event.currentTarget, event.value, and event.checked are\n// deliberately absent: the self modifier answers the target question and a\n// bound state cell answers the value question.\ndef onPlainEvent(event: Event):\n    print(f"plain: {event.type}")\n\ndef onKeyEvent(event: KeyboardEvent):\n    print(f"key: {event.key} {event.code} {event.altKey} {event.ctrlKey} {event.metaKey} {event.shiftKey} {event.repeat}")\n\ndef onPointerEvent(event: PointerEvent):\n    print(f"pointer: {event.pointerType} {event.pointerId} {event.button} {event.clientX} {event.clientY}")\n\ndef onInputEvent(event: InputEvent):\n    print(f"input: {event.inputType} {event.data ?? "no data"}")\n\ndef onCompositionEvent(event: CompositionEvent):\n    print(f"composition: {event.data}")\n\ndef onClipboardEvent(event: ClipboardEvent):\n    print(f"clipboard: {event.type}")\n\nexport component EventTypes:\n    return <input\n        data-events\n        type="text"\n        on:focus={onPlainEvent}\n        on:keydown={onKeyEvent}\n        on:pointerdown={onPointerEvent}\n        on:beforeinput={onInputEvent}\n        on:compositionend={onCompositionEvent}\n        on:paste={onClipboardEvent}\n    />`
+const eventsCode = `def onPlainEvent(event: Event):\n    print(f"plain: {event.type}")\n\ndef onPointerEvent(event: PointerEvent):\n    print(f"pointer: {event.pointerType} {event.button}")\n\n// on: carries at most one of each modifier, appended with dots. There are\n// exactly five, and self, prevent, and stop always apply in that order before\n// the handler runs.\nexport component EventDirectives:\n    state clicks = 0\n\n    def count():\n        clicks += 1\n\n    return <form data-directive-form on:submit.prevent={onPlainEvent}>\n        <button type="button" data-count on:click={count}>Clicked {clicks} times</button>\n        <button type="button" data-prevent on:click.prevent={onPlainEvent}>prevent</button>\n        <button type="button" data-stop on:click.stop={onPointerEvent}>stop</button>\n        <button type="button" data-self on:click.self={onPlainEvent}>self</button>\n        <button type="button" data-capture on:click.capture={onPlainEvent}>capture</button>\n        <button type="button" data-once on:click.once={onPlainEvent}>once</button>\n        <button type="button" data-stacked on:click.prevent.stop={onPointerEvent}>prevent and stop</button>\n    </form>`
+const bindCode = `// bind:value on the supported form controls, bind:checked on one checkbox,\n// bind:group on radios (the state holds the selected input's value) and on\n// checkboxes (List<string> membership). A bind target is a writable reactive\n// location: a state name, or a field or index path rooted in one.\nexport component BindDirectives:\n    state draft = ""\n    state accepted = false\n    state pick = "beta"\n    state picks: List<string> = []\n    state form = {nickname: "ada"}\n    state rows = ["first"]\n\n    const options = ["alpha", "beta", "gamma"]\n\n    return <fieldset data-bind-directives>\n        <input data-draft type="text" name="draft" bind:value={draft} />\n        <textarea data-note bind:value={draft}></textarea>\n        <input data-nickname type="text" bind:value={form.nickname} />\n        <input data-row type="text" bind:value={rows[0]} />\n        <input data-accepted type="checkbox" name="terms" bind:checked={accepted} />\n        <input data-pick-alpha type="radio" name="pick" value="alpha" bind:group={pick} />\n        <input data-pick-beta type="radio" name="pick" value="beta" bind:group={pick} />\n        <input data-picks-alpha type="checkbox" name="picks" value="alpha" bind:group={picks} />\n        <input data-picks-beta type="checkbox" name="picks" value="beta" bind:group={picks} />\n        <select data-select name="option" bind:value={pick}>\n            {options.map(option => <option key={option} value={option}>{option}</option>)}\n        </select>\n        <output data-bound>{f"{draft}|{accepted}|{pick}|{picks.size}|{form.nickname}|{rows[0]}"}</output>\n    </fieldset>`
+const classesCode = `export enum Tone:\n    quiet\n    loud\n\n// class:name={condition} adds and removes one class name as a bool changes,\n// while class itself accepts a name or a List of names. The two are\n// independent contributions to the element's class attribute.\nexport component ClassDirectives:\n    state highlighted = false\n    state tone: Tone = Tone.quiet\n\n    def toggleHighlight():\n        highlighted = not highlighted\n\n    def switchTone():\n        tone = tone == Tone.quiet ? Tone.loud : Tone.quiet\n\n    return <div data-class-directives>\n        <p\n            data-classes\n            class={["tour-note", "tour-note-wide"]}\n            class:tour-active={highlighted}\n            class:tour-quiet={tone == Tone.quiet}\n        >\n            class directives\n        </p>\n        <button type="button" data-toggle-highlight on:click={toggleHighlight}>Toggle highlight</button>\n        <button type="button" data-toggle-tone on:click={switchTone}>Toggle tone</button>\n    </div>`
+const classErrorCode = `component Tab(label: string, selected: string):\n    return <button type="button" class="tab" class:selected={selected}>{label}</button>`
+const classErrorOutput = `main.vel:2:46 error VEL4001: Cannot assign string to bool\n    return <button type="button" class="tab" class:selected={selected}>{label}</button>\n                                             ^^^^^^^^^^^^^^^^^^^^^^^^^`
+const visualsCode = `import {rgb, spacing} from "velar/look"\n\nconst controlLook = look:\n    display = "inline-flex"\n    gap = 6px\n    padding = spacing(6px, 10px)\n    borderRadius = 8px\n\nconst inkColor = rgb(24, 31, 46)\n\n// look={value} composes an existing Look, every look:property on the element\n// forms one anonymous base applied after it, and style:property is the\n// inline-priority compatibility override rather than a second visual language.\nexport component StyleDirectives:\n    state hot = false\n\n    def toggle():\n        hot = not hot\n\n    return <div data-style-directives>\n        <p data-visuals look={controlLook} look:color={inkColor} look:fontWeight={600} style:letterSpacing={0.02em}>\n            look and style directives\n        </p>\n        <p data-reactive look:color={hot ? inkColor : null}>a null value removes the controlled property</p>\n        <p\n            data-attributes\n            data-flag={hot}\n            data-absent={hot ? "present" : null}\n            hidden={not hot}\n        >\n            attribute values\n        </p>\n        <button type="button" data-toggle-hot on:click={toggle}>Toggle</button>\n    </div>`
+const refKeyCode = `// A key drives identity-preserving reuse only in the keyed-children shape —\n// items.map(item => <Row key={item.id} />), or a branch of a conditional that\n// produces one. There are no if, else-if, or else JSX attributes: conditional\n// children are ordinary expressions.\nexport component ChildDirectives:\n    state names: List<string> = ["alpha", "beta"]\n    state shown = true\n\n    let field: InputElement? = null\n\n    def reverse():\n        names = [...names].reversed()\n\n    def focusField():\n        if field != null:\n            field.focus()\n\n    return <div data-child-directives>\n        <input ref={field} data-field type="text" aria-label="A referenced field" />\n        <ul data-keyed>\n            {names.size == 0 ? <li data-empty>nothing listed</li> : names.map(name => <li key={name} data-listed={name}>{name}</li>)}\n        </ul>\n        <p data-conditional>\n            {shown ? <strong>on</strong> : <span>off</span>}\n        </p>\n        <p data-nullish>\n            {(shown ? null : "fallback") ?? <em>from nullish</em>}\n        </p>\n        <div data-positions>\n            {[<b>one</b>, <i>two</i>]}\n        </div>\n        <button type="button" data-reverse on:click={reverse}>Reverse</button>\n        <button type="button" data-focus-field on:click={focusField}>Focus the field</button>\n    </div>`
+const literalCode = `// The three literal attribute delimiters — double quotes, the HTML single\n// quote, and backticks for a value that already contains a quotation mark.\n// Raw HTML is an explicit string-only boundary that cannot carry children.\nexport component LiteralDirectives:\n    const markup = "<em>trusted markup</em>"\n\n    return <div data-literal-directives>\n        <p data-double="double quoted" data-single='single quoted' data-backtick=\`a "quoted" phrase\`>attribute delimiters</p>\n        <div data-markup unsafe:html={markup}></div>\n    </div>`
+
+const sections = [
+    {id: "jsx", label: "JSX is part of the grammar", labelZh: "JSX 属于语法"},
+    {id: "table", label: "The directive table", labelZh: "指令表"},
+    {id: "events", label: "on: and the six event types", labelZh: "on: 与六种事件类型"},
+    {id: "bindings", label: "The four bind spellings", labelZh: "四种 bind 拼写"},
+    {id: "classes", label: "class and class:name", labelZh: "class 与 class:name"},
+    {id: "visuals", label: "look, look:, and style:", labelZh: "look、look: 与 style:"},
+    {id: "refkey", label: "ref and key", labelZh: "ref 与 key"},
+    {id: "literal", label: "Literals and unsafe:html", labelZh: "字面量与 unsafe:html"},
+]
+
+const pointsLook = look:
+    display = "grid"
+    gap = 7px
+    marginTop = 18px
+    marginBottom = 4px
+    paddingLeft = 22px
+
+const directiveRows: List<MemberRow> = [
+    {name: "on:event", signature: "on:click={handler}", summary: "Binds a handler to a native DOM event; the handler's parameter is a typed event.", summaryZh: "把处理器绑定到原生 DOM 事件；处理器参数是带类型的事件。"},
+    {name: "bind:value", signature: "bind:value={draft}", summary: "Two-way binding for text inputs, textareas, and select elements.", summaryZh: "文本输入框、textarea 与 select 的双向绑定。"},
+    {name: "bind:checked", signature: "bind:checked={accepted}", summary: "Two-way binding for one checkbox, held as a bool.", summaryZh: "单个复选框的双向绑定，以 bool 保存。"},
+    {name: "bind:group", signature: "bind:group={pick}", summary: "One decision shared by a set of controls: a radio group's selected value, or a checkbox group's List<string> membership.", summaryZh: "一组控件共享的一个决定：单选组的选中值，或复选组的 List<string> 成员关系。"},
+    {name: "class", signature: "class={[\"note\", \"wide\"]}", summary: "A class name or a List of names; the value may be reactive.", summaryZh: "一个类名或一个类名 List；取值可以是响应式的。"},
+    {name: "class:name", signature: "class:active={selected}", summary: "Adds and removes one class name as a bool changes.", summaryZh: "随 bool 变化增删一个类名。"},
+    {name: "look", signature: "look={panelLook}", summary: "Composes a whole Look value onto the element, and may be reactive.", summaryZh: "把一个完整的 Look 值合成到元素上，可以是响应式的。"},
+    {name: "look:property", signature: "look:color={ink}", summary: "Sets one checked Look property; a null value removes it.", summaryZh: "设置一个受检的 Look 属性；取值为 null 时移除它。"},
+    {name: "style:property", signature: "style:letterSpacing={0.02em}", summary: "Writes the real CSS property at inline priority; a compatibility layer rather than a second visual language.", summaryZh: "以内联优先级写出真实 CSS 属性；是兼容层，而不是第二套视觉语言。"},
+    {name: "ref", signature: "ref={field}", summary: "Fills a mutable optional binding with the constructed element or a component Handle.", summaryZh: "用构造好的元素或组件 Handle 填充一个可变的可选绑定。"},
+    {name: "key", signature: "key={item.id}", summary: "Identifies a row in a keyed children shape so reuse follows identity rather than position.", summaryZh: "在带 key 的 children 形状中标识一行，使复用跟随身份而不是位置。"},
+    {name: "unsafe:html", signature: "unsafe:html={markup}", summary: "A string-only raw markup boundary; it cannot carry children.", summaryZh: "只接受字符串的原始标记边界；它不能携带 children。"},
+]
+
+const modifierRows: List<MemberRow> = [
+    {name: "prevent", signature: "on:submit.prevent", summary: "Calls preventDefault() before the handler runs.", summaryZh: "在处理器运行前调用 preventDefault()。"},
+    {name: "stop", signature: "on:click.stop", summary: "Calls stopPropagation() before the handler runs.", summaryZh: "在处理器运行前调用 stopPropagation()。"},
+    {name: "self", signature: "on:click.self", summary: "Ignores the event unless this element is the event's target.", summaryZh: "除非本元素就是事件的 target，否则忽略该事件。"},
+    {name: "capture", signature: "on:click.capture", summary: "Registers the listener for the capture phase.", summaryZh: "在捕获阶段注册监听器。"},
+    {name: "once", signature: "on:click.once", summary: "Removes the listener after one dispatch.", summaryZh: "一次分发后移除监听器。"},
+]
+
+export component WebTemplates:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/guide/web/templates", locale.isChinese())}
+            description={locale.text("How JSX is written and checked, which events are typed, and what each directive does.", "JSX 如何书写与受检、哪些事件带类型，以及每个指令做什么。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Web extension / 03", "Web 扩展 / 03")}
+                title={locale.text("Templates and directives", "模板与指令")}
+                summary={locale.text("JSX in the language, the six event types, and the whole directive table a native element accepts.", "语言内的 JSX、六种事件类型，以及原生元素接受的完整指令表。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <h2 id="jsx">{locale.text("JSX is part of the grammar", "JSX 属于语法")}</h2>
+                <p>
+                    {locale.text("Elements, attributes, and interpolations are parsed by the compiler rather than by a preprocessor, so an unknown element or an unknown directive is a diagnostic. A less-than sign begins JSX in a fixed set of positions: after a return, an assignment, an opening parenthesis or bracket, a comma, an arrow, and the nullish operator. JSX has no comment form, so a note about markup lives outside it.", "元素、属性与插值由编译器解析，而不是由预处理器处理，因此未知元素或未知指令会得到诊断。小于号只在一组固定位置开始 JSX：return 之后、赋值之后、左括号或左方括号之后、逗号之后、箭头之后，以及空值合并运算符之后。JSX 没有注释形式，因此关于标记的说明写在它之外。")}
+                </p>
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("JSX text is normalized before it becomes a text node: every whitespace run inside a text child collapses to one space, and whitespace that exists only because the source wrapped is dropped.", "JSX 文本在变成文本节点前先做规范化：文本子节点内部的每段空白折叠为一个空格，仅因源码折行而存在的空白被丢弃。")}
+                    </li>
+                    <li>
+                        {locale.text("Indentation therefore never adds spaces to the rendered output, while a deliberate space between two inline elements on the same line survives.", "因此缩进永远不会给渲染结果添加空格，而同一行两个内联元素之间刻意留下的空格会保留。")}
+                    </li>
+                    <li>
+                        {locale.text("Text that must be preserved exactly belongs in an interpolated string.", "必须原样保留的文本应写在插值字符串里。")}
+                    </li>
+                </ul>
+
+                <h2 id="table">{locale.text("The directive table", "指令表")}</h2>
+                <p>
+                    {locale.text("A native element accepts twelve directives. The table below is the complete list; every one of them is checked, and a name outside it fails at the attribute rather than at runtime.", "原生元素接受十二个指令。下表是完整清单；它们全部受检，不在表内的名字会在属性处失败，而不是在运行时失败。")}
+                </p>
+                <MemberTable
+                    rows={directiveRows}
+                    caption={locale.text("Directives a native element accepts", "原生元素接受的指令")}
+                />
+
+                <h2 id="events">{locale.text("on: and the six event types", "on: 与六种事件类型")}</h2>
+                <p>
+                    {locale.text("on:name binds a handler and the handler's parameter is a typed event. The extension publishes six event value types: Event, KeyboardEvent, PointerEvent, InputEvent, CompositionEvent, and ClipboardEvent. A zero-parameter handler stays valid, and no synthetic event runtime is added on top of the native one.", "on:name 绑定处理器，处理器参数是带类型的事件。扩展发布六种事件值类型：Event、KeyboardEvent、PointerEvent、InputEvent、CompositionEvent 与 ClipboardEvent。零参数处理器仍然有效，且不在原生事件之上添加合成事件运行时。")}
+                </p>
+                <CodeBlock code={eventTypesCode} />
+                <p>
+                    {locale.text("An event object carries typed event fields only. It deliberately carries no target or currentTarget: an untyped element reference inside a handler is how DOM reading leaks back into application code, and the value the handler wanted is available through a binding. The self modifier answers the question target would have answered — was this the element itself, or a descendant — which is what a backdrop-dismiss handler needs.", "事件对象只携带带类型的事件字段。它刻意不携带 target 与 currentTarget：处理器内部的无类型元素引用正是 DOM 读取回流进应用代码的途径，而处理器想要的值可以通过绑定取得。self 修饰符回答了 target 本会回答的问题——这是元素自身还是它的后代——这正是点击遮罩关闭的处理器所需要的。")}
+                </p>
+                <CodeBlock code={eventsCode} />
+                <MemberTable rows={modifierRows} caption={locale.text("The five event modifiers", "五个事件修饰符")} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("There are exactly five modifiers, an unknown one is a compile error, and none may repeat.", "修饰符恰好五个，未知修饰符是编译错误，且任何一个都不能重复。")}
+                    </li>
+                    <li>
+                        {locale.text("They are appended with dots and always apply in the order self, prevent, stop, then the handler runs.", "它们用点追加，并始终按 self、prevent、stop 的顺序生效，然后处理器才运行。")}
+                    </li>
+                    <li>
+                        {locale.text("An event handler runs for effect and returns null; because a record literal follows an arrow, a no-op handler is written as an arrow returning null.", "事件处理器为副作用而运行并返回 null；由于箭头后面跟的是记录字面量，空操作处理器写成返回 null 的箭头函数。")}
+                    </li>
+                </ul>
+
+                <h2 id="bindings">{locale.text("The four bind spellings", "四种 bind 拼写")}</h2>
+                <p>
+                    {locale.text("bind:value binds one text input, textarea, or select; bind:checked binds one checkbox as a bool; bind:group binds a set of controls that share one decision — a radio group's state holds the selected input's value, and a checkbox group's List<string> state holds the checked values, so checking and unchecking are membership changes. Each bound input identifies itself by its value attribute.", "bind:value 绑定单个文本输入框、textarea 或 select；bind:checked 以 bool 绑定单个复选框；bind:group 绑定共享同一个决定的一组控件——单选组的 state 保存被选中输入的 value，复选组的 List<string> state 保存被勾选的值，因此勾选与取消勾选就是成员关系的变化。每个被绑定的输入用自己的 value 属性标识自身。")}
+                </p>
+                <CodeBlock code={bindCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Every bind target is a writable reactive location: a state name, or a field or index path rooted in one.", "每个 bind 目标都是一个可写的响应位置：一个 state 名字，或者以它为根的字段路径、索引路径。")}
+                    </li>
+                    <li>
+                        {locale.text("A binding is the supported answer to the absent event.value: read the control through the cell it writes.", "绑定就是对缺席的 event.value 给出的受支持答案：通过它写入的那个单元读取控件。")}
+                    </li>
+                </ul>
+
+                <h2 id="classes">{locale.text("class and class:name", "class 与 class:name")}</h2>
+                <p>
+                    {locale.text("class accepts a name or a List of names. class:name toggles one class name from a bool, and the two compose: the bound list and the toggles are independent contributions to the element's class attribute, so a static class, a reactive class list, and several toggles coexist on one element.", "class 接受一个类名或一个类名 List。class:name 由 bool 切换一个类名，两者可以并存：绑定的列表与各个开关是对元素 class 属性的独立贡献，因此静态类、响应式类列表与若干开关可以同时出现在一个元素上。")}
+                </p>
+                <CodeBlock code={classesCode} />
+                <p>
+                    {locale.text("The toggle's value must be bool. An optional or a truthy value is rejected, which is the same rule the language applies to every condition.", "开关的取值必须是 bool。可选值或依赖真值性的取值会被拒绝，这与语言对每个条件的规则一致。")}
+                </p>
+                <CodeBlock code={classErrorCode} />
+                <CodeBlock code={classErrorOutput} />
+
+                <h2 id="visuals">{locale.text("look, look:, and style:", "look、look: 与 style:")}</h2>
+                <p>
+                    {locale.text("look={value} composes an existing Look. Every look:property on the element forms one anonymous base applied after that composition, a duplicate directive fails checking, and a null expression removes the composed property rather than emitting the text null. style:property writes the real CSS property at inline priority; it reuses Look's property table, types, builders, and reactive updates, and exists as a native compatibility layer rather than as a second visual language.", "look={value} 合成一个已有的 Look。元素上的每个 look:property 组成一个匿名基底，在该合成之后应用；重复的指令无法通过检查；取值为 null 会移除被合成的属性，而不是发出文本 null。style:property 以内联优先级写出真实 CSS 属性；它复用 Look 的属性表、类型、构建器与响应式更新，作为原生兼容层存在，而不是第二套视觉语言。")}
+                </p>
+                <CodeBlock code={visualsCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Hooks, media conditions, pseudo-elements, and spreads remain exclusive to a named or local full Look; a form such as look:hover:color does not exist.", "钩子、媒体条件、伪元素与展开仅属于具名或局部的完整 Look；look:hover:color 之类的形式并不存在。")}
+                    </li>
+                    <li>
+                        {locale.text("An attribute whose value is null is removed rather than rendered, so a conditional attribute is an ordinary conditional expression.", "取值为 null 的属性会被移除而不是被渲染，因此条件属性就是普通的条件表达式。")}
+                    </li>
+                </ul>
+
+                <h2 id="refkey">{locale.text("ref and key", "ref 与 key")}</h2>
+                <p>
+                    {locale.text("ref fills a mutable optional binding with the constructed element. It is null while the component body runs and is filled before @mounted, which is why DOM setup lives there. key belongs on the element a map produces, or on a branch of a conditional that produces one; it identifies the row rather than its position. There are no if, else-if, or else JSX attributes, because conditional children are ordinary expressions.", "ref 用构造好的元素填充一个可变的可选绑定。组件体运行期间它是 null，在 @mounted 之前被填充，因此 DOM 初始化写在那里。key 属于 map 产生的那个元素，或者产生该元素的条件分支；它标识的是这一行，而不是它的位置。JSX 没有 if、else-if、else 属性，因为条件子节点就是普通表达式。")}
+                </p>
+                <CodeBlock code={refKeyCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("A keyed update moves only the rows whose position actually changed, so a row already standing where the new order wants it keeps its focused input and its in-flight composition.", "带 key 的更新只移动位置确实改变的行，因此已经站在新顺序所要位置上的行会保留它获得焦点的输入框与进行中的输入法组合。")}
+                    </li>
+                    <li>
+                        {locale.text("Ordinary and keyed JSX lists both read one checked dense List snapshot, so mutation during rendering cannot change the values participating in that update.", "普通 JSX 列表与带 key 的列表都读取同一份受检的稠密 List 快照，因此渲染期间的改动无法改变参与这次更新的取值。")}
+                    </li>
+                </ul>
+
+                <h2 id="literal">{locale.text("Literals and unsafe:html", "字面量与 unsafe:html")}</h2>
+                <p>
+                    {locale.text("An attribute literal has three delimiters: double quotes, the HTML single quote, and backticks for a value that already contains a quotation mark. unsafe:html is an explicit wholesale innerHTML assignment on every reactive update; it does not morph DOM or preserve descendant identity, and it cannot be combined with children.", "属性字面量有三种定界符：双引号、HTML 单引号，以及用于本身含引号的取值的反引号。unsafe:html 是每次响应式更新时显式的整体 innerHTML 赋值；它不做 DOM 变形，也不保留后代身份，并且不能与 children 并用。")}
+                </p>
+                <CodeBlock code={literalCode} />
+                <Callout title={locale.text("What the directive set does not contain", "指令集合不包含什么")}>
+                    <p>
+                        {locale.text("There is no directive that reads an untyped element inside a handler, no raw style attribute, no conditional directive name, and no reusable Style value. Each of those has one supported spelling instead: a binding, a ref, an ordinary conditional expression, and a Look.", "没有任何指令能在处理器内部读取无类型的元素，没有原始 style 属性，没有条件化的指令名，也没有可复用的 Style 值。它们各自都有一种受支持的拼写：绑定、ref、普通条件表达式，以及 Look。")}
+                    </p>
+                </Callout>
+            </Prose>
+            <DocsPager previous={guidePrevious("/guide/web/templates")} next={guideNext("/guide/web/templates")} />
+        </DocsShell>
+    </main>

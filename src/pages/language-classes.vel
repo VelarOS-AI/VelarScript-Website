@@ -1,51 +1,118 @@
-import {Head, Link} from "velar/web"
-import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
-import {docsNav} from "../content.vel"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
-const basicCode = "class Player:\n    const id: string\n    let score: number\n    const achievements: List<string> = []\n    let sessions: number = 0\n\n    constructor(id: string, score: number = 0):\n        assert id.length > 0, \"Player id cannot be empty\"\n        self.id = id\n        self.score = score\n\n    get label() -> string:\n        return f\"{self.id}: {self.score}\"\n\n    def add(points: number):\n        self.score += points\n\nconst player = Player(\"nova\")"
-const inheritanceCode = "abstract class Entity:\n    const id: string\n\n    constructor(id: string):\n        self.id = id\n\n    abstract get label() -> string\n    abstract def describe() -> string\n\nclass Project extends Entity:\n    const name: string\n\n    constructor(id: string, name: string):\n        super(id)\n        self.name = name\n\n    override get label() -> string:\n        return self.name\n\n    override def describe() -> string:\n        return f\"{self.id}: {self.name}\""
-const privateCode = "class Session:\n    private const token: string\n    private static let active: number = 0\n\n    constructor(token: string):\n        self.token = token\n\n    private def authorization() -> string:\n        return f\"Bearer {self.token}\"\n\n    def headers() -> Map<string, string>:\n        const headers: Map<string, string> = Map()\n        headers.set(\"authorization\", self.authorization())\n        return headers"
-const staticCode = "class User:\n    const id: string\n    static const guestId: string = \"guest\"\n\n    constructor(id: string):\n        self.id = id\n\n    static def guest() -> User:\n        return User(User.guestId)"
+const shapeCode = `class Session:\n    let active: bool = true\n\n    constructor(const id: string):\n        pass\n\n    get label() -> string:\n        return self.active ? self.id : f"{self.id} (closed)"\n\n    def close():\n        self.active = false\n\n// Instances are called directly.\nconst session = Session("session-1")\nconst label = session.label\n\n// A class name is not a value: wrap the construction in an arrow to pass a\n// factory around.\nconst openSession = () => Session("session-2")\n\n// Reading a method as a value evaluates the receiver once and binds it there.\nconst closeSession = session.close`
+const newErrorCode = `class Session:\n    constructor(const id: string):\n        pass\n\nconst session = new Session("session-1")`
+const newErrorOutput = `main.vel:5:17 error VEL1005: Call a class directly; VelarScript does not expose 'new'\nconst session = new Session("session-1")\n                ^^^`
+const membersCode = `type Options:\n    retries: number\n\nclass Connection:\n    // Fields are const or let and require a type; an initializer is optional.\n    const protocol: string = "https"\n    let attempts: number = 0\n    let lastError: string?\n    private let secret: string\n\n    // A parameter prefixed with const, let, or private declares a field and\n    // initializes it from that argument.\n    constructor(const host: string, let port: number, private const token: string, options: Options):\n        // A required body field is initialized through one direct assignment.\n        self.secret = f"{options.retries}"\n        self.lastError = null\n\n    get address() -> string:\n        return f"{self.protocol}://{self.host}:{self.port}"\n\n    def rotate(token: string):\n        self.attempts += 1\n\n    // A method may declare type parameters.\n    def tagged<T>(value: T) -> T:\n        return value\n\n    // static declares class-owned fields and methods.\n    static const scheme: string = "wss"\n\n    static def describe() -> string:\n        return f"connections speak {Connection.scheme}"\n\nconst connection = Connection("example.test", 443, "t-1", {retries: 3})\nconst address = connection.address\nconst socketScheme = Connection.scheme\nconst described = Connection.describe()`
+const inheritanceCode = `abstract class Entity:\n    constructor(const id: string):\n        pass\n\n    abstract def describe() -> string\n\n    abstract get shortName() -> string\n\n    def shared() -> string:\n        return f"entity {self.id}"\n\nclass Player extends Entity:\n    constructor(id: string, let score: number = 0):\n        super(id)\n\n    override def describe() -> string:\n        // super.member reaches the base method a derived definition shadows.\n        return f"{super.shared()}: {self.score}"\n\n    override get shortName() -> string:\n        return self.id\n\nclass Champion extends Player:\n    constructor(id: string, score: number, let titles: number):\n        super(id, score)\n\n    override def describe() -> string:\n        return f"{super.describe()} ({self.titles} titles)"\n\nconst champion = Champion("c-1", 10, 2)\nconst championDescription = champion.describe()\n\n// A base field is one storage location shared by the whole instance, so it is\n// read and written through self.\nclass Counter:\n    let count: number = 0\n\nclass DoubleCounter extends Counter:\n    def bump():\n        self.count += 2`
+const disposeCode = `class Terminal:\n    let open: bool = true\n\n    def close():\n        self.open = false\n\n    // The release block is the one compiler-known class member. It is not\n    // callable from source, it must be safe to run twice, and a class declares\n    // at most one.\n    @dispose:\n        self.close()\n\n    // It may coexist with an ordinary method of the same name.\n    def dispose() -> string:\n        return "an ordinary method"\n\nclass AsyncTerminal:\n    async def stop():\n        print("stopped")\n\n    // A release body may await; releasing then awaits too.\n    @dispose:\n        await self.stop()\n\n// A derived release adds to its base's rather than replacing it: the compiler\n// chains them, derived first and base after.\nclass TrackedTerminal extends Terminal:\n    let released: bool = false\n\n    @dispose:\n        self.released = true`
+const usingCode = `class Terminal:\n    let open: bool = true\n\n    def close():\n        self.open = false\n\n    @dispose:\n        self.close()\n\nexport def ownedResource() -> string:\n    // Every exit from the enclosing scope releases the value, and several\n    // owned resources release in reverse declaration order.\n    using first = Terminal()\n    using second = Terminal()\n    return f"{first.open} {second.open}"\n\nexport def ownedInALoop(count: number) -> number:\n    let seen = 0\n    // A loop body is an ordinary owning scope: it releases on every iteration.\n    for _ in range(count):\n        using handle = Terminal()\n        seen += 1\n    return seen\n\nexport def ownedWithEarlyExit(flag: bool) -> string:\n    using handle = Terminal()\n    if flag:\n        // return releases before leaving.\n        return "early"\n    return "late"\n\n// An owned value may not leave the scope that releases it, but passing it to a\n// function stays legal: a callee borrows, and a borrow is not ownership.\ndef borrow(handle: Terminal) -> bool:\n    return handle.open\n\nexport def lendsWithoutGivingAway() -> bool:\n    using handle = Terminal()\n    return borrow(handle)`
+const absentCode = `class Chart:\n    let size: number = 10\n\n    // There is no setter. A field is assigned, or a method names the work it\n    // does.\n    def setSize(value: number):\n        assert 0 < value <= 4096 else "The chart size is outside the supported range"\n        self.size = value\n\n// self is not a reserved member name.\nclass SelfReference:\n    let self: string = "a field called self"\n\n    def read() -> string:\n        return self.self\n\n// A private member is marked with a modifier and reached through ordinary\n// member access.\nclass Vault:\n    private let secret: string = "s"\n\n    def fingerprint() -> number:\n        return self.secret.size\n\nconst chart = Chart()\nchart.setSize(200)\nconst direct = chart.size`
+const setterErrorCode = "class Chart:\n    let stored: number = 10\n\n    get size() -> number:\n        return self.stored\n\n    set size(value: number):\n        self.stored = value"
+const setterErrorOutput = "main.vel:7:5 error VEL2007: VelarScript classes have no setters; assign the field directly, or declare a method such as 'def setSize(value: T)'\n    set size(value: number):\n    ^^^^^^^^"
+
+const pointsLook = look:
+    display = "grid"
+    gap = 8px
+    margin = 0
+    paddingInlineStart = 20px
+
+const sections = [
+    {id: "shape", label: "Fields and one constructor", labelZh: "字段与唯一构造函数"},
+    {id: "members", label: "Modifiers", labelZh: "修饰关键字"},
+    {id: "inheritance", label: "Inheritance", labelZh: "继承"},
+    {id: "dispose", label: "The release contract", labelZh: "释放契约"},
+    {id: "using", label: "Ownership", labelZh: "所有权"},
+    {id: "absent", label: "What a class does not carry", labelZh: "类不承载什么"},
+]
 
 export component LanguageClasses:
     const locale = useLocale()
     return <main>
-        <Head title={locale.text("Classes · VelarScript", "类 · VelarScript")} description={locale.text("VelarScript classes, constructors, fields, methods, getters, private members, inheritance, abstract contracts, override, super, and Error subclasses.", "VelarScript 的类、构造器、字段、方法、getter、私有成员、继承、抽象契约、override、super 与 Error 子类。")} themeColor="#f7f5f0" />
-        <DocsShell items={docsNav}>
-            <PageHeader kicker={locale.text("Language / 05", "语言 / 05")} title={locale.text("Native identity without prototype ceremony.", "保留原生身份，去掉原型仪式。")} summary={locale.text("Classes lower to JavaScript classes and preserve nominal runtime identity while exposing a smaller, explicit construction and inheritance model.", "类会降级为 JavaScript 类并保留名义运行时身份，同时只暴露更小、更明确的构造与继承模型。")} tags={["explicit self", "single inheritance", "private", "native getters"]} />
+        <Head
+            title={headTitle("/guide/language/classes", locale.isChinese())}
+            description={locale.text("How a class declares fields and a constructor, how inheritance is written, and what the release contract and using promise.", "类如何声明字段与构造函数、继承如何书写，以及释放契约与 using 承诺了什么。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Language / 09", "语言 / 09")}
+                title={locale.text("Classes and ownership", "类与所有权")}
+                summary={locale.text("Fields, one explicit constructor, inheritance, and the release contract that using consumes.", "字段、唯一的显式构造函数、继承，以及 using 所消费的释放契约。")}
+            />
+            <SectionList items={sections} />
             <Prose>
-                <h2 id="construction">{locale.text("Fields and construction", "字段与构造")}</h2>
-                <CodeBlock code={basicCode} />
-                <ul>
-                    <li>{locale.text("Construct with ", "使用 ")}<code>Player(...)</code>{locale.text("; source never writes ", " 构造，源码不写 ")}<code>new</code>{locale.text(".", "。")}</li>
-                    <li>{locale.text("Instance fields live in the class body, use ", "实例字段写在类体中，使用 ")}<code>const</code>{locale.text(" or ", " 或 ")}<code>let</code>{locale.text(", and always declare a type. A field initializer is optional.", "，并且始终声明类型。字段初始化值可以省略。")}</li>
-                    <li><code>constructor(...)</code>{locale.text(" is the one explicit construction body. It initializes required fields with ", " 是唯一明确的构造体，通过 ")}<code>self.field = value</code>{locale.text(" and may validate with ", " 初始化必需字段，并可使用 ")}<code>assert</code>{locale.text(" or call methods.", " 验证或调用方法。")}</li>
-                    <li>{locale.text("A derived constructor calls ", "派生类构造器必须先调用 ")}<code>super(...)</code>{locale.text(" before using ", "，之后才能使用 ")}<code>self</code>{locale.text(". Constructors are synchronous and do not return a value.", "。构造器是同步的，也不返回值。")}</li>
-                    <li>{locale.text("A failed constructor prevents the incomplete object from escaping. There is no class-header field shorthand and no separate initialization block.", "构造失败会阻止不完整对象逃逸。语言没有类头字段简写，也没有第二种初始化代码块。")}</li>
+                <h2 id="shape">{locale.text("Fields and one constructor", "字段与唯一构造函数")}</h2>
+                <p>
+                    {locale.text("A class has at most one constructor, and an instance is produced by calling the class. Fields are const or let and state their type; a field with no initializer must be definitely assigned in the constructor body. A class name is not a value, so passing a factory around is written as an arrow that constructs.", "类至多有一个构造函数，实例由调用这个类产生。字段是 const 或 let 并写出自己的类型；没有初始化器的字段必须在构造函数体中被确定赋值。类名不是值，因此传递工厂的写法是一个执行构造的箭头函数。")}
+                </p>
+                <CodeBlock code={shapeCode} />
+                <p>
+                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                </p>
+                <CodeBlock code={newErrorCode} />
+                <p>
+                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                </p>
+                <CodeBlock code={newErrorOutput} />
+
+                <h2 id="members">{locale.text("Modifiers", "修饰关键字")}</h2>
+                <p>
+                    {locale.text("A parameter prefixed with const, let, or private declares a field and initializes it from that argument, so the two halves of the usual pattern collapse into one line. private marks a member the outside cannot reach, static marks one that belongs to the class, and a getter is a computed read with no assignment behind it.", "以 const、let 或 private 前缀的参数直接声明一个字段，并用该实参初始化它，于是常见写法的两半合并成一行。private 标记外部无法触及的成员，static 标记属于类本身的成员，而取值器是一次计算出来的读取，背后没有赋值。")}
+                </p>
+                <CodeBlock code={membersCode} />
+
+                <h2 id="inheritance">{locale.text("Inheritance", "继承")}</h2>
+                <p>
+                    {locale.text("abstract, extends, super, and override are the four words. An override is written rather than inferred, so renaming a base member surfaces as a diagnostic at every place that meant to override it. A base field is one storage location shared by the whole instance, and it is read and written through self.", "abstract、extends、super、override 是四个关键词。override 是写出来的而不是推断的，因此基类成员改名会在每一处本打算覆写它的位置以诊断的形式暴露。基类字段是整个实例共享的一处存储位置，读写都通过 self。")}
+                </p>
+                <CodeBlock code={inheritanceCode} />
+
+                <h2 id="dispose">{locale.text("The release contract", "释放契约")}</h2>
+                <p>
+                    {locale.text("A class declares at most one release block, and it is the one compiler-known class member: it is not callable from source, it must be safe to run twice, and its body may await. A derived release adds to its base's rather than replacing it, so releasing a subclass runs the derived body first and the base body after.", "一个类至多声明一个释放块，它是唯一由编译器认识的类成员：源码不能调用它，它必须可以安全地运行两次，其函数体可以 await。派生类的释放是在基类之上追加而不是取代，因此释放一个子类会先执行派生体、再执行基类体。")}
+                </p>
+                <CodeBlock code={disposeCode} />
+
+                <h2 id="using">{locale.text("Ownership", "所有权")}</h2>
+                <p>
+                    {locale.text("using binds an owned value and releases it on every exit from the enclosing scope, including an early return and a thrown error. Several owned values release in reverse declaration order, and a loop body is an ordinary owning scope. An owned value may not leave the scope that releases it, but a callee may borrow it: a borrow is not ownership.", "using 绑定一个被拥有的值，并在离开所在作用域的每条路径上释放它，包括提前 return 与抛出的错误。多个被拥有的值按声明的逆序释放，循环体本身就是一个普通的拥有作用域。被拥有的值不能离开释放它的作用域，但被调用方可以借用它：借用不是所有权。")}
+                </p>
+                <CodeBlock code={usingCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("using reads the release contract from the value's static type, which is why the contract and the ownership word are one feature rather than two.", "using 从值的静态类型上读取释放契约，因此契约与所有权关键字是同一项特性，而不是两项。")}
+                    </li>
+                    <li>
+                        {locale.text("A resource whose lifetime does not fit a scope is still closed by an ordinary method call; using is the spelling for the case that does fit.", "生命周期不契合作用域的资源，仍然通过普通方法调用来关闭；using 是给契合那一类情形的拼写。")}
+                    </li>
                 </ul>
 
-                <h2 id="methods">{locale.text("Methods and getters", "方法与 getter")}</h2>
-                <p>{locale.text("Instance methods use explicit ", "实例方法使用显式 ")}<code>self</code>{locale.text(". Passing a method as a callback retains its instance. ", "。把方法作为回调传递时会保留实例。")}<code>get name() -&gt; Type</code>{locale.text(" declares a read-only property evaluated on every read and lowered to a native JavaScript getter. Writable state stays an explicit ", " 声明每次读取时求值的只读属性，并降级为原生 JavaScript getter。可写状态保持为显式 ")}<code>let</code>{locale.text(" field; VelarScript adds no setters.", " 字段；VelarScript 不增加 setter。")}</p>
-
-                <h2 id="inheritance">{locale.text("Inheritance and abstract contracts", "继承与抽象契约")}</h2>
-                <CodeBlock code={inheritanceCode} />
-                <p>{locale.text("Classes use one base through ", "类通过 ")}<code>extends Base</code>{locale.text(". The derived constructor then calls ", " 使用单一基类，派生构造器再调用 ")}<code>super(...)</code>{locale.text(" explicitly. Replacing an inherited method or getter requires ", "。替换继承的方法或 getter 必须写 ")}<code>override</code>{locale.text(" with the same contract. Abstract classes cannot be constructed; concrete subclasses implement every inherited abstract member.", " 并保持同一契约。抽象类不能构造；具体子类必须实现所有继承的抽象成员。")}</p>
-                <p><code>super.method()</code>{locale.text(" calls an inherited method and ", " 调用继承方法，")}<code>super.name</code>{locale.text(" reads an inherited getter. A derived instance is assignable to its base and passes ", " 读取继承 getter。派生实例可赋值给基类，并通过原生运行时身份满足 ")}<code>value is Base</code>{locale.text(" through native runtime identity.", "。")}</p>
-
-                <h2 id="private">{locale.text("Private members", "私有成员")}</h2>
-                <CodeBlock code={privateCode} />
-                <p>{locale.text("Fields, getters, and concrete instance/static methods are public by default. ", "字段、getter 与具体实例/静态方法默认公开。")}<code>private</code>{locale.text(" is the only access modifier and lowers to native JavaScript private storage. Private members disappear from exported interfaces and outside completion/navigation/rename; they are not inherited and cannot be abstract or overridden.", " 是唯一访问修饰符，并降级为原生 JavaScript 私有存储。私有成员不会出现在导出接口及外部补全/跳转/重命名中；它们不被继承，也不能抽象或覆盖。")}</p>
-                <Callout title={locale.text("A deliberately small hierarchy", "有意保持小型层级")}><p>{locale.text("There is no redundant ", "没有多余的 ")}<code>public</code>{locale.text(", no ", "，也没有 ")}<code>protected</code>{locale.text(", multiple inheritance, mixins, decorators, operator overloading, metaclasses, or parallel interface system.", "、多重继承、mixin、装饰器、运算符重载、元类或平行 interface 系统。")}</p></Callout>
-
-                <h2 id="static">{locale.text("Static members", "静态成员")}</h2>
-                <CodeBlock code={staticCode} />
-                <p><code>static const</code>/<code>static let</code>{locale.text(" declare class-owned fields, ", " 声明类拥有的字段，")}<code>static def</code>{locale.text(" declares class methods, and ", " 声明类方法，")}<code>static get</code>{locale.text(" declares class properties. Static members use the class name instead of ", " 声明类属性。静态成员使用类名，而不是 ")}<code>self</code>{locale.text(".", "。")}</p>
-
-                <h2 id="errors">{locale.text("Application errors", "应用错误")}</h2>
-                <p><code>Error</code>{locale.text(" is the built-in nominal base for application error classes. Subclasses use the same construction and inheritance rules and can narrow with ", " 是应用错误类的内置名义基类。子类使用相同构造与继承规则，并可在 catch 块中用 ")}<code>is</code>{locale.text(" inside catch. VelarScript rejects throwing non-Error values.", " 收窄。VelarScript 拒绝抛出非 Error 值。")}</p>
-
-                <div class="next-links"><Link to="/docs/language/modules"><strong>{locale.text("Next: Modules and JavaScript", "下一步：模块与 JavaScript")}</strong><span>{locale.text("Organize source and cross the ecosystem boundary explicitly.", "组织源码并显式跨越生态边界。")}</span></Link><Link to="/docs/web/components"><strong>{locale.text("Components and JSX", "组件与 JSX")}</strong><span>{locale.text("Move from nominal domain behavior into the Web extension.", "从名义领域行为进入 Web 扩展。")}</span></Link></div>
+                <h2 id="absent">{locale.text("What a class does not carry", "类不承载什么")}</h2>
+                <p>
+                    {locale.text("There are no setters: a setter makes an assignment run code the assignment does not show, so a field is assigned directly or a method names the work it does. There is no this, no class-header constructor fields, no constructor block, no private identifier sigil, and no user-defined decorator. The modifier keywords are a closed vocabulary, and a new marking arrives as a new keyword.", "没有设值器：设值器会让一次赋值执行赋值本身没有显示出来的代码，因此要么直接给字段赋值，要么由一个方法说明它所做的工作。没有 this，没有类头部的构造字段，没有构造块，没有私有标识符符号，也没有用户自定义装饰器。修饰关键字是一份封闭词汇，新的标记以新关键字的形式到来。")}
+                </p>
+                <CodeBlock code={absentCode} />
+                <p>
+                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                </p>
+                <CodeBlock code={setterErrorCode} />
+                <p>
+                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                </p>
+                <CodeBlock code={setterErrorOutput} />
+                <Callout title={locale.text("Composition over extending a foreign class", "组合，而不是继承外来的类")}>
+                    <p>
+                        {locale.text("A class declared through the JavaScript boundary cannot be extended: construction would have to chain across the bridge, and the base is a contract whose body the compiler cannot see. Hold the instance in a field and expose the behavior needed. Extending Error is unaffected, because Error is a builtin rather than a declared foreign class.", "通过 JavaScript 边界声明的类不能被继承：构造会不得不跨过桥接，而基类是一份编译器看不到函数体的契约。把实例保存在字段里，只暴露所需要的行为即可。继承 Error 不受影响，因为 Error 是内建类型，而不是声明出来的外来类。")}
+                    </p>
+                </Callout>
             </Prose>
+            <DocsPager
+                previous={guidePrevious("/guide/language/classes")}
+                next={guideNext("/guide/language/classes")}
+            />
         </DocsShell>
     </main>

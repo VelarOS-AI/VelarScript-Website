@@ -1,0 +1,111 @@
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
+import {headTitle, referenceNav} from "../content.vel"
+
+const externNodeCode = `// The standard surface has no hashing API, so the boundary to one is declared.\n// \`extern module\` describes the JavaScript module's runtime exports, and every\n// use of them is then checked like ordinary VelarScript.\nextern module "node:crypto":\n    export def randomUUID() -> string\n\n    export class Hash:\n        def update(value: string) -> Hash\n        def digest(encoding: string) -> string\n\n    export def createHash(algorithm: string) -> Hash\n\nimport js {createHash, randomUUID} from "node:crypto"\n\nexport def digest(value: string) -> string:\n    const hasher = createHash("sha256")\n    return hasher.update(value).digest("hex")\n\nexport def identifier() -> string:\n    return randomUUID()`
+const unknownNodeCode = `type OperatingSystemUser:\n    username: string\n    homedir: string\n\n// Data the package does not guarantee should cross as \`unknown\` and enter\n// typed code through the runtime validator.\nextern module "node:os":\n    export def userInfo() -> unknown\n\nimport js {userInfo} from "node:os"\n\nexport def currentUser() -> string:\n    const user = OperatingSystemUser.parse(userInfo())\n    return f"{user.username} at {user.homedir}"`
+const overloadNodeCode = `// Each extern export, constructor, or method has exactly one declared\n// signature. An API built on events whose listener shape changes with the\n// event name cannot be declared per variant, so the payload crosses as\n// \`unknown\` and is narrowed where the shape is actually known.\nextern module "node:events":\n    export class EventEmitter:\n        constructor()\n        def on(event: string, listener: (payload: unknown) -> null) -> null\n        def emit(event: string, payload: unknown) -> bool\n\nimport js {EventEmitter} from "node:events"\n\ntype MessagePayload:\n    text: string\n\ndef handleMessage(payload: unknown):\n    const message = MessagePayload.parse(payload)\n    print(message.text)\n\nexport def listen() -> bool:\n    const source = EventEmitter()\n    source.on("message", handleMessage)\n    return source.emit("message", {text: "hello"})`
+const unsafeImportNodeCode = "import js unsafe {webcrypto} from \"node:crypto\"\n\ntype RandomSource:\n    getRandomValues: unknown\n\n// Nothing about an unsafe import is checked, so the import statement is the\n// boundary of trust: validate with a runtime type at the edge, and let only\n// typed values flow inward. When the boundary stabilizes, promote it to an\n// `extern module` declaration and the compiler starts checking every call.\nexport def randomSource() -> bool:\n    const source = RandomSource.parse(webcrypto)\n    return source.getRandomValues != null"
+const stylesheetCode = `import css unsafe "./legacy.css" before look\nimport css unsafe "./overrides.css" after look\n\n// \`before look\` and \`after look\` set source order only; specificity and\n// !important remain the stylesheet author's responsibility.\nexport component Preview(trustedMarkup: string):\n    // unsafe:html is a wholesale innerHTML assignment on every reactive\n    // update. It cannot be combined with children, and markup rendered through\n    // it is styled by the unsafe CSS route above rather than by Look.\n    return <article class="preview" unsafe:html={trustedMarkup} />`
+
+const vendorCssJsonCode = `{\n  "scripts": {\n    "sync:vendor-css": "cp node_modules/some-ui/dist/style.css src/vendor/some-ui.css",\n    "prebuild": "npm run sync:vendor-css"\n  }\n}`
+const reproTextCode = `What I wrote (or wanted to write):\n    <the minimal .vel source>\n\nWhat the compiler said:\n    <the verbatim diagnostics, or the wrong output>\n\nHow I resolved it:\n    <the workaround that unblocked the project, or "blocked">`
+const ejectShellCode = "velar build\n\n# The emitted program runs in a bare directory with nothing but Node —\n# no @velarscript/* packages, no compiler, no CLI.\ncd dist\nnode main.js"
+
+const exitMembers = [
+    {name: "1. The diagnostic", signature: "velar check · velar fix", summary: "Most walls end here, in one round. The rest of this page is for the walls that remain.", summaryZh: "大多数墙就到此为止，一轮解决。本页其余部分是给剩下那些墙的。"},
+    {name: "2. extern module", signature: `extern module "package": …`, summary: "A checked boundary to any JavaScript module, and the first choice. Every use is checked like ordinary VelarScript.", summaryZh: "通往任何 JavaScript 模块的受检边界，也是首选。对它的每次使用都像普通 VelarScript 一样受检。"},
+    {name: "3. import js unsafe", signature: `import js unsafe {value} from "package"`, summary: "Admits a value as any. Nothing about it is checked, so the import line is the boundary of trust.", summaryZh: "以 any 接纳一个值。它的一切都不受检，因此这一行导入就是信任的边界。"},
+    {name: "4. import css unsafe · unsafe:html", signature: `import css unsafe "./file.css" before|after look`, summary: "The styling and markup boundaries, when a design needs CSS that Look does not express or markup that is not JSX.", summaryZh: "样式与标记的边界；当设计需要 Look 表达不了的 CSS，或需要非 JSX 的标记时使用。"},
+    {name: "5. Minimal repro", signature: "reduce · file · climb the ladder", summary: "For a suspected compiler defect: reduce, report with three sections, and use the workaround ladder while waiting.", summaryZh: "当怀疑是编译器缺陷时：缩小、按三段式报告，并在等待期间沿着绕行阶梯前进。"},
+    {name: "6. The final exit", signature: "velar build → readable JavaScript", summary: "Take the emitted, source-mapped JavaScript and keep shipping without us. One-way, and gate-tested.", summaryZh: "带走产出的、带 source map 的 JavaScript，不依赖我们继续交付。这是单向的，并有门禁验证。"},
+]
+
+const sections = [
+    {id: "diagnostic", label: "The diagnostic teaches the fix", labelZh: "诊断教你怎么改"},
+    {id: "extern", label: "extern module", labelZh: "extern module"},
+    {id: "unsafe", label: "import js unsafe", labelZh: "import js unsafe"},
+    {id: "styling", label: "Styling and markup", labelZh: "样式与标记"},
+    {id: "defect", label: "A suspected compiler defect", labelZh: "疑似编译器缺陷"},
+    {id: "exit", label: "The final exit", labelZh: "最终出口"},
+]
+
+export component ReferenceEscapeHatches:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/reference/escape-hatches", locale.isChinese())}
+            description={locale.text("Each escape hatch, what it still checks, and what it stops promising.", "每一条逃生通道保留了哪些检查，以及它不再承诺什么。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={referenceNav}>
+            <PageHeader
+                kicker={locale.text("Reference", "参考")}
+                title={locale.text("Escape hatches", "逃生通道")}
+                summary={locale.text("A decision tree from the mildest exit to the final one. A language for real products must never strand a project mid-development, so each exit is a supported product surface rather than folklore.", "一棵从最温和的出口通向最终出口的决策树。一门面向真实产品的语言绝不能把项目搁浅在半途，因此每一级出口都是受支持的产品表面，而不是口口相传的偏方。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <MemberTable rows={exitMembers} caption={locale.text("The exits, in order", "各级出口，按顺序")} />
+
+                <h2 id="diagnostic">{locale.text("The diagnostic teaches the fix", "诊断教你怎么改")}</h2>
+                <p>
+                    {locale.text("Run velar check and do what it says; run velar fix where the rewrite is provably behavior-preserving. A diagnostic names the one current spelling rather than a list of possibilities, which is what lets a model self-correct in one round and a person learn the language from the compiler. The goal of the rest of this page is that a developer — or an agent — finds the way out in five minutes, without abandoning the project.", "运行 velar check 并照它说的做；当改写可证明保持行为时运行 velar fix。诊断给出的是当前唯一的那种拼写，而不是一串可能性，这正是模型能一轮自纠、人能从编译器学会这门语言的原因。本页其余部分的目标是：开发者——或者一个智能体——能在五分钟内找到出路，而不必放弃项目。")}
+                </p>
+
+                <h2 id="extern">{locale.text("extern module", "extern module")}</h2>
+                <p>
+                    {locale.text("When the standard surface lacks something, or the product needs a third-party npm package, declare a checked boundary. extern module describes the JavaScript module's runtime exports — constants, functions, and classes — and every use is then checked like ordinary VelarScript. Declared exports are presence-checked when the module loads, so a missing export fails at the boundary with a named diagnostic instead of binding undefined and failing far from the cause.", "当标准表面缺少某样东西，或产品需要第三方 npm 包时，声明一条受检边界。extern module 描述该 JavaScript 模块的运行时导出——常量、函数与类——此后对它们的每次使用都像普通 VelarScript 一样受检。已声明的导出会在模块加载时做存在性检查，因此缺失的导出会在边界处以具名诊断失败，而不是绑定到 undefined、在远离起因的地方才出错。")}
+                </p>
+                <CodeBlock code={externNodeCode} />
+                <p>
+                    {locale.text("Data the package does not guarantee should cross as unknown and enter typed code through the runtime validator. Many packages also work without a manual declaration: a safe import js reads the package's own TypeScript declarations when they map onto Vel's lightweight types.", "包不保证的数据应当以 unknown 越过边界，并通过运行时验证器进入带类型的代码。许多包也无需手写声明即可工作：当包自带的 TypeScript 声明能映射到 Vel 的轻量类型时，安全的 import js 会读取它们。")}
+                </p>
+                <CodeBlock code={unknownNodeCode} />
+                <Callout title={locale.text("The honest limit: one signature per export", "诚实的限制：每个导出只有一个签名")}>
+                    <p>
+                        {locale.text(`Each extern export, constructor, or method has exactly one declared signature. JavaScript APIs built on overloads — or on event names that change the listener's shape, such as on("data", …) versus on("close", …) — cannot be declared per variant today. This is the known narrow spot of the hatch. The two honest current solutions are to cross with unknown and narrow at runtime, or to write one fixed adapter facade in a package you own that flattens the overload set into single-signature functions.`, `每个 extern 导出、构造函数或方法都只有一个已声明的签名。建立在重载之上的 JavaScript API——或者随事件名改变监听器形状的 API，比如 on("data", …) 与 on("close", …)——今天还无法按变体分别声明。这是这条通道已知的窄处。当前两种诚实的做法是：以 unknown 越过边界、在运行时收窄；或者在你自己拥有的包里写一个固定的适配器门面，把重载集合压平成单签名函数。`)}
+                    </p>
+                </Callout>
+                <CodeBlock code={overloadNodeCode} />
+
+                <h2 id="unsafe">{locale.text("import js unsafe", "import js unsafe")}</h2>
+                <p>
+                    {locale.text("When a checked declaration is not worth the ceremony yet, import js unsafe admits the value as any. Nothing about it is checked, so treat the import statement as the boundary of trust: validate with a runtime type at the edge, and let only typed values flow inward. Unsafe imports are for speed, not for permanence — when the boundary stabilizes, promote it to an extern module declaration and the compiler starts checking every call site.", "当一份受检声明还不值得那份仪式时，import js unsafe 会以 any 接纳这个值。它的一切都不受检，因此要把这行导入当作信任的边界：在边缘用运行时类型验证，只让带类型的值向内流动。unsafe 导入是为了速度，不是为了长期存在——当边界稳定下来，把它提升为 extern module 声明，编译器就会开始检查每一个调用点。")}
+                </p>
+                <CodeBlock code={unsafeImportNodeCode} />
+
+                <h2 id="styling">{locale.text("Styling and markup", "样式与标记")}</h2>
+                <p>
+                    {locale.text("When a design needs CSS that Look does not express, native CSS is an explicit unsafe boundary with a declared position relative to Look's output. Trusted HTML renders through the string-only unsafe:html boundary; it is a wholesale innerHTML assignment on every reactive update, so it does not morph the DOM or preserve descendant identity, and it cannot be combined with children.", "当设计需要 Look 表达不了的 CSS 时，原生 CSS 是一条显式的 unsafe 边界，并且相对 Look 的产出声明了自己的位置。可信 HTML 通过只接受字符串的 unsafe:html 边界渲染；它在每次响应式更新时都是整体的 innerHTML 赋值，因此不会做 DOM 形变、不保留后代节点的同一性，也不能与子节点组合使用。")}
+                </p>
+                <CodeBlock code={stylesheetCode} />
+                <p>
+                    {locale.text("import css unsafe takes a relative project path and nothing else. There is no package-path form, so a component library whose CSS lives in node_modules is brought in by copying it into the project. That is a two-line build step and a deliberate one: the file becomes a reviewable artifact whose version is visible in the repository instead of a silent dependency of the visual layer.", "import css unsafe 只接受项目内的相对路径，别无其他。它没有包路径形式，因此 CSS 位于 node_modules 中的组件库，要通过把文件复制进项目来引入。这是两行构建步骤，而且是有意为之的：该文件成为可被审阅的构件，其版本在仓库中可见，而不是视觉层的一个隐形依赖。")}
+                </p>
+                <CodeBlock code={vendorCssJsonCode} />
+                <p>
+                    {locale.text("Three points keep that workflow honest. Import the copy before look so the application's own Look wins equal-specificity conflicts. Commit the copied file and re-run the copy when the package updates, which a prebuild or postinstall script keeps mechanical. And treat the copy as read-only: local edits belong in a second stylesheet imported after look, or in Look itself, so the next sync does not silently discard them.", "三点让这套流程保持诚实。把复制来的文件以 before look 导入，好让应用自己的 Look 在同等特异性的冲突中胜出。把复制的文件提交进仓库，并在包更新时重新执行复制，用 prebuild 或 postinstall 脚本把这件事机械化。并且把这份副本视为只读：本地修改应当写在以 after look 导入的第二份样式表里，或者写进 Look 本身，这样下一次同步才不会默默丢掉它们。")}
+                </p>
+
+                <h2 id="defect">{locale.text("A suspected compiler defect", "疑似编译器缺陷")}</h2>
+                <p>
+                    {locale.text("When the compiler itself appears wrong — a diagnostic that cannot be satisfied, an emit that misbehaves, a check that contradicts the documentation — do not abandon the project and do not fight the wall blindly. Reduce to a minimal repro first: cut the program down to the smallest .vel file that still shows the behavior. Most suspected compiler bugs resolve into a teaching diagnostic during that step, and the rest become perfect reports.", "当编译器本身看起来出错了——一条无法满足的诊断、行为不对的产出、与文档矛盾的检查——不要放弃项目，也不要盲目硬碰这堵墙。先缩小到最小复现：把程序削减到仍能展现该行为的最小 .vel 文件。大多数被怀疑的编译器缺陷会在这一步变成一条教学诊断，其余的则成为完美的报告。")}
+                </p>
+                <CodeBlock code={reproTextCode} />
+                <p>
+                    {locale.text("Climb the workaround ladder while waiting, in order: respell the construct, because a neighbouring canonical spelling usually avoids the edge; isolate the troublesome part into a small JavaScript module you own and declare it with extern module; and if the defect still blocks the project, take the final exit below. VelarScript makes no backward-compatibility promise, but a defect with a repro is treated as a gate failure rather than as folklore.", "在等待期间沿着绕行阶梯依次向上：换一种拼写，因为相邻的规范拼写通常能避开边角；把麻烦的部分隔离到你自己拥有的一个小 JavaScript 模块里，并用 extern module 声明它；如果缺陷仍然阻塞项目，就走下面的最终出口。VelarScript 不承诺向后兼容，但带有复现的缺陷会被当作门禁失败处理，而不是当作坊间传闻。")}
+                </p>
+
+                <h2 id="exit">{locale.text("The final exit", "最终出口")}</h2>
+                <p>
+                    {locale.text("For the Node target, velar build emits legible, source-mapped JavaScript — ordinary modules with your names in them, plus a generated node_modules/velar directory containing the standard-module runtime as plain readable JavaScript. That generated runtime is part of the build output, not part of the toolchain. A production web build additionally bundles and minifies for deployment, so the readable form of a web application is its module emission and source maps rather than the deployed bundle.", "对 Node 目标，velar build 产出可读的、带 source map 的 JavaScript——普通模块，里面是你自己的名字，另加一个生成的 node_modules/velar 目录，其中以纯可读 JavaScript 的形式包含标准模块运行时。那份生成的运行时属于构建产物，而不属于工具链。Web 生产构建则会为部署额外做打包与压缩，因此 Web 应用的可读形态是它的模块发射与 source map，而不是部署出去的那个包。")}
+                </p>
+                <CodeBlock code={ejectShellCode} />
+                <p>
+                    {locale.text("This anti-lock-in property is enforced by a permanent acceptance gate that builds a program, copies only the emitted output into an empty directory, and runs it with Node alone. Ejecting is one-way — you maintain the JavaScript from then on — which is exactly what makes it an honest exit: the code you leave with is code a JavaScript team can own.", "这条反锁定性质由一道常设的验收门禁保证：它构建一个程序，只把产出的输出复制到一个空目录，然后仅用 Node 运行它。弹出是单向的——从那以后由你维护这份 JavaScript——而这恰恰是它之所以是一个诚实出口的原因：你带走的代码，是一支 JavaScript 团队能够拥有的代码。")}
+                </p>
+            </Prose>
+        </DocsShell>
+    </main>

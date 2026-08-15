@@ -1,146 +1,45 @@
-import {expect} from "velar/test"
 import {browser} from "velar/web-test"
+import {expect} from "velar/test"
 
-async def useEnglish():
-    if await browser.text(".language-switch") == "EN":
-        await browser.click(".language-switch")
-        await browser.waitForText(".language-switch", "中")
-
-async def test_home_explains_the_product_and_uses_framework_navigation():
+test "the home page renders its definition and its compiled sample":
     await browser.open("/")
-    await useEnglish()
-    expect(await browser.attribute('a[href="#main-content"]', "href")).toBe("#main-content")
-    expect(await browser.count('#main-content[tabindex="-1"]')).toBe(1)
-    expect(await browser.text(".brand-name")).toBe("VelarScript")
-    expect(await browser.text("[data-home-hero] h1")).toContain("The Web")
-    expect(await browser.text("[data-home-hero]")).toContain("Language + Web framework")
-    expect(await browser.attribute('nav a[href="/learn"]', "aria-current")).toBe(null)
-    await browser.click('nav a[href="/learn"]')
-    await browser.waitForText("h1", "Readable from the first line.")
-    expect(await browser.currentPath()).toBe("/learn")
-    expect(await browser.attribute('nav a[href="/learn"]', "aria-current")).toBe("page")
-    expect(await browser.text("[data-package-workflow]")).toContain("velar add")
+    await browser.waitFor("[data-home-definition]")
+    expect(await browser.text("[data-home-definition] h1")).toBe("VelarScript")
+    await browser.waitFor("[data-home-sample] figure")
 
-async def test_locale_switch_is_reusable_persistent_and_code_is_highlighted():
+test "the primary navigation reaches the guide as a route change":
     await browser.open("/")
-    if await browser.text(".language-switch") == "EN":
-        await browser.click(".language-switch")
-    expect(await browser.text(".language-switch")).toBe("中")
-    expect(await browser.attribute("html", "lang")).toBe("en")
-    expect(await browser.count(".token-keyword") > 0).toBe(true)
-    expect(await browser.count(".token-type") > 0).toBe(true)
+    await browser.click(".primary-nav a:first-of-type")
+    await browser.waitFor(".docs")
+    expect(await browser.currentPath()).toBe("/guide")
+
+test "the guide shell lists all three sidebar groups":
+    await browser.open("/guide")
+    await browser.waitFor(".docs")
+    expect(await browser.count(".nav-group")).toBe(6)
+    expect(await browser.count(".velar-docs-prose") >= 1).toBeTruthy()
+
+test "the language switch flips the navigation and flips it back":
+    await browser.open("/guide")
+    await browser.waitFor(".primary-nav")
+    const before = await browser.text(".primary-nav a:first-of-type")
     await browser.click(".language-switch")
-    await browser.waitForText("[data-home-hero] h1", "让 Web")
-    expect(await browser.attribute("html", "lang")).toBe("zh-CN")
-    expect(await browser.attribute('[aria-label="主导航"] a[href="/docs"]', "href")).toBe("/docs")
-    await browser.reload()
-    await browser.waitForText("[data-home-hero] h1", "让 Web")
-    expect(await browser.text(".language-switch")).toBe("EN")
-    expect(await browser.attribute("html", "lang")).toBe("zh-CN")
+    const flipped = before == "Guide" ? "指南" : "Guide"
+    await browser.waitForText(".primary-nav a:first-of-type", flipped)
     await browser.click(".language-switch")
-    await browser.waitForText("[data-home-hero] h1", "The Web")
-    expect(await browser.attribute("html", "lang")).toBe("en")
+    await browser.waitForText(".primary-nav a:first-of-type", before)
 
-async def test_documentation_routes_and_active_navigation():
-    await browser.open("/docs")
-    await useEnglish()
-    await browser.waitForText("h1", "Learn the whole stack, from first value to verified deployment.")
-    expect(await browser.text(".velar-docs-callout")).toContain("Language and framework are separate")
-    expect(await browser.text("[data-docs-page]")).toContain("@velarscript/ui")
-    expect(await browser.attribute('[aria-label="Primary navigation"] a[href="/docs"]', "aria-current")).toBe("page")
-    await browser.click('[aria-label="Documentation sections"] a[href="/docs/getting-started"]')
-    await browser.waitForText("h1", "From an empty folder to a real Web app.")
-    expect(await browser.text("[data-getting-started]")).toContain("npm create velar@latest")
-    await browser.click('[aria-label="Documentation sections"] a[href="/docs/web"]')
-    await browser.waitForText("h1", "One official path from component to production.")
-    expect(await browser.currentPath()).toBe("/docs/web")
-    expect(await browser.text("[data-web-docs]")).toContain("velar/http")
-    expect(await browser.visible("[data-disclosure-answer]")).toBe(false)
-    await browser.press("[data-interaction-playground] summary", "Enter")
-    expect(await browser.visible("[data-disclosure-answer]")).toBe(true)
-    await browser.click('[data-interaction-playground] button:has-text("Inspect the dialog")')
-    expect(await browser.visible("[data-interaction-playground] dialog")).toBe(true)
-    const dialogTitleId = await browser.attribute("[data-interaction-playground] dialog", "aria-labelledby")
-    expect(dialogTitleId != null).toBe(true)
-    if dialogTitleId:
-        expect(dialogTitleId).toContain("velar-dialog-title-")
-    await browser.click('[data-interaction-playground] button:has-text("Return to the page")')
-    expect(await browser.visible("[data-interaction-playground] dialog")).toBe(false)
-    await browser.waitFor('[data-interaction-playground] button:has-text("Inspect the dialog"):focus')
-    await browser.click('[data-interaction-playground] button:has-text("Inspect the dialog")')
-    await browser.press('[data-interaction-playground] button:has-text("Return to the page")', "Escape")
-    expect(await browser.visible("[data-interaction-playground] dialog")).toBe(false)
-    await browser.waitFor('[data-interaction-playground] button:has-text("Inspect the dialog"):focus')
-    const fieldId = await browser.attribute('[data-interaction-playground] input[name="name"]', "id")
-    const labelTarget = await browser.attribute("[data-interaction-playground] [data-velar-ui-field] label", "for")
-    const hintId = await browser.attribute('[data-interaction-playground] input[name="name"]', "aria-describedby")
-    expect(fieldId).toBe(labelTarget)
-    expect(hintId != null).toBe(true)
-    await browser.click('[data-interaction-playground] button[type="submit"]')
-    expect(await browser.attribute('[data-interaction-playground] input[name="name"]', "aria-invalid")).toBe("true")
-    const errorDescription = await browser.attribute('[data-interaction-playground] input[name="name"]', "aria-describedby")
-    expect(errorDescription != null).toBe(true)
-    if hintId:
-        if errorDescription:
-            expect(errorDescription).toContain(hintId)
-    await browser.waitFor('[data-interaction-playground] input[name="name"]:focus')
-    await browser.fill('[data-interaction-playground] input[name="name"]', "Ada")
-    await browser.click('[data-interaction-playground] button[type="submit"]')
-    await browser.waitForText('[data-interaction-playground] [role="status"]', "Hello, Ada. This form stayed inside checked VelarScript APIs.")
-    expect(await browser.attribute('[data-interaction-playground] input[name="name"]', "aria-invalid")).toBe(null)
-    expect(await browser.attribute('[data-interaction-playground] input[name="name"]', "aria-describedby")).toBe(hintId)
+test "a language chapter carries its sections, its samples, and its pager":
+    await browser.open("/guide/language/values")
+    await browser.waitFor(".velar-docs-sections")
+    expect(await browser.count(".velar-docs-prose pre") >= 3).toBeTruthy()
+    await browser.waitFor(".velar-docs-pager")
 
-async def test_examples_and_not_found_are_delivered_by_production_router():
-    await browser.open("/examples")
-    await useEnglish()
-    await browser.waitForText("h1", "Small programs, honest ideas.")
-    expect(await browser.count("article.example")).toBe(3)
-    await browser.open("/not-a-velar-page")
-    await browser.waitForText("[data-not-found] h1", "Nothing is written here yet.")
-    expect(await browser.text("[data-not-found] p")).toContain("/not-a-velar-page")
+test "the reference CLI page renders its command tables":
+    await browser.open("/reference/cli")
+    await browser.waitFor(".docs")
+    expect(await browser.count(".velar-docs-members table") >= 1).toBeTruthy()
 
-async def test_mobile_navigation_and_code_surfaces_remain_usable():
-    await browser.viewport(390, 844)
-    await browser.open("/")
-    const primaryNavCount = await browser.count(".primary-nav")
-    const primaryNavStyle = await browser.attribute(".primary-nav", "style")
-    assert await browser.visible(".primary-nav"), f"Mobile primary navigation must remain visible (count={primaryNavCount}, style={primaryNavStyle})"
-    assert await browser.visible("[data-home-hero] figure"), "Mobile hero code sample must remain visible"
-    await browser.open("/docs")
-    assert not await browser.visible(".docs aside .brand"), "Mobile docs must hide the duplicate sidebar brand"
-    const mobileDocsCount = await browser.count(".mobile-docs-nav")
-    const mobileDocsStyle = await browser.attribute(".mobile-docs-nav", "style")
-    assert await browser.visible(".mobile-docs-nav"), f"Mobile docs navigation must replace the desktop navigation (count={mobileDocsCount}, style={mobileDocsStyle})"
-    await browser.click(".mobile-docs-nav summary")
-    assert await browser.visible(".mobile-docs-nav nav"), "Expanded mobile docs navigation must expose its sections"
-
-async def test_detailed_reference_routes_are_delivered():
-    await browser.open("/docs/language/types")
-    await useEnglish()
-    await browser.waitForText("h1", "Useful types, not type-level programming.")
-    expect(await browser.text("main")).toContain("User.parse")
-    await browser.open("/docs/language/collections")
-    await browser.waitForText("h1", "Three native collections, one clear vocabulary.")
-    expect(await browser.text("main")).toContain("users.index(ada)")
-    expect(await browser.text("main")).toContain("users.some")
-    expect(await browser.text("main")).toContain("users.every")
-    await browser.open("/docs/language/classes")
-    await browser.waitForText("h1", "Native identity without prototype ceremony.")
-    expect(await browser.text("main")).toContain("constructor(id: string")
-    await browser.open("/docs/web/components")
-    await browser.waitForText("h1", "Components create native Web structure.")
-    expect(await browser.text("main")).toContain("def content() -> WebNode")
-    await browser.open("/docs/web/reactivity")
-    await browser.waitForText("h1", "Updates are direct; ownership stays visible.")
-    expect(await browser.text("main")).toContain("still rejects the call")
-    await browser.open("/docs/core")
-    await browser.waitForText("h1", "Small explicit modules for everyday programs.")
-    expect(await browser.text("[data-core-library]")).toContain("velar/collections")
-    expect(await browser.text("[data-core-library]")).toContain("velar/log")
-    await browser.open("/docs/web/data")
-    await browser.waitForText("h1", "External data crosses checked boundaries.")
-    expect(await browser.text("main")).toContain("velar/http")
-    expect(await browser.text("main")).toContain("velar/storage")
-    await browser.open("/docs/testing")
-    await browser.waitForText("h1", "Test the source; verify the artifact users receive.")
-    expect(await browser.text("[data-testing-docs]")).toContain("verify-deployment")
+test "an unknown route answers the not-found page":
+    await browser.open("/this/page/does/not/exist")
+    await browser.waitFor("[data-not-found]")

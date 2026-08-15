@@ -1,6 +1,7 @@
-import {NavLink} from "velar/web"
+import {Link, NavLink} from "velar/web"
 import {Brand, Container, controlSurface, foundationInk as ink, foundationInkFaint as inkFaint, foundationInkSoft as inkSoft, foundationPaperPure as paperPure, foundationRule as rule, foundationSeaSoft as seaSoft, useLocale} from "@velarscript/site-ui"
 import {NavItem} from "../content.vel"
+import {border, minmax, rgba, spacing, tracks} from "velar/look"
 
 const headerLook = look:
     position = "sticky"
@@ -56,7 +57,7 @@ const navLinkLook = look:
         fontSize = 0.8rem
 
 const languageLook = look:
-    ...controlSurface(radius = 9px, padding = spacing(0px, 0px))
+    ...controlSurface(radius=9px, padding=spacing(0px, 0px))
     width = 38px
     height = 34px
     fontSize = 0.78rem
@@ -80,7 +81,7 @@ const versionLook = look:
     fontFamily = "SFMono-Regular, Consolas, monospace"
     fontSize = 0.72rem
 
-const sourceLook = controlSurface(radius = 8px)
+const sourceLook = controlSurface(radius=8px)
 
 const footerLook = look:
     borderTop = border(1px, rule)
@@ -96,13 +97,18 @@ const footerInnerLook = look:
     if viewport.width <= 640px:
         gridTemplateColumns = tracks(1fr)
 
-const statementLook = look:
-    maxWidth = 620px
+const footerFactsLook = look:
+    display = "grid"
+    gap = 6px
     margin = 0
-    fontSize = clamp(1.3rem, 3vw, 2.2rem)
-    fontWeight = 720
-    lineHeight = 1.14
-    letterSpacing = -0.045em
+    color = inkSoft
+    fontSize = 0.86rem
+    lineHeight = 1.7
+
+const footerLinksLook = look:
+    display = "flex"
+    flexWrap = "wrap"
+    gap = spacing(4px, 18px)
 
 const footerMetaLook = look:
     margin = 0
@@ -119,8 +125,47 @@ const footerLinkLook = look:
 
 export component SiteHeader(items: List<NavItem>, repositoryUrl: string, version: string):
     const locale = useLocale()
-    return <header class="header" look={headerLook}><Container><div class="inner" look={headerInnerLook}><Brand compact={true} look={headerBrandLook} /><nav class="primary-nav" look={navLook} aria-label={locale.text("Primary navigation", "主导航")}>{items.map(item => <NavLink key={item.path} to={item.path} look={navLinkLook}>{locale.text(item.label, item.labelZh)}</NavLink>)}</nav><button class="language-switch" look={languageLook} type="button" on:click={locale.toggle} aria-label={locale.text("切换到中文", "Switch to English")} title={locale.text("切换到中文", "Switch to English")}><span aria-hidden="true">{locale.text("中", "EN")}</span></button><div class="meta" look={headerMetaLook}><span class="version" look={versionLook}>v{version}</span><a class="source" look={sourceLook} href={repositoryUrl}>{locale.text("Source", "源码")}</a></div></div></Container></header>
+    return <header class="header" look={headerLook}>
+        <Container>
+            <div class="inner" look={headerInnerLook}>
+                <Brand compact={true} look={headerBrandLook} />
+                <nav class="primary-nav" look={navLook} aria-label={locale.text("Primary navigation", "主导航")}>
+                    {items.map(item => <NavLink key={item.path} to={item.path} look={navLinkLook}>{locale.text(item.label, item.labelZh)}</NavLink>)}
+                </nav>
+                <button
+                    class="language-switch"
+                    look={languageLook}
+                    type="button"
+                    on:click={locale.toggle}
+                    aria-label={locale.text("切换到中文", "Switch to English")}
+                    title={locale.text("切换到中文", "Switch to English")}
+                >
+                    <span aria-hidden="true">{locale.text("中", "EN")}</span>
+                </button>
+                <div class="meta" look={headerMetaLook}>
+                    <span class="version" look={versionLook}>v{version}</span>
+                    <a class="source" look={sourceLook} href={repositoryUrl}>{locale.text("Source", "源码")}</a>
+                </div>
+            </div>
+        </Container>
+    </header>
 
 export component SiteFooter(repositoryUrl: string, version: string):
     const locale = useLocale()
-    return <footer class="footer" look={footerLook}><Container><div class="inner" look={footerInnerLook}><p class="statement" look={statementLook}>{locale.text("A small, coherent language for ambitious work on the Web.", "一门小而完整的语言，为有野心的 Web 创作而生。")}</p><p class="meta" look={footerMetaLook}>VelarScript {version}<br /><a look={footerLinkLook} href={repositoryUrl}>{locale.text("Apache-2.0 on GitHub", "GitHub 上的 Apache-2.0 开源项目")}</a></p></div></Container></footer>
+    return <footer class="footer" look={footerLook}>
+        <Container>
+            <div class="inner" look={footerInnerLook}>
+                <div class="facts" look={footerFactsLook}>
+                    <span>VelarScript {version} · Apache-2.0 · <a look={footerLinkLook} href={repositoryUrl}>GitHub</a></span>
+                    <span class="footer-links" look={footerLinksLook}>
+                        <Link to="/guide" look={footerLinkLook}>{locale.text("Guide", "指南")}</Link>
+                        <Link to="/reference" look={footerLinkLook}>{locale.text("Reference", "参考")}</Link>
+                        <Link to="/examples" look={footerLinkLook}>{locale.text("Examples", "示例")}</Link>
+                    </span>
+                </div>
+                <p class="meta" look={footerMetaLook}>
+                    {locale.text("Development release. No backward-compatibility promise yet; pin the toolchain in your project.", "开发期发布。目前没有向后兼容承诺；请在项目中固定工具链版本。")}
+                </p>
+            </div>
+        </Container>
+    </footer>

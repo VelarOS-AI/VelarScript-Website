@@ -1,49 +1,142 @@
-import {Head, Link} from "velar/web"
-import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
-import {docsNav} from "../content.vel"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
-const timersCode = "import {after, environment, every, watchOnline, watchVisibility} from \"velar/browser\"\n\ncomponent EnvironmentStatus:\n    const stopReady = after(250, () => print(\"ready\"))\n    const stopHeartbeat = every(1000, () => refresh())\n    const stopOnline = watchOnline(value => print(value))\n    const stopVisibility = watchVisibility(value => print(value))\n\n    cleanup:\n        stopReady()\n        stopHeartbeat()\n        stopOnline()\n        stopVisibility()\n\n    return <p>{environment().online ? \"Online\" : \"Offline\"}</p>"
-const dialogCode = "let dialog: DialogElement? = null\nlet trigger: Element? = null\n\ndef openInspector():\n    showDialog(dialog)\n\ndef closeInspector():\n    closeDialog(dialog, \"done\")\n    focus(trigger)\n\nreturn <>\n    <button ref={trigger} on:click={openInspector}>Inspect</button>\n    <dialog ref={dialog}>\n        <button on:click={closeInspector}>Close</button>\n    </dialog>\n</>"
-const filesCode = "import {download, pick, readText} from \"velar/files\"\n\nconst selected = await pick({accept: \".json\", multiple: false})\nif selected.size > 0:\n    const source = await readText(selected.get(0))\n    download(\"copy.json\", source, \"application/json\")"
-const realtimeCode = "import {eventStream, socket} from \"velar/realtime\"\n\ncomponent LiveStatus:\n    const chat = socket(\"wss://example.test/chat\", {\n        message: text => print(text),\n        error: message => print(message),\n    })\n    const updates = eventStream(\"/api/updates\", {message: text => print(text)})\n\n    cleanup:\n        chat.close()\n        updates.close()\n\n    return <p>{chat.state()}</p>"
-const appCode = "import {onError, reportError} from \"velar/app\"\n\ncomponent ErrorStatus:\n    state message = \"ready\"\n\n    def capture(phase: string, detail: string):\n        message = phase + \":\" + detail\n\n    const stopErrors = onError(report => capture(report.phase, report.error.message))\n\n    cleanup:\n        stopErrors()\n\n    return <output>{message}</output>"
+const timersCode = `import {after, every, watchMedia, watchOnline, watchVisibility} from "velar/browser"\n\n// after(duration, callback) and every(duration, callback) take a Duration,\n// never a bare number, and each answers its own cancel function. The three\n// watch subscriptions follow the same shape, which is why one @cleanup loop\n// releases all five.\nexport component TimersAndSubscriptions:\n    state ticks = 0\n    state settled = "waiting"\n    state wide = false\n    state online = true\n    state visible = true\n    let stops: List<() -> null> = []\n\n    def countTick():\n        ticks += 1\n\n    def settle():\n        settled = "settled"\n\n    def setWide(next: bool):\n        wide = next\n\n    def setOnline(next: bool):\n        online = next\n\n    def setVisible(next: bool):\n        visible = next\n\n    @mounted:\n        stops = [\n            after(120ms, settle),\n            every(1s, countTick),\n            watchMedia("(min-width: 720px)", setWide),\n            watchOnline(setOnline),\n            watchVisibility(setVisible),\n        ]\n\n    @cleanup:\n        for stop in stops:\n            stop()\n\n    return <div data-timers>\n        <p data-ticks>{ticks}</p>\n        <p data-timer-settled>{settled}</p>\n        <p data-subscriptions>{f"{wide}:{online}:{visible}"}</p>\n    </div>`
+const environmentCode = `import {environment, location, media} from "velar/browser"\n\n// location(), environment(), and media(query) are synchronous reads of the\n// host, each returning a checked record rather than a live host object.\nexport component EnvironmentReadout:\n    state described = "not read"\n\n    def describe():\n        const here = location()\n        const env = environment()\n        const wideNow = media("(min-width: 720px)")\n        described = f"{here.path}|{here.origin != ""}|{here.query.size}|{here.hash == "" ? "no hash" : here.hash}"\n        print(f"{env.language} {env.languages.size} {env.online} {env.visible} {env.colorScheme} {env.reducedMotion} {env.touch} {wideNow}")\n\n    return <div data-environment>\n        <p data-described>{described}</p>\n        <button type="button" data-describe on:click={describe}>Read the environment</button>\n    </div>`
+const measurementCode = `import {frame, measure, scrollMetrics} from "velar/browser"\n\n// measure, scrollMetrics, and frame are the layout readouts. frame() answers a\n// Promise of the frame timestamp, which is the checked way to wait for the next\n// paint.\nexport component MeasurementReadout:\n    state box = "unmeasured"\n    state metrics = "unmeasured"\n    state stamped = "no frame"\n    let panel: Element? = null\n\n    def measurePanel():\n        if panel != null:\n            const rect = measure(panel)\n            const scroll = scrollMetrics(panel)\n            box = f"{rect.width}x{rect.height} at {rect.x},{rect.y}"\n            metrics = f"{scroll.x}:{scroll.y}:{scroll.viewportWidth}:{scroll.contentHeight}"\n\n    action awaitFrame() -> string:\n        const stamp = await frame()\n        stamped = f"frame {stamp >= 0}"\n        return stamped\n\n    return <div ref={panel} data-measurement>\n        <p data-box>{box}</p>\n        <p data-metrics>{metrics}</p>\n        <p data-stamped>{stamped}</p>\n        <button type="button" data-measure on:click={measurePanel}>Measure</button>\n        <button type="button" data-await-frame on:click={awaitFrame} disabled={awaitFrame.pending}>\n            Await a frame\n        </button>\n    </div>`
+const elementsCode = `import {blur, capturePointer, focus, releasePointer, scrollElementTo, scrollIntoView, setTextSelection, textSelection} from "velar/browser"\n\n// Focus, scrolling, text selection, and pointer capture all take the element\n// itself rather than a selector, so a ref is the entry point.\nexport component ElementControls:\n    state selection = "no selection"\n    state captured = "released"\n    let target: Element? = null\n    let note: TextAreaElement? = null\n\n    def focusNote():\n        if note != null:\n            focus(note)\n            focus(note, true)\n\n    def blurNote():\n        if note != null:\n            blur(note)\n\n    def revealTarget():\n        if target != null:\n            scrollIntoView(target)\n            scrollIntoView(target, "smooth")\n\n    def scrollPanel():\n        if target != null:\n            scrollElementTo(target, 0, 24)\n            scrollElementTo(target, 0, 0, "smooth")\n\n    def readSelection():\n        if note != null:\n            const span = textSelection(note)\n            selection = f"{span.start}:{span.end}:{span.direction}"\n            setTextSelection(note, 0, 4)\n            setTextSelection(note, 0, 4, "forward")\n\n    def capture(event: PointerEvent):\n        if target != null:\n            capturePointer(target, event.pointerId)\n            captured = "captured"\n\n    def release(event: PointerEvent):\n        if target != null:\n            releasePointer(target, event.pointerId)\n            captured = "released"\n\n    return <div ref={target} data-element-controls on:pointerdown={capture} on:pointerup={release}>\n        <textarea ref={note} data-note aria-label="A note">Some text to select</textarea>\n        <p data-selection>{selection}</p>\n        <p data-captured>{captured}</p>\n        <button type="button" data-focus on:click={focusNote}>Focus</button>\n        <button type="button" data-blur on:click={blurNote}>Blur</button>\n        <button type="button" data-reveal on:click={revealTarget}>Reveal</button>\n        <button type="button" data-scroll-panel on:click={scrollPanel}>Scroll the panel</button>\n        <button type="button" data-read-selection on:click={readSelection}>Read the selection</button>\n    </div>`
+const clipboardCode = `import {clipboardText, closeDialog, copyText, dialogResult, open, readClipboardText, scrollTo, setClipboardText, showDialog} from "velar/browser"\n\n// clipboardText(event) and setClipboardText(event, value) work on a real\n// clipboard event, so they are reached from on:copy and on:paste rather than by\n// asking for permission. The handler still calls preventDefault when it\n// replaces the browser's own behaviour.\nexport component ClipboardEvents:\n    state pasted = "nothing pasted"\n\n    def onPaste(event: ClipboardEvent):\n        pasted = clipboardText(event)\n\n    def onCopy(event: ClipboardEvent):\n        setClipboardText(event, "copied from the chapter")\n\n    return <div data-clipboard-events>\n        <input data-paste-target type="text" aria-label="Paste target" on:paste={onPaste} on:copy={onCopy} />\n        <p data-pasted>{pasted}</p>\n    </div>\n\n// The asynchronous clipboard requires a secure context and may reject when\n// browser permission or user-gesture policy denies access.\nexport async def clipboardSpellings():\n    await copyText("copied by the chapter")\n    print(await readClipboardText())\n\n// Calls that reach outside the page, and the modal dialog helpers, written\n// where nothing calls them: the spelling is the point.\nexport def windowAndScrollSpellings():\n    open("https://velarscript.dev")\n    open("https://velarscript.dev", "_blank")\n    scrollTo(0, 240)\n    scrollTo(0, 240, "smooth")\n\nexport def dialogSpellings(sheet: DialogElement):\n    showDialog(sheet)\n    closeDialog(sheet)\n    closeDialog(sheet, "confirmed")\n    print(dialogResult(sheet))`
+const formsCode = `import {checkedValue, clearError, clearErrors, errors, fieldValue, fieldValues, focusFirstError, numberValue, read, reset, setError, setPending, textValue, values} from "velar/forms"\n\nexport type SignUp:\n    email: string\n    age: number\n\n// The whole velar/forms table, driven from one form element. read(form, Target)\n// validates the form into a record type; the six readers answer individual\n// fields; the error helpers own the accessible error surface.\nexport component FormReadout:\n    state summary = "not submitted"\n    state errorSummary = "no errors"\n    let form: Element? = null\n\n    def readAll():\n        if form != null:\n            const all = values(form)\n            const one = fieldValue(form, "email")\n            const text = textValue(form, "email")\n            const fallback = textValue(form, "email", "unknown")\n            const age = numberValue(form, "age")\n            const agreed = checkedValue(form, "terms")\n            const tags = fieldValues(form, "tags")\n            summary = f"{all.size}|{one != null}|{text}|{fallback}|{age ?? 0}|{agreed}|{tags.size}"\n\n    def validate():\n        if form != null:\n            const parsed: SignUp? = try read(form, SignUp)\n            if parsed == null:\n                setError(form, "email", "Enter an email address and an age")\n                const messages = errors(form)\n                const moved = focusFirstError(form)\n                errorSummary = f"{messages.size} error(s), focused: {moved}"\n            else:\n                clearError(form, "email")\n                clearErrors(form)\n                errorSummary = f"valid: {parsed.email} is {parsed.age}"\n\n    action submit():\n        if form != null:\n            setPending(form, true)\n            await Promise.sleep(20ms)\n            setPending(form, false)\n            reset(form)\n\n    return <form ref={form} data-form on:submit.prevent={submit}>\n        <input data-email type="email" name="email" aria-label="Email" />\n        <input data-age type="number" name="age" aria-label="Age" />\n        <input data-terms type="checkbox" name="terms" value="yes" aria-label="Terms" />\n        <input data-tag-a type="checkbox" name="tags" value="a" aria-label="Tag a" />\n        <input data-tag-b type="checkbox" name="tags" value="b" aria-label="Tag b" />\n        <p data-form-summary>{summary}</p>\n        <p data-form-errors>{errorSummary}</p>\n        <button type="button" data-read-form on:click={readAll}>Read every field</button>\n        <button type="button" data-validate-form on:click={validate}>Validate</button>\n        <button type="submit" data-submit-form disabled={submit.pending}>Submit</button>\n    </form>`
+const filesCode = `import {download, pick, readDataUrl, readText} from "velar/files"\n\n// pick opens the operating system's file chooser and download writes to the\n// reader's disk, so both live in a function nothing calls: the spelling is the\n// point, performing it while a reader browses a documentation page is not.\nexport async def fileSpellings(file: File):\n    const chosen = await pick()\n    const images = await pick({accept: "image/*", multiple: true})\n    const body = await readText(file)\n    const cappedBody = await readText(file, 65536)\n    const dataUrl = await readDataUrl(file)\n    const cappedDataUrl = await readDataUrl(file, 65536)\n    download("notes.txt", body)\n    download("notes.csv", body, "text/csv")\n    print(f"{chosen.size} {images.size} {cappedBody.size} {dataUrl.size} {cappedDataUrl.size}")\n\n// A File is an opaque record with read-only metadata. Only a value returned by\n// pick may be read or attached to a multipart body.\nexport def describeFile(file: File) -> string:\n    return f"{file.name} {file.size} {file.type} {file.modified}"`
+
+const sections = [
+    {id: "timers", label: "Timers and subscriptions", labelZh: "定时器与订阅"},
+    {id: "environment", label: "Reading the host", labelZh: "读取宿主"},
+    {id: "layout", label: "Layout readouts", labelZh: "布局读数"},
+    {id: "elements", label: "Element controls", labelZh: "元素控制"},
+    {id: "clipboard", label: "Clipboard, windows, and dialogs", labelZh: "剪贴板、窗口与对话框"},
+    {id: "forms", label: "Reading a form", labelZh: "读取表单"},
+    {id: "files", label: "Files", labelZh: "文件"},
+]
+
+const pointsLook = look:
+    display = "grid"
+    gap = 7px
+    marginTop = 18px
+    marginBottom = 4px
+    paddingLeft = 22px
+
+const formRows: List<MemberRow> = [
+    {name: "read", signature: "read(form, Type) -> Type", summary: "Decodes a flat native form into a record type through the existing runtime validator.", summaryZh: "经由已有的运行时验证器，把扁平的原生表单解码为记录类型。"},
+    {name: "values", signature: "values(form) -> Map<string, unknown>", summary: "Every submitted value; repeated names become a list.", summaryZh: "全部提交值；重复的名字变成列表。"},
+    {name: "textValue", signature: `textValue(form, name, fallback="")`, summary: "One text field with a declared fallback; native file values are refused rather than coerced.", summaryZh: "带声明回退值的单个文本字段；原生文件值会被拒绝而不是强制转换。"},
+    {name: "numberValue", signature: "numberValue(form, name) -> number?", summary: "One number field under the same decimal grammar the language uses; blank and malformed text answer null.", summaryZh: "在语言使用的同一套十进制文法下的单个数字字段；空白与畸形文本回答 null。"},
+    {name: "checkedValue", signature: "checkedValue(form, name) -> bool", summary: "One checkbox as a bool.", summaryZh: "以 bool 表示的单个复选框。"},
+    {name: "fieldValues", signature: "fieldValues(form, name) -> List<string>", summary: "Every value submitted under one repeated name.", summaryZh: "以同一个重复名字提交的全部取值。"},
+    {name: "setError clearError clearErrors", signature: "setError(form, name, message)", summary: "Owns field alerts while preserving unrelated accessibility metadata.", summaryZh: "在保留无关无障碍元数据的同时，拥有字段告警。"},
+    {name: "errors focusFirstError", signature: "focusFirstError(form) -> bool", summary: "Reads current messages and moves focus to the first invalid field.", summaryZh: "读取当前消息，并把焦点移到第一个无效字段。"},
+    {name: "setPending reset", signature: "setPending(form, true)", summary: "Owns the busy state and the temporary disabling, then restores what it changed.", summaryZh: "拥有忙碌状态与临时禁用，随后恢复它改动过的部分。"},
+]
 
 export component WebBrowser:
     const locale = useLocale()
     return <main>
-        <Head title={locale.text("Browser capabilities · VelarScript", "浏览器能力 · VelarScript")} description={locale.text("VelarScript browser snapshots, timers, focus, layout, dialogs, clipboard, files, realtime, and application error handling.", "VelarScript 的浏览器快照、定时器、焦点、布局、对话框、剪贴板、文件、实时连接与应用错误处理。")} themeColor="#f7f5f0" />
-        <DocsShell items={docsNav}>
-            <PageHeader kicker={locale.text("Web framework / 05", "Web 框架 / 05")} title={locale.text("Browser effects have names and lifetimes.", "浏览器副作用有名称，也有生命周期。")} summary={locale.text("Typed capability modules replace ambient globals. Anything that keeps running returns a handle owned by component cleanup.", "类型化能力模块替代环境全局。任何持续运行的工作都会返回由组件 cleanup 拥有的句柄。")} tags={["velar/browser", "velar/files", "velar/realtime", "velar/app"]} />
+        <Head
+            title={headTitle("/guide/web/browser", locale.isChinese())}
+            description={locale.text("The browser capabilities the extension publishes as modules, and the release contract each subscription carries.", "扩展以模块形式发布的浏览器能力，以及每个订阅携带的释放契约。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Web extension / 11", "Web 扩展 / 11")}
+                title={locale.text("Browser capabilities", "浏览器能力")}
+                summary={locale.text("Timers and subscriptions that return their own stop, host readouts, element controls, forms, and files.", "自带 stop 的定时器与订阅、宿主读数、元素控制、表单与文件。")}
+            />
+            <SectionList items={sections} />
             <Prose>
-                <h2 id="browser">{locale.text("velar/browser snapshots and watchers", "velar/browser 快照与监听")}</h2>
+                <h2 id="timers">{locale.text("Timers and subscriptions", "定时器与订阅")}</h2>
+                <p>
+                    {locale.text("after schedules one callback and every schedules repeated work. Each takes a Duration rather than a bare number, and each answers its own idempotent stop function — which is why the three environment subscriptions have the same shape and one cleanup loop releases all five. There is no setTimeout, no setInterval, and no effect API.", "after 安排一次回调，every 安排重复工作。两者都接受 Duration 而不是裸数字，并各自返回自己的幂等 stop 函数——这正是三个环境订阅具有相同形状、且一个清理循环就能释放全部五个的原因。这里没有 setTimeout、没有 setInterval，也没有 effect API。")}
+                </p>
                 <CodeBlock code={timersCode} />
-                <p><code>location()</code>{locale.text(" and ", " 与 ")}<code>environment()</code>{locale.text(" return typed snapshots. ", " 返回类型化快照。")}<code>media</code>, <code>watchMedia</code>, <code>watchOnline</code>{locale.text(", and ", " 与 ")}<code>watchVisibility</code>{locale.text(" expose changing environment state; every watcher returns cleanup. Clipboard APIs remain subject to browser security and user-gesture policy.", " 暴露变化的环境状态；每个监听器都返回 cleanup。剪贴板 API 仍受浏览器安全与用户手势策略约束。")}</p>
-                <p><code>after</code>{locale.text(" schedules once and ", " 调度一次，")}<code>every</code>{locale.text(" repeatedly. Both return idempotent stop functions. Repeating work waits for sync/async callback settlement before next turn, so slow polling never overlaps. Errors report through ", " 重复调度。两者都返回幂等 stop 函数。重复工作会等待同步/异步回调结算后再调度下一轮，因此慢轮询不会重叠。错误通过 ")}<code>velar/app</code>{locale.text(".", " 报告。")}</p>
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Repeating work schedules its next turn only after the current callback settles, so slow polling cannot overlap itself.", "重复的工作只在当前回调结束之后才安排下一轮，因此缓慢的轮询不会自我重叠。")}
+                    </li>
+                    <li>
+                        {locale.text("Stopping cannot abort a callback that has already started, but it prevents every later turn.", "停止无法中止已经开始的回调，但会阻止之后的每一轮。")}
+                    </li>
+                    <li>
+                        {locale.text("Callback failures are normalized through velar/app with the timer phase, so a throwing timer is reported rather than lost.", "回调失败经由 velar/app 在 timer 阶段被规范化上报，因此抛错的定时器会被上报而不是丢失。")}
+                    </li>
+                </ul>
 
-                <h2 id="layout">{locale.text("Layout, scrolling, frames, and focus", "布局、滚动、帧与焦点")}</h2>
-                <p><code>open</code>, <code>scrollTo</code>, <code>scrollIntoView</code>, <code>measure</code>{locale.text(", and ", " 与 ")}<code>frame</code>{locale.text(" expose intentional window/layout work with checked strings, finite coordinates, and bounded returns. ", " 用受检查字符串、有限坐标与有界返回值暴露明确 window/布局工作。")}<code>focus(element, preventScroll=false)</code>{locale.text(" and ", " 与 ")}<code>blur(element)</code>{locale.text(" require real HTML refs and invoke native prototype operations without document globals.", " 要求真实 HTML 引用，并在不暴露 document 全局的情况下调用原生原型操作。")}</p>
+                <h2 id="environment">{locale.text("Reading the host", "读取宿主")}</h2>
+                <p>
+                    {locale.text("location, environment, and media are synchronous reads that each return a checked record rather than a live host object. Host strings and booleans must already have the declared type; a malformed value is rejected rather than implicitly converted, and the returned language list is an application-owned copy rather than a view into the browser.", "location、environment 与 media 是同步读取，各自返回一个受检的记录，而不是活的宿主对象。宿主提供的字符串与布尔值必须本来就是声明的类型；畸形取值会被拒绝而不是隐式转换，返回的语言列表是应用拥有的副本，而不是对浏览器内部的视图。")}
+                </p>
+                <CodeBlock code={environmentCode} />
 
-                <h2 id="dialogs">{locale.text("Native dialogs", "原生对话框")}</h2>
-                <CodeBlock code={dialogCode} />
-                <p>{locale.text("A dialog ref narrows to ", "dialog 引用收窄为 ")}<code>DialogElement?</code>{locale.text(". ", "。")}<code>showDialog</code>{locale.text(" opens mounted native dialog modally, ", " 模态打开已挂载原生对话框，")}<code>closeDialog</code>{locale.text(" closes with optional string result, and ", " 用可选字符串结果关闭，")}<code>dialogResult</code>{locale.text(" reads it. App owns accessible naming, initial focus, Escape behavior, and focus return.", " 读取结果。应用负责无障碍命名、初始焦点、Escape 行为与焦点返回。")}</p>
+                <h2 id="layout">{locale.text("Layout readouts", "布局读数")}</h2>
+                <p>
+                    {locale.text("measure answers an element's rectangle, scrollMetrics answers its scroll position together with the viewport and content sizes, and frame answers a Promise of the next frame's timestamp — the checked way to wait for a paint. Rectangles must contain finite numbers, and the readouts call the validated platform operation rather than an instance override.", "measure 返回元素的矩形，scrollMetrics 返回它的滚动位置以及视口与内容尺寸，frame 返回下一帧时间戳的 Promise——这是等待一次绘制的受检方式。矩形必须包含有限数字，且这些读数调用经过验证的平台操作，而不是实例上的覆写。")}
+                </p>
+                <CodeBlock code={measurementCode} />
 
-                <h2 id="files">velar/files</h2>
+                <h2 id="elements">{locale.text("Element controls", "元素控制")}</h2>
+                <p>
+                    {locale.text("Focus, scrolling, text selection, and pointer capture all take the element itself rather than a selector, so a ref is the entry point. A textarea ref narrows to a text-area element, whose selection is read and written in Unicode code-point offsets rather than the platform's own units — a native selection that splits a surrogate pair is rejected.", "焦点、滚动、文本选择与指针捕获都接受元素本身而不是选择器，因此 ref 是入口。textarea 的 ref 收窄为文本域元素，它的选择区按 Unicode 码点偏移读写，而不是按平台自己的单位——切开代理对的原生选择区会被拒绝。")}
+                </p>
+                <CodeBlock code={elementsCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Behaviour arguments are exactly auto, smooth, or instant, and scroll coordinates must be finite numbers; an invalid value fails before the browser capability is invoked.", "行为参数恰好是 auto、smooth 或 instant，滚动坐标必须是有限数字；无效取值在调用浏览器能力之前就失败。")}
+                    </li>
+                    <li>
+                        {locale.text("Pointer identifiers are bounded non-negative integers, and pointer-capture state is not duplicated in the language runtime.", "指针标识符是有界的非负整数，指针捕获状态不会在语言运行时中被复制一份。")}
+                    </li>
+                    <li>
+                        {locale.text("Components remain responsible for choosing when focus should move or return; the module supplies the operation, not the policy.", "何时移动或归还焦点仍由组件决定；模块提供的是操作，不是策略。")}
+                    </li>
+                </ul>
+
+                <h2 id="clipboard">{locale.text("Clipboard, windows, and dialogs", "剪贴板、窗口与对话框")}</h2>
+                <p>
+                    {locale.text("The synchronous clipboard boundary works on a real copy, cut, or paste event, so it is reached from an event directive rather than by asking for a permission. The asynchronous pair requires a secure context and may reject when browser policy denies access. A dialog ref narrows to a dialog element, and the three dialog helpers validate the browser object without exposing an untyped DOM.", "同步的剪贴板边界作用于真实的 copy、cut 或 paste 事件，因此它经由事件指令抵达，而不是通过申请权限。异步的一对需要安全上下文，并可能在浏览器策略拒绝访问时被拒绝。dialog 的 ref 收窄为对话框元素，三个对话框辅助函数在不暴露无类型 DOM 的前提下验证浏览器对象。")}
+                </p>
+                <CodeBlock code={clipboardCode} />
+
+                <h2 id="forms">{locale.text("Reading a form", "读取表单")}</h2>
+                <p>
+                    {locale.text("velar/forms reads a native form without leaking the platform's own form-data object and without forcing application code through an unknown value. read decodes a flat form into an existing record type: it supports strings, finite numbers, checkbox booleans, enums, repeated string fields, and optional scalars, while invalid required numbers, enums, native files, nested records, and unsupported collections fail explicitly.", "velar/forms 读取原生表单，既不泄漏平台自己的表单数据对象，也不迫使应用代码经过 unknown。read 把扁平的表单解码成一个已有的记录类型：它支持字符串、有限数字、复选框布尔值、枚举、重复的字符串字段与可选标量；而无效的必需数字、枚举、原生文件、嵌套记录与不受支持的集合都会显式失败。")}
+                </p>
+                <MemberTable rows={formRows} caption={locale.text("What velar/forms publishes", "velar/forms 发布了什么")} />
+                <CodeBlock code={formsCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("read does not create another schema language and does not infer business rules. Required text, trimming, minimums, custom messages, and submission behaviour remain application code and ordinary HTML attributes.", "read 不创建第二套 schema 语言，也不推断业务规则。必填文本、去空白、最小值、自定义消息与提交行为，仍然是应用代码与普通 HTML 属性的事。")}
+                    </li>
+                    <li>
+                        {locale.text("The error helpers own field alerts while preserving unrelated accessibility metadata, and duplicate owned nodes for one field are cleared together so a stale alert cannot survive recovery.", "错误辅助函数在保留无关无障碍元数据的同时拥有字段告警；同一字段的重复受拥有节点会被一起清除，因此陈旧告警不会在恢复后残留。")}
+                    </li>
+                    <li>
+                        {locale.text("Submission stays explicit through the ordinary event directives; the helpers require a real form element.", "提交仍然通过普通的事件指令显式进行；这些辅助函数要求一个真实的表单元素。")}
+                    </li>
+                </ul>
+
+                <h2 id="files">{locale.text("Files", "文件")}</h2>
+                <p>
+                    {locale.text("pick uses the native file-input path and answers a list of opaque File values that expose read-only name, size, type, and modification metadata. Only a value returned by pick may be read as text or as a data URL, or attached to a multipart body, so a forged structural record fails even when it resembles the public metadata. download accepts actual text for its name, data, and media type.", "pick 走原生文件输入路径，返回一组不透明的 File 值，暴露只读的名称、大小、类型与修改时间元数据。只有 pick 返回的取值才可以被读为文本或 data URL，或附加到 multipart 请求体上，因此伪造的结构化记录即使看起来与公开元数据相同也会失败。download 的名称、数据与媒体类型都接受真实的文本。")}
+                </p>
                 <CodeBlock code={filesCode} />
-                <p><code>pick</code>{locale.text(" returns opaque stable records with name, size, type, and modified time. Only those records may enter ", " 返回包含名称、大小、类型与修改时间的不透明稳定记录。只有这些记录能进入 ")}<code>readText</code>, <code>readDataUrl</code>{locale.text(", or HTTP multipart. Reads inspect size first and use explicit ceiling up to 64 MiB. ", " 或 HTTP multipart。读取先检查大小，并使用不超过 64 MiB 的显式上限。")}<code>download</code>{locale.text(" creates bounded text download. Directory/persistent handles remain outside Web API 0.10.", " 创建有界文本下载。目录/持久句柄仍在 Web API 0.10 范围外。")}</p>
-
-                <h2 id="realtime">velar/realtime</h2>
-                <CodeBlock code={realtimeCode} />
-                <p><code>socket</code>{locale.text(" wraps text WebSockets and exposes ", " 包装文本 WebSocket 并暴露 ")}<code>state</code>, <code>send</code>, <code>sendJson</code>{locale.text(", and ", " 与 ")}<code>close</code>{locale.text(". ", "。")}<code>eventStream</code>{locale.text(" wraps server-sent events with ", " 包装服务器发送事件并提供 ")}<code>state</code>{locale.text(" and ", " 与 ")}<code>close</code>{locale.text(". URLs, handlers, sizes, close codes/reasons validate before native effects. JSON sends use strict lossless data.", "。URL、处理器、大小、关闭码/原因都在原生副作用前验证。JSON 发送使用严格无损数据。")}</p>
-                <p>{locale.text("Handler throws and rejected promises enter shared application errors. Oversized inbound data closes its channel. Components explicitly close every connection during cleanup.", "处理器抛错与 Promise 拒绝进入共享应用错误。超大输入会关闭通道。组件在 cleanup 中显式关闭每个连接。")}</p>
-
-                <h2 id="app">velar/app</h2>
-                <CodeBlock code={appCode} />
-                <p><code>onError(callback)</code>{locale.text(" receives normalized reports with error, phase, detail, component, timestamp and returns cleanup. ", " 接收包含 error、phase、detail、component 与 timestamp 的规范报告并返回 cleanup。")}<code>reportError(error, phase="manual", detail="")</code>{locale.text(" submits deliberate failure without rethrowing.", " 提交有意失败但不再次抛出。")}</p>
-                <p>{locale.text("The channel owns mount, render, watch, event, mounted, cleanup, resource, action, timer, storage, and realtime failures. Without handler, automatic failures surface through host. Initial mount failure renders compiler-owned accessible fatal state; later transactional failures retain last valid UI.", "该通道拥有 mount、render、watch、event、mounted、cleanup、resource、action、timer、storage 与 realtime 失败。没有处理器时，自动失败通过宿主暴露。首次挂载失败渲染编译器拥有的无障碍致命状态；后续事务失败保留最后有效界面。")}</p>
-                <Callout title={locale.text("Acquire, retain, release", "获取、持有、释放")}><p>{locale.text("If an API returns ", "如果 API 返回 ")}<code>stop</code>, <code>close</code>{locale.text(", or another lifetime handle, keep it in component scope and call it from sibling ", " 或其他生命周期句柄，请保存在组件作用域并从并列 ")}<code>cleanup</code>{locale.text(".", " 调用。")}</p></Callout>
-
-                <div class="next-links"><Link to="/docs/testing"><strong>{locale.text("Next: Testing and deployment", "下一步：测试与部署")}</strong><span>{locale.text("Prove browser paths in the production artifact.", "在生产产物中证明这些浏览器路径。")}</span></Link><Link to="/docs/web"><strong>{locale.text("Web overview", "Web 概览")}</strong><span>{locale.text("Return to the complete framework map.", "返回完整框架地图。")}</span></Link></div>
+                <Callout title={locale.text("What these modules deliberately do not expose", "这些模块刻意不暴露什么")}>
+                    <p>
+                        {locale.text("Directory access, persistent file handles, raw clipboard formats, mutable scroll fields, and the platform's own file and form-data constructors are not source-level APIs. Each module captures the host operations it needs when it initializes, so JavaScript loaded later cannot redirect an owned focus, scroll, reset, or read.", "目录访问、持久文件句柄、原始剪贴板格式、可变的滚动字段，以及平台自己的文件与表单数据构造器，都不是源码层面的 API。每个模块在初始化时捕获它需要的宿主操作，因此稍后加载的 JavaScript 无法改道一次受拥有的聚焦、滚动、重置或读取。")}
+                    </p>
+                </Callout>
             </Prose>
+            <DocsPager previous={guidePrevious("/guide/web/browser")} next={guideNext("/guide/web/browser")} />
         </DocsShell>
     </main>

@@ -1,51 +1,168 @@
-import {Head, Link} from "velar/web"
-import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
-import {docsNav} from "../content.vel"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
-const routeCode = "import {Head, RouteContext, Router, route} from \"velar/web\"\n\ncomponent ProjectPage(route: RouteContext):\n    const id = route.params.get(\"id\")\n    return <main><Head title=\"Project\" /><h1>{id ?? \"Missing\"}</h1></main>\n\nconst routes = [\n    route(\"/\", Home),\n    route(\"/projects/:id\", ProjectPage),\n    route(\"/files/*\", FileBrowser),\n]\n\ncomponent App:\n    return <Router routes={routes} fallback={NotFound} />"
-const linkCode = "return <nav aria-label=\"Primary\">\n    <NavLink to=\"/\" exact={true}>Home</NavLink>\n    <NavLink to=\"/projects\">Projects</NavLink>\n    <Link to=\"/settings\">Settings</Link>\n</nav>"
-const navigationCode = "navigate(\"/projects/new\")\nnavigate(\"/projects\", {replace: true, scroll: false})\nredirect(\"/sign-in\")\nback()\nforward()\nreload()\nconst route = currentRoute()"
-const headCode = "component ArticlePage(article: Article):\n    return <main>\n        <Head\n            title={article.title}\n            description={article.summary}\n            canonical={article.url}\n            robots=\"index,follow\"\n            image={article.image}\n            themeColor=\"#f7f5f0\"\n        />\n        <article>...</article>\n    </main>"
-const lazyCode = "const Reports = lazy(\n    () => import(\"./pages/reports.vel\"),\n    \"Reports\",\n    ReportsLoading,\n    ReportsFailed,\n)\n\nconst routes = [route(\"/reports\", Reports)]"
+const routesCode = `import {RouteContext, Router, route} from "velar/web"\n\ncomponent ArticlePage(route: RouteContext):\n    return <article data-route="article">\n        <h2>{route.params.get("slug") ?? "untitled"}</h2>\n    </article>\n\ncomponent ArchivePage(route: RouteContext):\n    return <section data-route="archive">\n        <h2>Archive</h2>\n        <p data-rest>{route.params.get("wildcard") ?? "the whole archive"}</p>\n    </section>\n\ncomponent IndexPage:\n    return <section data-route="index"><h2>Index</h2></section>\n\n// A route component may accept route: RouteContext and nothing else that is\n// required, so a fallback is a checked route component too.\ncomponent NotFound(route: RouteContext):\n    return <section data-route="not-found" role="alert">\n        <h2>Page not found</h2>\n        <p data-missing>{f"No page matches {route.path}"}</p>\n    </section>\n\n// A pattern is a pure pathname beginning with a slash. It may contain :name\n// parameters, or one whole terminal wildcard segment whose value is read as the\n// "wildcard" parameter.\nexport const routes = [\n    route("/", IndexPage),\n    route("/articles/:slug", ArticlePage),\n    route("/archive/*", ArchivePage),\n]\n\nexport component Application:\n    return <main data-application>\n        <Router routes={routes} fallback={NotFound} />\n    </main>`
+const contextCode = `import {RouteContext, currentRoute, domId} from "velar/web"\n\n// RouteContext is an importable named data type: an application-relative path,\n// decoded params, a parsed query, and the hash. A percent-encoded parameter\n// that cannot be decoded is treated as a non-match and reaches the fallback.\ncomponent SearchResults(route: RouteContext):\n    const headingId = domId("search")\n\n    return <section data-route="search" aria-labelledby={headingId}>\n        <h2 id={headingId}>Results</h2>\n        <p data-path>{route.path}</p>\n        <p data-term>{route.query.get("q") ?? "no term"}</p>\n        <p data-page>{route.query.get("page") ?? "1"}</p>\n        <p data-section>{route.hash == "" ? "no anchor" : route.hash}</p>\n    </section>\n\n// currentRoute() answers a typed snapshot of the route the application is on,\n// for code that is not itself a route component.\nexport component Breadcrumbs:\n    const here = currentRoute()\n\n    return <nav data-breadcrumbs aria-label="Breadcrumbs">\n        <p data-current>{here.path}</p>\n        <SearchResults route={here} />\n    </nav>`
+const navigationCode = `import {Link, NavLink, announce, back, forward, navigate, redirect, reload} from "velar/web"\n\n// The four history operations that leave the current page, written together.\nexport def historySpellings():\n    redirect("/")\n    back()\n    forward()\n    reload()\n\n// announce(message, priority?) writes to the application's live region, which\n// is how a single-page navigation stays audible to a screen reader.\nexport def announceRouteChange(path: string):\n    announce(f"Navigated to {path}")\n    announce("Navigation failed", "assertive")\n\nexport component SiteNavigation:\n    def openArticle():\n        navigate("/articles/route-patterns")\n\n    def replaceWithArchive():\n        navigate("/archive/2026", {replace: true, scroll: false})\n\n    return <nav data-site-navigation aria-label="Site">\n        <Link to="/" replace={false}>Home</Link>\n        <NavLink to="/articles" exact={false}>Articles</NavLink>\n        <NavLink to="/archive/2026" exact={true}>Archive</NavLink>\n        <button type="button" data-open-article on:click={openArticle}>Open an article</button>\n        <button type="button" data-replace on:click={replaceWithArchive}>Replace with the archive</button>\n    </nav>`
+const headCode = `import {Head} from "velar/web"\n\n// Head owns its seven fields for its component's lifetime and restores the\n// previous values on cleanup, so a route that mounts a Head does not have to\n// undo it on the way out. Every prop except title is optional.\nexport component ArticleHead(title: string, summary: string, slug: string):\n    return <Head\n        title={f"{title} — Field Notes"}\n        description={summary}\n        canonical={f"/articles/{slug}"}\n        robots="index,follow"\n        image="/social-card.png"\n        themeColor="#1d2b57"\n        language="en"\n    />`
+const errorsCode = `import {onError, reportError} from "velar/app"\n\n// velar/app owns the error chain. onError registers a handler and answers its\n// own cleanup function; reportError puts an application failure onto the same\n// chain the runtime already uses.\nexport type AppErrorReport:\n    error: Error\n    phase: string\n    detail: string\n    component: string\n    timestamp: number\n\nexport component ErrorChain:\n    state lastReport = "no report"\n    let stop: (() -> null)? = null\n\n    def record(report: AppErrorReport):\n        lastReport = f"{report.phase}:{report.detail}:{report.component}:{report.error.message}"\n\n    @mounted:\n        stop = onError(record)\n\n    @cleanup:\n        if stop != null:\n            stop()\n\n    def raise():\n        reportError(Error("A reported failure"), "event", "the routing chapter")\n\n    def raiseBare():\n        reportError(Error("A failure with no phase"))\n\n    return <div data-error-chain>\n        <p data-last-report>{lastReport}</p>\n        <button type="button" data-report-error on:click={raise}>Report an error</button>\n        <button type="button" data-report-bare on:click={raiseBare}>Report without a phase</button>\n    </div>`
+const configJsonCode = `{\n  "web": {\n    "base": "/",\n    "publicConfig": {\n      "apiBase": "/api",\n      "channel": "preview",\n      "features": {"realtime": true}\n    }\n  }\n}`
+const configCode = `import {has, keys, publicConfig} from "velar/config"\n\n// publicConfig(Target) validates the manifest's web.publicConfig block against\n// an ordinary record type at startup, so a missing or mistyped key fails once\n// rather than somewhere in the page. has and keys answer the same block\n// untyped, which is what optional capability discovery needs.\nexport type SiteFeatures:\n    realtime: bool\n\nexport type SiteConfig:\n    apiBase: string\n    channel: string\n    features: SiteFeatures\n\nexport const config = publicConfig(SiteConfig)\nexport const hasApiBase = has("apiBase")\nexport const configKeys = keys()\n\nexport component ConfigReadout:\n    return <p data-config>{f"{config.apiBase}:{config.channel}:{config.features.realtime}:{hasApiBase}:{configKeys.size}"}</p>`
+
+const sections = [
+    {id: "routes", label: "Declaring routes", labelZh: "声明路由"},
+    {id: "context", label: "What a route receives", labelZh: "路由收到什么"},
+    {id: "lazy", label: "Splitting a route", labelZh: "拆分一条路由"},
+    {id: "navigation", label: "Navigation and links", labelZh: "导航与链接"},
+    {id: "head", label: "Document metadata", labelZh: "文档元数据"},
+    {id: "errors", label: "The application error chain", labelZh: "应用错误链"},
+    {id: "config", label: "Validated public configuration", labelZh: "经过验证的公开配置"},
+]
+
+const pointsLook = look:
+    display = "grid"
+    gap = 7px
+    marginTop = 18px
+    marginBottom = 4px
+    paddingLeft = 22px
+
+const lazyRows: List<MemberRow> = [
+    {name: "lazy", signature: "lazy(loader, exportName, loading=null, failed=null)", summary: "Returns the exported component with its original prop contract, loaded from its own chunk.", summaryZh: "返回带原有 prop 契约的导出组件，从它自己的 chunk 中加载。"},
+    {name: "loader", signature: `() => import("./pages/reports.vel")`, summary: "A zero-argument checked dynamic VelarScript import, so the target stays inside the checked module graph.", summaryZh: "一个零参数的受检动态 VelarScript 导入，因此目标仍留在受检模块图中。"},
+    {name: "exportName", signature: `"Reports"`, summary: "A literal component export name; a dynamic string is refused.", summaryZh: "一个字面量的组件导出名；动态字符串会被拒绝。"},
+    {name: "loading, failed", signature: "PageLoading, PageFailed", summary: "Components rendered while the chunk loads and when it fails; both must actually return components.", summaryZh: "chunk 加载期间与加载失败时渲染的组件；两者都必须真的返回组件。"},
+]
+
+const lazyRouteChunkCode = `import {rgb} from "velar/look"\n\nconst pageLook = look:\n    padding = 8px\n    color = rgb(24, 31, 46)\n\nexport component ReportsPage:\n    return <article data-reports look={pageLook}>\n        <h3>Reports</h3>\n        <p>This module arrives in its own chunk when the route is first visited.</p>\n    </article>`
+
+const lazyRouteCode = `import {Router, lazy, route} from "velar/web"\n\ncomponent RouteLoading:\n    return <p role="status">Loading the reports module.</p>\n\n// A failure fallback accepts error: Error and requires no other props.\ncomponent RouteFailed(error: Error):\n    return <p role="alert">The reports module failed to load: {error.message}</p>\n\n// The loader is a checked dynamic import, so the chunk is part of the graph.\nconst Reports = lazy(() => import("./chunk.vel"), "ReportsPage", RouteLoading, RouteFailed)\n\ncomponent Home:\n    return <p>Start here.</p>\n\nexport component App:\n    return <Router routes={[route("/", Home), route("/reports", Reports)]} />`
 
 export component WebRouting:
     const locale = useLocale()
     return <main>
-        <Head title={locale.text("Routing and metadata · VelarScript", "路由与元数据 · VelarScript")} description={locale.text("VelarScript Router, routes, RouteContext, Link, NavLink, navigation, Head, lazy components, announcements, and DOM IDs.", "VelarScript 的 Router、路由、RouteContext、Link、NavLink、导航、Head、懒加载组件、播报与 DOM ID。")} themeColor="#f7f5f0" />
-        <DocsShell items={docsNav}>
-            <PageHeader kicker={locale.text("Web framework / 03", "Web 框架 / 03")} title={locale.text("Routes are checked component boundaries.", "路由是受检查的组件边界。")} summary={locale.text("Patterns, route props, links, base paths, navigation, metadata, lazy chunks, fallbacks, and recovery share one application-relative model.", "模式、路由属性、链接、基础路径、导航、元数据、懒分块、回退与恢复共用一套应用相对模型。")} tags={["Router", "RouteContext", "Head", "lazy"]} />
+        <Head
+            title={headTitle("/guide/web/routing", locale.isChinese())}
+            description={locale.text("How routes are declared, what RouteContext carries, and how velar/config validates the manifest at startup.", "路由如何声明、RouteContext 携带什么，以及 velar/config 如何在启动时验证清单。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Web extension / 10", "Web 扩展 / 10")}
+                title={locale.text("Routing and configuration", "路由与配置")}
+                summary={locale.text("Routes and route context, split routes, navigation, document metadata, the application error chain, and validated public configuration.", "路由与路由上下文、被拆分的路由、导航、文档元数据、应用错误链，以及经过验证的公开配置。")}
+            />
+            <SectionList items={sections} />
             <Prose>
-                <h2 id="routes">{locale.text("Declare routes", "声明路由")}</h2>
-                <CodeBlock code={routeCode} />
-                <p>{locale.text("A route pattern begins with ", "路由模式以 ")}<code>/</code>{locale.text(" and contains only a pathname. ", " 开头且只包含 pathname。")}<code>:name</code>{locale.text(" captures one decoded segment and final ", " 捕获一个解码片段，末尾 ")}<code>*</code>{locale.text(" captures the remainder under ", " 把剩余路径放入 ")}<code>route.params.get("wildcard")</code>{locale.text(". Queries, hashes, backslashes, empty segments, duplicate parameters, non-terminal wildcards, and redundant trailing slashes are rejected.", "。查询、hash、反斜线、空片段、重复参数、非末尾通配符与多余尾斜线会被拒绝。")}</p>
-                <p><code>RouteContext</code>{locale.text(" contains application-relative ", " 包含应用相对 ")}<code>path</code>{locale.text(", string ", "、字符串 ")}<code>params</code>/<code>query</code>{locale.text(" Maps, and ", " Map 与 ")}<code>hash</code>{locale.text(". A route component may require only ", "。路由组件只能要求 ")}<code>route: RouteContext</code>{locale.text(". Compiler checks the contract before browser execution.", "；编译器在浏览器执行前检查该契约。")}</p>
+                <h2 id="routes">{locale.text("Declaring routes", "声明路由")}</h2>
+                <p>
+                    {locale.text("route(path, component) declares one entry and Router renders the first matching component. A pattern is a pure pathname beginning with a slash; query text, hash text, backslashes, empty segments, and a redundant trailing slash are all rejected. It may contain :name parameters, or one whole terminal wildcard segment whose value is read as the wildcard parameter — so a named wildcard parameter cannot be combined with the wildcard segment.", "route(path, component) 声明一个条目，Router 渲染第一个匹配的组件。模式是以斜杠开头的纯路径名；查询文本、hash 文本、反斜杠、空段与多余的尾部斜杠都会被拒绝。它可以包含 :name 参数，或者一个整段的终端通配符，其取值以 wildcard 参数读取——因此具名的 wildcard 参数不能与通配符段并用。")}
+                </p>
+                <CodeBlock code={routesCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("When no route matches, an omitted fallback renders a small accessible not-found view instead of an empty router.", "当没有路由匹配时，省略 fallback 会渲染一个小而可访问的未找到视图，而不是一个空的 router。")}
+                    </li>
+                    <li>
+                        {locale.text("A mounted Router constructs the target component before destroying the active page. If construction fails, the prior page remains mounted and velar/app receives the report, and another navigation may recover normally.", "已挂载的 Router 会先构造目标组件，再销毁当前页面。若构造失败，先前的页面保持挂载、velar/app 收到报告，之后的导航可以正常恢复。")}
+                    </li>
+                    <li>
+                        {locale.text("Invalid path parameters, repeated parameters, non-terminal wildcards, non-components, and wrong route props all fail checking before browser execution.", "无效的路径参数、重复的参数、非终端通配符、非组件，以及错误的路由 prop，都会在浏览器执行之前无法通过检查。")}
+                    </li>
+                </ul>
 
-                <h2 id="router">{locale.text("Router behavior", "Router 行为")}</h2>
-                <p><code>Router</code>{locale.text(" renders the first match. Unmatched routes render an accessible default 404 or checked fallback. A malformed percent-encoded parameter becomes a normal non-match instead of fatal render.", " 渲染第一个匹配。未匹配路由会渲染无障碍默认 404 或受检查回退。格式错误的百分号编码参数会成为普通不匹配，而不是致命渲染。")}</p>
-                <p>{locale.text("Navigation is transactional: Router constructs target before destroying current page. On failure, incomplete target cleans up, previous page remains, and ", "导航是事务性的：Router 先构造目标再销毁当前页面。失败时，不完整目标会清理，上一页保持挂载，")}<code>velar/app</code>{locale.text(" receives recoverable ", " 收到可恢复 ")}<code>render/router</code>{locale.text(" report. Initial route failure reaches the root fatal boundary.", " 报告。首次路由失败仍会到达根致命边界。")}</p>
+                <h2 id="context">{locale.text("What a route receives", "路由收到什么")}</h2>
+                <p>
+                    {locale.text("RouteContext is an importable named data type with an application-relative path, string params and query Maps, and the hash. A route component may require only its route prop, and currentRoute() answers the same typed snapshot to code that is not itself a route component.", "RouteContext 是可导入的具名数据类型，包含应用相对的 path、字符串 params 与 query 两个 Map，以及 hash。路由组件唯一可以要求的就是它的 route prop；currentRoute() 为本身不是路由组件的代码返回同样的带类型快照。")}
+                </p>
+                <CodeBlock code={contextCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Browser path, query, and hash values must already be strings; routing never calls conversion hooks on malformed host values.", "浏览器提供的 path、query 与 hash 取值必须本来就是字符串；路由不会对畸形的宿主取值调用转换钩子。")}
+                    </li>
+                    <li>
+                        {locale.text("A percent-encoded parameter that cannot be decoded is treated as a non-match and reaches the ordinary fallback, so a malformed direct URL cannot turn a recoverable unknown route into a fatal render.", "无法解码的百分号编码参数会被当作不匹配，进入普通的 fallback，因此畸形的直达 URL 无法把一个可恢复的未知路由变成致命渲染。")}
+                    </li>
+                    <li>
+                        {locale.text("domId(prefix) answers an application-local unique DOM id for accessible label and description relationships, without requiring a cryptographic identifier.", "domId(prefix) 返回一个应用内唯一的 DOM id，用于可访问的标签与描述关系，而不需要密码学标识符。")}
+                    </li>
+                </ul>
 
-                <h2 id="links">Link and NavLink</h2>
-                <CodeBlock code={linkCode} />
-                <p><code>Link</code>{locale.text(" preserves native anchor behavior and intercepts only an unmodified primary click on an internal path. ", " 保留原生锚点行为，只拦截内部路径上的无修饰主按钮点击。")}<code>NavLink</code>{locale.text(" adds ", " 添加 ")}<code>aria-current="page"</code>{locale.text("; non-exact links match descendants while ", "；非 exact 链接匹配后代，")}<code>/</code>{locale.text(" stays exact. Both understand ", " 仍有意保持精确。两者都理解 ")}<code>web.base</code>{locale.text(", trailing slashes, history changes, and cleanup.", "、尾斜线、历史变化与清理。")}</p>
+                <h2 id="lazy">{locale.text("Splitting a route", "拆分一条路由")}</h2>
+                <p>
+                    {locale.text("lazy puts one route in its own chunk while keeping the target inside the checked module graph, because the loader is an ordinary checked dynamic import rather than a string the bundler interprets. It owns one cached successful load, retries after a failed one, mounts only the active child, and destroys loading or resolved children when the route leaves.", "lazy 把一条路由放进它自己的 chunk，同时让目标留在受检模块图中——因为加载器是一个普通的受检动态导入，而不是打包器去解释的字符串。它拥有一次被缓存的成功加载，失败后会重试，只挂载处于活动状态的子项，并在路由离开时销毁加载中或已解析的子项。")}
+                </p>
+                <MemberTable rows={lazyRows} caption={locale.text("What lazy takes", "lazy 接受什么")} />
+                <p>
+                    {locale.text("The two blocks below are two modules of one project. The neighbour module, chunk.vel, exports the page; the entry declares the lazy route against it. Both compile together in the site's gate.", "下面两个代码块是同一个项目里的两个模块。邻居模块 chunk.vel 导出页面组件；入口模块对它声明惰性路由。两者在本站门禁中一起编译。")}
+                </p>
+                <CodeBlock code={lazyRouteChunkCode} />
+                <CodeBlock code={lazyRouteCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Failures report through velar/app with the resource phase and render either the supplied failure component or an accessible default alert.", "失败经由 velar/app 在 resource 阶段上报，并渲染所提供的失败组件，或一个可访问的默认警告。")}
+                    </li>
+                    <li>
+                        {locale.text("The boundary also owns failures after the module has loaded: if the selected component throws while it is constructed, its transactional cleanup finishes before the same failure view is rendered.", "该边界也拥有模块加载之后的失败：若被选中的组件在构造时抛出，它的事务性清理会先完成，然后才渲染同一个失败视图。")}
+                    </li>
+                    <li>
+                        {locale.text("A failing custom failure component is itself reported and replaced by a built-in accessible alert rather than becoming an unhandled rejection.", "自定义失败组件自身失败时会被上报，并由内置的可访问警告替代，而不是变成未处理的拒绝。")}
+                    </li>
+                </ul>
 
-                <h2 id="navigation">{locale.text("Intentional history operations", "明确的历史操作")}</h2>
+                <h2 id="navigation">{locale.text("Navigation and links", "导航与链接")}</h2>
+                <p>
+                    {locale.text("Link and NavLink preserve native anchor behaviour and intercept only an unmodified primary click on an internal application path. NavLink additionally owns the current-page marker while its target is active, which is the attribute the current Look hook reads. navigate, redirect, back, forward, and reload are the intentional history operations.", "Link 与 NavLink 保留原生锚点行为，只拦截对内部应用路径的、未加修饰键的主键点击。NavLink 还在其目标处于活动状态时拥有当前页标记，这正是 current 这个 Look 钩子读取的属性。navigate、redirect、back、forward 与 reload 是有意为之的历史操作。")}
+                </p>
                 <CodeBlock code={navigationCode} />
-                <p><code>navigate</code>{locale.text(" accepts checked ", " 接受受检查布尔 ")}<code>replace</code>{locale.text(" and ", " 与 ")}<code>scroll</code>{locale.text(". ", "。")}<code>redirect</code>, <code>back</code>, <code>forward</code>{locale.text(", and ", " 与 ")}<code>reload</code>{locale.text(" make history intent explicit. ", " 让历史意图明确。")}<code>currentRoute()</code>{locale.text(" returns Router's same typed application-relative snapshot.", " 返回与 Router 相同的类型化应用相对快照。")}</p>
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Navigation options are a data-only record with boolean replace and scroll fields, fully validated before history or scrolling changes.", "导航选项是一个只含数据的记录，带布尔的 replace 与 scroll 字段，在历史或滚动改变之前被完整验证。")}
+                    </li>
+                    <li>
+                        {locale.text("Non-exact links match descendant paths, except that the application root matches only itself. Matching stays application-relative under a configured base and normalizes trailing slashes.", "非精确链接匹配后代路径，唯独应用根只匹配它自己。匹配在配置了 base 时仍是应用相对的，并会规范化尾部斜杠。")}
+                    </li>
+                    <li>
+                        {locale.text("announce writes to a compiler-owned live region with a polite or assertive priority, which is how a single-page navigation stays audible.", "announce 以 polite 或 assertive 优先级写入由编译器拥有的 live region，这就是单页导航保持可被朗读的方式。")}
+                    </li>
+                </ul>
 
                 <h2 id="head">{locale.text("Document metadata", "文档元数据")}</h2>
+                <p>
+                    {locale.text("Head owns the title, description, canonical link, robots directive, social image, theme colour, and document language for its component's lifetime, and restores the previous values on cleanup. Only the title is required, so a route sets what it knows and leaves the rest alone.", "Head 在其组件的生命周期内拥有 title、description、canonical 链接、robots 指令、社交图片、主题色与文档语言，并在清理时恢复之前的取值。只有 title 是必需的，因此路由设置它知道的部分，其余保持不动。")}
+                </p>
                 <CodeBlock code={headCode} />
-                <p><code>Head</code>{locale.text(" owns title, description, canonical URL, robots, social image, and theme color for its component lifetime and restores previous values on cleanup. It composes with routes/lazy pages without document globals.", " 在组件生命周期内拥有标题、描述、规范 URL、robots、社交图片与主题色，并在清理时恢复旧值。它与路由/懒页面组合，不依赖 document 全局。")}</p>
 
-                <h2 id="lazy">{locale.text("Lazy route components", "懒加载路由组件")}</h2>
-                <CodeBlock code={lazyCode} />
-                <p><code>lazy</code>{locale.text(" accepts a checked dynamic VelarScript import, literal component export name, and optional loading/failure components. It caches success, retries failure, owns child lifetimes, and handles module/component construction failure through accessible fallbacks and shared error channel.", " 接受受检查的动态 VelarScript 导入、字面量组件导出名与可选加载/失败组件。它缓存成功、重试失败、拥有子生命周期，并通过无障碍回退与共享错误通道处理模块/组件构造失败。")}</p>
+                <h2 id="errors">{locale.text("The application error chain", "应用错误链")}</h2>
+                <p>
+                    {locale.text("onError observes application failures and returns an explicit cleanup function; reportError submits an application error without throwing it again. Reports carry the error, the phase, a detail, the component, and a timestamp, and foreign JavaScript values are normalized to an Error before they arrive.", "onError 观察应用失败并返回一个显式的清理函数；reportError 提交一个应用错误而不再次抛出它。报告携带 error、phase、detail、component 与时间戳；外来的 JavaScript 取值在抵达之前会被规范化为 Error。")}
+                </p>
+                <CodeBlock code={errorsCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("The compiler reports failures from the initial mount, reactive render and synchronous watch blocks, events, @mounted, and @cleanup through this one chain.", "编译器把首次 mount、响应式渲染与同步 watch 块、事件、@mounted 与 @cleanup 的失败，全部经由这一条链上报。")}
+                    </li>
+                    <li>
+                        {locale.text("A detached async statement reports its rejection here too, under the distinct detached phase.", "分离的 async 语句也在这里上报它的拒绝，使用独立的 detached 阶段。")}
+                    </li>
+                    <li>
+                        {locale.text("An automatic failure with no installed handler is surfaced through the host runtime rather than silently discarded, so handlers own their lifetime and are removed during cleanup.", "没有安装处理器的自动失败会经由宿主运行时浮现，而不是被静默丢弃；因此处理器拥有自己的生命周期，并在清理时被移除。")}
+                    </li>
+                </ul>
 
-                <h2 id="accessibility">{locale.text("Announcements and DOM IDs", "播报与 DOM ID")}</h2>
-                <p><code>announce(message, priority="polite")</code>{locale.text(" writes to a compiler-owned live region. ", " 写入编译器拥有的 live region。")}<code>domId(prefix="velar")</code>{locale.text(" creates an application-local monotonic ID for label, description, and accessible-name relationships without cryptographic UUID.", " 创建应用局部单调 ID，用于标签、描述与无障碍名称关系，无需密码学 UUID。")}</p>
-                <Callout title={locale.text("Base paths are one contract", "基础路径是一份契约")}><p>{locale.text("With ", "当 ")}<code>web.base</code>{locale.text(" set to ", " 为 ")}<code>/studio/</code>{locale.text(", navigating to ", " 时，导航到 ")}<code>/settings</code>{locale.text(" writes ", " 会在浏览器写入 ")}<code>/studio/settings</code>{locale.text(" while Router still matches ", "，而 Router 仍匹配 ")}<code>/settings</code>{locale.text(". Development, assets, links, fallback, and verification use the same base.", "。开发、资源、链接、回退与验证使用同一 base。")}</p></Callout>
-
-                <div class="next-links"><Link to="/docs/web/data"><strong>{locale.text("Next: Forms, HTTP and storage", "下一步：表单、HTTP 与存储")}</strong><span>{locale.text("Load, validate, submit, and persist application data.", "加载、验证、提交并持久化应用数据。")}</span></Link><Link to="/docs/web/browser"><strong>{locale.text("Browser capabilities", "浏览器能力")}</strong><span>{locale.text("Use timers, focus, dialogs, files, and realtime explicitly.", "显式使用定时器、焦点、对话框、文件与实时连接。")}</span></Link></div>
+                <h2 id="config">{locale.text("Validated public configuration", "经过验证的公开配置")}</h2>
+                <p>
+                    {locale.text("publicConfig(Type) validates the manifest's public configuration block through the same type declaration used everywhere else and returns the named type, so a missing or mistyped key fails once at startup rather than somewhere in the page. has and keys answer the same block untyped for optional capability discovery.", "publicConfig(Type) 用与别处相同的类型声明验证清单的公开配置块，并返回该具名类型，因此缺失或写错的键在启动时一次性失败，而不是在页面某处失败。has 与 keys 以不带类型的方式回答同一个块，用于可选的能力发现。")}
+                </p>
+                <CodeBlock code={configJsonCode} />
+                <CodeBlock code={configCode} />
+                <Callout title={locale.text("This boundary is public values only", "这条边界只承载公开取值")}>
+                    <p>
+                        {locale.text("Only the manifest's public configuration block is read. It must be a JSON object, is size limited, rejects non-JSON values and the reserved keys, and is recursively frozen. Public configuration is baked into the content-hashed application entry at build time, and the language never implicitly reads environment files, process environment, server configuration, or secrets.", "只有清单的公开配置块会被读取。它必须是 JSON 对象、有大小上限、拒绝非 JSON 取值与保留键，并被递归冻结。公开配置在构建期被烘焙进内容哈希的应用入口；语言从不隐式读取环境文件、进程环境、服务器配置或密钥。")}
+                    </p>
+                </Callout>
             </Prose>
+            <DocsPager previous={guidePrevious("/guide/web/routing")} next={guideNext("/guide/web/routing")} />
         </DocsShell>
     </main>

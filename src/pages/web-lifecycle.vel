@@ -1,0 +1,112 @@
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
+
+const timerCode = `import {after, every} from "velar/browser"\n\n// @mounted and @cleanup are siblings. Cleanup is not nested inside @mounted and\n// is not returned from an effect callback, so the two blocks read as what they\n// are: one setup and one teardown for the whole component.\nexport component TimerLifecycle:\n    state ticks = 0\n    state settled = "waiting"\n    let stopTimer: (() -> null)? = null\n    let stopDelay: (() -> null)? = null\n\n    def countTick():\n        ticks += 1\n\n    def settle():\n        settled = "settled"\n\n    @mounted:\n        stopTimer = every(1s, countTick)\n        stopDelay = after(120ms, settle)\n\n    @cleanup:\n        if stopTimer != null:\n            stopTimer()\n        if stopDelay != null:\n            stopDelay()\n\n    return <div data-timer-lifecycle>\n        <p data-ticks>{ticks}</p>\n        <p data-settled>{settled}</p>\n    </div>`
+const effectErrorCode = "component TimerPanel:\n    state ticks = 0\n\n    def onMount():\n        ticks += 1\n\n    def effect():\n        ticks += 1\n\n    return <p>{ticks}</p>"
+const effectErrorOutput = "main.vel:4:9 error VEL1005: Use the Web extension's component-level '@mounted:' block\n    def onMount():\n        ^^^^^^^\n\nmain.vel:7:9 error VEL1005: Effects are internal to @velarscript/web; use watch, @mounted, or @cleanup\n    def effect():\n        ^^^^^^"
+const refCode = `// A ref is null while the body runs and is filled before @mounted, which is why\n// lifecycle setup that needs the DOM lives there. Refs are restored to null\n// during cleanup.\nexport component RefLifecycle:\n    state measured = "unmeasured"\n    let board: CanvasElement? = null\n\n    @mounted:\n        if board != null:\n            measured = f"{board.width}x{board.height}"\n\n    @cleanup:\n        measured = "unmeasured"\n\n    return <div data-ref-lifecycle>\n        <canvas ref={board} data-canvas width="48" height="24"></canvas>\n        <p data-measured>{measured}</p>\n    </div>`
+const switchCode = `component Child:\n    state ticks = 0\n\n    def count():\n        ticks += 1\n\n    @cleanup:\n        print("the child was destroyed")\n\n    return <button type="button" data-child on:click={count}>{ticks}</button>\n\n// A component whose position unmounts is destroyed with its watches, resources,\n// actions, events, refs, and DOM work. Toggling this branch is the visible form\n// of that contract.\nexport component LifecycleSwitch:\n    state showing = true\n\n    def toggle():\n        showing = not showing\n\n    return <div data-lifecycle-switch>\n        <button type="button" data-toggle-lifecycle on:click={toggle}>{showing ? "Unmount" : "Mount"}</button>\n        {showing ? <Child /> : <p data-unmounted>unmounted</p>}\n    </div>`
+const tickCode = `// tick() answers Promise<null> that resolves after the pending reactive flush\n// has settled, which is how a caller observes the DOM a state write produces.\n// It is also where an unowned failure surfaces: if the flush reported a failure\n// no handler claimed, tick() rejects with it.\nexport component TickObserver:\n    state written = 0\n    state observed = "not observed"\n\n    action writeThenObserve() -> string:\n        written += 1\n        await tick()\n        observed = f"observed {written}"\n        return observed\n\n    return <div data-tick-observer>\n        <p data-written>{written}</p>\n        <p data-observed>{observed}</p>\n        <button type="button" data-write-then-observe on:click={writeThenObserve} disabled={writeThenObserve.pending}>\n            Write, then observe\n        </button>\n    </div>`
+
+const sections = [
+    {id: "blocks", label: "Two sibling blocks", labelZh: "两个兄弟块"},
+    {id: "forbidden", label: "The names that are refused", labelZh: "被拒绝的名字"},
+    {id: "refs", label: "When a ref is filled", labelZh: "ref 何时被填充"},
+    {id: "destruction", label: "What destruction covers", labelZh: "销毁覆盖了什么"},
+    {id: "tick", label: "tick observes the flush", labelZh: "tick 观察刷新"},
+]
+
+const pointsLook = look:
+    display = "grid"
+    gap = 7px
+    marginTop = 18px
+    marginBottom = 4px
+    paddingLeft = 22px
+
+export component WebLifecycle:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/guide/web/lifecycle", locale.isChinese())}
+            description={locale.text("The two lifecycle blocks, why cleanup is not nested inside setup, and how tick exposes the reactive flush.", "两个生命周期块、清理为何不嵌套在初始化里，以及 tick 如何暴露响应式刷新。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Web extension / 06", "Web 扩展 / 06")}
+                title={locale.text("Lifecycle and mount", "生命周期与挂载")}
+                summary={locale.text("@mounted and @cleanup as siblings, when a ref is filled, what destruction covers, and the tick that lets a caller observe a flush.", "作为兄弟块的 @mounted 与 @cleanup、ref 何时被填充、销毁覆盖了什么，以及让调用方观察一次刷新的 tick。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <h2 id="blocks">{locale.text("Two sibling blocks", "两个兄弟块")}</h2>
+                <p>
+                    {locale.text("A component has two lifecycle hooks and they are siblings. Cleanup is not nested inside setup and is not returned from a callback, so the two blocks read as what they are: one setup and one teardown for the whole component. A handle that must be released is stored in a binding by the first block and released by the second.", "组件有两个生命周期钩子，它们是兄弟关系。清理既不嵌套在初始化内部，也不由回调返回，因此这两个块读起来就是它们本来的样子：对整个组件的一次初始化与一次拆解。需要释放的句柄由第一个块存入绑定，由第二个块释放。")}
+                </p>
+                <CodeBlock code={timerCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("@mounted may await asynchronous work; @cleanup remains synchronous and should start no unowned background work.", "@mounted 可以 await 异步工作；@cleanup 保持同步，且不应启动无主的后台工作。")}
+                    </li>
+                    <li>
+                        {locale.text("Independent cleanup steps continue after one of them fails, and every failure is reported through velar/app.", "各个独立的清理步骤在其中一步失败后继续执行，且每个失败都经由 velar/app 上报。")}
+                    </li>
+                    <li>
+                        {locale.text("Event handlers and lifecycle callbacks are non-tracking execution boundaries: reads performed inside them cannot become dependencies of the region that happened to mount or destroy the component.", "事件处理器与生命周期回调是不追踪的执行边界：在它们内部的读取不会成为恰好挂载或销毁该组件的那个区域的依赖。")}
+                    </li>
+                </ul>
+
+                <h2 id="forbidden">{locale.text("The names that are refused", "被拒绝的名字")}</h2>
+                <p>
+                    {locale.text("There is no public effect API, and the four names a reader might reach for from another framework — effect, onMount, onMounted, and on_mount — are refused outright rather than left to mean something else. Each rejection names the current spelling, so the correction is one round rather than a search.", "不存在公开的 effect API；读者可能从别的框架带来的四个名字——effect、onMount、onMounted 与 on_mount——被直接拒绝，而不是被留下来表示别的东西。每条拒绝都指出当前的拼写，因此修正只需一轮，而不是一次搜索。")}
+                </p>
+                <CodeBlock code={effectErrorCode} />
+                <CodeBlock code={effectErrorOutput} />
+
+                <h2 id="refs">{locale.text("When a ref is filled", "ref 何时被填充")}</h2>
+                <p>
+                    {locale.text("A ref is null while the component body runs and is filled before @mounted, which is exactly why setup that needs the DOM lives there. During cleanup the binding is restored to null, so a saved reference cannot outlive the element it named.", "组件体运行期间 ref 是 null，并在 @mounted 之前被填充——这正是需要 DOM 的初始化写在那里的原因。清理期间该绑定被恢复为 null，因此保存下来的引用不会比它所命名的元素活得更久。")}
+                </p>
+                <CodeBlock code={refCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("A ref on a component is filled with that component's Handle, and it becomes available after the child root has been constructed and before the parent's @mounted runs.", "组件上的 ref 被填入该组件的 Handle；它在子组件的根构造完成之后、父组件的 @mounted 运行之前可用。")}
+                    </li>
+                    <li>
+                        {locale.text("Specific element types narrow the binding: a dialog ref narrows to DialogElement, and a textarea ref narrows to TextAreaElement.", "具体的元素类型会收窄绑定：dialog 的 ref 收窄为 DialogElement，textarea 的 ref 收窄为 TextAreaElement。")}
+                    </li>
+                </ul>
+
+                <h2 id="destruction">{locale.text("What destruction covers", "销毁覆盖了什么")}</h2>
+                <p>
+                    {locale.text("A component whose position unmounts is destroyed together with its watches, resources, actions, event listeners, refs, and DOM work. Nothing survives its component by accident, which is why a subscription that must outlive one belongs at module scope and says so.", "位置被卸载的组件会与它的 watch、resource、action、事件监听器、ref 与 DOM 工作一同被销毁。没有任何东西会意外地比它的组件活得更久；因此必须比组件活得更久的订阅应当写在模块作用域，并如实说明。")}
+                </p>
+                <CodeBlock code={switchCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Component setup and initial JSX construction are transactional: a failure runs sibling cleanup, destroys the incomplete scope, and preserves the original error.", "组件初始化与首次 JSX 构造是事务性的：失败会运行兄弟清理、销毁不完整的作用域，并保留原始错误。")}
+                    </li>
+                    <li>
+                        {locale.text("Dynamic and keyed updates build the replacement first, so a failed update retains the last valid DOM and discards its incomplete scope.", "动态更新与带 key 的更新会先构建替换品，因此失败的更新保留最后一份有效 DOM，并丢弃不完整的作用域。")}
+                    </li>
+                    <li>
+                        {locale.text("A disposed resource reload is a resolved no-op, and calling a disposed action rejects with an owned Error.", "已释放的 resource 的 reload 是一次已解决的空操作；调用已释放的 action 会以一个受拥有的 Error 拒绝。")}
+                    </li>
+                </ul>
+
+                <h2 id="tick">{locale.text("tick observes the flush", "tick 观察刷新")}</h2>
+                <p>
+                    {locale.text("tick() answers a Promise of null that resolves after the pending reactive flush has settled, which is how a caller observes the DOM a state write produces. It is also where an unowned failure surfaces: if the flush reported a failure no handler claimed, tick() rejects with it, so an awaited tick cannot step over a broken update.", "tick() 返回一个 Promise<null>，在待处理的响应式刷新结束后解决——这就是调用方观察一次 state 写入所产生的 DOM 的方式。它也是无主失败浮现的地方：若该次刷新上报了没有处理器认领的失败，tick() 会以它拒绝，因此被 await 的 tick 无法跨过一次损坏的更新。")}
+                </p>
+                <CodeBlock code={tickCode} />
+                <Callout title={locale.text("mount is the application's own boundary", "mount 是应用自己的边界")}>
+                    <p>
+                        {locale.text("mount, tick, and computed are the three reserved global functions, so no binding in a Web module may spell them. mount attaches one root, constructs it synchronously, and mounts one component instance exactly once; the activation chapter covers the spellings and the failure states in full.", "mount、tick 与 computed 是三个保留的全局函数，因此 Web 模块中的任何绑定都不能占用这些名字。mount 挂载一个根、同步构造它，并且同一个组件实例只挂载一次；激活那一章完整讲述了它的拼写与失败状态。")}
+                    </p>
+                </Callout>
+            </Prose>
+            <DocsPager previous={guidePrevious("/guide/web/lifecycle")} next={guideNext("/guide/web/lifecycle")} />
+        </DocsShell>
+    </main>

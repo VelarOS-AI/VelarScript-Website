@@ -41,6 +41,10 @@ try {
   const expectedPackages = [
     "@velarscript/cli",
     "@velarscript/compiler",
+    "@velarscript/desktop",
+    "@velarscript/node",
+    "@velarscript/script-analysis",
+    "@velarscript/text-buffer",
     "@velarscript/web",
     "create-velar",
   ];

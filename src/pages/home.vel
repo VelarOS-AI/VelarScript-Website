@@ -1,205 +1,375 @@
-import {Head} from "velar/web"
-import {ActionLink, CodeWindow, Container, Eyebrow, Section, SectionHeading, Surface, foundationInkFaint as inkFaint, foundationInkSoft as inkSoft, foundationSea as sea, useLocale} from "@velarscript/site-ui"
-import {features, learningSteps} from "../content.vel"
-import {FeatureGrid} from "../components/feature-grid.vel"
-import {LearningPath} from "../components/learning-path.vel"
+import {Head, Link} from "velar/web"
+import {border, clamp, minmax, repeat, rgba, spacing, tracks} from "velar/look"
+import {CodeBlock} from "@velarscript/docs-kit"
+import {ActionLink, CodeWindow, Container, Eyebrow, Section, Surface, foundationInk as ink, foundationInkFaint as inkFaint, foundationInkSoft as inkSoft, foundationPaperPure as paperPure, foundationRule as rule, foundationSea as sea, useLocale} from "@velarscript/site-ui"
+import {headTitle} from "../content.vel"
 
-const heroCode = "type Project:\n    name: string\n    stars: number\n\nconst cardLook = look:\n    display = \"grid\"\n    gap = 12px\n\ncomponent ProjectCard(project: Project):\n    state starred = false\n\n    def toggleStarred():\n        starred = not starred\n\n    return <article look={cardLook}>\n        <h2>{project.name}</h2>\n        <p>{project.stars} stars</p>\n        <button on:click={toggleStarred}>\n            {starred ? \"Starred\" : \"Star\"}\n        </button>\n    </article>"
+const taskAppCode = `import {border, color, rgb, spacing} from "velar/look"\n\ntype Task:\n    id: string\n    title: string\n    done: bool\n\nconst cardLook = look:\n    display = "grid"\n    gap = 8px\n    padding = spacing(14px, 16px)\n    border = border(1px, color("silver"))\n    borderRadius = 10px\n\ndef titleLook(done: bool) -> Look:\n    return look:\n        margin = 0\n        fontSize = 1.05rem\n\n        if done:\n            color = rgb(94, 96, 102)\n            textDecoration = "line-through"\n\ncomponent TaskCard(task: Task):\n    state done = task.done\n\n    def toggle():\n        done = not done\n\n    return <article look={cardLook}>\n        <h2 look={titleLook(done)}>{task.title}</h2>\n        <button type="button" on:click={toggle}>{done ? "Reopen" : "Complete"}</button>\n    </article>\n\nconst first: Task = {id: "read", title: "Read the guide", done: false}\n\nmount(<TaskCard task={first} />, "#app")`
 
-const heroLook = look:
-    paddingTop = clamp(70px, 10vw, 128px)
-    paddingBottom = clamp(76px, 9vw, 116px)
+const presenceErrorCode = `type Account:\n    id: string\n    name: string\n\nexport def label(account: Account?) -> string:\n    if account:\n        return account.name\n    return "no account"`
 
-const heroGridLook = look:
-    display = "grid"
-    gridTemplateColumns = tracks(minmax(0px, 1.05fr), minmax(420px, 0.72fr))
-    alignItems = "center"
-    gap = clamp(50px, 8vw, 120px)
+const presenceErrorOutput = "main.vel:6:8 error VEL4001: A condition judges truth, not presence; write 'account != null' to test Account? for a value\n    if account:\n       ^^^^^^^"
 
-    if viewport.width <= 980px:
-        gridTemplateColumns = tracks(minmax(0px, 1fr))
+const createShellCode = "npm create velar@latest my-app -- --template web\ncd my-app\nnpm install"
 
-const heroTitleLook = look:
-    maxWidth = 900px
+const developShellCode = "npm run dev\nnpx velar check"
+
+const shipShellCode = "npm test\nnpm run build\nnpx velar verify"
+
+const openingLook = look:
+    paddingTop = clamp(64px, 8vw, 108px)
+    paddingBottom = clamp(56px, 7vw, 88px)
+
+const openingTitleLook = look:
     margin = 0
-    marginTop = 18px
-    fontSize = clamp(4rem, 10vw, 9.5rem)
-    lineHeight = 0.85
-    letterSpacing = -0.075em
+    marginTop = 14px
+    fontSize = clamp(2.6rem, 6vw, 4.6rem)
+    lineHeight = 1.02
+    letterSpacing = -0.045em
 
-const heroAccentLook = look:
-    display = "block"
-    color = sea
-    fontWeight = 520
-
-const leadLook = look:
-    maxWidth = 690px
+const definitionLook = look:
+    maxWidth = 760px
     margin = 0
-    marginTop = 34px
+    marginTop = 26px
     color = inkSoft
-    fontSize = clamp(1.12rem, 2.2vw, 1.42rem)
-    lineHeight = 1.62
+    fontSize = clamp(1.06rem, 1.9vw, 1.28rem)
+    lineHeight = 1.65
+
+const missionLook = look:
+    maxWidth = 760px
+    margin = 0
+    marginTop = 16px
+    color = inkSoft
+    lineHeight = 1.7
 
 const actionsLook = look:
     display = "flex"
     flexWrap = "wrap"
     gap = 10px
-    marginTop = 32px
+    marginTop = 30px
 
-const proofLook = look:
-    display = "flex"
-    flexWrap = "wrap"
-    gap = spacing(8px, 20px)
-    margin = 0
-    marginTop = 27px
-    color = inkFaint
-    fontSize = 0.78rem
-    fontWeight = 650
-
-const proofItemLook = look:
-    @before:
-        content = "—"
-        marginRight = 8px
-        color = sea
-
-const codeColumnLook = look:
-    rotate = 1.4deg
-
-    if viewport.width <= 980px:
-        width = 100%
-        minWidth = 0
-        maxWidth = 680px
-        rotate = 0deg
-
-const manifestoLook = look:
+const sampleGridLook = look:
     display = "grid"
-    gridTemplateColumns = tracks(minmax(0px, 0.9fr), minmax(280px, 0.48fr))
-    gap = clamp(40px, 8vw, 120px)
-    alignItems = "end"
+    gridTemplateColumns = tracks(minmax(0px, 1fr), minmax(0px, 0.62fr))
+    alignItems = "start"
+    gap = clamp(28px, 4vw, 56px)
 
-    if viewport.width <= 980px:
-        gridTemplateColumns = tracks(minmax(0px, 1fr))
+    if viewport.width <= 900px:
+        gridTemplateColumns = tracks(1fr)
 
-const manifestoTitleLook = look:
+const readingLook = look:
+    display = "grid"
+    gap = 14px
     margin = 0
-    fontSize = clamp(3rem, 7.5vw, 7.4rem)
-    lineHeight = 0.92
-    letterSpacing = -0.065em
-
-const manifestoTextLook = look:
-    margin = 0
+    marginTop = 18px
+    padding = 0
+    listStyle = "none"
     color = inkSoft
-    fontSize = 1.08rem
-    lineHeight = 1.75
+    lineHeight = 1.65
 
-const layersLook = look:
+const readingTermLook = look:
+    color = ink
+    fontFamily = "SFMono-Regular, Consolas, monospace"
+    fontSize = 0.82rem
+
+const cardsLook = look:
     display = "grid"
     gridTemplateColumns = repeat(3, minmax(0px, 1fr))
-    marginTop = 70px
+    gap = 1px
+    marginTop = 40px
+    border = border(1px, rule)
+    borderRadius = 14px
+    background = rule
 
-    if viewport.width <= 720px:
+    if viewport.width <= 900px:
+        gridTemplateColumns = repeat(2, minmax(0px, 1fr))
+
+    if viewport.width <= 620px:
         gridTemplateColumns = tracks(1fr)
 
-def layerLook(last: bool) -> Look:
-    return look:
-        display = "grid"
-        gap = 28px
-        minHeight = 250px
-        padding = 28px
-        borderRight = border(1px, rgba(255, 255, 255, 0.16))
-
-        if last:
-            borderRight = border(0px, color("transparent"))
-
-        if viewport.width <= 720px:
-            minHeight = 190px
-            borderRight = border(0px, color("transparent"))
-            borderBottom = border(1px, rgba(255, 255, 255, 0.16))
-
-            if last:
-                borderBottom = border(0px, color("transparent"))
-
-const layerIndexLook = look:
-    color = rgba(255, 255, 255, 0.55)
-    fontFamily = "SFMono-Regular, Consolas, monospace"
-    fontSize = 0.74rem
-
-const layerTitleLook = look:
-    alignSelf = "end"
-    fontSize = clamp(1.5rem, 3vw, 2.7rem)
-    letterSpacing = -0.045em
-
-const closingLook = look:
+const cardLook = look:
     display = "grid"
-    gridTemplateColumns = tracks(1fr, "auto")
-    alignItems = "end"
-    gap = 40px
-    padding = clamp(52px, 8vw, 86px)
+    alignContent = "start"
+    gap = 10px
+    padding = clamp(20px, 2.4vw, 28px)
+    background = paperPure
 
-    if viewport.width <= 720px:
+const cardTitleLook = look:
+    margin = 0
+    fontSize = 1.06rem
+    letterSpacing = -0.015em
+
+const cardTextLook = look:
+    margin = 0
+    color = inkSoft
+    fontSize = 0.96rem
+    lineHeight = 1.65
+
+const cardLinkLook = look:
+    color = sea
+    fontSize = 0.88rem
+    fontWeight = 650
+
+const diagnosticLook = look:
+    display = "grid"
+    gridTemplateColumns = tracks(minmax(0px, 1fr), minmax(0px, 1fr))
+    gap = 16px
+    marginTop = 34px
+
+    if viewport.width <= 780px:
         gridTemplateColumns = tracks(1fr)
 
-const closingTitleLook = look:
-    maxWidth = 760px
+const diagnosticLabelLook = look:
     margin = 0
-    fontSize = clamp(2.7rem, 7vw, 6.8rem)
-    lineHeight = 0.94
-    letterSpacing = -0.065em
+    marginBottom = 10px
+    color = inkFaint
+    fontFamily = "SFMono-Regular, Consolas, monospace"
+    fontSize = 0.7rem
+    fontWeight = 700
+    letterSpacing = 0.1em
+    textTransform = "uppercase"
 
-const closingTextLook = look:
-    maxWidth = 570px
+const stepsLook = look:
+    display = "grid"
+    gridTemplateColumns = repeat(3, minmax(0px, 1fr))
+    gap = 22px
+    marginTop = 34px
+
+    if viewport.width <= 860px:
+        gridTemplateColumns = tracks(1fr)
+
+const stepTitleLook = look:
     margin = 0
-    marginTop = 20px
-    color = rgba(255, 255, 255, 0.65)
+    marginBottom = 10px
+    fontSize = 1rem
+
+const boundaryInnerLook = look:
+    display = "grid"
+    gap = 18px
+    padding = clamp(28px, 4vw, 52px)
+
+const boundaryTitleLook = look:
+    margin = 0
+    fontSize = clamp(1.5rem, 3vw, 2.1rem)
+    letterSpacing = -0.03em
+
+const boundaryListLook = look:
+    display = "grid"
+    gap = 10px
+    margin = 0
+    paddingLeft = 20px
+    color = rgba(255, 255, 255, 0.74)
+    lineHeight = 1.7
+
+const boundaryLinkLook = look:
+    color = paperPure
+
+const footLinksLook = look:
+    display = "flex"
+    flexWrap = "wrap"
+    gap = spacing(10px, 26px)
+    paddingBlock = 40px
+    borderTop = border(1px, rule)
+
+const footLinkLook = look:
+    color = ink
+    fontWeight = 650
+    textDecoration = "none"
+
+const sectionTitleLook = look:
+    margin = 0
+    fontSize = clamp(1.6rem, 3.2vw, 2.3rem)
+    letterSpacing = -0.03em
+
+const sectionLeadLook = look:
+    maxWidth = 720px
+    margin = 0
+    marginTop = 12px
+    color = inkSoft
     lineHeight = 1.7
 
 export component Home:
     const locale = useLocale()
     return <main>
-        <Head title={locale.text("VelarScript — The Web, written clearly", "VelarScript — 清晰地书写 Web")} description={locale.text("A clear, compact language and integrated framework for modern web applications.", "面向现代 Web 应用的清晰、紧凑语言与一体化框架。")} themeColor="#f7f5f0" />
-        <section class="hero" look={heroLook} data-home-hero>
+        <Head
+            title={headTitle("/", locale.isChinese())}
+            description={locale.text("VelarScript is an application language that compiles to JavaScript: a Python-shaped writing surface over JavaScript's runtime semantics, with the Web as an official extension.", "VelarScript 是一门编译到 JavaScript 的应用语言：以 Python 的书写表面承载 JavaScript 的运行时语义，Web 是它的官方扩展。")}
+            themeColor="#f7f5f0"
+        />
+
+        <section class="opening" look={openingLook} data-home-definition>
             <Container>
-                <div class="hero-grid" look={heroGridLook}>
-                    <div>
-                        <Eyebrow label={locale.text("Language + Web framework", "语言 + Web 框架")} />
-                        <h1 look={heroTitleLook}>{locale.text("The Web,", "让 Web，")}<span look={heroAccentLook}>{locale.text("written clearly.", "写得更清晰。")}</span></h1>
-                        <p class="lead" look={leadLook}>{locale.text("VelarScript combines Python's readability with JavaScript's flexible runtime model, then makes components, Look, data, and browser capabilities feel like one language.", "VelarScript 融合 Python 的可读性与 JavaScript 灵活的运行时模型，并让组件、Look、数据和浏览器能力像同一门语言一样自然协作。")}</p>
-                        <div class="actions" look={actionsLook}><ActionLink to="/learn" label={locale.text("Start learning", "开始学习")} /><ActionLink to="/docs" label={locale.text("Read the docs", "阅读文档")} quiet={true} /></div>
-                        <p class="proof" look={proofLook}><span look={proofItemLook}>{locale.text("Compiles to JavaScript", "编译为 JavaScript")}</span><span look={proofItemLook}>{locale.text("Native JSX and controlled Look", "原生 JSX 与受控 Look")}</span><span look={proofItemLook}>Apache-2.0</span></p>
-                    </div>
-                    <div class="code-column" look={codeColumnLook}><CodeWindow code={heroCode} label="project-card.vel" /></div>
+                <Eyebrow label={locale.text("Language and official Web extension", "语言与官方 Web 扩展")} />
+                <h1 look={openingTitleLook}>VelarScript</h1>
+                <p class="definition" look={definitionLook}>
+                    {locale.text("An application language that compiles to JavaScript: Python's writing surface over JavaScript's runtime semantics. The language core stands on its own, and the Web is an official extension a project activates.", "一门编译到 JavaScript 的应用语言：以 Python 的书写表面，承载 JavaScript 的运行时语义。语言核心独立成立，Web 是项目按需激活的官方扩展。")}
+                </p>
+                <p look={missionLook}>
+                    {locale.text("It is designed for code that a model writes and a person owns: the reader has to be able to check what the code does, and the compiler has to say so when it cannot.", "它为「模型书写、人来拥有」的代码而设计：读者必须能够核验代码在做什么，而当编译器无法确认时，它必须说出来。")}
+                </p>
+                <div class="actions" look={actionsLook}>
+                    <ActionLink to="/guide/quick-start" label={locale.text("Quick start", "快速开始")} />
+                    <ActionLink to="/guide" label={locale.text("Read the guide", "阅读指南")} quiet={true} />
                 </div>
             </Container>
         </section>
 
         <Section ruled={true}>
             <Container>
-                <div class="manifesto" look={manifestoLook}><h2 look={manifestoTitleLook}>{locale.text("Less language between you and the idea.", "让语言少挡在你与想法之间。")}</h2><p look={manifestoTextLook}>{locale.text("VelarScript does not invent a new virtual machine or disguise how the browser works. Values, references, closures, promises, and the prototype-based JavaScript runtime remain underneath. The source language simply gives you a cleaner place to think.", "VelarScript 不发明新的虚拟机，也不掩饰浏览器如何工作。值、引用、闭包、Promise 与基于原型的 JavaScript 运行时仍在底层；源语言只是提供一个更干净的思考空间。")}</p></div>
+                <div class="sample" look={sampleGridLook} data-home-sample>
+                    <CodeWindow code={taskAppCode} label="main.vel" />
+                    <div>
+                        <h2 look={sectionTitleLook}>{locale.text("One file, two vocabularies", "一个文件，两套词汇")}</h2>
+                        <ul look={readingLook}>
+                            <li>
+                                <span look={readingTermLook}>type · def · const</span>
+                                <br />
+                                {locale.text("type, def, const, and the control flow are the language. They exist in every VelarScript project, including one that never touches a browser.", "type、def、const 与控制流属于语言本身。它们存在于每个 VelarScript 项目中，包括从不接触浏览器的项目。")}
+                            </li>
+                            <li>
+                                <span look={readingTermLook}>component · state · look · JSX · mount</span>
+                                <br />
+                                {locale.text("component, state, look, JSX, and mount come from the Web extension. Without @velarscript/web in velar.json, none of those words exist.", "component、state、look、JSX 与 mount 来自 Web 扩展。如果 velar.json 中没有 @velarscript/web，这些词一个都不存在。")}
+                            </li>
+                            <li>
+                                <span look={readingTermLook}>velar check</span>
+                                <br />
+                                {locale.text("This block is compiled by the site's own gate as a complete project before the page can be published.", "这段代码在页面发布之前，会由本站门禁作为一个完整项目编译。")}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </Container>
         </Section>
 
         <Section ruled={true}>
             <Container>
-                <SectionHeading kicker={locale.text("Design principles", "设计原则")} title={locale.text("Small enough to learn. Complete enough to ship.", "足够小，易于学习；足够完整，可以交付。")} summary={locale.text("Every feature must make ordinary web application code easier to read, safer at a real boundary, or simpler to operate.", "每项能力都必须让日常 Web 应用代码更易读、让真实边界更安全，或让运行维护更简单。")} />
-                <FeatureGrid features={features} />
+                <h2 look={sectionTitleLook}>{locale.text("What the language is like", "这门语言的性质")}</h2>
+                <p look={sectionLeadLook}>
+                    {locale.text("Six properties that decide how ordinary application code reads. Each one links to the chapter that shows it working.", "六项决定日常应用代码读起来如何的性质。每一项都链接到展示它如何运作的章节。")}
+                </p>
+                <div class="cards" look={cardsLook}>
+                    <article look={cardLook}>
+                        <h3 look={cardTitleLook}>{locale.text("One idea, one spelling", "一个想法，一种拼写")}</h3>
+                        <p look={cardTextLook}>
+                            {locale.text("Where two spellings would mean the same thing, only one exists. There is one canonical layout, one equality, and one place cleanup is written.", "当两种拼写会表达同一件事时，只保留一种。只有一种规范排版、一种相等、一处书写清理逻辑的位置。")}
+                        </p>
+                        <Link to="/guide/language/operators" look={cardLinkLook}>
+                            {locale.text("Operators", "运算符")}
+                        </Link>
+                    </article>
+                    <article look={cardLook}>
+                        <h3 look={cardTitleLook}>{locale.text("A type is also a runtime validator", "类型同时是运行时验证器")}</h3>
+                        <p look={cardTextLook}>
+                            {locale.text("The declaration that checks the source also validates data arriving from JSON, HTTP, storage, and forms. There is no second schema to keep in step.", "检查源码的那份声明，同时验证来自 JSON、HTTP、存储与表单的数据。不存在需要同步维护的第二套 schema。")}
+                        </p>
+                        <Link to="/guide/language/records" look={cardLinkLook}>
+                            {locale.text("Records and enums", "记录与枚举")}
+                        </Link>
+                    </article>
+                    <article look={cardLook}>
+                        <h3 look={cardTitleLook}>
+                            {locale.text("Diagnostics name the accepted spelling", "诊断说出被接受的拼写")}
+                        </h3>
+                        <p look={cardTextLook}>
+                            {locale.text("A diagnostic states what to write, not only what was rejected. Where a rewrite is provably equivalent, velar fix applies it unattended.", "诊断说明应该写什么，而不只是指出被拒绝的写法。当改写可证明等价时，velar fix 会无人值守地应用它。")}
+                        </p>
+                        <Link to="/guide/quick-start" look={cardLinkLook}>{locale.text("Quick start", "快速开始")}</Link>
+                    </article>
+                    <article look={cardLook}>
+                        <h3 look={cardTitleLook}>
+                            {locale.text("No implicit coercion, no truthiness", "没有隐式转换，没有 truthiness")}
+                        </h3>
+                        <p look={cardTextLook}>
+                            {locale.text("A condition accepts bool and bool? only. Presence is written != null and emptiness is written .size == 0, so the three questions stay three.", "条件只接受 bool 与 bool?。存在性写作 != null，空写作 .size == 0，三个问题始终是三个。")}
+                        </p>
+                        <Link to="/guide/language/control-flow" look={cardLinkLook}>
+                            {locale.text("Control flow", "控制流")}
+                        </Link>
+                    </article>
+                    <article look={cardLook}>
+                        <h3 look={cardTitleLook}>{locale.text("Look is checked and extracted", "Look 受检并被提取")}</h3>
+                        <p look={cardTextLook}>
+                            {locale.text("A look block is a checked literal with closed property families and value kinds. The compiler extracts it at build time rather than assembling styles while the page runs.", "look 块是受检字面量，属性家族与取值种类都是封闭集合。编译器在构建期提取它，而不是在页面运行时拼装样式。")}
+                        </p>
+                        <Link to="/guide/web/look" look={cardLinkLook}>Look</Link>
+                    </article>
+                    <article look={cardLook}>
+                        <h3 look={cardTitleLook}>
+                            {locale.text("The output is readable JavaScript", "产物是可读的 JavaScript")}
+                        </h3>
+                        <p look={cardTextLook}>
+                            {locale.text("The build emits ordinary JavaScript modules. Reading the output, or leaving with it, is a normal operation rather than a rescue procedure.", "构建产出普通的 JavaScript 模块。阅读产物，或者带着产物离开，都是普通操作，而不是抢救流程。")}
+                        </p>
+                        <Link to="/reference/escape-hatches" look={cardLinkLook}>
+                            {locale.text("Escape hatches", "逃生通道")}
+                        </Link>
+                    </article>
+                </div>
+                <div class="diagnostic" look={diagnosticLook}>
+                    <div>
+                        <p look={diagnosticLabelLook}>{locale.text("Rejected", "被拒绝的写法")}</p>
+                        <CodeBlock code={presenceErrorCode} />
+                    </div>
+                    <div>
+                        <p look={diagnosticLabelLook}>{locale.text("What velar check answers", "velar check 的回答")}</p>
+                        <CodeBlock code={presenceErrorOutput} />
+                    </div>
+                </div>
             </Container>
         </Section>
 
         <Section ruled={true}>
             <Container>
-                <SectionHeading kicker={locale.text("One coherent stack", "一套连贯技术栈")} title={locale.text("Language and framework, designed together.", "语言与框架，从一开始就一起设计。")} summary={locale.text("The compiler owns the language. @velarscript/web owns browser application capabilities. The browser still runs ordinary JavaScript.", "编译器负责语言，@velarscript/web 负责浏览器应用能力，而浏览器最终运行的仍是普通 JavaScript。")} />
-                <Surface dark={true}><div class="layers" look={layersLook}><div class="layer" look={layerLook(false)}><span look={layerIndexLook}>01 / {locale.text("SOURCE", "源码")}</span><strong look={layerTitleLook}>{locale.text("VelarScript language", "VelarScript 语言")}</strong></div><div class="layer" look={layerLook(false)}><span look={layerIndexLook}>02 / {locale.text("FRAMEWORK", "框架")}</span><strong look={layerTitleLook}>@velarscript/web</strong></div><div class="layer" look={layerLook(true)}><span look={layerIndexLook}>03 / {locale.text("RUNTIME", "运行时")}</span><strong look={layerTitleLook}>{locale.text("Browser JavaScript", "浏览器 JavaScript")}</strong></div></div></Surface>
+                <h2 look={sectionTitleLook}>{locale.text("How you use it", "怎么用")}</h2>
+                <p look={sectionLeadLook}>
+                    {locale.text("One toolchain covers the loop: create a project, run and check it, then test and build it.", "同一套工具链覆盖整个循环：创建项目、运行并检查、测试并构建。")}
+                </p>
+                <div class="steps" look={stepsLook}>
+                    <div>
+                        <h3 look={stepTitleLook}>{locale.text("Create", "创建")}</h3>
+                        <CodeBlock code={createShellCode} />
+                    </div>
+                    <div>
+                        <h3 look={stepTitleLook}>{locale.text("Run and check", "运行与检查")}</h3>
+                        <CodeBlock code={developShellCode} />
+                    </div>
+                    <div>
+                        <h3 look={stepTitleLook}>{locale.text("Test and build", "测试与构建")}</h3>
+                        <CodeBlock code={shipShellCode} />
+                    </div>
+                </div>
             </Container>
         </Section>
 
         <Section ruled={true}>
             <Container>
-                <SectionHeading kicker={locale.text("Learning path", "学习路径")} title={locale.text("From first line to production.", "从第一行代码走向生产环境。")} summary={locale.text("Start with readable language fundamentals, then add Web capabilities only when your application needs them.", "先从易读的语言基础开始，再在应用真正需要时逐步加入 Web 能力。")} />
-                <LearningPath steps={learningSteps} />
+                <Surface dark={true}>
+                    <div class="boundaries" look={boundaryInnerLook}>
+                        <h2 look={boundaryTitleLook}>{locale.text("Status and boundaries", "状态与边界")}</h2>
+                        <ul look={boundaryListLook}>
+                            <li>
+                                {locale.text("This is a development release. The language, compiler, extensions, CLI, and this site advance as one tested system.", "当前是开发期发布。语言、编译器、扩展、CLI 与本站作为同一个经过测试的系统共同演进。")}
+                            </li>
+                            <li>
+                                {locale.text("There is no backward-compatibility promise yet. A spelling can change when a better one is decided.", "目前没有向后兼容承诺。当更好的拼写被裁定时，现有拼写可以改变。")}
+                            </li>
+                            <li>
+                                {locale.text("Pin the toolchain in your project. A pinned version is what makes a build reproducible across machines.", "请在项目中固定工具链版本。固定版本正是让构建在不同机器上可复现的前提。")}
+                            </li>
+                            <li>{locale.text("Every escape hatch is documented, including the final one: leaving with the compiled JavaScript.", "每一条逃生通道都有文档，包括最终那一条：带着编译产出的 JavaScript 离开。")} <Link to="/reference/escape-hatches" look={boundaryLinkLook}>{locale.text("Escape hatches", "逃生通道")}</Link></li>
+                        </ul>
+                    </div>
+                </Surface>
             </Container>
         </Section>
 
-        <Section ruled={true}>
-            <Container><Surface dark={true}><div class="closing" look={closingLook}><div><h2 look={closingTitleLook}>{locale.text("Write the app, not the ceremony.", "写应用，而不是写仪式。")}</h2><p look={closingTextLook}>{locale.text("The current line is a development release. The language, compiler, Web framework, CLI, and this site advance as one tested system.", "当前版本仍处于开发阶段。语言、编译器、Web 框架、CLI 与官网作为同一个经过测试的系统共同演进。")}</p></div><ActionLink to="/learn" label={locale.text("Meet VelarScript", "认识 VelarScript")} inverse={true} /></div></Surface></Container>
-        </Section>
+        <Container>
+            <div class="foot-links" look={footLinksLook}>
+                <Link to="/guide" look={footLinkLook}>{locale.text("Guide", "指南")}</Link>
+                <Link to="/reference" look={footLinkLook}>{locale.text("Reference", "参考")}</Link>
+                <Link to="/examples" look={footLinkLook}>{locale.text("Examples", "示例")}</Link>
+                <a href="https://github.com/VelarOS-AI/VelarScript" look={footLinkLook}>GitHub</a>
+            </div>
+        </Container>
     </main>

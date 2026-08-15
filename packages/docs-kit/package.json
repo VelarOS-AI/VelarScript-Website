@@ -16,6 +16,6 @@
     "@velarscript/ui": "0.2.0"
   },
   "peerDependencies": {
-    "@velarscript/web": "0.10.0-dev"
+    "@velarscript/web": "0.10.0"
   }
 }

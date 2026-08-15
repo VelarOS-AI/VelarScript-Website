@@ -1,0 +1,225 @@
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
+import {headTitle, referenceNav} from "../content.vel"
+
+const pathNodeCode = `import {basename, contains, dirname, extension, fromFileUrl, isAbsolute, join, normalize, relative, resolve, toFileUrl} from "velar/path"\n\n// Multi-part operations take a dense List<string>; every input and every\n// result is limited to 4,096 code units.\nconst resolved = resolve(["/srv", "app", "main.vel"])\nconst joined = join(["srv", "app", "main.vel"])\nconst namedResolve = resolve(parts=["/srv", "app"])\n\nconst normalized = normalize("/srv//app/../app/main.vel")\nconst relativePath = relative("/srv/app", "/srv/app/pages/index.vel")\nconst directory = dirname("/srv/app/main.vel")\nconst fileName = basename("/srv/app/main.vel")\nconst suffix = extension("/srv/app/main.vel")\nconst absolute = isAbsolute("/srv/app")\n\n// A lexical containment check is the first gate of a workspace policy; code\n// that crosses symbolic-link authority also checks velar/fs.canonical.\nconst contained = contains(root="/srv", target="/srv/app/main.vel")\n\nconst fileUrl = toFileUrl("/srv/app/main.vel")\nconst backFromUrl = fromFileUrl("file:///srv/app/main.vel")\n\nexport const summary = f"{resolved} {joined} {namedResolve} {normalized} {relativePath} {directory} {fileName} {suffix} {absolute} {contained} {fileUrl} {backFromUrl}"`
+const fsNodeCode = `import {canonical, copyFile, createText, exists, info, list, makeDirectory, move, readText, removeFile, replaceTextIfMatches, watchFiles, writeText} from "velar/fs"\n\nexport async def readAndWrite(path: string) -> string:\n    const text = await readText(path, 65536)\n    // createText is the no-clobber primitive: its exclusive-create decision and\n    // the file creation are one host operation, so it must not be emulated with\n    // exists followed by writeText.\n    await createText(f"{path}.new", "fresh")\n    // replaceTextIfMatches is the optimistic edit: after an exact byte match a\n    // same-directory temporary file is renamed over the target, so a reader\n    // observes the old or the new contents and never a partial write.\n    const replaced = await replaceTextIfMatches(path, text, "next")\n    await writeText(path, "next")\n    return f"{text.size} {replaced}"\n\nexport async def inspect(path: string) -> string:\n    const present = await exists(path)\n    const entries = await list(path, 100)\n    const metadata = await info(path)\n    const realPath = await canonical(path)\n    if metadata == null:\n        return f"{present} {entries.size} {realPath}"\n    return f"{metadata.name} {metadata.kind} {metadata.size} {metadata.modifiedAt}"\n\nexport async def rearrange(source: string, target: string):\n    await makeDirectory(target)\n    await copyFile(source, target, true)\n    await move(source, target, replace=true)\n    await removeFile(target)\n\n// A watcher is an owned resource: \`using\` releases it, and \`async for\` drives\n// it. It reports only the changes that happen after it is armed.\nexport async def watch(path: string) -> number:\n    using watcher = await watchFiles(path, true)\n    let batches = 0\n    async for batch in watcher:\n        batches += 1\n        if batch.rescan or batch.paths.size > 100:\n            break\n    return batches\n\n// Each failure a caller recovers from differently arrives as its own class,\n// carrying the failing path.\nexport async def recover(path: string) -> string:\n    try:\n        return await readText(path)\n    catch error:\n        if error is FileNotFoundError:\n            await createText(path, "")\n            return ""\n        if error is PermissionError:\n            return f"Cannot read {error.path}: {error.message}"\n        if error is NotADirectoryError:\n            return "the path names a file"\n        if error is FileExistsError:\n            return "choose another name"\n        throw error`
+const envNodeCode = `import {get, require as requireVariable} from "velar/env"\nimport {exit, onShutdown} from "velar/host"\n\n// Names use the portable [A-Za-z_][A-Za-z0-9_]* shape; there is no\n// process-wide environment dump.\nexport def settings() -> string:\n    const optional = get("PORT")\n    const required = requireVariable("HOME")\n    return f"{optional ?? "8080"} {required}"\n\n// Cleanups run in registration order under one 30-second graceful-shutdown\n// deadline; a second signal force-quits immediately.\nexport def registerShutdown():\n    onShutdown(async () => print("flushing before exit"))\n\nexport def stop(code: number):\n    exit(code)`
+const processNodeCode = `import {ProcessOutputChannel, run, start} from "velar/process"\n\n// One program, run directly, without a shell. A child receives only the\n// runtime's small safe baseline plus the explicit map, so unrelated API keys\n// cannot leak by default.\nexport async def runOnce() -> string:\n    const result = await run("git", ["status", "--short"])\n    const bounded = await run("git", ["log", "-1"], {cwd: "/srv/app", timeout: 5000, maxOutputBytes: 1048576})\n    const environment: Map<string, string> = Map([["CI", "1"]])\n    const withEnvironment = await run("env", [], {env: environment})\n    return f"{result.code} {result.stdout.size} {bounded.code} {withEnvironment.code}"\n\n// A started process is an owned resource: \`using\` releases it on every exit,\n// and \`async for\` drives its output through the language's ordinary\n// asynchronous iteration protocol rather than a callback.\nexport async def streamOutput() -> string:\n    using child = await start("npm", ["run", "build"])\n    let joined = f"pid {child.pid}"\n    async for output in child:\n        if output.channel == ProcessOutputChannel.stdout:\n            joined += output.text\n        else if output.channel == ProcessOutputChannel.stderr:\n            joined += f"! {output.text}"\n    const result = await child.wait()\n    return f"{joined} {result.code}"`
+const terminalNodeCode = `import {terminal} from "velar/terminal"\n\n// args() returns only the program arguments after \`velar run ... --\`.\n// write and writeError await backpressure instead of accumulating output.\nexport async def interact() -> string:\n    const args = terminal.args()\n    const interactive = terminal.isInteractive()\n    await terminal.write("Name: ")\n    const answer = await terminal.readLine()\n    const age = await terminal.readLine("Age: ")\n    await terminal.writeError("something went wrong\\n")\n    // close() is permanent and idempotent: a later readLine() answers null\n    // rather than opening standard input again.\n    terminal.close()\n    return f"{args.size} {interactive} {answer ?? ""} {age ?? ""}"`
+const serveNodeCode = `import {RequestBodyTooLargeError, ServeRequest, ServeResponse, fileResponse, serve} from "velar/serve"\n\ntype MessageInput:\n    text: string\n\n// A response is one checked plain record: {status, json}, {status, text}, or\n// {status, stream}. Transport-owned headers cannot be overridden.\nasync def handle(request: ServeRequest) -> ServeResponse:\n    if request.path == "/api/health":\n        return {status: 200, json: {ok: true}}\n    if request.path == "/api/message":\n        try:\n            const input = await request.parse(MessageInput, maxBytes=65536)\n            return {status: 200, text: input.text}\n        catch error:\n            if error is RequestBodyTooLargeError:\n                // The read-only maxBytes field lets a handler answer 413\n                // without matching error text.\n                return {status: 413, json: {error: f"at most {error.maxBytes} bytes"}}\n            throw error\n    return fileResponse(root="dist", path=request.path, fallback="index.html")\n\nexport async def startServer() -> number:\n    // serve really binds a port; port 0 asks the host for any free one.\n    const server = await serve(handle, port=8787)\n    const port = server.port\n    await server.stop()\n    return port\n\nexport async def reportBindFailure() -> string:\n    try:\n        const server = await serve(handle, 80)\n        return f"bound {server.port}"\n    catch error:\n        if error is AddressInUseError:\n            return "bind another port, or port 0 for any free one"\n        if error is PermissionError:\n            return "the host refused this port"\n        throw error`
+const httpNodeCode = `import {HttpAbortError, HttpError, HttpTransportError, HttpTransportPhase, http, secretHeader} from "velar/http"\n\ntype Report:\n    id: string\n    total: number\n\n// The descriptor carries only the environment-variable name. The official\n// runtime resolves the value when the request starts and never returns it to\n// application code.\nconst apiKey = secretHeader("authorization", "API_TOKEN", "Bearer ")\n\nexport async def load(url: string) -> string:\n    const request = http.get(url, {\n        headers: Map([["accept", "application/json"]]),\n        secretHeaders: [apiKey],\n        timeout: 5000,\n        maxBytes: 1048576,\n    })\n    // parse uses the same runtime type validator as everywhere else; there is\n    // no second schema system.\n    const parsed = await request.parse(Report)\n    return parsed.id\n\nexport async def failures(url: string) -> string:\n    try:\n        return await http.get(url).text()\n    catch error:\n        if error is HttpError:\n            return f"{error.status} {error.url}"\n        if error is HttpAbortError:\n            return f"aborted: {error.reason}"\n        if error is HttpTransportError:\n            return error.phase == HttpTransportPhase.request ? "the request never left" : "the response never arrived"\n        throw error`
+
+const pathMembers = [
+    {name: "resolve", signature: "resolve(parts?) -> string", summary: "Resolves a dense List<string> against the working directory.", summaryZh: "把稠密的 List<string> 相对工作目录解析为绝对路径。"},
+    {name: "join", signature: "join(parts?) -> string", summary: "Joins path parts lexically.", summaryZh: "以词法方式连接路径片段。"},
+    {name: "normalize", signature: "normalize(path) -> string", summary: "Collapses duplicate separators and dot segments.", summaryZh: "折叠重复分隔符与点号片段。"},
+    {name: "relative", signature: "relative(from, to) -> string", summary: "The path from one location to another.", summaryZh: "从一个位置到另一个位置的路径。"},
+    {name: "dirname", signature: "dirname(path) -> string", summary: "The containing directory, read from the supplied path rather than a normalized one.", summaryZh: "所在目录，按给定路径本身读取，而不是先规范化。"},
+    {name: "basename", signature: "basename(path) -> string", summary: "The final component.", summaryZh: "最后一段。"},
+    {name: "extension", signature: "extension(path) -> string", summary: "The final extension.", summaryZh: "最后的扩展名。"},
+    {name: "isAbsolute", signature: "isAbsolute(path) -> bool", summary: "Whether the path is absolute.", summaryZh: "路径是否是绝对路径。"},
+    {name: "contains", signature: "contains(root, target) -> bool", summary: "A lexical containment check, suitable as the first gate of a workspace policy.", summaryZh: "词法层面的包含检查，适合作为工作区策略的第一道关卡。"},
+    {name: "toFileUrl", signature: "toFileUrl(path) -> string", summary: "Resolves a path and returns its encoded local file: URL.", summaryZh: "解析路径并返回编码后的本地 file: URL。"},
+    {name: "fromFileUrl", signature: "fromFileUrl(url) -> string", summary: "The inverse, for a local file URL; other schemes are rejected.", summaryZh: "上一项的逆运算，用于本地文件 URL；其他 scheme 会被拒绝。"},
+]
+
+const fsMembers = [
+    {name: "readText", signature: "readText(path, maxBytes?) -> Promise<string>", summary: "Reads one valid UTF-8 regular file under an explicit byte budget.", summaryZh: "在显式的字节预算下读取一个有效的 UTF-8 普通文件。"},
+    {name: "createText", signature: "createText(path, text) -> Promise<null>", summary: "Atomically creates one new file and refuses every existing entry, including symbolic links.", summaryZh: "原子地创建一个新文件，并拒绝任何已存在的条目，符号链接也不例外。"},
+    {name: "replaceTextIfMatches", signature: "replaceTextIfMatches(path, expected, replacement) -> Promise<bool>", summary: "Replaces a matching file as one directory-entry commit and reports a detected conflict as false.", summaryZh: "以一次目录项提交替换内容匹配的文件；检测到冲突时返回 false。"},
+    {name: "writeText", signature: "writeText(path, text) -> Promise<null>", summary: "Writes at most 16 MiB of UTF-8 text.", summaryZh: "写入至多 16 MiB 的 UTF-8 文本。"},
+    {name: "appendText", signature: "appendText(path, text) -> Promise<null>", summary: "Appends at most 16 MiB of UTF-8 text.", summaryZh: "追加至多 16 MiB 的 UTF-8 文本。"},
+    {name: "exists", signature: "exists(path) -> Promise<bool>", summary: "False only for a missing path; permission and host failures remain errors.", summaryZh: "只有路径缺失时才为 false；权限与宿主故障仍是错误。"},
+    {name: "list", signature: "list(path, maxItems?) -> Promise<List<string>>", summary: "A sorted, caller-bounded List with at most 2 MiB of name text.", summaryZh: "排序的、由调用方限定上限的 List，名字文本至多 2 MiB。"},
+    {name: "info", signature: "info(path) -> Promise<FileInfo?>", summary: "Bounded {name, kind, size, modifiedAt} metadata, or null when absent.", summaryZh: "有界的 {name, kind, size, modifiedAt} 元数据；不存在时为 null。"},
+    {name: "canonical", signature: "canonical(path) -> Promise<string>", summary: "The host real path, for containment and identity checks.", summaryZh: "宿主的真实路径，用于包含关系与同一性检查。"},
+    {name: "makeDirectory", signature: "makeDirectory(path) -> Promise<null>", summary: "Creates the requested directory and missing parents.", summaryZh: "创建目标目录以及缺失的父目录。"},
+    {name: "copyFile", signature: "copyFile(source, target, replace?) -> Promise<null>", summary: "Copies one regular file; replacement is explicit.", summaryZh: "复制一个普通文件；覆盖必须显式声明。"},
+    {name: "move", signature: "move(source, target, replace?) -> Promise<null>", summary: "Moves one path; replacement is explicit.", summaryZh: "移动一个路径；覆盖必须显式声明。"},
+    {name: "removeFile", signature: "removeFile(path) -> Promise<null>", summary: "Removes one file and never recursively removes a directory.", summaryZh: "删除一个文件，绝不递归删除目录。"},
+    {name: "watchFiles", signature: "watchFiles(path, recursive?) -> Promise<FileWatcher>", summary: "A bounded, resource-owned invalidation watcher for one existing file or directory.", summaryZh: "针对一个已存在的文件或目录、有界且由资源拥有的失效监视器。"},
+    {name: "FileWatcher.next", signature: "next() -> Promise<FileWatchBatch?>", summary: "Pulls one sorted, deduplicated batch. Only one pull may be active, and it answers null after release.", summaryZh: "拉取一个排序去重后的批次。同时只能有一个拉取在进行；释放后返回 null。"},
+    {name: "FileWatcher.close", signature: "close() -> Promise<null>", summary: "Idempotently releases the watcher and settles a pending pull with null.", summaryZh: "幂等地释放监视器，并以 null 结束挂起的拉取。"},
+]
+
+const envMembers = [
+    {name: "get", signature: "get(name) -> string?", summary: "Reads one explicit environment variable.", summaryZh: "读取一个显式指定的环境变量。"},
+    {name: "require", signature: "require(name) -> string", summary: "Throws a VelarScript error naming an absent variable.", summaryZh: "变量缺失时抛出错误，并在消息中给出变量名。"},
+    {name: "exit", signature: "exit(code?) -> null", summary: "velar/host. Accepts integer exit codes from 0 through 255.", summaryZh: "来自 velar/host。接受 0 到 255 的整数退出码。"},
+    {name: "onShutdown", signature: "onShutdown(cleanup) -> null", summary: "velar/host. Registers an async cleanup for SIGINT and SIGTERM; at most 1,024 callbacks, run in registration order.", summaryZh: "来自 velar/host。为 SIGINT 与 SIGTERM 注册异步清理；至多 1,024 个回调，按注册顺序运行。"},
+]
+
+const processMembers = [
+    {name: "run", signature: "run(command, args?, options?) -> Promise<ProcessResult>", summary: "Executes one program and waits. The result carries code, signal, stdout, and stderr.", summaryZh: "执行一个程序并等待结束。结果包含 code、signal、stdout 与 stderr。"},
+    {name: "start", signature: "start(command, args?, options?) -> Promise<Process>", summary: "Executes one program and hands back an owned handle. Acquisition is asynchronous on every target.", summaryZh: "执行一个程序并交回一个被拥有的句柄。在所有目标上，获取都是异步的。"},
+    {name: "options", signature: "{cwd, env, stdin, timeout, maxOutputBytes}", summary: "Snapshotted from enumerable own data fields; accessors, symbols, inherited state, and unknown fields are rejected before a child can start.", summaryZh: "从可枚举的自有数据字段做快照；访问器、symbol、继承状态与未知字段在子进程启动前即被拒绝。"},
+    {name: "Process.pid", signature: "pid -> number", summary: "The read-only process identifier.", summaryZh: "只读的进程标识符。"},
+    {name: "Process.next", signature: "next() -> Promise<ProcessOutput?>", summary: "Pulls {channel, text}. Only one pull may be active, and each channel has its own incremental UTF-8 decoder.", summaryZh: "拉取 {channel, text}。同时只能有一个拉取在进行；每个通道拥有自己的增量 UTF-8 解码器。"},
+    {name: "Process.wait", signature: "wait() -> Promise<ProcessResult>", summary: "Terminally idempotent. Incremental output must be drained first; calling it directly is the explicit aggregate-only path.", summaryZh: "终态幂等。必须先排空增量输出；直接调用它是显式的「只取聚合结果」路径。"},
+    {name: "Process.stop", signature: "stop() -> Promise<null>", summary: "SIGTERM, escalating to SIGKILL after two seconds, with a five-second confirmation deadline. Idempotent after confirmation and retryable after rejection.", summaryZh: "发送 SIGTERM，两秒后升级为 SIGKILL，确认期限五秒。确认之后幂等，被拒绝之后可重试。"},
+    {name: "ProcessOutputChannel", signature: "ProcessOutputChannel.stdout · .stderr", summary: "The official enum for the two output channels.", summaryZh: "两个输出通道的官方枚举。"},
+]
+
+const terminalMembers = [
+    {name: "args", signature: "terminal.args() -> List<string>", summary: "A fresh List containing only the program arguments after velar run … --.", summaryZh: "全新的 List，只包含 velar run … -- 之后的程序参数。"},
+    {name: "isInteractive", signature: "terminal.isInteractive() -> bool", summary: "Whether both input and output are attached to a terminal.", summaryZh: "输入与输出是否都连接到终端。"},
+    {name: "readLine", signature: "terminal.readLine(prompt?) -> Promise<string?>", summary: "One line without its newline, or null at end of input.", summaryZh: "一行文本（不含换行符），输入结束时为 null。"},
+    {name: "write", signature: "terminal.write(text) -> Promise<null>", summary: "Awaits stdout backpressure instead of silently accumulating output.", summaryZh: "等待 stdout 的背压，而不是默默累积输出。"},
+    {name: "writeError", signature: "terminal.writeError(text) -> Promise<null>", summary: "The same contract on stderr.", summaryZh: "在 stderr 上的同一契约。"},
+    {name: "close", signature: "terminal.close() -> null", summary: "Permanent and idempotent even before the first read, so a later readLine answers null.", summaryZh: "即使在首次读取之前也是永久且幂等的，之后的 readLine 返回 null。"},
+]
+
+const serveMembers = [
+    {name: "serve", signature: "serve(handler, port, host?) -> Promise<Server>", summary: "Binds an HTTP server. Host defaults to 127.0.0.1, and port 0 asks for any free port.", summaryZh: "绑定一个 HTTP 服务器。host 默认为 127.0.0.1，端口 0 表示任取一个空闲端口。"},
+    {name: "Server", signature: "{port, stop() -> Promise<null>}", summary: "The actual bound port and an idempotent async stop.", summaryZh: "真实绑定的端口，以及一个幂等的异步 stop。"},
+    {name: "ServeRequest", signature: "{method, path, query, headers}", summary: "Method, decoded URL path, first-value query, and normalized header Maps.", summaryZh: "方法、解码后的 URL 路径、取首值的查询，以及规范化后的头部 Map。"},
+    {name: "request.text", signature: "text(maxBytes?) -> Promise<string>", summary: "A cached body reader. The first read enforces its budget while the request arrives.", summaryZh: "带缓存的请求体读取器。首次读取会在请求到达过程中执行其预算。"},
+    {name: "request.json", signature: "json(maxBytes?) -> Promise<unknown>", summary: "The same strict, bounded, accessor-free JSON contract as everywhere else.", summaryZh: "与别处相同的严格、有界、不触发访问器的 JSON 契约。"},
+    {name: "request.parse", signature: "parse(Type, maxBytes?) -> Promise<T>", summary: "Applies json() and validates with a runtime Type. The Type identity is checked before any body read.", summaryZh: "先执行 json()，再用运行时 Type 验证。Type 的标识在读取请求体之前就已检查。"},
+    {name: "ServeResponse", signature: "{status, json|text|stream, headers?}", summary: "One checked plain record. A stream producer accepts at most 1 MiB per chunk and 64 MiB in total.", summaryZh: "一个受检的普通记录。流式生产者每块至多 1 MiB，总计至多 64 MiB。"},
+    {name: "fileResponse", signature: "fileResponse(root, path, fallback?) -> ServeResponse", summary: "Resolves the real root and target, rejects traversal and symlink escape, reads only regular files up to 64 MiB.", summaryZh: "解析真实的根与目标，拒绝路径穿越与符号链接逃逸，只读取至多 64 MiB 的普通文件。"},
+    {name: "RequestBodyTooLargeError", signature: "error.maxBytes -> number", summary: "Lets a handler answer 413 without matching error text.", summaryZh: "让处理函数无需匹配错误文本即可返回 413。"},
+]
+
+const httpMembers = [
+    {name: "http.request", signature: "http.request(method, url, options?)", summary: "Creates a lazy request. The same vocabulary as the browser module.", summaryZh: "创建一个惰性请求。与浏览器模块使用同一套词汇。"},
+    {name: "http.get", signature: "http.get(url, options?)", summary: "Also post, put, patch, delete, and head.", summaryZh: "还有 post、put、patch、delete 与 head。"},
+    {name: "options", signature: "{headers, secretHeaders, body, timeout, maxBytes}", summary: "Timeout defaults to 120,000 ms, accepts integers from 0 through 600,000, and reserves 0 as the explicit no-timeout mode.", summaryZh: "超时默认 120,000 毫秒，接受 0 到 600,000 的整数，其中 0 是显式的「无超时」模式。"},
+    {name: "request readers", signature: "response() · json() · text() · streamText(consume) · parse(Type) · cancel()", summary: "Concurrent buffered readers share one body read; streamText is deliberately exclusive while active.", summaryZh: "并发的缓冲读取器共享同一次请求体读取；streamText 在活动期间被有意设为独占。"},
+    {name: "secretHeader", signature: "secretHeader(name, environment, prefix?)", summary: "A descriptor carrying only the variable name. The official runtime resolves it when the request starts and never returns the value to application code.", summaryZh: "只携带变量名的描述符。官方运行时在请求开始时解析它，且绝不把值返回给应用代码。"},
+    {name: "HttpError", signature: "{status, url, body}", summary: "A non-2xx response. Its URL is the final response URL after redirects.", summaryZh: "非 2xx 响应。它的 URL 是重定向之后的最终响应 URL。"},
+    {name: "HttpAbortError", signature: "{reason}", summary: `Cancellation or deadline expiry; reason is "cancelled" or "timeout".`, summaryZh: `取消或超时；reason 为 "cancelled" 或 "timeout"。`},
+    {name: "HttpTransportError", signature: "{phase}", summary: "DNS, connection, socket, or native body-stream failure. phase is HttpTransportPhase.request or .response.", summaryZh: "DNS、连接、socket 或原生请求体流失败。phase 为 HttpTransportPhase.request 或 .response。"},
+]
+
+const sections = [
+    {id: "target", label: "Why these are Node-only", labelZh: "它们为何只属于 Node"},
+    {id: "path", label: "velar/path", labelZh: "velar/path"},
+    {id: "fs", label: "velar/fs", labelZh: "velar/fs"},
+    {id: "env", label: "velar/env and velar/host", labelZh: "velar/env 与 velar/host"},
+    {id: "process", label: "velar/process", labelZh: "velar/process"},
+    {id: "terminal", label: "velar/terminal", labelZh: "velar/terminal"},
+    {id: "serve", label: "velar/serve", labelZh: "velar/serve"},
+    {id: "http", label: "Node velar/http", labelZh: "Node 的 velar/http"},
+]
+
+export component ReferenceNode:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/reference/node", locale.isChinese())}
+            description={locale.text("The capability modules a Node project may import, and why a web project cannot import them.", "Node 项目可以导入的能力模块，以及 Web 项目为何无法导入它们。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={referenceNav}>
+            <PageHeader
+                kicker={locale.text("Reference", "参考")}
+                title={locale.text("Node capabilities", "Node 能力")}
+                summary={locale.text("The local platform modules — path, fs, env, host, process, terminal, serve — and the Node contract of velar/http.", "本地平台模块——path、fs、env、host、process、terminal、serve——以及 velar/http 的 Node 契约。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <h2 id="target">{locale.text("Why these are Node-only", "它们为何只属于 Node")}</h2>
+                <p>
+                    {locale.text("These modules are a small first-party surface for local applications and servers. They work under velar run, Core tests, and Core builds. A Web project that imports one of them fails during project compilation with guidance to the platform that has it: velar/serve points Web code to the application dev server and the browser target of velar/http.", "这些模块是面向本地应用与服务器的一小片第一方表面。它们在 velar run、Core 测试与 Core 构建下工作。导入其中任何一个的 Web 项目都会在项目编译期失败，并给出指向具备该能力的平台的指引：velar/serve 会把 Web 代码指向应用开发服务器，以及 velar/http 的浏览器目标。")}
+                </p>
+                <p>
+                    {locale.text("Node is the current internal engine, but Node classes, callbacks, events, buffers, and overloads are not part of the contract. The contracts and implementations are owned by the independently reusable @velarscript/node package; the CLI only composes that extension for local programs.", "Node 是当前的内部引擎，但 Node 的类、回调、事件、buffer 与重载都不属于契约。契约与实现由可独立复用的 @velarscript/node 包拥有；CLI 只是为本地程序组合这个扩展。")}
+                </p>
+                <Callout title={locale.text("Which failures get their own class", "哪些失败拥有自己的类")}>
+                    <p>
+                        {locale.text("Only velar/fs, velar/serve, and velar/http name their own error classes, because only their failures have more than one recovery. Every failure of velar/path, velar/process, velar/env, velar/host, and velar/terminal — a wrong argument, an exceeded budget, an unusable host — has exactly one recovery, which is to change the code, so each arrives as an ordinary Error. A class exists only where a caller would write different recovery for it.", "只有 velar/fs、velar/serve 与 velar/http 拥有自己的错误类，因为只有它们的失败存在不止一种恢复方式。velar/path、velar/process、velar/env、velar/host 与 velar/terminal 的每一种失败——实参错误、超出预算、宿主不可用——都只有一种恢复方式，就是改代码，因此它们都以普通的 Error 到达。只有当调用方会为之写出不同的恢复逻辑时，类才存在。")}
+                    </p>
+                </Callout>
+
+                <h2 id="path">{locale.text("velar/path", "velar/path")}</h2>
+                <p>
+                    {locale.text("Checked host-path operations. Every input path and every public path result is limited to 4,096 code units, so many individually valid parts cannot manufacture an oversized result. dirname, basename, and extension inspect the supplied path rather than normalizing . or .. away first, while normalize, join, resolve, and relative perform their named normalization steps.", "受检的宿主路径操作。每个输入路径与每个公开的路径结果都限制在 4096 个码点以内，因此许多各自合法的片段无法拼出超长结果。dirname、basename 与 extension 检视给定的路径本身，不会先把 . 或 .. 规范化掉；而 normalize、join、resolve 与 relative 会执行各自名称所述的规范化步骤。")}
+                </p>
+                <MemberTable
+                    rows={pathMembers}
+                    caption={locale.text("velar/path — eleven exports", "velar/path —— 十一个导出")}
+                />
+                <CodeBlock code={pathNodeCode} />
+
+                <h2 id="fs">{locale.text("velar/fs", "velar/fs")}</h2>
+                <p>
+                    {locale.text("Paths are non-empty, NUL-free strings of at most 4,096 code units. The module has no synchronous forms, no recursive deletion, no byte inspection, no callback event surface, and no public filesystem streams.", "路径是非空、不含 NUL、至多 4096 个码点的字符串。本模块没有同步形式、没有递归删除、没有字节检查、没有回调事件表面，也没有公开的文件系统流。")}
+                </p>
+                <MemberTable
+                    rows={fsMembers}
+                    caption={locale.text("velar/fs — the file operations and the watcher", "velar/fs —— 文件操作与监视器")}
+                />
+                <CodeBlock code={fsNodeCode} />
+                <Callout title={locale.text("A watcher reports only changes made after it is armed", "监视器只报告它武装之后发生的变化")}>
+                    <p>
+                        {locale.text("watchFiles resolves when the request is accepted, not when the host has finished arming its native stream, and the stream begins at the moment arming completes. A change written between those two points can never arrive — measured on macOS FSEvents under load, 4 of 40 notifications were lost, one with a 25-second window. This is the real semantics of every filesystem watcher, so the module states it rather than pretending to erase it. To observe a change you are about to make, write first and then start watching, or query the state on both sides of the write.", "watchFiles 在请求被接受时解析，而不是在宿主完成原生流的武装时；流从武装完成的那一刻开始。写在这两个时间点之间的变化因此永远不会到达——在负载下对 macOS FSEvents 的实测中，40 次通知丢失了 4 次，其中一次的窗口长达 25 秒。这是每一个文件系统监视器的真实语义，因此本模块把它讲出来，而不是假装抹掉它。若要观察你自己即将做出的改动，应先写入再开始监视，或在写入前后各查询一次状态。")}
+                    </p>
+                </Callout>
+
+                <h2 id="env">{locale.text("velar/env and velar/host", "velar/env 与 velar/host")}</h2>
+                <p>
+                    {locale.text("Environment names use the portable [A-Za-z_][A-Za-z0-9_]* shape and at most 256 characters; there is no process-wide environment dump. On Node the official module captures the original process.env object and its validation operations when it initializes, so replacing the global environment object afterwards cannot redirect a read, and accessor-backed values are rejected without execution.", "环境变量名使用可移植的 [A-Za-z_][A-Za-z0-9_]* 形态，至多 256 个字符；没有进程级的环境倾倒。在 Node 上，官方模块在初始化时捕获原始的 process.env 对象及其验证操作，因此之后替换全局环境对象无法改变一次读取，访问器支撑的值也会在不被执行的情况下被拒绝。")}
+                </p>
+                <MemberTable
+                    rows={envMembers}
+                    caption={locale.text("velar/env and velar/host — four exports", "velar/env 与 velar/host —— 四个导出")}
+                />
+                <CodeBlock code={envNodeCode} />
+                <p>
+                    {locale.text("Successful shutdown exits with conventional status 130 or 143. A rejection, an invalid result, or an expired deadline is reported and selects exit 1 instead of leaving the process alive forever.", "正常关闭以约定的状态码 130 或 143 退出。被拒绝、返回无效结果或超出期限都会被报告，并选择以 1 退出，而不是让进程永远活着。")}
+                </p>
+
+                <h2 id="process">{locale.text("velar/process", "velar/process")}</h2>
+                <p>
+                    {locale.text("start and run execute one program directly, without a shell. A child receives only the runtime's small safe environment baseline plus the explicit map — the parent environment is not copied wholesale, so unrelated API keys cannot leak by default. Chunks preserve the order in which stdout and stderr data is observed by the host, and each channel has its own incremental UTF-8 decoder, so a code point split across native chunks is never exposed as replacement fragments.", "start 与 run 直接执行一个程序，不经过 shell。子进程只收到运行时那一小份安全的环境基线加上显式传入的 map——父进程环境不会被整体复制，因此无关的 API key 默认不会泄漏。数据块保持宿主观察到的 stdout 与 stderr 顺序，每个通道拥有自己的增量 UTF-8 解码器，因此跨原生数据块被切开的码点绝不会以替换字符的碎片形式出现。")}
+                </p>
+                <MemberTable
+                    rows={processMembers}
+                    caption={locale.text("velar/process — two entry points and one owned handle", "velar/process —— 两个入口与一个被拥有的句柄")}
+                />
+                <CodeBlock code={processNodeCode} />
+                <p>
+                    {locale.text("An executable grant is authority to run that native program and its descendant tree as the current operating-system user. It prevents shell parsing and accidental command substitution; it is not an operating-system sandbox for the program's own filesystem or network effects. A deliberately detached process can escape its group, and retained ownership plus bounded host-pipe closure make that limitation explicit rather than silently losing the lifecycle.", "对可执行文件的授权，是以当前操作系统用户身份运行该原生程序及其后代进程树的权限。它防止 shell 解析与意外的命令替换；它不是针对该程序自身文件系统或网络影响的操作系统沙箱。刻意分离的进程可以逃出进程组；保留所有权与有界的宿主管道关闭，把这一限制明确说出来，而不是让生命周期悄悄丢失。")}
+                </p>
+
+                <h2 id="terminal">{locale.text("velar/terminal", "velar/terminal")}</h2>
+                <p>
+                    {locale.text("The terminal is a standard capability handle that publishes close(), so `using` supplies its release contract without a declaration. Each argument list, line, prompt, write, and queued-input window has an explicit bound. Input that arrives between readLine calls is paused and delivered through the next Promise; an oversized line rejects that Promise rather than escaping from a host event callback.", "终端是一个发布了 close() 的标准能力句柄，因此 `using` 无需任何声明即可提供它的释放契约。参数列表、行、提示符、写入与排队输入窗口都各有显式上界。在两次 readLine 之间到达的输入会被暂停，并通过下一个 Promise 交付；超长的行会拒绝那个 Promise，而不是从宿主事件回调中逃逸。")}
+                </p>
+                <MemberTable
+                    rows={terminalMembers}
+                    caption={locale.text("velar/terminal — one handle, six members", "velar/terminal —— 一个句柄，六个成员")}
+                />
+                <CodeBlock code={terminalNodeCode} />
+
+                <h2 id="serve">{locale.text("velar/serve", "velar/serve")}</h2>
+                <p>
+                    {locale.text("serve binds an HTTP server and resolves to a Server record containing the actual port and an idempotent async stop(). The application-facing module never owns a Node HTTP server or request stream: it exchanges bounded request and response commands with the same private isolated host used by velar/fs, and only that worker imports Node's HTTP, filesystem, and stream machinery.", "serve 绑定一个 HTTP 服务器，并解析为包含真实端口与幂等异步 stop() 的 Server 记录。面向应用的模块从不拥有 Node 的 HTTP 服务器或请求流：它与 velar/fs 所用的同一个私有隔离宿主交换有界的请求与响应命令，只有那个 worker 会导入 Node 的 HTTP、文件系统与流机制。")}
+                </p>
+                <MemberTable
+                    rows={serveMembers}
+                    caption={locale.text("velar/serve — the server, the request, and the response", "velar/serve —— 服务器、请求与响应")}
+                />
+                <CodeBlock code={serveNodeCode} />
+                <p>
+                    {locale.text("Handler failures are reported to stderr and return an opaque 500 Internal server error; no development stack is disclosed. Transport-owned headers cannot be overridden, and the worker holds one 128 MiB aggregate budget for cached request bodies, static files, buffered responses, and in-flight stream chunks, so per-value limits do not multiply without bound under concurrency.", "处理函数的失败被报告到 stderr，并返回不透明的 500 Internal server error；不会泄露开发期栈信息。传输层拥有的头部不可被覆盖；worker 为缓存的请求体、静态文件、缓冲响应与在途流块共同持有一份 128 MiB 的总预算，因此单值限制不会在并发下无界相乘。")}
+                </p>
+
+                <h2 id="http">{locale.text("Node velar/http", "Node 的 velar/http")}</h2>
+                <p>
+                    {locale.text("Local programs use the same request vocabulary as Web code. The difference the Node contract adds is secretHeaders: up to 16 descriptors created by secretHeader(name, environment, prefix). Creating the lazy request validates and snapshots the descriptors but does not read their environment variables, so a rotation made before the first response or body reader is observed, while a missing value rejects that first effect before any network operation begins.", "本地程序使用与 Web 代码相同的请求词汇。Node 契约新增的差别是 secretHeaders：至多 16 个由 secretHeader(name, environment, prefix) 创建的描述符。创建惰性请求时会验证并快照这些描述符，但不会读取它们的环境变量，因此在首次读取响应或请求体之前完成的轮换会被观察到，而缺失的值则会在任何网络操作开始之前就拒绝那第一次生效。")}
+                </p>
+                <MemberTable
+                    rows={httpMembers}
+                    caption={locale.text("velar/http on Node — the request surface and the three failure classes", "Node 上的 velar/http —— 请求表面与三类失败")}
+                />
+                <CodeBlock code={httpNodeCode} />
+                <p>
+                    {locale.text("Secret header names cannot claim transport-controlled or ambient credential headers, cannot conflict with ordinary headers, and their combined header budget remains 64 KiB. Node follows at most 20 redirects and removes every secret-derived header when a redirect crosses origins. Retry count, delay, status classification, idempotency, and whether already-visible output may be replayed remain application policy rather than hidden behavior in velar/http.", "密钥头部的名字不能占用由传输层控制或环境提供的凭据头部，不能与普通头部冲突，其合并后的头部预算仍为 64 KiB。Node 至多跟随 20 次重定向，并在重定向跨越来源时移除每一个由密钥派生的头部。重试次数、延迟、状态码分类、幂等性，以及已经可见的输出能否重放，都属于应用策略，而不是 velar/http 中隐藏的行为。")}
+                </p>
+            </Prose>
+        </DocsShell>
+    </main>

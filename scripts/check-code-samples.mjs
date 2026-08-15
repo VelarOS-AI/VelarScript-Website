@@ -1,119 +1,200 @@
-import { mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { inspectModule } from "@velarscript/compiler";
-import { velarCompilerExtension } from "@velarscript/web/compiler";
+
+// Every code sample on this site is checked by the suffix of the constant that
+// holds it. There is no central registry to keep in sync: the name a page
+// author writes is the whole declaration of what the sample is.
+//
+//   *ShellCode *TextCode *JsonCode *TreeCode *JsCode *TsCode *CssCode
+//   *HtmlCode    — not VelarScript, so not compiled.
+//   *AppCode     — a complete web program, checked as a project entry.
+//   *NodeCode    — a module for the Node target, checked in a Node project.
+//   *DesktopCode — a module for the Desktop target, checked with the Desktop
+//                  extension activated.
+//   *ErrorCode   — a teaching counter-example: it must still fail to compile,
+//                  so it cannot quietly become legal code. When the page also
+//                  prints the compiler's answer in a same-prefix *ErrorOutput
+//                  constant, every VEL code quoted there must appear in the
+//                  diagnostics the sample really produces.
+//   *BrowserTestCode — a browser-test module: checked as sample.browser.test.vel,
+//                  the only module kind allowed to import velar/web-test.
+//   *ChunkCode   — a neighbour module: checked on its own like any excerpt, and
+//                  also written as chunk.vel beside the same-prefix sample, so a
+//                  page can compile a real relative import or a lazy(...) chunk.
+//   *Code        — an ordinary excerpt: it must produce no diagnostics.
+//
+// Every VelarScript sample goes through `velar check` in a temporary project.
+// The in-process `inspectModule` only parses, so it accepts unknown names,
+// wrong types, and the truthiness conditions these pages teach against — a
+// gate built on it would pass counter-examples the compiler rejects.
+const skippedSuffixes = ["ShellCode", "TextCode", "JsonCode", "TreeCode", "JsCode", "TsCode", "CssCode", "HtmlCode"];
+const targetSuffixes = [["AppCode", "web"], ["NodeCode", "node"], ["DesktopCode", "desktop"]];
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const nonVelarSamples = new Set([
-  "src/pages/docs-getting-started.vel:createCode",
-  "src/pages/docs-getting-started.vel:scriptsCode",
-  "src/pages/docs-overview.vel:firstRunCode",
-  "src/pages/docs-overview.vel:stackCode",
-  "src/pages/docs-project.vel:treeCode",
-  "src/pages/docs-project.vel:manifestCode",
-  "src/pages/docs-project.vel:packageCode",
-  "src/pages/docs-project.vel:commandsCode",
-  "src/pages/docs-project.vel:libraryCode",
-  "src/pages/language-modules.vel:packageCode",
-  "src/pages/learn.vel:createCode",
-  "src/pages/learn.vel:dependencyCode",
-  "src/pages/learn.vel:shipCode",
-  "src/pages/testing-deployment.vel:buildCode",
-  "src/pages/testing-deployment.vel:deployCode",
-  "src/pages/web-docs.vel:activateCode",
-]);
-const completeSamples = new Set([
-  "src/pages/core-library.vel:textCode",
-  "src/pages/core-library.vel:urlCode",
-  "src/pages/core-library.vel:timeCode",
-  "src/pages/core-library.vel:idLogCode",
-  "src/pages/docs-getting-started.vel:componentCode",
-  "src/pages/home.vel:heroCode",
-  "src/pages/language-classes.vel:basicCode",
-  "src/pages/language-classes.vel:inheritanceCode",
-  "src/pages/language-classes.vel:privateCode",
-  "src/pages/language-classes.vel:staticCode",
-  "src/pages/language-collections.vel:setCode",
-  "src/pages/language-docs.vel:valuesCode",
-  "src/pages/language-docs.vel:objectCode",
-  "src/pages/language-functions.vel:functionCode",
-  "src/pages/language-types.vel:recordCode",
-  "src/pages/language-types.vel:recursiveCode",
-  "src/pages/language-types.vel:unionCode",
-  "src/pages/learn.vel:valuesCode",
-  "src/pages/learn.vel:componentCode",
-  "src/pages/testing-deployment.vel:browserTestCode",
-  "src/pages/web-browser.vel:appCode",
-  "src/pages/web-data.vel:configCode",
-  "src/pages/web-data.vel:httpCode",
-  "src/pages/web-data.vel:storageCode",
-  "src/pages/web-docs.vel:importsCode",
-  "src/pages/web-reactivity.vel:stateCode",
-  "src/pages/web-reactivity.vel:lifecycleCode",
-]);
 const samples = [];
+const errorOutputs = new Map();
 const failures = [];
+
+// A sample is a string literal, and `velar format` picks its delimiter from the
+// text: a block that contains a double quote is canonically written with
+// backticks. Both spellings are read here, because the alternative would be
+// asking page authors to write samples the formatter then rewrites.
+const literal = '(?:"(?:\\\\.|[^"\\\\])*"|`(?:\\\\.|[^`\\\\])*`)';
+const escapes = new Map([["n", "\n"], ["t", "\t"], ["r", "\r"], ["0", "\0"]]);
 
 for (const file of await velarFiles(join(root, "src"))) {
   const path = relative(root, file).replaceAll("\\", "/");
   const source = await readFile(file, "utf8");
-  const constants = /\bconst\s+([A-Za-z_]\w*Code)\s*=\s*("(?:\\.|[^"\\])*")/gu;
+  const constants = new RegExp(`\\bconst\\s+([A-Za-z_]\\w*Code)\\s*=\\s*(${literal})`, "gu");
   for (const match of source.matchAll(constants)) samples.push(readSample(path, match[1], match[2]));
+  const outputs = new RegExp(`\\bconst\\s+([A-Za-z_]\\w*ErrorOutput)\\s*=\\s*(${literal})`, "gu");
+  for (const match of source.matchAll(outputs)) {
+    const output = readSample(path, match[1], match[2]);
+    errorOutputs.set(output.id, output.source);
+  }
   if (path === "src/content.vel") {
     let index = 0;
-    const fields = /\bcode\s*:\s*("(?:\\.|[^"\\])*")/gu;
+    const fields = new RegExp(`\\bcode\\s*:\\s*(${literal})`, "gu");
     for (const match of source.matchAll(fields)) samples.push(readSample(path, `code:${index += 1}`, match[1]));
   }
 }
 
-for (const sample of samples) {
-  if (nonVelarSamples.has(sample.id)) continue;
-  const result = inspectModule(sample.source, { path: sample.id, extensions: [velarCompilerExtension] });
-  for (const diagnostic of result.diagnostics) failures.push(`${sample.id}: ${diagnostic.code} ${diagnostic.message}`);
-}
+const counts = { application: 0, excerpt: 0, counterExample: 0, skipped: 0 };
+const projects = new Map();
+const samplesById = new Map(samples.map((sample) => [sample.id, sample]));
 
-const missingComplete = [...completeSamples].filter((id) => !samples.some((sample) => sample.id === id));
-for (const id of missingComplete) failures.push(`${id}: declared complete sample was not found`);
-if (failures.length === 0) await checkCompleteSamples(samples.filter((sample) => completeSamples.has(sample.id)));
+try {
+  for (const sample of samples) {
+    if (skippedSuffixes.some((suffix) => sample.name.endsWith(suffix))) {
+      counts.skipped += 1;
+      continue;
+    }
+    const target = targetSuffixes.find(([suffix]) => sample.name.endsWith(suffix))?.[1] ?? "web";
+    const chunk = sample.name.endsWith("ChunkCode")
+      ? undefined
+      : samplesById.get(`${sample.id.slice(0, -"Code".length)}ChunkCode`);
+    const diagnostics = await checkSample(sample, target, chunk);
+    if (sample.name.endsWith("ErrorCode")) {
+      counts.counterExample += 1;
+      checkCounterExample(sample, diagnostics);
+      continue;
+    }
+    if (sample.name.endsWith("AppCode")) counts.application += 1;
+    else counts.excerpt += 1;
+    if (diagnostics.text !== "") failures.push(`${sample.id}: sample does not compile\n${diagnostics.text}`);
+  }
+} finally {
+  for (const directory of projects.values()) await rm(directory, { recursive: true, force: true });
+}
 
 if (samples.length === 0) failures.push("No website code samples were found");
 if (failures.length > 0) {
   console.error(failures.join("\n"));
   process.exitCode = 1;
 } else {
-  console.log(`Checked ${samples.length} website code samples (${completeSamples.size} complete VelarScript examples)`);
+  console.log([
+    `Checked ${samples.length} website code samples:`,
+    `${counts.application} complete applications,`,
+    `${counts.excerpt} compiled excerpts,`,
+    `${counts.counterExample} teaching counter-examples,`,
+    `${counts.skipped} non-VelarScript blocks.`,
+  ].join(" "));
 }
 
-function readSample(path, name, literal) {
-  try {
-    return { id: `${path}:${name}`, source: JSON.parse(literal) };
-  } catch (error) {
-    failures.push(`${path}:${name}: invalid source string: ${error instanceof Error ? error.message : String(error)}`);
-    return { id: `${path}:${name}`, source: "" };
+function checkCounterExample(sample, diagnostics) {
+  // Keyed off the whole failure text, not off VEL codes: some real rejections
+  // (a Node-only module in a web project) carry no code at all.
+  if (diagnostics.text === "") {
+    failures.push(`${sample.id}: counter-example produced no diagnostic, so it no longer teaches anything`);
+    return;
+  }
+  const outputId = `${sample.id.slice(0, -"ErrorCode".length)}ErrorOutput`;
+  const output = errorOutputs.get(outputId);
+  if (output === undefined) return;
+  const produced = new Set(diagnostics.codes);
+  for (const quoted of new Set(output.match(/VEL\d+/gu) ?? [])) {
+    if (!produced.has(quoted)) {
+      failures.push(`${outputId}: quotes ${quoted}, which the sample does not produce (it produces ${[...produced].join(", ")})`);
+    }
   }
 }
 
-async function checkCompleteSamples(complete) {
-  const directory = await mkdtemp(join(tmpdir(), "velarscript-website-samples-"));
-  try {
-    await symlink(join(root, "node_modules"), join(directory, "node_modules"), "dir");
-    await writeFile(join(directory, "velar.json"), `${JSON.stringify({
+function readSample(path, name, text) {
+  return { id: `${path}:${name}`, name, source: decodeLiteral(text) };
+}
+
+function decodeLiteral(text) {
+  const body = text.slice(1, -1);
+  let decoded = "";
+  for (let index = 0; index < body.length; index += 1) {
+    if (body[index] !== "\\") {
+      decoded += body[index];
+      continue;
+    }
+    index += 1;
+    const marker = body[index];
+    if (marker === "u" && body[index + 1] === "{") {
+      const end = body.indexOf("}", index);
+      decoded += String.fromCodePoint(Number.parseInt(body.slice(index + 2, end), 16));
+      index = end;
+      continue;
+    }
+    decoded += escapes.get(marker) ?? marker;
+  }
+  return decoded;
+}
+
+async function checkSample(sample, target, chunk) {
+  const directory = await projectFor(target);
+  const isBrowserTest = sample.name.endsWith("BrowserTestCode");
+  const isTest = !isBrowserTest && /^test "/mu.test(sample.source);
+  await rm(join(directory, "sample.test.vel"), { force: true });
+  await rm(join(directory, "sample.browser.test.vel"), { force: true });
+  await rm(join(directory, "chunk.vel"), { force: true });
+  await writeFile(join(directory, "main.vel"), isTest || isBrowserTest ? "export const placeholder = 1\n" : sample.source, "utf8");
+  if (isTest) await writeFile(join(directory, "sample.test.vel"), sample.source, "utf8");
+  if (isBrowserTest) await writeFile(join(directory, "sample.browser.test.vel"), sample.source, "utf8");
+  if (chunk !== undefined) await writeFile(join(directory, "chunk.vel"), chunk.source, "utf8");
+  // A sample that shows the CSS escape hatch names a stylesheet. What the page
+  // teaches is the import and its cascade position, so an empty stylesheet is
+  // enough for the compiler to resolve the resource.
+  for (const match of sample.source.matchAll(/^import css unsafe "\.\/([\w./-]+\.css)"/gmu)) {
+    await mkdir(dirname(join(directory, match[1])), { recursive: true });
+    await writeFile(join(directory, match[1]), "", "utf8");
+  }
+  const execution = spawnSync(join(root, "node_modules", ".bin", "velar"), ["check"], { cwd: directory, encoding: "utf8" });
+  const text = execution.status === 0 ? "" : (execution.stderr || execution.stdout).trimEnd();
+  return { text, codes: text.match(/VEL\d+/gu) ?? [] };
+}
+
+async function projectFor(target) {
+  const existing = projects.get(target);
+  if (existing !== undefined) return existing;
+  const directory = await mkdtemp(join(tmpdir(), `velarscript-website-samples-${target}-`));
+  await symlink(join(root, "node_modules"), join(directory, "node_modules"), "dir");
+  await writeFile(join(directory, "velar.json"), `${JSON.stringify(manifestFor(target), null, 2)}\n`, "utf8");
+  projects.set(target, directory);
+  return directory;
+}
+
+function manifestFor(target) {
+  if (target === "node") return { formatVersion: 2, entry: "main.vel" };
+  if (target === "desktop") {
+    return {
       formatVersion: 2,
       entry: "main.vel",
-      extensions: ["@velarscript/web"],
-    }, null, 2)}\n`, "utf8");
-    const command = join(root, "node_modules", ".bin", "velar");
-    for (const sample of complete) {
-      await writeFile(join(directory, "main.vel"), sample.source, "utf8");
-      const execution = spawnSync(command, ["check"], { cwd: directory, encoding: "utf8" });
-      if (execution.status !== 0) failures.push(`${sample.id}: complete example does not compile\n${execution.stderr || execution.stdout}`.trimEnd());
-    }
-  } finally {
-    await rm(directory, { recursive: true, force: true });
+      extensions: ["@velarscript/desktop"],
+      desktop: {
+        productName: "VelarScript sample",
+        identifier: "cn.velaros.velarscript.sample",
+        permissions: { files: ["app-data", "project"], processes: [], terminal: false, network: [], environment: [], secrets: [] },
+      },
+    };
   }
+  return { formatVersion: 2, entry: "main.vel", extensions: ["@velarscript/web"] };
 }
 
 async function velarFiles(directory) {

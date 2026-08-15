@@ -1,0 +1,338 @@
+import {Head, Link} from "velar/web"
+import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
+
+import {headTitle, referenceNav} from "../content.vel"
+
+const webServicesCode = `import {reportError} from "velar/app"\nimport {publicConfig} from "velar/config"\nimport {announce, domId} from "velar/web"\n\ntype RuntimeConfig:\n    apiBase: string\n\n// publicConfig validates the whole manifest value through an ordinary type\n// declaration. There is no second schema language, and only\n// velar.json.web.publicConfig is read.\nconst config = publicConfig(RuntimeConfig)\n\nexport component SaveNotice(label: string):\n    // domId answers an application-local unique DOM id for accessible label\n    // and description relationships, without needing a cryptographic UUID.\n    const noticeId = domId("notice")\n\n    def save():\n        announce(f"{label} saved", "polite")\n\n    def fail():\n        // reportError submits an application error without throwing it again.\n        reportError(Error("save failed"), "manual", label)\n\n    return <section aria-describedby={noticeId}>\n        <p id={noticeId}>{config.apiBase}</p>\n        <button on:click={save}>Save</button>\n        <button on:click={fail}>Report a failure</button>\n    </section>`
+const webBrowserCode = `import {after, environment} from "velar/browser"\nimport {storage} from "velar/storage"\n\ntype Settings:\n    theme: string\n\nexport component ThemeBadge:\n    // A scope is one compiler-typed key namespace over local storage.\n    const preferences = storage.scope("site")\n    const settings = preferences.get("settings", Settings, {theme: "system"}, 262144)\n\n    // Timer handles are explicit component resources: start them in setup or\n    // @mounted, keep the stop function, and release it in the sibling @cleanup.\n    const stopReady = after(250ms, () => print("ready"))\n\n    @cleanup:\n        stopReady()\n\n    return <p data-theme={settings.theme}>{environment().online ? "online" : "offline"}</p>`
+
+const webMembers = [
+    {name: "route", signature: "route(path, view) -> Route", summary: "Declares an application route. A pattern is a pure pathname beginning with /, and may contain :name parameters or one whole terminal * segment.", summaryZh: "声明一条应用路由。模式是以 / 开头的纯路径名，可包含 :name 参数，或一整段末尾的 * 通配段。"},
+    {name: "Router", signature: "<Router routes={…} fallback={…} />", summary: "Renders the first matching component. An omitted fallback renders a small accessible page-not-found view rather than an empty router. At most 10,000 routes.", summaryZh: "渲染第一个匹配的组件。省略 fallback 时渲染一个小而无障碍的「页面不存在」视图，而不是空路由器。至多 10,000 条路由。"},
+    {name: "RouteContext", signature: "{path, params, query, hash}", summary: "An importable named data type. A route component may require only its route: RouteContext prop.", summaryZh: "可导入的具名数据类型。路由组件只允许要求它的 route: RouteContext 属性。"},
+    {name: "lazy", signature: "lazy(loader, exportName, loading?, failed?)", summary: "Returns the exported component with its original prop contract, owning one cached successful load and a retry after a failed one.", summaryZh: "返回带有原始属性契约的导出组件；它拥有一次缓存的成功加载，失败后可重试。"},
+    {name: "Link", signature: "<Link to={…} replace={…} />", summary: "Preserves native anchor behavior and intercepts only an unmodified primary click on an internal application path.", summaryZh: "保留原生锚点行为，只拦截对内部应用路径的、未加修饰键的主键点击。"},
+    {name: "NavLink", signature: "<NavLink to={…} exact={…} replace={…} />", summary: `The same click behavior, and it owns aria-current="page" while its target is active.`, summaryZh: `相同的点击行为，并在目标处于活动状态时拥有 aria-current="page"。`},
+    {name: "navigate", signature: "navigate(to, options?) -> null", summary: "Options are a data-only record with boolean replace and scroll fields, fully validated before history or scrolling changes.", summaryZh: "选项是只含数据的记录，带 replace 与 scroll 两个布尔字段，在历史或滚动变化前完成验证。"},
+    {name: "redirect", signature: "redirect(to) -> null", summary: "Replaces the current entry.", summaryZh: "替换当前历史条目。"},
+    {name: "back", signature: "back() -> null", summary: "One step back in history.", summaryZh: "在历史中后退一步。"},
+    {name: "forward", signature: "forward() -> null", summary: "One step forward in history.", summaryZh: "在历史中前进一步。"},
+    {name: "reload", signature: "reload() -> null", summary: "Reloads the document.", summaryZh: "重新加载文档。"},
+    {name: "currentRoute", signature: "currentRoute() -> RouteContext", summary: "A typed snapshot of the current application-relative route.", summaryZh: "当前应用相对路由的带类型快照。"},
+    {name: "Head", signature: "<Head title description canonical robots image themeColor language />", summary: "Owns those document values for its component lifetime and restores the previous ones on cleanup.", summaryZh: "在组件生命周期内拥有这些文档值，并在清理时恢复先前的值。"},
+    {name: "announce", signature: "announce(message, priority?) -> null", summary: "Writes to a compiler-owned live region; priority is polite or assertive.", summaryZh: "写入编译器拥有的 live region；priority 为 polite 或 assertive。"},
+    {name: "domId", signature: "domId(prefix?) -> string", summary: "An application-local, monotonically unique DOM id for accessible label and description relationships.", summaryZh: "应用内单调唯一的 DOM id，用于无障碍的标签与描述关联。"},
+]
+
+const appMembers = [
+    {name: "onError", signature: "onError(handler) -> () -> null", summary: "Observes application failures and returns an explicit cleanup. Reports carry error, phase, detail, component, and timestamp; foreign JavaScript values are normalized to Error.", summaryZh: "观察应用失败并返回显式的清理函数。报告携带 error、phase、detail、component 与 timestamp；外来的 JavaScript 值被规范化为 Error。"},
+    {name: "reportError", signature: "reportError(error, phase?, detail?) -> null", summary: "Submits an application error deliberately, without throwing it again.", summaryZh: "有意地提交一个应用错误，而不再次抛出它。"},
+]
+
+const configMembers = [
+    {name: "publicConfig", signature: "publicConfig(Type) -> T", summary: "Validates the complete manifest value through the same type declaration used everywhere else and returns the named type.", summaryZh: "用与别处相同的类型声明验证整个清单值，并返回该具名类型。"},
+    {name: "has", signature: "has(key) -> bool", summary: "Optional capability discovery.", summaryZh: "可选的能力探测。"},
+    {name: "keys", signature: "keys() -> List<string>", summary: "The sorted key list.", summaryZh: "排序后的键列表。"},
+]
+
+const lookMembers = [
+    {name: "color", signature: "color(value) -> Color", summary: "A named or hexadecimal CSS colour.", summaryZh: "具名或十六进制的 CSS 颜色。"},
+    {name: "rgb", signature: "rgb(red, green, blue) -> Color", summary: "Three channels.", summaryZh: "三个通道。"},
+    {name: "rgba", signature: "rgba(red, green, blue, alpha) -> Color", summary: "Three channels and an alpha.", summaryZh: "三个通道加一个透明度。"},
+    {name: "hsl", signature: "hsl(hue, saturation, lightness) -> Color", summary: "The cylindrical form.", summaryZh: "柱面坐标形式。"},
+    {name: "alpha", signature: "alpha(color, opacity) -> Color", summary: "The same colour at another opacity.", summaryZh: "同一颜色的另一透明度。"},
+    {name: "lighten", signature: "lighten(color, amount) -> Color", summary: "A lighter derivative.", summaryZh: "更浅的派生色。"},
+    {name: "darken", signature: "darken(color, amount) -> Color", summary: "A darker derivative.", summaryZh: "更深的派生色。"},
+    {name: "border", signature: "border(width, color, style?) -> Border", summary: "One border value.", summaryZh: "一个边框值。"},
+    {name: "shadow", signature: "shadow(x, y, blur, color, spread?, inset?) -> Shadow", summary: "One shadow value.", summaryZh: "一个阴影值。"},
+    {name: "linearGradient", signature: "linearGradient(angle, start, end) -> Image", summary: "A two-stop linear gradient.", summaryZh: "两个色标的线性渐变。"},
+    {name: "asset", signature: "asset(path) -> Image", summary: "A project asset as an image value.", summaryZh: "把项目资源作为图像值。"},
+    {name: "minmax", signature: "minmax(minimum, maximum) -> Track", summary: "One grid track with a range.", summaryZh: "一条带范围的网格轨道。"},
+    {name: "repeat", signature: "repeat(count, size) -> TrackList", summary: "A repeated track pattern.", summaryZh: "重复的轨道模式。"},
+    {name: "tracks", signature: "tracks(first, …) -> TrackList", summary: "An explicit track list, at most 1,024 entries.", summaryZh: "显式的轨道列表，至多 1,024 项。"},
+    {name: "transition", signature: "transition(property, duration, easing?, delay?) -> Transition", summary: "The state-change spelling of motion.", summaryZh: "动效中「状态变化」的那种拼写。"},
+    {name: "animate", signature: "animate(frames, duration, easing?, delay?, count?, loop?, direction?, fill?) -> Animation", summary: "The keyframe spelling, taking a module-level keyframes: value. A raw CSS animation string is rejected.", summaryZh: "关键帧的那种拼写，接受模块级的 keyframes: 值。裸的 CSS animation 字符串会被拒绝。"},
+    {name: "spacing", signature: "spacing(first, second?, third?, fourth?) -> Spacing", summary: "One to four edge values.", summaryZh: "一到四个边值。"},
+    {name: "min", signature: "min(first, second) -> Length", summary: "The smaller of two lengths.", summaryZh: "两个长度中较小者。"},
+    {name: "max", signature: "max(first, second) -> Length", summary: "The larger of two lengths.", summaryZh: "两个长度中较大者。"},
+    {name: "clamp", signature: "clamp(minimum, preferred, maximum) -> Length", summary: "A bounded fluid length.", summaryZh: "有界的流体长度。"},
+]
+
+const httpMembers = [
+    {name: "http.request", signature: "http.request(method, url, options?)", summary: "Creates a lazy request. get, post, put, patch, delete, and head are the same call with the method fixed.", summaryZh: "创建一个惰性请求。get、post、put、patch、delete 与 head 是固定了方法的同一调用。"},
+    {name: "options", signature: "{headers, body, timeout, maxBytes, credentials, cache}", summary: "Plain data records only. Credentials are omit, same-origin, or include; cache is default, no-store, reload, no-cache, or force-cache.", summaryZh: "只接受普通数据记录。credentials 为 omit、same-origin 或 include；cache 为 default、no-store、reload、no-cache 或 force-cache。"},
+    {name: "request readers", signature: "response() · json() · text() · streamText(consume) · blob() · parse(Type) · cancel()", summary: "Buffered readers share one body read and cache successful bytes; streamText stays exclusive while active.", summaryZh: "缓冲读取器共享同一次请求体读取并缓存成功的字节；streamText 在活动期间保持独占。"},
+    {name: "formBody", signature: "formBody() -> FormBody", summary: "A multipart builder with field, file, files, remove, has, and names. file accepts only an opaque record returned by velar/files.pick.", summaryZh: "多部分请求体构建器，带 field、file、files、remove、has 与 names。file 只接受由 velar/files.pick 返回的不透明记录。"},
+    {name: "HttpError", signature: "{status, url, body}", summary: "A non-2xx response. Its URL is the final response URL after redirects.", summaryZh: "非 2xx 响应。它的 URL 是重定向之后的最终响应 URL。"},
+    {name: "HttpAbortError", signature: "{reason}", summary: "Cancellation or timeout, so recovery does not depend on browser-specific abort errors.", summaryZh: "取消或超时，因此恢复逻辑不依赖各浏览器各自的中止错误。"},
+    {name: "HttpTransportError", signature: "{phase}", summary: "Native request or response-stream failure. phase is HttpTransportPhase.request or .response.", summaryZh: "原生请求或响应流失败。phase 为 HttpTransportPhase.request 或 .response。"},
+]
+
+const storageMembers = [
+    {name: "storage", signature: "storage.get · set · has · keys · remove · clear · watch · scope", summary: "Local storage, typed. get(key, Type, fallback?, maxBytes?) validates through a runtime type; a read over budget returns the fallback without parsing.", summaryZh: "带类型的 local storage。get(key, Type, fallback?, maxBytes?) 通过运行时类型验证；超出预算的读取直接返回兜底值而不解析。"},
+    {name: "session", signature: "session.<the same members>", summary: "Session storage, with the identical surface.", summaryZh: "session storage，表面完全相同。"},
+    {name: "scope", signature: "storage.scope(name)", summary: "One compiler-typed key namespace. Scoped keys have one bounded 4,096-character path.", summaryZh: "一个由编译器赋型的键命名空间。带作用域的键拥有一条至多 4096 个字符的有界路径。"},
+    {name: "watch", signature: "watch(key, Type, callback, maxBytes?) -> () -> null", summary: "Observes same-page writes and browser storage events, and returns an explicit cleanup. An individually oversized value maps to null rather than partially parsed data.", summaryZh: "观察同页写入与浏览器 storage 事件，并返回显式的清理函数。单个超预算的值映射为 null，而不是部分解析的数据。"},
+    {name: "database", signature: "database(name) -> Database", summary: "Asynchronous IndexedDB get, set, has, keys, remove, and clear. Values are stored as canonical strict JSON text rather than arbitrary structured-clone objects.", summaryZh: "异步的 IndexedDB get、set、has、keys、remove 与 clear。值以规范的严格 JSON 文本存储，而不是任意的结构化克隆对象。"},
+]
+
+const formsMembers = [
+    {name: "values", signature: "values(form) -> Map<string, unknown>", summary: "Native form data; a repeated name becomes a list.", summaryZh: "原生表单数据；重复的字段名变成列表。"},
+    {name: "read", signature: "read(form, Type) -> T", summary: "Decodes a flat native form into an existing record type. The compiler supplies the private decoder description and the existing Type.parse validator checks the result.", summaryZh: "把扁平的原生表单解码为既有的记录类型。编译器提供私有的解码描述，由既有的 Type.parse 验证结果。"},
+    {name: "fieldValue", signature: "fieldValue(form, name) -> unknown?", summary: "One raw value.", summaryZh: "一个原始值。"},
+    {name: "textValue", signature: "textValue(form, name, fallback?) -> string", summary: "Rejects native file values instead of coercing them silently.", summaryZh: "拒绝原生文件值，而不是默默地做转换。"},
+    {name: "numberValue", signature: "numberValue(form, name) -> number?", summary: "The same grammar as number(text): blank, hexadecimal, separator, and non-finite text answer null.", summaryZh: "与 number(text) 相同的语法：空白、十六进制、分隔符与非有限文本都返回 null。"},
+    {name: "checkedValue", signature: "checkedValue(form, name) -> bool", summary: "One checkbox.", summaryZh: "一个复选框。"},
+    {name: "fieldValues", signature: "fieldValues(form, name) -> List<string>", summary: "A repeated field.", summaryZh: "一个重复字段。"},
+    {name: "setError", signature: "setError(form, name, message) -> null", summary: "Owns the field alert while preserving unrelated aria-describedby tokens.", summaryZh: "拥有该字段的错误提示，同时保留无关的 aria-describedby 记号。"},
+    {name: "clearError", signature: "clearError(form, name) -> null", summary: "Clears one field's owned alerts together, so a stale alert cannot survive recovery.", summaryZh: "一并清除某字段自有的提示，因此陈旧提示无法在恢复后残留。"},
+    {name: "clearErrors", signature: "clearErrors(form) -> null", summary: "Clears every owned alert.", summaryZh: "清除全部自有提示。"},
+    {name: "errors", signature: "errors(form) -> Map<string, string>", summary: "The current messages.", summaryZh: "当前的消息。"},
+    {name: "focusFirstError", signature: "focusFirstError(form) -> bool", summary: "Focuses the first invalid field.", summaryZh: "聚焦第一个无效字段。"},
+    {name: "setPending", signature: "setPending(form, pending) -> null", summary: "Owns aria-busy and temporarily disables fields, restoring their previous disabled state afterward.", summaryZh: "拥有 aria-busy 并临时禁用字段，之后恢复它们原先的禁用状态。"},
+    {name: "reset", signature: "reset(form) -> null", summary: "Restores pending and error ownership, then performs the native form reset.", summaryZh: "先恢复 pending 与错误的所有权，再执行原生表单重置。"},
+]
+
+const browserMembers = [
+    {name: "after", signature: "after(duration, callback) -> () -> null", summary: "One scheduled callback. The stop function is idempotent, and durations are Core ms or s values.", summaryZh: "一次定时回调。停止函数是幂等的，时长使用 Core 的 ms 或 s 值。"},
+    {name: "every", signature: "every(duration, callback) -> () -> null", summary: "Repeated work that schedules its next turn only after the current callback settles, so slow polling cannot overlap itself.", summaryZh: "重复工作，只有当前回调落定后才安排下一轮，因此缓慢的轮询不会自我重叠。"},
+    {name: "frame", signature: "frame() -> Promise<number>", summary: "One animation frame timestamp.", summaryZh: "一个动画帧时间戳。"},
+    {name: "location", signature: "location() -> Location", summary: "A typed snapshot rather than a mutable browser global.", summaryZh: "带类型的快照，而不是可变的浏览器全局对象。"},
+    {name: "environment", signature: "environment() -> Environment", summary: "Navigator, online, visibility, media-preference, and touch fields, each snapshotted once and validated.", summaryZh: "navigator、在线状态、可见性、媒体偏好与触摸字段，各自快照一次并经过验证。"},
+    {name: "media", signature: "media(query) -> bool", summary: "One media-query answer.", summaryZh: "一次媒体查询的结果。"},
+    {name: "watchMedia", signature: "watchMedia(query, callback) -> () -> null", summary: "Also watchOnline and watchVisibility. Every watcher returns a cleanup function.", summaryZh: "另有 watchOnline 与 watchVisibility。每个观察者都返回清理函数。"},
+    {name: "open", signature: "open(url, target?) -> null", summary: "An intentional window operation.", summaryZh: "一次显式的窗口操作。"},
+    {name: "scrollTo", signature: "scrollTo(x, y, behavior?) -> null", summary: "Behavior is exactly auto, smooth, or instant.", summaryZh: "behavior 只能是 auto、smooth 或 instant。"},
+    {name: "scrollIntoView", signature: "scrollIntoView(element, behavior?) -> null", summary: "One element into view.", summaryZh: "把一个元素滚动进视野。"},
+    {name: "scrollMetrics", signature: "scrollMetrics(element) -> ScrollMetrics", summary: "{x, y, viewportWidth, viewportHeight, contentWidth, contentHeight} from captured native getters.", summaryZh: "通过被捕获的原生 getter 读出 {x, y, viewportWidth, viewportHeight, contentWidth, contentHeight}。"},
+    {name: "scrollElementTo", signature: "scrollElementTo(element, x, y, behavior?) -> null", summary: "Moves that exact element without exposing mutable scrollTop or scrollLeft fields.", summaryZh: "移动指定元素，而不暴露可变的 scrollTop 或 scrollLeft 字段。"},
+    {name: "measure", signature: "measure(element) -> Rect", summary: "A layout rectangle of finite numbers.", summaryZh: "由有限数构成的布局矩形。"},
+    {name: "focus", signature: "focus(element, preventScroll?) -> null", summary: "Explicit accessibility focus ownership for a typed JSX ref. blur(element) is its pair.", summaryZh: "为带类型的 JSX ref 提供显式的无障碍焦点归属。blur(element) 是它的配对。"},
+    {name: "showDialog", signature: "showDialog(dialog) -> null", summary: "Opens a mounted native dialog modally; closeDialog(dialog, result?) closes it and dialogResult(dialog) reads its string result.", summaryZh: "以模态方式打开已挂载的原生 dialog；closeDialog(dialog, result?) 关闭它，dialogResult(dialog) 读取它的字符串结果。"},
+    {name: "textSelection", signature: "textSelection(area) -> {start, end, direction}", summary: "Offsets are Unicode code points, never DOM UTF-16 units; a selection that splits a surrogate pair is rejected.", summaryZh: "偏移以 Unicode 码点计，绝不是 DOM 的 UTF-16 单元；切开代理对的选区会被拒绝。"},
+    {name: "setTextSelection", signature: "setTextSelection(area, start, end, direction?) -> null", summary: "Ranges must be ordered and in bounds; direction is none, forward, or backward.", summaryZh: "范围必须有序且在界内；direction 为 none、forward 或 backward。"},
+    {name: "clipboardText", signature: "clipboardText(event) -> string", summary: "The synchronous copy, cut, and paste boundary, text/plain only. setClipboardText(event, value) is its pair.", summaryZh: "同步的复制、剪切与粘贴边界，只处理 text/plain。setClipboardText(event, value) 是它的配对。"},
+    {name: "copyText", signature: "copyText(value) -> Promise<null>", summary: "Requires a secure context and may reject when permission or gesture policy denies access. readClipboardText() is its pair.", summaryZh: "要求安全上下文；当权限或手势策略拒绝时可能被拒绝。readClipboardText() 是它的配对。"},
+    {name: "capturePointer", signature: "capturePointer(element, pointerId) -> null", summary: "Keeps drag and select ownership on one native element. releasePointer is its pair.", summaryZh: "把拖拽与选择的归属保持在一个原生元素上。releasePointer 是它的配对。"},
+]
+
+const filesMembers = [
+    {name: "pick", signature: "pick(options?) -> Promise<List<File>>", summary: "The native file-input path. Options are a data-only accept string and multiple bool record; one result is limited to 10,000 files.", summaryZh: "原生文件输入路径。选项是只含数据的 accept 字符串与 multiple 布尔字段；一次结果至多 10,000 个文件。"},
+    {name: "File", signature: "{name, size, type, modified}", summary: "An opaque value with read-only metadata. Only values returned by pick may be read or attached to a form body.", summaryZh: "带只读元数据的不透明值。只有 pick 返回的值可以被读取或附加到表单体上。"},
+    {name: "readText", signature: "readText(file, maxBytes?) -> Promise<string>", summary: "Inspects the native file size before reading; the explicit ceiling is 64 MiB.", summaryZh: "读取前先检查原生文件大小；显式上限为 64 MiB。"},
+    {name: "readDataUrl", signature: "readDataUrl(file, maxBytes?) -> Promise<string>", summary: "The same contract, as a data URL.", summaryZh: "同样的契约，但返回 data URL。"},
+    {name: "download", signature: "download(name, data, mime?) -> null", summary: "Accepts actual text for its name, data, and MIME type. Text downloads are limited to 64 MiB.", summaryZh: "名称、数据与 MIME 类型都要求真正的文本。文本下载限制为 64 MiB。"},
+]
+
+const realtimeMembers = [
+    {name: "socket", signature: "socket(url, handlers?) -> Socket", summary: "Wraps text WebSocket messages and exposes state, send, sendJson, and close. A binary message is reported to the error handler and closes the text-only channel.", summaryZh: "包装文本 WebSocket 消息，提供 state、send、sendJson 与 close。二进制消息会报告给错误处理器，并关闭这条纯文本通道。"},
+    {name: "eventStream", signature: "eventStream(url, handlers?, credentials?) -> EventStream", summary: "Wraps server-sent events and exposes state and close, with optional credentials.", summaryZh: "包装服务端推送事件，提供 state 与 close，凭据可选。"},
+    {name: "state", signature: "state() -> string", summary: "Event streams report connecting, open, or closed; WebSockets additionally expose closing. An unknown native state number fails rather than being mislabeled.", summaryZh: "事件流报告 connecting、open 或 closed；WebSocket 另有 closing。未知的原生状态码会失败，而不是被贴上错误标签。"},
+    {name: "sendJson", signature: "sendJson(value) -> null", summary: "The same strict lossless JSON contract as HTTP and storage; it validates and serializes before observing connection state.", summaryZh: "与 HTTP、存储相同的严格无损 JSON 契约；它在观察连接状态之前先验证并序列化。"},
+    {name: "close", signature: "close(code?, reason?) -> null", summary: "Close codes are 1000 or application codes 3000 through 4999; reasons are at most 123 UTF-8 bytes.", summaryZh: "关闭码为 1000 或应用码 3000 到 4999；原因至多 123 个 UTF-8 字节。"},
+]
+
+const testMembers = [
+    {name: "browser", signature: "open · reload · click · fill · select · press · scroll", summary: "The automation actions. Each drives the real page rather than a simulated DOM.", summaryZh: "自动化动作。每一个驱动的都是真实页面，而不是模拟的 DOM。"},
+    {name: "browser queries", signature: "text · attribute · namespace · count · visible · currentPath · viewport", summary: "namespace(selector) requires one matched node and answers its platform namespace URI, so SVG and HTML lowering can be asserted without page evaluation.", summaryZh: "namespace(selector) 要求恰好匹配一个节点，并返回它的平台命名空间 URI，因此无需页面求值即可断言 SVG 与 HTML 的降级结果。"},
+    {name: "browser waits", signature: "waitFor(selector) · waitForText(selector, text)", summary: "The two waits. One test is bounded to 120 seconds and the aggregate run to 20 minutes.", summaryZh: "两种等待。单个测试上限 120 秒，整轮运行上限 20 分钟。"},
+    {name: "browser measurements", signature: "timings() · animation(selector) · measureClick · measureFill · measurePress", summary: "Bounded fail-closed records from a test-only page runtime installed before application code. No clock callback, page evaluation, or event injection is exposed.", summaryZh: "由先于应用代码安装的测试专用页面运行时给出的、有界且失败即关闭的记录。不暴露时钟回调、页面求值或事件注入。"},
+    {name: "localStorage", signature: "get · set · remove · clear", summary: "Raw string operations after browser.open, so a recovery path can plant malformed or legacy bytes without shipping a debug hook in the product. sessionStorage is its pair.", summaryZh: "在 browser.open 之后可用的原始字符串操作，使恢复路径可以植入损坏或历史遗留的字节，而无需在产品中留下调试入口。sessionStorage 是它的配对。"},
+    {name: "network", signature: "respond(path, body, status?, contentType?, delayMs?) · clear()", summary: "A bounded response for one application-relative path, confined to the isolated test origin.", summaryZh: "为一条应用相对路径安装的有界响应，被限制在隔离的测试来源内。"},
+]
+
+const sections = [
+    {id: "web", label: "velar/web", labelZh: "velar/web"},
+    {id: "app", label: "velar/app", labelZh: "velar/app"},
+    {id: "config", label: "velar/config", labelZh: "velar/config"},
+    {id: "look", label: "velar/look", labelZh: "velar/look"},
+    {id: "http", label: "velar/http", labelZh: "velar/http"},
+    {id: "storage", label: "velar/storage", labelZh: "velar/storage"},
+    {id: "forms", label: "velar/forms", labelZh: "velar/forms"},
+    {id: "browser", label: "velar/browser", labelZh: "velar/browser"},
+    {id: "files", label: "velar/files", labelZh: "velar/files"},
+    {id: "realtime", label: "velar/realtime", labelZh: "velar/realtime"},
+    {id: "web-test", label: "velar/web-test", labelZh: "velar/web-test"},
+]
+
+const chapterLinkLook = look:
+    color = sea
+    fontSize = 0.92rem
+
+export component ReferenceWeb:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/reference/web", locale.isChinese())}
+            description={locale.text("A map of the Web extension's module surface, with the chapter that covers each module.", "Web 扩展模块表面的地图，并标出覆盖每个模块的章节。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={referenceNav}>
+            <PageHeader
+                kicker={locale.text("Reference", "参考")}
+                title={locale.text("Web modules", "Web 模块")}
+                summary={locale.text("The eleven modules the Web extension publishes, export by export, each with the guide chapter that teaches it.", "Web 扩展发布的十一个模块，逐个导出列出，并各自标注讲授它的指南章节。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <p>
+                    {locale.text("These modules exist only when velar.json activates @velarscript/web. The language core owns no browser word: component, JSX, state, resource, action, watch, @mounted, @cleanup, look, keyframes, the unsafe CSS import, and the three reserved globals computed, mount, and tick are the complete addition the extension makes to the language. Everything below is a module, not syntax.", "只有当 velar.json 激活 @velarscript/web 时，这些模块才存在。语言核心不拥有任何浏览器词汇：component、JSX、state、resource、action、watch、@mounted、@cleanup、look、keyframes、unsafe CSS 导入，以及三个保留全局 computed、mount 与 tick，构成了该扩展对语言的全部增补。下面列出的都是模块，而不是语法。")}
+                </p>
+                <CodeBlock code={webServicesCode} />
+
+                <h2 id="web">{locale.text("velar/web", "velar/web")}</h2>
+                <p>
+                    {locale.text("Routing, navigation, document metadata, and two accessibility primitives. A mounted Router constructs the target component before destroying or replacing the active page: if construction fails, the prior page remains mounted and velar/app receives the failure, so a broken route does not blank the application.", "路由、导航、文档元数据，以及两个无障碍原语。已挂载的 Router 会先构造目标组件，再销毁或替换当前页面：若构造失败，先前的页面保持挂载，失败交给 velar/app，因此一条坏路由不会让应用变成空白。")}
+                </p>
+                <MemberTable
+                    rows={webMembers}
+                    caption={locale.text("velar/web — fifteen exports", "velar/web —— 十五个导出")}
+                />
+                <p>
+                    <Link to="/guide/web/routing" look={chapterLinkLook}>
+                        {locale.text("Guide: Routing and configuration", "指南：路由与配置")}
+                    </Link>
+                </p>
+
+                <h2 id="app">{locale.text("velar/app", "velar/app")}</h2>
+                <p>
+                    {locale.text("One error channel for the whole application. The compiler reports failures from initial mount, reactive render and synchronous watch blocks, synchronous or asynchronous events, @mounted, and @cleanup. A detached async statement reports its rejection through the same chain under the distinct detached phase; with no handler installed the failure surfaces through the host runtime, never silently.", "整个应用共用一条错误通道。编译器会报告来自初次 mount、响应式 render 与同步 watch 块、同步或异步事件、@mounted 与 @cleanup 的失败。分离的 async 语句通过同一条链路以独立的 detached 阶段报告其拒绝；未安装处理器时，失败通过宿主运行时浮现，绝不会被静默吞掉。")}
+                </p>
+                <MemberTable rows={appMembers} caption={locale.text("velar/app — two exports", "velar/app —— 两个导出")} />
+                <p>
+                    <Link to="/guide/web/lifecycle" look={chapterLinkLook}>
+                        {locale.text("Guide: Lifecycle and mount", "指南：生命周期与挂载")}
+                    </Link>
+                </p>
+
+                <h2 id="config">{locale.text("velar/config", "velar/config")}</h2>
+                <p>
+                    {locale.text("Only velar.json's web.publicConfig is read. It must be a JSON object, is limited to 64 KiB, rejects non-finite and non-JSON values and the reserved keys __proto__, prototype, and constructor, and is recursively frozen. It is baked into the content-hashed application entry at build time, so changing it changes the build identity. VelarScript never implicitly reads .env, process.env, server configuration, or secrets, and this boundary must contain public values only.", "只读取 velar.json 的 web.publicConfig。它必须是 JSON 对象，限制为 64 KiB，拒绝非有限值、非 JSON 值以及 __proto__、prototype、constructor 这三个保留键，并被递归冻结。它在构建时被编入内容哈希的应用入口，因此修改它就会改变构建标识。VelarScript 绝不隐式读取 .env、process.env、服务器配置或密钥，这条边界只能承载公开值。")}
+                </p>
+                <MemberTable
+                    rows={configMembers}
+                    caption={locale.text("velar/config — three exports", "velar/config —— 三个导出")}
+                />
+                <p>
+                    <Link to="/guide/web/routing" look={chapterLinkLook}>
+                        {locale.text("Guide: Routing and configuration", "指南：路由与配置")}
+                    </Link>
+                </p>
+
+                <h2 id="look">{locale.text("velar/look", "velar/look")}</h2>
+                <p>
+                    {locale.text("Unit suffixes are language syntax and need no import: px, rem, em, vw, vh, vmin, and vmax are Length; % is Percentage; fr is TrackFraction; ms and s are Duration; deg and turn are Angle. The builders are named imports, so the import list at the top of a file names the visual vocabulary that file speaks. Each is an ordinary value, so const make = rgb aliases it and higher-order use keeps the same checked signature.", "单位后缀是语言语法，无需导入：px、rem、em、vw、vh、vmin 与 vmax 是 Length；% 是 Percentage；fr 是 TrackFraction；ms 与 s 是 Duration；deg 与 turn 是 Angle。构建器是具名导入，因此文件顶部的导入清单写明了这个文件所说的视觉词汇。每一个都是普通值，因此 const make = rgb 可以为它取别名，高阶使用也保持同一份受检签名。")}
+                </p>
+                <MemberTable
+                    rows={lookMembers}
+                    caption={locale.text("velar/look — twenty builders, plus the visual Type objects", "velar/look —— 二十个构建器，以及视觉类型对象")}
+                />
+                <p><Link to="/guide/web/look" look={chapterLinkLook}>{locale.text("Guide: Look", "指南：Look")}</Link></p>
+
+                <h2 id="http">{locale.text("velar/http", "velar/http")}</h2>
+                <p>
+                    {locale.text("One call convention: a lazy request object, then a body reader. Object bodies are snapshotted and JSON encoded when the request is created rather than when a reader starts fetching, so later mutation cannot change what is dispatched. velar/http does not retry implicitly — status policy, backoff, idempotency, and replay safety belong to the caller.", "统一的调用约定：先得到一个惰性请求对象，再调用请求体读取器。对象形式的请求体在请求创建时就完成快照与 JSON 编码，而不是等到读取器开始 fetch，因此之后的修改无法改变实际发出的内容。velar/http 不做隐式重试——状态码策略、退避、幂等性与重放安全都归调用方。")}
+                </p>
+                <MemberTable
+                    rows={httpMembers}
+                    caption={locale.text("velar/http — the request surface and the three failure classes", "velar/http —— 请求表面与三类失败")}
+                />
+                <p>
+                    <Link to="/guide/web/data" look={chapterLinkLook}>
+                        {locale.text("Guide: Storage, HTTP and realtime", "指南：存储、HTTP 与实时")}
+                    </Link>
+                </p>
+
+                <h2 id="storage">{locale.text("velar/storage", "velar/storage")}</h2>
+                <p>
+                    {locale.text("Every write uses the strict JSON data contract. Unsupported or lossy values visible to the compiler fail during checking; dynamic values are validated again at runtime before storage is mutated. IndexedDB accepts only its strict JSON text representation before type validation, so a Date, Map, accessor record, or other foreign value written by JavaScript cannot enter through a permissive runtime type — the read returns its declared fallback instead.", "每一次写入都使用严格的 JSON 数据契约。编译器可见的不支持或有损的值在检查期失败；动态值在存储被修改之前于运行时再次验证。IndexedDB 在类型验证之前只接受它的严格 JSON 文本表示，因此由 JavaScript 写入的 Date、Map、访问器记录或其他外来值无法通过宽松的运行时类型进入——读取会返回声明的兜底值。")}
+                </p>
+                <MemberTable
+                    rows={storageMembers}
+                    caption={locale.text("velar/storage — three exports and their members", "velar/storage —— 三个导出及其成员")}
+                />
+                <CodeBlock code={webBrowserCode} />
+                <p>
+                    <Link to="/guide/web/data" look={chapterLinkLook}>
+                        {locale.text("Guide: Storage, HTTP and realtime", "指南：存储、HTTP 与实时")}
+                    </Link>
+                </p>
+
+                <h2 id="forms">{locale.text("velar/forms", "velar/forms")}</h2>
+                <p>
+                    {locale.text("read decodes a flat native form into the existing colon-form record type: string, finite number, bool checkboxes, enums, List<string> repeated fields, and optional string, number, and enum fields. Blank optional numbers and missing optional scalars become null; invalid required numbers, enums, native files, nested records, and unsupported collections fail explicitly. read does not create another schema language or infer business rules — required text, trimming, minimums, custom messages, and submission behavior remain application code and ordinary HTML attributes.", "read 把扁平的原生表单解码为既有的冒号式记录类型：string、有限 number、bool 复选框、枚举、List<string> 重复字段，以及可选的 string、number 与枚举字段。空白的可选数字与缺失的可选标量变为 null；无效的必填数字、枚举、原生文件、嵌套记录与不支持的集合都会显式失败。read 不会造出另一门 schema 语言，也不推断业务规则——必填、去空白、最小值、自定义消息与提交行为，仍然由应用代码与普通 HTML 属性负责。")}
+                </p>
+                <MemberTable
+                    rows={formsMembers}
+                    caption={locale.text("velar/forms — fourteen exports", "velar/forms —— 十四个导出")}
+                />
+                <p>
+                    <Link to="/guide/web/browser" look={chapterLinkLook}>
+                        {locale.text("Guide: Browser capabilities", "指南：浏览器能力")}
+                    </Link>
+                </p>
+
+                <h2 id="browser">{locale.text("velar/browser", "velar/browser")}</h2>
+                <p>
+                    {locale.text("Timer handles are explicit component resources: start them during setup or @mounted, retain the returned stop function, and release it from the sibling @cleanup block. VelarScript exposes no setTimeout, no setInterval, and no React-style effect API.", "定时器句柄是显式的组件资源：在 setup 或 @mounted 中启动，保留返回的停止函数，并在同级的 @cleanup 块中释放。VelarScript 不暴露 setTimeout、setInterval，也没有 React 式的 effect API。")}
+                </p>
+                <MemberTable
+                    rows={browserMembers}
+                    caption={locale.text("velar/browser — timers, environment, layout, focus, dialogs, selection, clipboard", "velar/browser —— 定时器、环境、布局、焦点、对话框、选区、剪贴板")}
+                />
+                <p>
+                    <Link to="/guide/web/browser" look={chapterLinkLook}>
+                        {locale.text("Guide: Browser capabilities", "指南：浏览器能力")}
+                    </Link>
+                </p>
+
+                <h2 id="files">{locale.text("velar/files", "velar/files")}</h2>
+                <p>
+                    {locale.text("Native authority lives in a host-private registry rather than a copyable record field, so a forged structural object fails at runtime even when it resembles the public file metadata. Directory access, persistent file handles, and the File System Access API are deliberately outside this version.", "原生权威存放在宿主私有的注册表中，而不是可复制的记录字段，因此伪造的结构对象即使看起来与公开的文件元数据一致，也会在运行时失败。目录访问、持久文件句柄与 File System Access API 被有意排除在本版本之外。")}
+                </p>
+                <MemberTable
+                    rows={filesMembers}
+                    caption={locale.text("velar/files — four exports and one opaque value", "velar/files —— 四个导出与一个不透明值")}
+                />
+                <p>
+                    <Link to="/guide/web/browser" look={chapterLinkLook}>
+                        {locale.text("Guide: Browser capabilities", "指南：浏览器能力")}
+                    </Link>
+                </p>
+
+                <h2 id="realtime">{locale.text("velar/realtime", "velar/realtime")}</h2>
+                <p>
+                    {locale.text("Connections are ordinary owned resources: applications close them explicitly from a sibling @cleanup. Handler throws and rejected promises are reported through velar/app with a stable realtime phase and detail instead of escaping the native event loop. Realtime URLs are limited to 2 MiB and text messages to 16 MiB.", "连接是普通的被拥有资源：应用在同级的 @cleanup 中显式关闭它们。处理器抛出的异常与被拒绝的 Promise 通过 velar/app 以稳定的 realtime 阶段与细节报告，而不是从原生事件循环中逃逸。实时 URL 限制为 2 MiB，文本消息限制为 16 MiB。")}
+                </p>
+                <MemberTable
+                    rows={realtimeMembers}
+                    caption={locale.text("velar/realtime — two constructors and their members", "velar/realtime —— 两个构造器及其成员")}
+                />
+                <p>
+                    <Link to="/guide/web/data" look={chapterLinkLook}>
+                        {locale.text("Guide: Storage, HTTP and realtime", "指南：存储、HTTP 与实时")}
+                    </Link>
+                </p>
+
+                <h2 id="web-test">{locale.text("velar/web-test", "velar/web-test")}</h2>
+                <p>
+                    {locale.text("Browser tests live in *.browser.test.vel and run only through velar test --browser. Because that command is the only place this module has a runtime, importing it from an application module or a plain *.test.vel is refused at the import line rather than left to fail at the call. The test body runs in the test process rather than in the page, so mount, JSX, document, and velar/storage are unavailable there.", "浏览器测试位于 *.browser.test.vel，只通过 velar test --browser 运行。由于该命令是这个模块唯一拥有运行时的地方，从应用模块或普通 *.test.vel 导入它会在 import 行被拒绝，而不是留到调用时才失败。测试体运行在测试进程中而不是页面中，因此 mount、JSX、document 与 velar/storage 在那里不可用。")}
+                </p>
+                <MemberTable
+                    rows={testMembers}
+                    caption={locale.text("velar/web-test — the controller, the storage controls, and the network routes", "velar/web-test —— 控制器、存储控制与网络路由")}
+                />
+                <Callout title={locale.text("A green browser suite means no test printed an error anywhere", "浏览器套件全绿，意味着没有任何测试在任何地方打印过错误")}>
+                    <p>
+                        {locale.text("Any unowned error during a test fails that test: a page error, an error or warning console message, an uncaught exception, an unhandled rejection, or a detached-task failure report. The runner itself keeps running — the failure belongs to the test, never to the process — and the exit code reports it.", "测试期间任何无主的错误都会让该测试失败：页面错误、error 或 warning 级别的控制台消息、未捕获的异常、未处理的拒绝，或分离任务的失败报告。运行器本身继续运行——失败属于测试，绝不属于进程——并由退出码报告出来。")}
+                    </p>
+                </Callout>
+                <p>
+                    <Link to="/guide/web/testing" look={chapterLinkLook}>
+                        {locale.text("Guide: Testing web applications", "指南：测试 Web 应用")}
+                    </Link>
+                </p>
+            </Prose>
+        </DocsShell>
+    </main>

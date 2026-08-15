@@ -1,54 +1,123 @@
-import {Head, Link} from "velar/web"
-import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
-import {docsNav} from "../content.vel"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
-const recordCode = "type User:\n    id: string\n    name: string\n    avatar: string?\n    roles: List<string>\n\ntype Identifier = string\ntype Users = List<User>\ntype UserHandler = (User) -> null"
-const validationCode = "const user = User.parse(raw)\n\nif raw is User:\n    print(raw.name)\n\nimport {parse as parseJson} from \"velar/json\"\nconst decoded = parseJson(source, User)"
-const recursiveCode = "type TreeNode:\n    label: string\n    children: List<TreeNode>\n\ntype Comment:\n    body: string\n    reply: Comment?"
-const unionCode = "type DisplayValue = string | number | bool\n\ndef display(value: DisplayValue) -> string:\n    if value is string:\n        return value\n    else if value is number:\n        return str(value)\n    else:\n        return value ? \"yes\" : \"no\""
-const enumCode = "enum TaskStatus:\n    todo\n    doing\n    done\n\nconst status: TaskStatus = TaskStatus.todo\nconst parsed = TaskStatus.parse(rawStatus)"
+const annotationsCode = `type Tag:\n    label: string\n\ntype User:\n    id: string\n    name: string\n    avatar: string?\n\n// Every built-in Core type in a written annotation.\nconst text: string = "a"\nconst quantity: number = 1\nconst flag: bool = true\nconst nothing: null = null\nconst listOfText: List<string> = ["a"]\nconst setOfNumbers: Set<number> = Set([1])\nconst mapOfUsers: Map<string, User> = Map()\nconst recordOfTags: Record<Tag> = {}\nconst optionalText: string? = null\nconst smallUnion: string | number = 1\nconst threeArmUnion: string | number | bool = true\nconst dynamic: unknown = 1\n\n// A function type always writes its result, a null result included.\nconst handler: (User) -> null = user => print(user.name)\nconst twoParameters: (string, number) -> bool = (left, right) => left.size == right\nconst noParameters: () -> string = () => "a"\nconst namedParameters: (user: User, prefix: string) -> string = (user, prefix) => prefix + user.name\n\n// An omittable parameter and a required parameter whose value may be null are\n// two different contracts.\nconst omittableParameter: (user: User, prefix?: string) -> string = (user: User, prefix: string = "@") => prefix + user.name\nconst optionalTypedParameter: (user: User, prefix: string?) -> string = (user, prefix) => (prefix ?? "@") + user.name\n\n// A rest parameter states its element type even when the annotation supplies\n// one: contextual typing covers the fixed parameters only.\nconst restParameter: (...values: number) -> number = (...values: number) => values.size`
+const shorthandCode = `async def resolvesNull():\n    pass\n\nasync def resolvesText() -> string:\n    return "a"\n\nconst barePromise: Promise = resolvesNull()\nconst explicitPromise: Promise<null> = resolvesNull()\nconst promiseOfText: Promise<string> = resolvesText()\n\nconst bareFunction: Function = () => null\nconst functionResult: Function<string> = () => "a"\nconst functionOneInput: Function<number, string> = value => str(value)\nconst functionTwoInputs: Function<number, number, string> = (left, right) => str(left + right)`
+const readonlyCode = `type Details:\n    label: string\n\ntype Tag:\n    label: string\n\ntype Profile:\n    readonly id: string\n    details: Details\n    tags: List<Tag>\n\ndef loadProfile() -> Profile:\n    return {id: "p", details: {label: "d"}, tags: []}\n\nexport def display(profile: readonly Profile) -> string:\n    // A read-only view is transitive through reads.\n    const nestedLabel = profile.details.label\n    const firstTag = profile.tags.get(0)\n    return profile.id + nestedLabel + (firstTag?.label ?? "")\n\n// The same value reached through an owning type is still writable.\nexport def update(profile: Profile):\n    profile.details.label = "Updated"\n\nconst owned: Profile = loadProfile()\nlet selected: readonly Profile = owned\nselected = loadProfile()\n\n// A new collection returned by copy or slice owns its outer container.\nexport def copiedContainer(profile: readonly Profile) -> number:\n    const copied = profile.tags.copy()\n    return copied.size`
+const optionalsCode = `type User:\n    id: string\n    name: string\n    avatar: string?\n\ndef findUser(id: string) -> User?:\n    return id == "" ? null : {id, name: "Ada", avatar: null}\n\nexport def presenceTests(id: string) -> string:\n    const user: User? = findUser(id)\n\n    if user != null:\n        print(user.name)\n\n    if user == null:\n        return "Missing"\n    else:\n        return user.name\n\n// A guard whose arm terminates keeps the negated fact on the fall-through path.\nexport def terminatingGuard(user: User?) -> string:\n    if user == null:\n        return "Missing"\n    return user.name\n\n// An assignment establishes a fact of its own.\nexport def assignmentFacts() -> string:\n    const pinned: string? = "a"\n    let open: string? = "a"\n    open = null\n    return pinned + (open ?? "b")\n\n// Optional access is explicit at each optional continuation.\ntype Address:\n    city: string\n\ntype AccountDetails:\n    address: Address?\n\ntype Account:\n    profile: AccountDetails?\n\nconst account: Account? = null\nconst optionalValues: List<number>? = null\nconst optionalCallback: ((number) -> number)? = null\n\nconst city = account?.profile?.address?.city\nconst firstValue = optionalValues?.[0]\nconst called = optionalCallback?.(1)`
+const presenceErrorCode = "type User:\n    id: string\n    name: string\n\nexport def label(user: User?) -> string:\n    return user.name"
+const presenceErrorOutput = "main.vel:6:12 error VEL4001: Use optional access '?.' for User?\n    return user.name\n           ^^^^^^^^^"
+const narrowingCode = `type Contact:\n    email: string\n\ntype Owner:\n    profile: Contact?\n\ntype User:\n    id: string\n    name: string\n\n// Equality against a literal carries a fact back to its subject.\nexport def equalityFacts(flagOrNothing: bool?) -> string:\n    if flagOrNothing == true:\n        return "true"\n    if flagOrNothing == false:\n        return "false"\n    return "absent"\n\n// A membership probe narrows the same way.\nexport def membershipFacts(candidate: string?, names: List<string>) -> string:\n    if candidate in names:\n        return candidate\n    return "missing"\n\n// An optional chain that produced a value proves every link along it.\nexport def chainFacts(owner: Owner) -> string:\n    if owner.profile?.email != null:\n        return owner.profile.email\n    return "missing"\n\n// A fact survives calls, but a hot loop should bind the narrowed value once.\nexport def boundOnce(user: User?) -> number:\n    if user == null:\n        return 0\n    const present = user\n    let total = 0\n    for _ in range(3):\n        total += present.name.size\n    return total\n\n// Narrowing does not flow into a nested function body.\nexport def nestedFunction(user: User?) -> (() -> string):\n    if user == null:\n        return () => "missing"\n    const present = user\n    return () => present.name\n\n// A getter is a computed value, not a stable location: read it into a const.\nclass Session:\n    let stored: string? = null\n\n    get current() -> string?:\n        return self.stored\n\nexport def getterNarrowing(session: Session) -> string:\n    const current = session.current\n    if current == null:\n        return "missing"\n    return current\n\n// An index and a Map read are reads, not locations.\nexport def indexNarrowing(values: List<string>, lookup: Map<string, string>) -> string:\n    const firstValue = values.get(0)\n    const looked = lookup.get("a")\n    if firstValue == null or looked == null:\n        return "missing"\n    return firstValue + looked`
+const conversionCode = `enum Status:\n    pending\n    done\n\nconst text: string = "a"\nconst quantity: number = 1\nconst flag: bool = true\nconst nothing: null = null\nconst smallUnion: string | number = 1\n\nexport def textConversion(status: Status, maybe: string?) -> string:\n    const fromString = f"{text}"\n    const fromNumber = f"{quantity}"\n    const fromBool = f"{flag}"\n    const fromNull = f"{nothing}"\n    const fromEnum = f"{status}"\n    const fromOptional = f"{maybe}"\n    const fromUnion = f"{smallUnion}"\n    return fromString + fromNumber + fromBool + fromNull + fromEnum + fromOptional + fromUnion`
+const recordErrorCode = `type User:\n    id: string\n    name: string\n\nconst user: User = {id: "u-1", name: "Ada"}\nconst label = f"{user}"`
+const recordErrorOutput = `main.vel:6:18 error VEL4026: An f-string renders strings, numbers, bools, enums, null, and extension values with a declared text form; format User explicitly — print(value) to inspect it, or Json.stringify(value) for data text\nconst label = f"{user}"\n                 ^^^^`
+
+const pointsLook = look:
+    display = "grid"
+    gap = 8px
+    margin = 0
+    paddingInlineStart = 20px
+
+const sections = [
+    {id: "annotations", label: "The annotation vocabulary", labelZh: "注解词汇表"},
+    {id: "shorthand", label: "Promise and Function", labelZh: "Promise 与 Function"},
+    {id: "readonly", label: "Read-only views", labelZh: "只读视图"},
+    {id: "optionals", label: "Optionals are unions", labelZh: "可选值就是联合"},
+    {id: "narrowing", label: "What establishes a fact", labelZh: "什么建立事实"},
+    {id: "conversion", label: "The text-conversion contract", labelZh: "文本转换契约"},
+]
 
 export component LanguageTypes:
     const locale = useLocale()
     return <main>
-        <Head title={locale.text("Types and data · VelarScript", "类型与数据 · VelarScript")} description={locale.text("VelarScript record types, aliases, optionals, unions, enums, inference, and runtime validation without a second schema language.", "VelarScript 的记录类型、别名、可选值、联合、枚举、推断与运行时验证，不引入第二套 schema 语言。")} themeColor="#f7f5f0" />
-        <DocsShell items={docsNav}>
-            <PageHeader kicker={locale.text("Language / 02", "语言 / 02")} title={locale.text("Useful types, not type-level programming.", "类型要有用，而不是做类型层编程。")} summary={locale.text("Types document application boundaries, guide the editor, catch ordinary mistakes, and optionally validate incoming runtime data.", "类型用于说明应用边界、帮助编辑器、捕获常见错误，并按需验证进入运行时的数据。")} tags={["one type keyword", "runtime parse", "simple unions", "enums"]} />
+        <Head
+            title={headTitle("/guide/language/types", locale.isChinese())}
+            description={locale.text("Every built-in type in a written annotation, what readonly promises, and how an optional is narrowed.", "每个内置类型在书面注解中的写法、readonly 承诺了什么，以及可选值如何被收窄。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Language / 03", "语言 / 03")}
+                title={locale.text("Types and optionals", "类型与可选值")}
+                summary={locale.text("The annotation vocabulary, read-only views, optionals, and the narrowing checks that consume them.", "注解词汇表、只读视图、可选值，以及消费它们的收窄检查。")}
+            />
+            <SectionList items={sections} />
             <Prose>
-                <h2 id="record">{locale.text("Records and aliases", "记录与别名")}</h2>
-                <CodeBlock code={recordCode} />
-                <p>{locale.text("The colon form declares a structural record. The equals form gives an existing type a readable transparent name. Aliases expand for checking, cross module boundaries, and can participate in runtime validation, but do not create nominal wrappers or accept type parameters.", "冒号形式声明结构化记录；等号形式给现有类型一个易读的透明名称。别名会在检查时展开，可以跨模块并参与运行时验证，但不会创建名义包装，也不接受类型参数。")}</p>
-                <p>{locale.text("Fields may use primitives, optionals, Lists, Maps, Sets, functions, records, classes, enums, or bounded unions. Function signatures omit parameter names because names do not affect assignability. An optional function requires grouping: ", "字段可以使用基础类型、可选类型、List、Map、Set、函数、记录、类、枚举或有界联合。函数签名省略参数名，因为名称不影响可赋值性。可选函数需要分组：")}<code>((string) -&gt; string)?</code>{locale.text(".", "。")}</p>
-                <Callout title={locale.text("One declaration system", "一套声明系统")}><p>{locale.text("VelarScript has no separate ", "VelarScript 没有额外的 ")}<code>schema</code>{locale.text(" or ", " 或 ")}<code>interface</code>{locale.text(" keyword. The same named ", " 关键字。同一个命名 ")}<code>type</code>{locale.text(" serves static checks, editor help, JSON/HTTP/storage/form boundaries, and explicit runtime validation.", " 同时服务于静态检查、编辑器帮助、JSON/HTTP/存储/表单边界与显式运行时验证。")}</p></Callout>
-
-                <h2 id="validation">{locale.text("Runtime validation", "运行时验证")}</h2>
-                <CodeBlock code={validationCode} />
-                <ul>
-                    <li><code>Type.parse(value)</code>{locale.text(" returns the checked value or throws ", " 返回通过检查的值，否则抛出 ")}<code>ValidationError</code>{locale.text(".", "。")}</li>
-                    <li><code>value is Type</code>{locale.text(" checks and narrows without throwing.", " 进行检查与收窄，但不抛错。")}</li>
-                    <li>{locale.text("Runtime code is emitted only when a type is actually used at runtime.", "只有类型确实在运行时使用时才会生成对应代码。")}</li>
-                    <li>{locale.text("Every emitted record Type, alias, and enum is frozen and registered under one module-independent identity.", "每个生成的记录 Type、别名与枚举都会冻结，并以独立于模块的统一身份注册。")}</li>
-                    <li>{locale.text("Forged objects with lookalike ", "伪造带有相似 ")}<code>parse</code>{locale.text(" or ", " 或 ")}<code>is</code>{locale.text(" fields cannot bypass validation.", " 字段的对象无法绕过验证。")}</li>
+                <h2 id="annotations">{locale.text("The annotation vocabulary", "注解词汇表")}</h2>
+                <p>
+                    {locale.text("The written surface is a closed list: string, number, bool, null, List, Set, Map, Record, unknown, small unions, and function types. A function type always writes its result, including a null result, so a reader of the annotation alone knows whether a call answers anything.", "书面表面是一份封闭清单：string、number、bool、null、List、Set、Map、Record、unknown、小型联合，以及函数类型。函数类型总是写出结果，包括 null 结果，因此仅凭注解就能知道一次调用是否给出值。")}
+                </p>
+                <CodeBlock code={annotationsCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("An omittable parameter and a required parameter whose value may be null are two different contracts, and the annotation spells the difference.", "可省略参数与「必须传入但值可能为 null」的参数是两种不同的契约，注解把这个区别写了出来。")}
+                    </li>
+                    <li>
+                        {locale.text("unknown is the ordinary spelling for unvalidated dynamic input. It must be validated before use, which is what separates it from the JavaScript boundary's any.", "unknown 是未经验证的动态输入的常规拼写。使用前必须验证，这正是它与 JavaScript 边界处的 any 的区别所在。")}
+                    </li>
                 </ul>
-                <p>{locale.text("JSON-shaped validation recursively accepts finite primitives, ", "JSON 形状验证会递归接受有限基础值、")}<code>null</code>{locale.text(", dense Lists, and plain records. At strict data boundaries it rejects sparse/accessor Lists, symbols, cycles, class instances, functions, Map, Set, Promise, and non-finite numbers.", "、稠密 List 与普通记录。在严格数据边界上，它会拒绝稀疏/访问器 List、symbol、循环、类实例、函数、Map、Set、Promise 与非有限数字。")}</p>
 
-                <h2 id="recursive">{locale.text("Recursive records", "递归记录")}</h2>
-                <CodeBlock code={recursiveCode} />
-                <p>{locale.text("A record may refer to itself or another record when a finite value can terminate through an optional, List, Map, or real union branch. Required cycles such as ", "只要有限值能通过可选值、List、Map 或真实联合分支终止，记录就可以引用自身或其他记录。像 ")}<code>type Loop: next: Loop</code>{locale.text(" are rejected. Runtime validation accepts finite acyclic trees and shared subtrees, but safely rejects cyclic graphs and excessive depth.", " 这样的必需循环会被拒绝。运行时验证接受有限无环树和共享子树，并安全拒绝循环图与过深结构。")}</p>
+                <h2 id="shorthand">{locale.text("Promise and Function", "Promise 与 Function")}</h2>
+                <p>
+                    {locale.text("Two names have a shorthand table so a common annotation stays short. A bare Promise resolves to null, and Function takes its inputs first and its result last. An async declaration annotates the resolved value, never the Promise around it.", "有两个名字带有简写表，让常见注解保持简短。裸 Promise 解析为 null，Function 先写输入、最后写结果。async 声明注解的是解析后的值，而不是包在外面的 Promise。")}
+                </p>
+                <CodeBlock code={shorthandCode} />
 
-                <h2 id="union">{locale.text("Simple unions and narrowing", "简单联合与收窄")}</h2>
-                <CodeBlock code={unionCode} />
-                <p>{locale.text("Unions describe a small finite set of runtime alternatives. Each rejected ", "联合描述一小组有限的运行时备选。每次失败的 ")}<code>is</code>{locale.text(" check removes that member for the following ", " 检查都会从后续 ")}<code>else if</code>{locale.text(" or ", " 或 ")}<code>else</code>{locale.text(" branch. The same bounded narrowing works for inline branches, assertions, stable record fields, and ordinary component control flow. VelarScript does not add conditional, mapped, or programmable type subtraction.", " 分支中移除对应成员。同样的有界收窄适用于内联分支、断言、稳定记录字段与普通组件控制流。VelarScript 不加入条件类型、映射类型或可编程类型减法。")}</p>
+                <h2 id="readonly">{locale.text("Read-only views", "只读视图")}</h2>
+                <p>
+                    {locale.text("A read-only type is a view over the same value: it promises that this reference will not write, not that the value is frozen. The view is transitive through reads, so a nested field reached through it is read-only too, while the same value reached through an owning type stays writable.", "只读类型是同一个值上的视图：它承诺这个引用不会写入，而不是承诺该值被冻结。视图在读取上是传递的，因此通过它取到的嵌套字段同样只读，而通过拥有型类型取到的同一个值仍然可写。")}
+                </p>
+                <CodeBlock code={readonlyCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("A read-only binding may be reassigned; what it refuses is a write through the reference.", "只读绑定本身可以被重新赋值；它拒绝的是通过该引用进行的写入。")}
+                    </li>
+                    <li>
+                        {locale.text("A new collection returned by copy or slice owns its outer container, so the caller may mutate it.", "copy 或 slice 返回的新集合拥有自己的外层容器，因此调用方可以修改它。")}
+                    </li>
+                </ul>
 
-                <h2 id="enum">{locale.text("Enums", "枚举")}</h2>
-                <CodeBlock code={enumCode} />
-                <p>{locale.text("Enums are nominal string-backed workflow values. Members serialize as their names and may flow to string-based Web/storage boundaries, but arbitrary strings are not assignable back. Use ", "枚举是以字符串承载的名义工作流值。成员序列化为自身名称，可以流向基于字符串的 Web/存储边界，但任意字符串不能反向赋值。动态输入使用 ")}<code>Enum.parse</code>{locale.text(" for dynamic input and ", "，穷尽处理使用 ")}<code>match</code>{locale.text(" for exhaustive handling.", "。")}</p>
+                <h2 id="optionals">{locale.text("Optionals are unions", "可选值就是联合")}</h2>
+                <p>
+                    {locale.text("An optional type is the union of a type with null. Absence is a value the type states, so it is not something a reader has to infer from context, and every continuation over an optional is written: an optional member, an optional index, an optional call.", "可选类型就是某个类型与 null 的联合。缺失是类型明说的一个值，读者不必从上下文里推测；对可选值的每一次延续都要写出来：可选成员、可选索引、可选调用。")}
+                </p>
+                <CodeBlock code={optionalsCode} />
+                <p>
+                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                </p>
+                <CodeBlock code={presenceErrorCode} />
+                <p>
+                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                </p>
+                <CodeBlock code={presenceErrorOutput} />
 
-                <h2 id="inference">{locale.text("Inference and deliberate limits", "推断与有意限制")}</h2>
-                <p>{locale.text("Local values, callback arguments/results, collection transforms, Promise results, runtime parsing, and first writes to empty collections are inferred. Public function parameters, non-", "局部值、回调参数/结果、集合变换、Promise 结果、运行时解析与空集合首次写入都可以推断。公开函数参数、非 ")}<code>null</code>{locale.text(" results, class fields, and important application boundaries stay explicit. The language intentionally omits user-defined generics, overloads, declaration merging, conditional/mapped types, metaprogramming, and complex constraints.", " 结果、类字段与重要应用边界仍需显式类型。语言有意省略用户泛型、重载、声明合并、条件/映射类型、元编程与复杂约束。")}</p>
+                <h2 id="narrowing">{locale.text("What establishes a fact", "什么建立事实")}</h2>
+                <p>
+                    {locale.text("Narrowing is bounded and it is worth knowing where the boundary is. A comparison, a membership probe, an assignment, a terminating guard, and an optional chain that produced a value all establish facts. A getter, an index read, and a Map read are computed values rather than stable locations, so each is read into a binding first; a fact also does not flow into a nested function body.", "收窄是有界的，值得知道界在哪里。比较、成员探测、赋值、以终止分支收尾的守卫，以及产出了值的可选链，都会建立事实。取值器、索引读取与 Map 读取都是计算出来的值而不是稳定位置，因此要先读入一个绑定；事实也不会流入嵌套函数体。")}
+                </p>
+                <CodeBlock code={narrowingCode} />
+                <Callout title={locale.text("Bounded on purpose", "刻意有界")}>
+                    <p>
+                        {locale.text("There are no conditional, mapped, or programmable types. A type is read by looking at its declaration rather than by evaluating a second program, which is the property that keeps a type readable to someone who did not write it.", "没有条件类型、映射类型或可编程类型。读懂一个类型靠看它的声明，而不是靠再执行一段程序；正是这一点让类型对没写过它的人仍然可读。")}
+                    </p>
+                </Callout>
 
-                <div class="next-links"><Link to="/docs/language/functions"><strong>{locale.text("Next: Functions and flow", "下一步：函数与控制流")}</strong><span>{locale.text("Use those types across synchronous and asynchronous work.", "在同步与异步工作中使用这些类型。")}</span></Link><Link to="/docs/language/collections"><strong>{locale.text("Collections", "集合")}</strong><span>{locale.text("Lists, Maps, Sets, iteration, and transformations.", "List、Map、Set、迭代与变换。")}</span></Link></div>
+                <h2 id="conversion">{locale.text("The text-conversion contract", "文本转换契约")}</h2>
+                <p>
+                    {locale.text("Text conversion accepts strings, numbers, bools, enums, null, and extension values with a declared text form. A record is not on that list, because there is no single rendering of a record that every caller would have wanted. Inspection is print, and data text is Json.stringify, which is resident and needs no import.", "文本转换接受字符串、数字、bool、枚举、null，以及带有已声明文本形式的扩展值。记录不在这份清单上，因为记录没有哪一种渲染是所有调用方都想要的。检查用 print，数据文本用 Json.stringify——它是常驻的，无需导入。")}
+                </p>
+                <CodeBlock code={conversionCode} />
+                <p>
+                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                </p>
+                <CodeBlock code={recordErrorCode} />
+                <p>
+                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                </p>
+                <CodeBlock code={recordErrorOutput} />
             </Prose>
+            <DocsPager previous={guidePrevious("/guide/language/types")} next={guideNext("/guide/language/types")} />
         </DocsShell>
     </main>

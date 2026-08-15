@@ -1,6 +1,5 @@
 import {environment} from "velar/browser"
 import {storage} from "velar/storage"
-import {lower, startsWith} from "velar/text"
 
 export type LocaleComposer:
     locale: () -> string
@@ -26,8 +25,8 @@ def detectedLocale() -> string:
         pass
 
     try:
-        const browserLanguage = lower(environment().language)
-        return startsWith(browserLanguage, "zh") ? "zh" : "en"
+        const browserLanguage = environment().language.lower()
+        return browserLanguage.startsWith("zh") ? "zh" : "en"
     catch error:
         return "en"
 

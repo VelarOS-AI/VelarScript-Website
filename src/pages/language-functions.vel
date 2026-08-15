@@ -1,62 +1,118 @@
-import {Head, Link} from "velar/web"
-import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
-import {docsNav} from "../content.vel"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
-const functionCode = "def greet(name: string, punctuation: string = \"!\") -> string:\n    return f\"Hello, {name}{punctuation}\"\n\nconst message = greet(punctuation=\"?\", name=\"Ada\")\n\ndef notify(message: string):\n    print(message)\n\nconst greetUser: (string, string) -> string = greet"
-const arrowCode = "const names = users.map(user => user.name)\nconst point = value => {x: value, y: value ** 2}\nconst load: (string) -> Promise<User> = async id => await loadUser(id)"
-const asyncCode = "async def loadUser(id: string) -> User:\n    const response = await http.get(f\"/api/users/{id}\")\n    return await response.parse(User)\n\nasync def loadAll(ids: List<string>) -> List<User>:\n    return await map(ids, async id => await loadUser(id), 4)"
-const restCode = "def total(first: number, ...values: number) -> number:\n    let result = first\n    for value in values:\n        result += value\n    return result\n\nconst subtotal = total(1, 2, 3)\nconst final = total(subtotal, ...moreValues)"
-const flowCode = "if score >= 90:\n    grade = \"A\"\nelse if score >= 80:\n    grade = \"B\"\nelse:\n    grade = \"C\"\n\nfor user in users:\n    print(user.name)\n\nwhile queue.size > 0:\n    process(queue.get(0))"
-const matchCode = "match task.status:\n    case TaskStatus.todo, TaskStatus.doing:\n        showOpenTask()\n    case TaskStatus.done:\n        showResult()\n\nmatch response:\n    case {kind: \"success\", users: [first, ...rest], requestId} as payload if rest.size > 0:\n        show(first)\n        log(payload.kind, requestId)\n    case {kind: \"failure\", message}:\n        print(message)\n    case User as user:\n        show(user)\n    case _:\n        print(\"Unsupported\")"
-const errorCode = "class SaveError extends Error:\n    const documentId: string\n\n    constructor(documentId: string, message: string):\n        super(message)\n        self.documentId = documentId\n\ntry:\n    await save(document)\ncatch error:\n    if error is SaveError:\n        showSaveFailure(error.message)\n    else:\n        throw error\nfinally:\n    releaseLock()"
+const declaringCode = `type User:\n    id: string\n    name: string\n    avatar: string?\n\nexport def formatUser(user: User, prefix: string = "@") -> string:\n    return f"{prefix}{user.name}"\n\n// A body-backed function may omit its result annotation. Where the inferred\n// result is null, omitting it is required.\nexport def inferredNull():\n    print("nothing a caller can use")\n\nexport def inferredText(flag: bool):\n    if flag:\n        return "yes"\n    return "no"\n\n// A partial return infers an optional result.\nexport def inferredOptional(flag: bool):\n    if flag:\n        return "yes"\n\n// An explicit result stays a checked contract: every reachable path returns.\nexport def explicitResult(flag: bool) -> string:\n    if flag:\n        return "yes"\n    return "no"\n\n// Recursive result dependencies solve to a fixed point.\ndef countDown(value: number):\n    if value <= 0:\n        return 0\n    return countDown(value - 1)`
+const callsCode = `type User:\n    id: string\n    name: string\n\ndef formatUser(user: User, prefix: string = "@") -> string:\n    return f"{prefix}{user.name}"\n\nconst user: User = {id: "u-1", name: "Ada"}\n\nconst first = formatUser(user)\nconst second = formatUser(user, prefix="#")\nconst third = formatUser(user, "!")\nconst named = formatUser(user=user, prefix="?")\n\n// Named arguments may be reordered; source expressions still evaluate left to\n// right.\nconst reordered = formatUser(prefix="~", user=user)\n\n// Once a fixed parameter has a default, every following fixed parameter does\n// too, so positional and named calls stay identical.\ndef label(text: string, prefix: string = "[", suffix: string = "]") -> string:\n    return prefix + text + suffix\n\nconst defaulted = label("a")\nconst oneDefaultGiven = label("a", "<")\nconst bothDefaultsGiven = label("a", "<", ">")\nconst suffixOnly = label("a", suffix=">")`
+const colonErrorCode = `def label(text: string, prefix: string = "[") -> string:\n    return prefix + text\n\nconst labelled = label("a", prefix: "<")`
+const colonErrorOutput = `main.vel:4:29 error VEL2024: Write '=' between the name and value for named argument 'prefix': prefix = value\nconst labelled = label("a", prefix: "<")\n                            ^^^^^^`
+const arrowsCode = `const values: List<number> = [1, 2, 3]\nconst doubled = values.map(value => value * 2)\nconst annotatedArrow = values.map((value: number) => value * 3)\nconst parenthesizedParameter = values.map((value) => value + 1)\nconst twoParameters = (left: number, right: number) => left + right\nconst noParameters = () => "a"\n\n// After the arrow a brace opens a record, never a block.\nconst recordFactory = () => {id: "a"}\nconst emptyRecordFactory = () => {}\n\n// A function that should do nothing answers null.\nconst doesNothing = () => null\n\n// A callback that needs two statements becomes a named def.\ndef describeValue(value: number) -> string:\n    const scaled = value * 10\n    return f"{value} -> {scaled}"\n\nconst described = values.map(describeValue)\n\n// A callback may use a local parameter name while satisfying a named contract.\nconst localName: (request: string) -> string = _request => _request.upper()\n\n// An unannotated arrow parameter takes its type from the annotation it is\n// assigned to; with no annotation on either side it is unknown.\nconst contextuallyTypedArrow: (number) -> number = value => value * 2`
+const restCode = "const values: List<number> = [1, 2, 3]\n\nexport def total(...amounts: number) -> number:\n    return amounts.sum()\n\nexport def totalWithBase(base: number, ...amounts: number) -> number:\n    return base + amounts.sum()\n\nexport def totalWithDefault(base: number = 0, ...amounts: number) -> number:\n    return base + amounts.sum()\n\nconst summed = total(1, 2, 3)\nconst spreadInto = total(...values)\nconst fixedThenSpread = totalWithBase(10, ...values)"
+const asyncCode = `type User:\n    id: string\n    name: string\n\ndef apiUser(id: string) -> User:\n    return {id, name: "Ada"}\n\nexport async def loadUser(id: string) -> User:\n    return apiUser(id)\n\n// The call type is a Promise of the annotated value; the declaration annotates\n// the resolved value, never the Promise around it.\nconst pending: Promise<User> = loadUser("u-1")\n\nexport async def inferredAsyncResult():\n    print("an async declaration with no value result infers a null result")\n\nexport async def awaitsAndDetaches():\n    // await waits; the async statement runs the task detached and requires a\n    // checked promise of null.\n    await loadUser("u-1")\n    async inferredAsyncResult()\n\nconst asyncArrow = async (id: string) => await loadUser(id)\nconst contextuallyTypedAsyncArrow: (string) -> Promise<User> = async id => await loadUser(id)`
+const droppedErrorCode = `async def save() -> string:\n    return "saved"\n\nexport def run():\n    save()`
+const droppedErrorOutput = "main.vel:5:5 error VEL4027: This call returns Promise<string>; 'await save()' to wait for it, or 'async save()' to run it detached\n    save()\n    ^^^^^^"
+const genericsCode = `export def mapValues<T, U>(items: List<T>, transform: (T) -> U) -> List<U>:\n    return items.map(transform)\n\nconst flags: List<bool> = mapValues(["a", ""], value => value != "")\n\n// Type arguments are inferred at each call site; there is no explicit\n// instantiation syntax, and a parameter the call leaves unsolved is unknown.\nexport def identity<T>(value: T) -> T:\n    return value\n\nconst identicalText = identity("a")\nconst identicalNumber = identity(1)\n\n// The three closed bounds.\nexport def label<T: Text>(value: T) -> string:\n    return f"{value}"\n\nexport def ranked<T: Comparable>(values: List<T>) -> List<T>:\n    return values.sorted()\n\nexport def smallest<T: Comparable>(values: List<T>) -> T?:\n    return values.min()\n\nexport def encoded<T: Data>(value: T) -> string:\n    return Json.stringify(value)\n\nexport def cloned<T: Data>(value: T) -> T:\n    return Json.clone(value)\n\nconst labelled = label(5)\nconst rankedText = ranked(["b", "a"])\nconst encodedRecord = encoded({id: "u-1"})\n\n// A class method takes type parameters too.\nclass Registry:\n    let stored: List<unknown> = []\n\n    def keep<T>(value: T) -> T:\n        self.stored.append(value)\n        return value`
+
+const pointsLook = look:
+    display = "grid"
+    gap = 8px
+    margin = 0
+    paddingInlineStart = 20px
+
+const sections = [
+    {id: "declaring", label: "Parameters and results", labelZh: "参数与结果"},
+    {id: "calls", label: "Positional, then named", labelZh: "先位置，后具名"},
+    {id: "arrows", label: "Arrows", labelZh: "箭头函数"},
+    {id: "rest", label: "Rest parameters and spread", labelZh: "剩余参数与展开"},
+    {id: "async", label: "Async functions", labelZh: "async 函数"},
+    {id: "generics", label: "Type parameters and bounds", labelZh: "类型参数与界"},
+]
 
 export component LanguageFunctions:
     const locale = useLocale()
     return <main>
-        <Head title={locale.text("Functions and flow · VelarScript", "函数与控制流 · VelarScript")} description={locale.text("VelarScript functions, callbacks, async and await, rest parameters, control flow, match, assertions, and errors.", "VelarScript 的函数、回调、async/await、剩余参数、控制流、match、断言与错误。")} themeColor="#f7f5f0" />
-        <DocsShell items={docsNav}>
-            <PageHeader kicker={locale.text("Language / 03", "语言 / 03")} title={locale.text("Named work stays obvious.", "让命名工作始终清晰。")} summary={locale.text("Use def for statement bodies, expression arrows for small callbacks, and one native Promise model for all asynchronous code.", "语句体使用 def，小回调使用表达式箭头，所有异步代码共用一套原生 Promise 模型。")} tags={["def", "async + await", "else if", "match"]} />
+        <Head
+            title={headTitle("/guide/language/functions", locale.isChinese())}
+            description={locale.text("How functions declare parameters and results, how calls order positional and named arguments, and what async adds.", "函数如何声明参数与结果、调用如何排列位置实参与具名实参，以及 async 增加了什么。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Language / 05", "语言 / 05")}
+                title={locale.text("Functions and calls", "函数与调用")}
+                summary={locale.text("Parameters and defaults, result inference, named arguments, arrows, async, and the three closed bounds.", "参数与默认值、结果推断、具名实参、箭头函数、async，以及三个封闭的界。")}
+            />
+            <SectionList items={sections} />
             <Prose>
-                <h2 id="functions">{locale.text("Named functions", "命名函数")}</h2>
-                <CodeBlock code={functionCode} />
-                <p>{locale.text("Parameters always declare their types. No result annotation means ", "参数始终声明类型。没有结果标注表示 ")}<code>-&gt; null</code>{locale.text(", may end naturally, and returns the one empty value. A data-returning function declares ", "，函数可以自然结束并返回唯一空值。返回数据的函数声明 ")}<code>-&gt; T</code>{locale.text(" and must return on every reachable path. Defaults are evaluated before the body and make an argument omittable without making its type optional.", "，并必须在每条可达路径上返回值。默认参数在函数体前求值，让参数可省略但不会让类型变为可选。")}</p>
-                <p>{locale.text("Function values use ", "函数值使用 ")}<code>(ParameterTypes) -&gt; Result</code>{locale.text(". A final rest element uses ", "。末尾剩余元素使用 ")}<code>...Type</code>{locale.text(". Multiline imports, parameters, type arguments, objects, constructors, Lists, and calls accept a trailing comma.", "。多行导入、参数、类型参数、对象、构造、List 与调用都接受尾随逗号。")}</p>
-                <p>{locale.text("Calls may name parameters with ", "调用可以使用 ")}<code>name=value</code>{locale.text(". Positional arguments come first; names must exist and appear once. Expressions still evaluate once in written order before values are passed in declaration order, so naming never changes side-effect order. Rest parameters remain positional.", " 具名参数。位置参数必须在前；名称必须存在且只能出现一次。表达式仍按源码书写顺序求值一次，再按声明顺序传值，因此具名不会改变副作用顺序。剩余参数仍是位置形式。")}</p>
-
-                <h2 id="arrows">{locale.text("Expression callbacks", "表达式回调")}</h2>
-                <CodeBlock code={arrowCode} />
-                <p>{locale.text("An arrow body is exactly one expression. The object form after ", "箭头函数体严格只有一个表达式。")}<code>=&gt;</code>{locale.text(" is unambiguously an object expression, not a JavaScript block. Use a named ", " 后的对象形式明确是对象表达式，不是 JavaScript 代码块。回调需要语句、局部控制流或多个 return 时，请使用命名 ")}<code>def</code>{locale.text(" when a callback needs statements, local control flow, or multiple returns.", "。")}</p>
-
-                <h2 id="async">{locale.text("Asynchronous work", "异步工作")}</h2>
-                <CodeBlock code={asyncCode} />
-                <ul>
-                    <li>{locale.text("For ", "对于 ")}<code>async def</code>{locale.text(", async methods, actions, and async arrows, ", "、异步方法、action 与异步箭头，")}<code>-&gt; T</code>{locale.text(" names the resolved value; callers receive ", " 表示解析后的值，调用方收到 ")}<code>Promise&lt;T&gt;</code>{locale.text(".", "。")}</li>
-                    <li>{locale.text("Returning either ", "返回 ")}<code>T</code>{locale.text(" or ", " 或 ")}<code>Promise&lt;T&gt;</code>{locale.text(" is valid because native Promise adoption flattens the result.", " 都有效，因为原生 Promise 接纳会展平结果。")}</li>
-                    <li>{locale.text("Writing ", "异步声明写成 ")}<code>-&gt; Promise&lt;T&gt;</code>{locale.text(" on an async declaration is rejected to preserve one spelling.", " 会被拒绝，以保持唯一写法。")}</li>
-                    <li><code>await</code>{locale.text(" belongs to the nearest async boundary and cannot leak into a synchronous callback or parameter default.", " 属于最近的异步边界，不能泄漏进同步回调或参数默认值。")}</li>
-                    <li>{locale.text("A Promise must be awaited before becoming a JSX child.", "Promise 成为 JSX 子内容前必须先 await。")}</li>
+                <h2 id="declaring">{locale.text("Parameters and results", "参数与结果")}</h2>
+                <p>
+                    {locale.text("A parameter states its type, and a default is written at the declaration rather than reconstructed in the body. A body-backed function may omit its result annotation; where the inferred result is null, omitting it is required, so a declaration that writes an arrow always promises something a caller can use. An explicit result stays a checked contract on every reachable path.", "参数写出自己的类型，默认值写在声明处，而不是在函数体里重建。有函数体的函数可以省略结果注解；当推断结果为 null 时必须省略，因此写出了箭头的声明总是承诺了调用方能用的东西。显式结果在每条可达路径上都保持为受检契约。")}
+                </p>
+                <CodeBlock code={declaringCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("A function that returns on some paths and falls off the end on others infers an optional result.", "在部分路径返回、其余路径落到末尾的函数，推断出的是可选结果。")}
+                    </li>
+                    <li>
+                        {locale.text("Recursive result dependencies solve to a fixed point, so a recursive helper needs no annotation to break a cycle.", "递归的结果依赖会解到不动点，因此递归辅助函数不需要靠注解来打断循环。")}
+                    </li>
                 </ul>
 
-                <h2 id="rest">{locale.text("Rest parameters and spreads", "剩余参数与展开")}</h2>
+                <h2 id="calls">{locale.text("Positional, then named", "先位置，后具名")}</h2>
+                <p>
+                    {locale.text("A call writes positional arguments first and named arguments after, and named arguments may be reordered while source expressions still evaluate left to right. Once a fixed parameter has a default every following fixed parameter does too, which is what keeps the positional and the named reading of one call identical.", "调用先写位置实参，再写具名实参；具名实参可以重排，而源表达式仍按从左到右求值。一旦某个固定参数带上默认值，其后的每个固定参数也必须带，正是这一点让同一次调用的位置读法与具名读法完全一致。")}
+                </p>
+                <CodeBlock code={callsCode} />
+                <p>
+                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                </p>
+                <CodeBlock code={colonErrorCode} />
+                <p>
+                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                </p>
+                <CodeBlock code={colonErrorOutput} />
+
+                <h2 id="arrows">{locale.text("Arrows", "箭头函数")}</h2>
+                <p>
+                    {locale.text("An arrow carries one expression. A parameter may be bare, parenthesized, or annotated; an unannotated parameter takes its type from the annotation the arrow is assigned to. A callback that needs two statements becomes a named def, which is why an arrow body never opens a block and a brace after the arrow opens a record.", "箭头承载一个表达式。参数可以是裸的、加括号的或带注解的；未注解的参数从箭头被赋值到的那个注解取得类型。需要两条语句的回调改写成具名 def——这正是箭头体从不开启块、而箭头之后的花括号打开的是记录的原因。")}
+                </p>
+                <CodeBlock code={arrowsCode} />
+
+                <h2 id="rest">{locale.text("Rest parameters and spread", "剩余参数与展开")}</h2>
+                <p>
+                    {locale.text("A rest parameter collects the remaining positional arguments into a List of one element type, and the same three dots spread a List back into a call. Fixed parameters may precede a rest parameter, with or without defaults.", "剩余参数把余下的位置实参收进一个单一元素类型的 List，同样的三个点也把 List 展开回一次调用。固定参数可以出现在剩余参数之前，带默认值与否都可以。")}
+                </p>
                 <CodeBlock code={restCode} />
-                <p>{locale.text("The rest annotation is the element type, so ", "剩余参数标注的是元素类型，因此 ")}<code>values</code>{locale.text(" is a ", " 是 ")}<code>List&lt;number&gt;</code>{locale.text(". Rest parameters must be final, typed, and have no default. Functions, methods, expression arrows, and extern functions support them; components retain named JSX props and class constructors fixed arity.", "。剩余参数必须位于末尾、有类型且无默认值。函数、方法、表达式箭头与 extern 函数支持它；组件保留命名 JSX 属性，类构造器保留固定参数数量。")}</p>
 
-                <h2 id="control">{locale.text("Block control flow", "块级控制流")}</h2>
-                <CodeBlock code={flowCode} />
-                <p>{locale.text("Blocks use a colon and indentation. The middle branch is ", "代码块使用冒号与缩进。中间条件分支写 ")}<code>else if</code>{locale.text(", not Python ", "，而不是 Python 的 ")}<code>elif</code>{locale.text(". ", "。")}<code>for</code>{locale.text(" iterates Lists, strings, Set values, or Map keys. ", " 迭代 List、字符串、Set 值或 Map 键。")}<code>break</code>{locale.text(" and ", " 与 ")}<code>continue</code>{locale.text(" stay inside their loop. Conditions use strict boolean/optional rules.", " 保持在所属循环内。条件使用严格布尔/可选规则。")}</p>
+                <h2 id="async">{locale.text("Async functions", "async 函数")}</h2>
+                <p>
+                    {locale.text("An async declaration annotates the resolved value, and the call type is the Promise around it. There are two ways to consume a call that answers a Promise: await waits for it, and the async statement runs it detached. A call whose Promise is dropped is a diagnostic, so a task that nobody is waiting for is a written decision rather than an omission.", "async 声明注解的是解析后的值，而调用类型是包在外面的 Promise。消费返回 Promise 的调用有两种写法：await 等待它，async 语句让它脱离当前流程运行。直接丢弃 Promise 的调用会得到诊断，因此「没有人等待这个任务」是一个写出来的决定，而不是一次遗漏。")}
+                </p>
+                <CodeBlock code={asyncCode} />
+                <p>
+                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                </p>
+                <CodeBlock code={droppedErrorCode} />
+                <p>
+                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                </p>
+                <CodeBlock code={droppedErrorOutput} />
 
-                <h2 id="match">{locale.text("Finite matching", "有限匹配")}</h2>
-                <CodeBlock code={matchCode} />
-                <p><code>match</code>{locale.text(" evaluates its subject once and never falls through. Cases may group literals or enum members, check a runtime type, or destructure nested records and Lists. ", " 只求值主体一次且绝不贯穿。case 可以组合字面量或枚举成员、检查运行时类型，也可以解构嵌套记录与 List。")}</p>
-                <p><code>{"{field}"}</code>{locale.text(" captures a record field, ", " 捕获记录字段，")}<code>[first, ...rest]</code>{locale.text(" matches the List prefix and captures a fresh remaining List, and ", " 匹配 List 前缀并捕获一个新的剩余 List，")}<code>_</code>{locale.text(" is the only wildcard. Nested patterns use the same rules; ", " 是唯一通配符。嵌套模式遵循相同规则；")}<code>as name</code>{locale.text(" binds the whole value, while ", " 绑定整个值，而 ")}<code>if</code>{locale.text(" adds a guard after bindings exist. Guards are not exhaustive. Complete enum matches, wildcard cases, complete List length patterns, and irrefutable required record fields participate in required-return analysis. Match remains statement-only, so branches use ordinary return or assignment.", " 在绑定建立后添加守卫。守卫不计入穷尽性；完整枚举、通配分支、完整 List 长度模式与必需记录字段上的不可失败模式会参与必需返回分析。match 仍然是语句，分支使用普通 return 或赋值。")}</p>
-
-                <h2 id="errors">{locale.text("Errors, cleanup, and assertions", "错误、清理与断言")}</h2>
-                <CodeBlock code={errorCode} />
-                <p><code>throw</code>{locale.text(" accepts an ", " 接受 ")}<code>Error</code>{locale.text(" or subclass. ", " 或其子类。")}<code>catch</code>{locale.text(" always receives a reliable Error. Foreign primitive throws retain a readable message; objects and functions receive a stable message, remain available as cause, and never have conversion hooks invoked. ", " 始终收到可靠 Error。外部基础值保留可读消息；对象与函数使用稳定消息并保留为 cause，规范化过程绝不会调用其转换 hook。")}<code>try</code>{locale.text(" requires ", " 必须有 ")}<code>catch</code>, <code>finally</code>{locale.text(", or both. ", " 或两者。")}<code>finally</code>{locale.text(" cannot return or break/continue out of cleanup, so it cannot silently replace a pending result or error. ", " 不能通过 return 或 break/continue 离开清理块，因此不会静默替换待返回结果或异常。")}<code>assert condition, message</code>{locale.text(" stays active in production, narrows proven optionals, and throws ", " 在生产中仍然有效，会收窄被证明的可选值，并在不变量失败时抛出 ")}<code>AssertionError</code>{locale.text(" on failure.", "。")}</p>
-                <Callout title={locale.text("Document the public surface", "为公开表面编写文档")}><p>{locale.text("Contiguous ", "连续的 ")}<code>///</code>{locale.text(" comments attach Markdown docs to the next declaration and flow through module metadata into editor hover and completion. They do not emit runtime docstrings or create a second type language.", " 注释把 Markdown 文档附加到下一个声明，并通过模块元数据进入编辑器悬停与补全。它们不会生成运行时 docstring，也不创建第二套类型语言。")}</p></Callout>
-
-                <div class="next-links"><Link to="/docs/language/collections"><strong>{locale.text("Next: Collections", "下一步：集合")}</strong><span>{locale.text("Choose List, Map, Set, and official helper modules.", "选择 List、Map、Set 与官方辅助模块。")}</span></Link><Link to="/docs/language/classes"><strong>{locale.text("Classes", "类")}</strong><span>{locale.text("Use nominal identity and explicit inheritance.", "使用名义身份与显式继承。")}</span></Link></div>
+                <h2 id="generics">{locale.text("Type parameters and bounds", "类型参数与界")}</h2>
+                <p>
+                    {locale.text("Type parameters exist on functions and on class methods. Type arguments are inferred at each call site and there is no explicit instantiation syntax. Three bounds are published — Comparable for ordering, Text for conversion to text, and Data for structured encoding — and the list is closed: there is no constraint language a library could extend.", "类型参数存在于函数与类方法上。类型实参在每个调用处推断，且没有显式实例化语法。已发布的界有三个——用于排序的 Comparable、用于转为文本的 Text、用于结构化编码的 Data——这份清单是封闭的：不存在可供库扩展的约束语言。")}
+                </p>
+                <CodeBlock code={genericsCode} />
+                <Callout title={locale.text("Why the bound list is closed", "界的清单为何封闭")}>
+                    <p>
+                        {locale.text("A user-defined bound would put the reader back to reading a library before reading the code in front of them. The same reason keeps decorators out: the modifier keywords are a closed vocabulary the compiler owns, and a new marking arrives as a new keyword rather than as an extension point.", "用户自定义的界会让读者在读眼前这段代码之前，先得去读一个库。装饰器被排除在外是同样的理由：修饰关键字是一份由编译器持有的封闭词汇，新的标记以新关键字的形式到来，而不是作为扩展点。")}
+                    </p>
+                </Callout>
             </Prose>
+            <DocsPager
+                previous={guidePrevious("/guide/language/functions")}
+                next={guideNext("/guide/language/functions")}
+            />
         </DocsShell>
     </main>

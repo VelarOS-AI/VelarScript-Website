@@ -41,9 +41,9 @@
     "@velarscript/docs-kit": "0.1.0",
     "@velarscript/site-ui": "0.1.0",
     "@velarscript/ui": "0.2.0",
-    "@velarscript/web": "0.10.0-dev"
+    "@velarscript/web": "0.10.0"
   },
   "devDependencies": {
-    "@velarscript/cli": "0.10.0-dev"
+    "@velarscript/cli": "0.10.0"
   }
 }

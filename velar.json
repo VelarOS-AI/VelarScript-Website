@@ -10,7 +10,7 @@
     "publicConfig": {
       "repositoryUrl": "https://github.com/VelarOS-AI/VelarScript",
       "releaseChannel": "development",
-      "languageVersion": "0.10.0-dev",
+      "languageVersion": "0.10.0",
       "webApiVersion": "0.10"
     },
     "build": {

@@ -1,3 +1,5 @@
+import {rgb, rgba} from "velar/look"
+
 export const paper = rgb(247, 245, 240)
 export const paperPure = rgb(251, 250, 247)
 export const ink = rgb(17, 18, 22)

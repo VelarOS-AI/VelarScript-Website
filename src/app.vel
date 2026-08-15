@@ -1,28 +1,50 @@
 import {publicConfig} from "velar/config"
 import {Head, RouteContext, Router, route} from "velar/web"
+import {clamp} from "velar/look"
 import {Container, SiteFoundation, foundationInkSoft as inkSoft, foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {primaryNav, SiteRuntimeConfig} from "./content.vel"
 import {SiteFooter, SiteHeader} from "./components/site-shell.vel"
-import {DocsOverview} from "./pages/docs-overview.vel"
-import {DocsGettingStarted} from "./pages/docs-getting-started.vel"
-import {DocsProject} from "./pages/docs-project.vel"
 import {Examples} from "./pages/examples.vel"
+import {GuideForFrameworks} from "./pages/guide-for-frameworks.vel"
+import {GuideForJavaScript} from "./pages/guide-for-javascript.vel"
+import {GuideIntroduction} from "./pages/guide-introduction.vel"
+import {GuideQuickStart} from "./pages/guide-quick-start.vel"
 import {Home} from "./pages/home.vel"
-import {CoreLibrary} from "./pages/core-library.vel"
 import {LanguageClasses} from "./pages/language-classes.vel"
 import {LanguageCollections} from "./pages/language-collections.vel"
-import {LanguageDocs} from "./pages/language-docs.vel"
+import {LanguageControlFlow} from "./pages/language-control-flow.vel"
+import {LanguageErrors} from "./pages/language-errors.vel"
 import {LanguageFunctions} from "./pages/language-functions.vel"
+import {LanguageJavaScript} from "./pages/language-javascript.vel"
 import {LanguageModules} from "./pages/language-modules.vel"
+import {LanguageOperators} from "./pages/language-operators.vel"
+import {LanguageRecords} from "./pages/language-records.vel"
+import {LanguageTesting} from "./pages/language-testing.vel"
+import {LanguageTextNumbers} from "./pages/language-text-numbers.vel"
 import {LanguageTypes} from "./pages/language-types.vel"
-import {Learn} from "./pages/learn.vel"
-import {TestingDeployment} from "./pages/testing-deployment.vel"
+import {LanguageValues} from "./pages/language-values.vel"
+import {ReferenceCli} from "./pages/reference-cli.vel"
+import {ReferenceDesktop} from "./pages/reference-desktop.vel"
+import {ReferenceEscapeHatches} from "./pages/reference-escape-hatches.vel"
+import {ReferenceModules} from "./pages/reference-modules.vel"
+import {ReferenceNamespaces} from "./pages/reference-namespaces.vel"
+import {ReferenceNode} from "./pages/reference-node.vel"
+import {ReferenceOverview} from "./pages/reference-overview.vel"
+import {ReferenceProject} from "./pages/reference-project.vel"
+import {ReferenceWeb} from "./pages/reference-web.vel"
+import {WebBeyondLook} from "./pages/web-beyond-look.vel"
 import {WebBrowser} from "./pages/web-browser.vel"
 import {WebComponents} from "./pages/web-components.vel"
 import {WebData} from "./pages/web-data.vel"
-import {WebDocs} from "./pages/web-docs.vel"
-import {WebReactivity} from "./pages/web-reactivity.vel"
+import {WebLifecycle} from "./pages/web-lifecycle.vel"
+import {WebLook} from "./pages/web-look.vel"
+import {WebMotion} from "./pages/web-motion.vel"
+import {WebOverview} from "./pages/web-overview.vel"
+import {WebResources} from "./pages/web-resources.vel"
 import {WebRouting} from "./pages/web-routing.vel"
+import {WebState} from "./pages/web-state.vel"
+import {WebTemplates} from "./pages/web-templates.vel"
+import {WebTesting} from "./pages/web-testing.vel"
 
 const config = publicConfig(SiteRuntimeConfig)
 
@@ -40,9 +62,9 @@ const missingTitleLook = look:
     maxWidth = 900px
     margin = 0
     marginTop = 16px
-    fontSize = clamp(4rem, 10vw, 9rem)
-    lineHeight = 0.9
-    letterSpacing = -0.07em
+    fontSize = clamp(2.4rem, 6vw, 4rem)
+    lineHeight = 1.02
+    letterSpacing = -0.04em
 
 const missingMessageLook = look:
     margin = 0
@@ -52,31 +74,71 @@ const missingMessageLook = look:
 
 component NotFound(route: RouteContext):
     const locale = useLocale()
-    return <main class="missing" look={missingLook} data-not-found><Head title={locale.text("Page not found · VelarScript", "页面不存在 · VelarScript")} description={locale.text("The requested VelarScript documentation page does not exist.", "请求的 VelarScript 文档页面不存在。")} /><Container><span class="code" look={missingCodeLook}>404 / {locale.text("UNKNOWN ROUTE", "未知路由")}</span><h1 look={missingTitleLook}>{locale.text("Nothing is written here yet.", "这里还没有内容。")}</h1><p look={missingMessageLook}>{locale.text("No VelarScript page matches", "没有 VelarScript 页面匹配")} {route.path}.</p></Container></main>
+    return <main class="missing" look={missingLook} data-not-found>
+        <Head
+            title={locale.text("Page not found · VelarScript", "页面不存在 · VelarScript")}
+            description={locale.text("The requested VelarScript documentation page does not exist.", "请求的 VelarScript 文档页面不存在。")}
+        />
+        <Container>
+            <span class="code" look={missingCodeLook}>404 / {locale.text("UNKNOWN ROUTE", "未知路由")}</span>
+            <h1 look={missingTitleLook}>{locale.text("Nothing is written here yet.", "这里还没有内容。")}</h1>
+            <p look={missingMessageLook}>{locale.text("No VelarScript page matches", "没有 VelarScript 页面匹配")} {route.path}.</p>
+        </Container>
+    </main>
 
 const routes = [
     route("/", Home),
-    route("/learn", Learn),
-    route("/docs", DocsOverview),
-    route("/docs/getting-started", DocsGettingStarted),
-    route("/docs/project", DocsProject),
-    route("/docs/language", LanguageDocs),
-    route("/docs/language/types", LanguageTypes),
-    route("/docs/language/functions", LanguageFunctions),
-    route("/docs/language/collections", LanguageCollections),
-    route("/docs/language/classes", LanguageClasses),
-    route("/docs/language/modules", LanguageModules),
-    route("/docs/web", WebDocs),
-    route("/docs/web/components", WebComponents),
-    route("/docs/web/reactivity", WebReactivity),
-    route("/docs/web/routing", WebRouting),
-    route("/docs/web/data", WebData),
-    route("/docs/web/browser", WebBrowser),
-    route("/docs/core", CoreLibrary),
-    route("/docs/testing", TestingDeployment),
+    route("/guide", GuideIntroduction),
+    route("/guide/quick-start", GuideQuickStart),
+    route("/guide/for-javascript", GuideForJavaScript),
+    route("/guide/for-frameworks", GuideForFrameworks),
+    route("/guide/language/values", LanguageValues),
+    route("/guide/language/operators", LanguageOperators),
+    route("/guide/language/types", LanguageTypes),
+    route("/guide/language/records", LanguageRecords),
+    route("/guide/language/functions", LanguageFunctions),
+    route("/guide/language/text-numbers", LanguageTextNumbers),
+    route("/guide/language/collections", LanguageCollections),
+    route("/guide/language/control-flow", LanguageControlFlow),
+    route("/guide/language/classes", LanguageClasses),
+    route("/guide/language/errors", LanguageErrors),
+    route("/guide/language/modules", LanguageModules),
+    route("/guide/language/javascript", LanguageJavaScript),
+    route("/guide/language/testing", LanguageTesting),
+    route("/guide/web", WebOverview),
+    route("/guide/web/components", WebComponents),
+    route("/guide/web/templates", WebTemplates),
+    route("/guide/web/state", WebState),
+    route("/guide/web/resources", WebResources),
+    route("/guide/web/lifecycle", WebLifecycle),
+    route("/guide/web/look", WebLook),
+    route("/guide/web/motion", WebMotion),
+    route("/guide/web/beyond-look", WebBeyondLook),
+    route("/guide/web/routing", WebRouting),
+    route("/guide/web/browser", WebBrowser),
+    route("/guide/web/data", WebData),
+    route("/guide/web/testing", WebTesting),
+    route("/reference", ReferenceOverview),
+    route("/reference/namespaces", ReferenceNamespaces),
+    route("/reference/modules", ReferenceModules),
+    route("/reference/node", ReferenceNode),
+    route("/reference/web", ReferenceWeb),
+    route("/reference/cli", ReferenceCli),
+    route("/reference/project", ReferenceProject),
+    route("/reference/escape-hatches", ReferenceEscapeHatches),
+    route("/reference/desktop", ReferenceDesktop),
     route("/examples", Examples),
 ]
 
+// The paths the router really serves, so a test can compare them with the
+// navigation data instead of trusting that the two lists were edited together.
+export const routePaths: List<string> = routes.map(entry => entry.path)
+
 export component App:
     const locale = useLocale()
-    return <SiteFoundation><Head title={locale.text("VelarScript — Write the Web clearly", "VelarScript — 清晰地书写 Web")} language={locale.languageTag()} /><SiteHeader items={primaryNav} repositoryUrl={config.repositoryUrl} version={config.languageVersion} /><div id="main-content" tabindex="-1"><Router routes={routes} fallback={NotFound} /></div><SiteFooter repositoryUrl={config.repositoryUrl} version={config.languageVersion} /></SiteFoundation>
+    return <SiteFoundation>
+        <Head title="VelarScript" language={locale.languageTag()} />
+        <SiteHeader items={primaryNav} repositoryUrl={config.repositoryUrl} version={config.languageVersion} />
+        <div id="main-content" tabindex="-1"><Router routes={routes} fallback={NotFound} /></div>
+        <SiteFooter repositoryUrl={config.repositoryUrl} version={config.languageVersion} />
+    </SiteFoundation>

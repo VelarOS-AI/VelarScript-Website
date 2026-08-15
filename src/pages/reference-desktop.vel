@@ -1,0 +1,132 @@
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
+import {headTitle, referenceNav} from "../content.vel"
+
+const hostDesktopCode = `import {appDataDirectory, homeDirectory, packaged, platform, projectDirectory, selectProjectDirectory, selectedProjectDirectory} from "velar/desktop"\n\n// platform() and packaged() are the two synchronous host reads: the host\n// operating system name, and whether this build runs from a packaged\n// application rather than from \`velar dev\`.\nexport def hostSummary() -> string:\n    return f"{platform()}|{packaged()}"\n\n// The three directories every Desktop application eventually needs, each an\n// absolute path validated by the module before it becomes VelarScript text.\nexport async def hostDirectories() -> string:\n    const home = await homeDirectory()\n    const data = await appDataDirectory()\n    const project = await projectDirectory()\n    return f"{home}|{data}|{project}"\n\n// The two project-directory spellings differ in exactly one thing:\n// selectedProjectDirectory() reads what the user has already chosen and\n// answers null when nothing is chosen, while selectProjectDirectory() opens\n// the system picker and answers null when the user cancels. One is a query,\n// the other is a dialog.\nexport async def readSelectedProject() -> string:\n    return await selectedProjectDirectory() ?? "nothing selected yet"\n\nexport async def askForProject() -> string:\n    return await selectProjectDirectory() ?? "the picker was cancelled"`
+const taskDesktopCode = `import {ProjectTaskCommand, ProjectTaskOutputChannel, startProjectTask} from "velar/desktop"\n\n// ProjectTaskCommand is the closed set of toolchain commands a Desktop\n// application may start: check, test, build, and run.\nexport def commandLabel(command: ProjectTaskCommand) -> string:\n    match command:\n        case ProjectTaskCommand.check:\n            return "velar check"\n        case ProjectTaskCommand.test:\n            return "velar test"\n        case ProjectTaskCommand.build:\n            return "velar build"\n        case ProjectTaskCommand.run:\n            return "velar run"\n\n// Every handle publishes a release operation, so \`using\` supplies its contract\n// and the handle is closed at the end of the block.\nexport async def runCheck() -> string:\n    using task = await startProjectTask(ProjectTaskCommand.check)\n    let lines = 0\n    async for output in task:\n        if output.channel == ProjectTaskOutputChannel.stdout:\n            lines += 1\n    const result = await task.wait()\n    return f"{task.pid} {lines} {result.code}"`
+const testDesktopCode = `import {appDataDirectory, makeDirectory, readText, removeFile, writeText} from "velar/desktop-test"\n\n// velar/desktop-test is the test-process door into the Desktop host, the way\n// velar/web-test is the door into the running page. Its runtime exists only\n// under \`velar test --browser\`.\nexport def fixturePath(root: string, name: string) -> string:\n    return f"{root}/fixtures/{name}"\n\nexport async def fixtureRound() -> string:\n    const data = await appDataDirectory()\n    const folder = fixturePath(data, "round")\n    const file = f"{folder}/note.txt"\n    await makeDirectory(folder)\n    await writeText(file, "written by the test")\n    const read = await readText(file, 4096)\n    await removeFile(file)\n    return read`
+
+const manifestJsonCode = `{\n  "formatVersion": 2,\n  "entry": "main.vel",\n  "outDir": "dist/renderer",\n  "publicDir": "public",\n  "extensions": ["@velarscript/desktop"],\n  "desktop": {\n    "productName": "VelarScript Desktop tour",\n    "identifier": "dev.velarscript.tour",\n    "window": { "width": 1040, "height": 720, "minWidth": 640, "minHeight": 480 },\n    "permissions": {\n      "files": ["app-data", "project"],\n      "processes": [],\n      "terminal": false,\n      "network": [],\n      "environment": [],\n      "secrets": []\n    }\n  }\n}`
+
+const hostMembers = [
+    {name: "platform", signature: "platform() -> string", summary: "The host operating system name. One of the two synchronous host reads.", summaryZh: "宿主操作系统名。两个同步宿主读取之一。"},
+    {name: "packaged", signature: "packaged() -> bool", summary: "Whether this build runs from a packaged application rather than from velar dev.", summaryZh: "当前构建是从打包后的应用运行，还是从 velar dev 运行。"},
+    {name: "homeDirectory", signature: "homeDirectory() -> Promise<string>", summary: "An absolute path the module has validated before it becomes VelarScript text.", summaryZh: "在成为 VelarScript 文本之前，由模块验证过的绝对路径。"},
+    {name: "appDataDirectory", signature: "appDataDirectory() -> Promise<string>", summary: "The application's own data root, and one of the two grantable file roots.", summaryZh: "应用自身的数据根目录，也是两个可授权文件根之一。"},
+    {name: "projectDirectory", signature: "projectDirectory() -> Promise<string>", summary: "The project root, the other grantable file root.", summaryZh: "项目根目录，另一个可授权的文件根。"},
+    {name: "selectedProjectDirectory", signature: "selectedProjectDirectory() -> Promise<string?>", summary: "Reads what the user has already chosen and answers null when nothing is chosen. A query.", summaryZh: "读取用户已经选择的目录；未选择时返回 null。这是一次查询。"},
+    {name: "selectProjectDirectory", signature: "selectProjectDirectory() -> Promise<string?>", summary: "Opens the system picker and answers null when the user cancels. A dialog.", summaryZh: "打开系统选择器；用户取消时返回 null。这是一个对话框。"},
+]
+
+const handleMembers = [
+    {name: "startProjectTask", signature: "startProjectTask(command, args?, options?) -> Promise<ProjectTask>", summary: "Starts one toolchain command. Options carry timeout and maxOutputBytes.", summaryZh: "启动一条工具链命令。选项包含 timeout 与 maxOutputBytes。"},
+    {name: "ProjectTaskCommand", signature: ".check · .test · .build · .run", summary: "The closed set of toolchain commands a Desktop application may start.", summaryZh: "桌面应用可以启动的工具链命令的封闭集合。"},
+    {name: "ProjectTask", signature: "pid · next() · wait() · stop()", summary: "next() yields one {channel, text} record at a time, which is exactly the shape async for consumes; wait() answers the exit result; stop() ends it early.", summaryZh: "next() 每次产出一条 {channel, text} 记录，正是 async for 消费的形状；wait() 给出退出结果；stop() 提前结束它。"},
+    {name: "ProjectTaskOutputChannel", signature: ".stdout · .stderr", summary: "Discriminates one line of output.", summaryZh: "用来区分一行输出的来源。"},
+    {name: "openTerminal", signature: "openTerminal(options?) -> Promise<TerminalSession>", summary: "Opens a PTY. Options carry columns and rows.", summaryZh: "打开一个 PTY。选项包含 columns 与 rows。"},
+    {name: "TerminalSession", signature: "pid · write() · resize() · next() · wait() · close()", summary: "A long-lived interactive session; resize takes the new column and row counts.", summaryZh: "一个长期存活的交互会话；resize 接受新的列数与行数。"},
+    {name: "languageServer", signature: "languageServer() -> Promise<LanguageServer>", summary: "Launches the toolchain's language server.", summaryZh: "启动工具链的语言服务器。"},
+    {name: "LanguageServer", signature: "send(message) · next() · close()", summary: "One message in, one message out, and an explicit close.", summaryZh: "发一条消息、收一条消息，外加显式的关闭。"},
+]
+
+const permissionMembers = [
+    {name: "files", signature: `["app-data", "project"]`, summary: "Which file roots the application may reach. Filesystem calls are confined to the declared roots.", summaryZh: "应用可以触达哪些文件根。文件系统调用被限制在已声明的根内。"},
+    {name: "processes", signature: `["git"]`, summary: "Exact executable names. A grant is authority to run that native program and its descendant tree as the current user; it is not an operating-system sandbox.", summaryZh: "精确的可执行文件名。授权意味着以当前用户身份运行该原生程序及其后代进程树；它不是操作系统沙箱。"},
+    {name: "terminal", signature: "false", summary: "Whether openTerminal may allocate a PTY at all.", summaryZh: "openTerminal 是否可以分配 PTY。"},
+    {name: "network", signature: `["https://api.example.com"]`, summary: "Exact HTTPS or loopback origins. The manifest grant is rechecked before every redirect hop, so a redirect cannot escape it.", summaryZh: "精确的 HTTPS 或回环来源。每一跳重定向之前都会重新检查清单授权，因此重定向无法逃出它。"},
+    {name: "environment", signature: `["CI"]`, summary: "Individual uppercase readable variable names, captured once at application startup: at most 64 variables, 64 KiB per value, 1 MiB across names plus values.", summaryZh: "逐个列出的大写可读变量名，在应用启动时捕获一次：至多 64 个变量、每个值至多 64 KiB、名字加值合计至多 1 MiB。"},
+    {name: "secrets", signature: `["PROVIDER_API_KEY"]`, summary: "A separate host-only list that cannot overlap the readable one. A secret may be consumed only through a velar/http.secretHeader descriptor; velar/env and the WebView bridge never receive its value.", summaryZh: "单独的、只属于宿主的列表，不能与可读列表重叠。密钥只能通过 velar/http.secretHeader 描述符消费；velar/env 与 WebView 桥接永远拿不到它的值。"},
+]
+
+const testMembers = [
+    {name: "appDataDirectory", signature: "appDataDirectory() -> Promise<string>", summary: "The same host root, read from the test process.", summaryZh: "同一个宿主根目录，从测试进程读取。"},
+    {name: "projectDirectory", signature: "projectDirectory() -> Promise<string>", summary: "The project root, read from the test process.", summaryZh: "项目根目录，从测试进程读取。"},
+    {name: "makeDirectory", signature: "makeDirectory(path) -> Promise<null>", summary: "Creates a fixture directory.", summaryZh: "创建一个夹具目录。"},
+    {name: "readText", signature: "readText(path, maxBytes) -> Promise<string>", summary: "Reads a fixture back within a byte budget.", summaryZh: "在字节预算内把夹具读回来。"},
+    {name: "writeText", signature: "writeText(path, text) -> Promise<null>", summary: "Writes a fixture.", summaryZh: "写入一个夹具。"},
+    {name: "removeFile", signature: "removeFile(path) -> Promise<null>", summary: "Removes it again.", summaryZh: "再把它删除。"},
+]
+
+const sections = [
+    {id: "shape", label: "One project, one WebView", labelZh: "一个项目，一个 WebView"},
+    {id: "host", label: "The host surface", labelZh: "宿主表面"},
+    {id: "handles", label: "The three handles", labelZh: "三种句柄"},
+    {id: "permissions", label: "Declared permissions", labelZh: "声明式权限"},
+    {id: "testing", label: "velar/desktop-test", labelZh: "velar/desktop-test"},
+]
+
+export component ReferenceDesktop:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/reference/desktop", locale.isChinese())}
+            description={locale.text("What the Desktop extension adds on top of the Web extension, and how its permissions are declared.", "桌面扩展在 Web 扩展之上增加了什么，以及它的权限如何声明。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={referenceNav}>
+            <PageHeader
+                kicker={locale.text("Reference", "参考")}
+                title={locale.text("Desktop extension", "桌面扩展")}
+                summary={locale.text("One project behind one system WebView: fifteen exports, three long-lived handles, and a manifest that declares exactly what the application may reach.", "一个项目，位于一个系统 WebView 之后：十五个导出、三种长期存活的句柄，以及一份精确声明应用可触达范围的清单。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <h2 id="shape">{locale.text("One project, one WebView", "一个项目，一个 WebView")}</h2>
+                <p>
+                    {locale.text("A Desktop application uses one VelarScript module graph with the same components, JSX, Look, state, derived values, and actions as Web. There is no renderer and main split, so the same module that declares a component may call the host. Renderer and main processes and their versioned transport are internal security boundaries, not user-facing project concepts.", "桌面应用使用同一张 VelarScript 模块图，其中的组件、JSX、Look、状态、派生值与 action 与 Web 完全相同。没有渲染进程与主进程之分，因此声明组件的那个模块可以直接调用宿主。渲染进程与主进程及其版本化传输是内部的安全边界，而不是面向用户的项目概念。")}
+                </p>
+                <p>
+                    {locale.text("@velarscript/desktop composes @velarscript/web, so every Web spelling is available here unchanged. This page covers only what Desktop adds. Because velar/desktop reaches the machine, every call belongs behind a control the reader presses rather than in code that runs while the page builds.", "@velarscript/desktop 组合了 @velarscript/web，因此每一种 Web 拼写在这里都原样可用。本页只覆盖桌面新增的部分。由于 velar/desktop 触达机器，每次调用都应当放在读者按下的控件之后，而不是放在页面构建期间运行的代码里。")}
+                </p>
+
+                <h2 id="host">{locale.text("The host surface", "宿主表面")}</h2>
+                <p>
+                    {locale.text("Seven host functions: two synchronous reads and five paths. Desktop home, app-data, and project APIs accept only host-returned absolute paths of at most 4,096 code units.", "七个宿主函数：两个同步读取与五个路径。桌面的 home、app-data 与 project API 只接受由宿主返回、至多 4096 个码点的绝对路径。")}
+                </p>
+                <MemberTable
+                    rows={hostMembers}
+                    caption={locale.text("velar/desktop — the seven host functions", "velar/desktop —— 七个宿主函数")}
+                />
+                <CodeBlock code={hostDesktopCode} />
+
+                <h2 id="handles">{locale.text("The three handles", "三种句柄")}</h2>
+                <p>
+                    {locale.text("Every handle publishes a release operation, so `using` supplies its contract and the handle is closed at the end of the block. Starting a child process, opening a PTY, and launching a language server are all real actions.", "每种句柄都发布了释放操作，因此 `using` 会提供它的契约，句柄在块结束时被关闭。启动子进程、打开 PTY、启动语言服务器都是真实动作。")}
+                </p>
+                <MemberTable
+                    rows={handleMembers}
+                    caption={locale.text("velar/desktop — ProjectTask, TerminalSession, LanguageServer", "velar/desktop —— ProjectTask、TerminalSession、LanguageServer")}
+                />
+                <CodeBlock code={taskDesktopCode} />
+                <Callout title={locale.text("Navigation retires handles rather than transferring them", "导航会让句柄退役，而不是移交它们")}>
+                    <p>
+                        {locale.text("Every main-document bridge instance generates an unguessable private generation and combines it with its page-local request number, so a response from a destroyed document cannot settle a request whose counter restarted after reload. Navigation retirement discards old responses and transfers no process or HTTP handles: the capability worker stops the old document's processes, aborts its HTTP bodies, and rejects cross-generation handle use. A filesystem operation already committed by the operating system is not rolled back, but its obsolete result is never delivered into the new document.", "每个主文档桥接实例都会生成一个不可猜测的私有世代号，并与页面本地的请求编号组合，因此来自已销毁文档的响应，无法落定一个在重载后计数器重新开始的请求。导航退役会丢弃旧响应，并且不移交任何进程或 HTTP 句柄：能力 worker 会停止旧文档的进程、中止它的 HTTP 请求体，并拒绝跨世代的句柄使用。已被操作系统提交的文件系统操作不会回滚，但它过期的结果绝不会被投递进新文档。")}
+                    </p>
+                </Callout>
+
+                <h2 id="permissions">{locale.text("Declared permissions", "声明式权限")}</h2>
+                <p>
+                    {locale.text("The manifest declares which files, processes, terminals, network origins, environment variables, and secrets the application may reach. A process-only application does not need to grant velar/fs: its omitted cwd is the application launch directory. An explicit Desktop process cwd must be an existing directory inside a granted file root, and Desktop does not allow an option map to replace PATH.", "清单声明应用可以触达哪些文件、进程、终端、网络来源、环境变量与密钥。只用进程的应用无需授予 velar/fs：省略的 cwd 就是应用启动目录。显式的桌面进程 cwd 必须是某个已授权文件根内的现有目录，且桌面不允许用选项 map 替换 PATH。")}
+                </p>
+                <CodeBlock code={manifestJsonCode} />
+                <MemberTable
+                    rows={permissionMembers}
+                    caption={locale.text("desktop.permissions — six lists", "desktop.permissions —— 六个列表")}
+                />
+                <p>
+                    {locale.text("Desktop applies two distinct symlink rules. Content operations such as read, write, append, copy, list, and canonicalization follow the target only after its real path remains inside a granted root. Entry operations such as info, move, and removeFile operate on the final directory entry itself, so removing or moving an in-root symlink never mutates its target.", "桌面应用两套不同的符号链接规则。读、写、追加、复制、列举与规范化这类内容操作，只有在目标的真实路径仍位于已授权根内时才跟随该目标。info、move 与 removeFile 这类条目操作作用于最终的目录项本身，因此删除或移动一个位于根内的符号链接，绝不会改动它指向的目标。")}
+                </p>
+
+                <h2 id="testing">{locale.text("velar/desktop-test", "velar/desktop-test")}</h2>
+                <p>
+                    {locale.text("velar/desktop-test is the test-process door into the Desktop host, the way velar/web-test is the door into the running page. Its runtime exists only under velar test --browser — every export fails otherwise — so a *.test.vel module writes the fixture round and the browser test is where it actually runs.", "velar/desktop-test 是测试进程通往桌面宿主的那道门，正如 velar/web-test 是通往运行中页面的门。它的运行时只在 velar test --browser 下存在——否则每个导出都会失败——因此 *.test.vel 模块写下夹具流程，而浏览器测试才是它真正运行的地方。")}
+                </p>
+                <MemberTable
+                    rows={testMembers}
+                    caption={locale.text("velar/desktop-test — six asynchronous exports", "velar/desktop-test —— 六个异步导出")}
+                />
+                <CodeBlock code={testDesktopCode} />
+            </Prose>
+        </DocsShell>
+    </main>

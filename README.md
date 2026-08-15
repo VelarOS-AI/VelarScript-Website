@@ -2,9 +2,10 @@
 
 [![VelarScript Website CI](https://github.com/VelarOS-AI/VelarScript-Website/actions/workflows/ci.yml/badge.svg)](https://github.com/VelarOS-AI/VelarScript-Website/actions/workflows/ci.yml)
 
-The official VelarScript language and Web framework website. Its application,
-components, controlled Look styles, content, and tests are written in VelarScript.
-Repository automation stays in small explicit JavaScript and shell scripts.
+The official VelarScript site: a language guide, a library and toolchain
+reference, and the example index. Its pages, components, controlled Look styles,
+navigation data, and tests are written in VelarScript; repository automation
+stays in small explicit JavaScript and shell scripts.
 
 Contribution and private security-reporting expectations are recorded in
 [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
@@ -25,17 +26,34 @@ The project is organized bottom-up:
 
 - `packages/ui`: private, theme-neutral accessibility, interaction, and layout
   primitives built from native browser behavior.
-- `packages/site-ui`: VelarOS-aligned brand and marketing-site components built
-  on the neutral primitives.
-- `packages/docs-kit`: documentation navigation and content patterns composed
-  from the UI and brand layers.
-- `src`: official language content and product pages built from those packages.
+- `packages/site-ui`: the paper, ink, and sea foundation, the locale composer,
+  the syntax renderer, and the page-level primitives built on those primitives.
+- `packages/docs-kit`: the documentation shell, page header, section list,
+  code block, callout, member table, and chapter pager.
+- `src`: the site itself — `content.vel` declares the navigation, `app.vel`
+  declares the routes, and `src/pages` holds one module per page.
+
+The information architecture is three sections. `/guide` is one ordered chain
+of thirty chapters — four for getting started, thirteen for the language, and
+thirteen for the Web extension — declared once in `content.vel` so the sidebar
+and the chapter pager read the same list. `/reference` is nine pages covering
+the library contract, the resident namespaces, the pure and capability modules,
+the CLI, the project manifest, the escape hatches, and the Desktop extension.
+`/examples` indexes the applications kept in the language repository.
+
+Every code block on the site is compiled before it can be published.
+`npm run samples:check` reads each sample from the page that declares it and
+decides what to do with it from the constant's name suffix: `*ShellCode`,
+`*TextCode`, `*JsonCode`, `*TreeCode`, `*JsCode`, `*TsCode`, `*CssCode`, and
+`*HtmlCode` are not VelarScript and are skipped; `*AppCode` is checked as a
+complete web program; `*NodeCode` and `*DesktopCode` are checked against those
+targets; `*ErrorCode` is a teaching counter-example that must still produce a
+diagnostic, and every `VEL` code quoted in a same-prefix `*ErrorOutput` constant
+must appear in the diagnostics that sample really produces; every other `*Code`
+must compile with no diagnostics. There is no central registry to keep in sync.
 
 `npm run packages:check` performs a dry package inventory for all three source
 packages; `npm run validate` includes that gate before the production build.
-The first interactive dogfood set covers disclosure, modal focus ownership,
-checked DOM IDs, form field relationships, and framework-owned validation
-errors.
 
 The public CI pins the toolchain checkout to one exact source commit and runs
 the same bootstrap, validation, production verification, and Chromium/Firefox/

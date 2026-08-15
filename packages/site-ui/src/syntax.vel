@@ -1,13 +1,13 @@
 import {enumerate} from "velar/collections"
-import {findMatches, includes, matches, startsWith} from "velar/text"
+import {rgb} from "velar/look"
 
 type SyntaxToken:
     value: string
     kind: string
 
-const keywords = "|abstract|action|and|as|assert|async|await|break|case|catch|class|cleanup|component|computed|const|constructor|continue|def|else|enum|export|extends|extern|finally|for|from|if|import|in|is|let|look|match|mounted|null|not|or|override|pass|private|resource|return|state|static|super|throw|try|type|unsafe|watch|while|"
+const keywords = "|abstract|action|and|as|assert|async|await|break|case|catch|class|cleanup|component|const|constructor|continue|css|def|else|enum|export|expose|exposes|extends|extern|false|finally|for|from|if|import|in|is|js|keyframes|let|look|match|module|mounted|not|null|or|override|pass|private|resource|return|state|static|super|test|throw|true|try|type|unsafe|watch|while|"
 const builtins = "|Angle|bool|Border|Color|Duration|Error|Event|Image|Length|List|Look|Map|number|Opacity|Percentage|Promise|Set|Shadow|Spacing|string|Track|TrackList|Transition|unknown|WebNode|"
-const tokenPattern = "#[^\\n]*|//[^\\n]*|\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|[A-Za-z_][A-Za-z0-9_]*|[0-9]+(?:\\.[0-9]+)?|[ \\t\\r\\n]+|."
+const tokenPattern = `#[^\\n]*|//[^\\n]*|"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'|[A-Za-z_][A-Za-z0-9_]*|[0-9]+(?:\\.[0-9]+)?|[ \\t\\r\\n]+|.`
 
 const syntaxLook = look:
     color = rgb(243, 240, 232)
@@ -28,24 +28,26 @@ def tokenLook(kind: string) -> Look:
             fontStyle = "italic"
 
 def tokenKind(value: string) -> string:
-    if startsWith(value, "#") or startsWith(value, "//"):
+    if value.startsWith("#") or value.startsWith("//"):
         return "comment"
-    if startsWith(value, "\"") or startsWith(value, "'"):
+    if value.startsWith(`"`) or value.startsWith("'"):
         return "string"
-    if matches(value, "^[0-9]"):
+    if Text.matches(value, "^[0-9]"):
         return "number"
-    if includes(keywords, f"|{value}|"):
+    if keywords.has(f"|{value}|"):
         return "keyword"
-    if includes(builtins, f"|{value}|") or matches(value, "^[A-Z]"):
+    if builtins.has(f"|{value}|") or Text.matches(value, "^[A-Z]"):
         return "type"
     return "plain"
 
 def syntaxTokens(source: string) -> List<SyntaxToken>:
-    return findMatches(source, tokenPattern).map(item => {
+    return Text.findMatches(source, tokenPattern).map(item => {
         value: item.value,
         kind: tokenKind(item.value),
     })
 
 export component SyntaxCode(code: string):
     const tokens = enumerate(syntaxTokens(code))
-    return <code look={syntaxLook}>{tokens.map(item => <span key={item.index} class={f"token-{item.value.kind}"} look={tokenLook(item.value.kind)}>{item.value.value}</span>)}</code>
+    return <code look={syntaxLook}>
+        {tokens.map(item => <span key={item.index} class={f"token-{item.value.kind}"} look={tokenLook(item.value.kind)}>{item.value.value}</span>)}
+    </code>

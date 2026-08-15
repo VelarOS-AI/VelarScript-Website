@@ -12,6 +12,6 @@
     "README.md"
   ],
   "peerDependencies": {
-    "@velarscript/web": "0.10.0-dev"
+    "@velarscript/web": "0.10.0"
   }
 }

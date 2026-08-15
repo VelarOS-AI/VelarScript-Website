@@ -1,0 +1,109 @@
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
+
+const blocksCode = `async def save():\n    print("saved")\n\ndef close():\n    print("closed")\n\nexport async def tryCatchFinally() -> string:\n    try:\n        await save()\n    catch error:\n        return error.message\n    finally:\n        close()\n    return "ok"\n\n// catch with no finally, and try/finally with no catch.\nexport def catchOnly(values: List<number>) -> number:\n    try:\n        return values[99]\n    catch error:\n        return -1\n\nexport def finallyOnly() -> string:\n    try:\n        return "body"\n    finally:\n        close()\n\n// The Error contract's own members.\nexport def errorContract(error: Error) -> string:\n    const message = error.message\n    const name = error.name\n    const code = error.code\n    const stack = error.stack\n    const cause = error.cause\n    return f"{message} {name} {code} {stack} {cause == null}"`
+const textErrorCode = "export def refuse(reason: string):\n    throw reason"
+const textErrorOutput = "main.vel:2:11 error VEL4001: Only Error values can be thrown, received string\n    throw reason\n          ^^^^^^"
+const raisedCode = `type Config:\n    retries: number\n\n// The three classes the compiler itself raises.\nexport def compilerRaised(untrusted: unknown, values: List<number>) -> string:\n    try:\n        const config = Config.parse(untrusted)\n        return str(values[config.retries])\n    catch error:\n        if error is ValidationError:\n            // ValidationError carries the detail its parse site reports.\n            return f"{error.path} {error.field} {error.reason}"\n        if error is NarrowingError:\n            return "a stale flow fact"\n        if error is IndexError:\n            return "an out-of-range position"\n        throw error\n\n// Each may be constructed and thrown directly.\nexport def constructAndThrow(kind: string):\n    if kind == "validation":\n        throw ValidationError("bad shape")\n    if kind == "narrowing":\n        throw NarrowingError("stale fact")\n    if kind == "index":\n        throw IndexError("out of range")\n    throw Error("ordinary")`
+const capabilityCode = `// The five capability classes are reserved Core bindings and need no import.\nexport def capabilityRecovery(error: Error) -> string:\n    if error is FileNotFoundError:\n        return f"missing: {error.path}"\n    else if error is PermissionError:\n        return f"refused: {error.path}"\n    else if error is NotADirectoryError:\n        return f"not a directory: {error.path}"\n    else if error is FileExistsError:\n        return f"already there: {error.path}"\n    else if error is AddressInUseError:\n        return "bind another port, or port 0 for any free one"\n    else:\n        return error.message\n\n// code is the class name in string form, and it always agrees with is.\nexport def crossesAJsonBoundary(error: Error) -> string:\n    return Json.stringify({code: error.code, message: error.message})`
+const customCode = `class TimeoutError extends Error:\n    constructor(message: string, const seconds: number):\n        super(message)\n\nclass SlowTimeoutError extends TimeoutError:\n    constructor(seconds: number):\n        super("far too slow", seconds)\n\nexport def customHierarchy(error: Error) -> string:\n    // An Error subclass reports under its declared name, and a type test\n    // narrows to the fields that subclass adds.\n    if error is SlowTimeoutError:\n        return f"{error.name} {error.code} {error.seconds}"\n    if error is TimeoutError:\n        return f"{error.name} after {error.seconds}"\n    return error.name\n\n// finally is cleanup, not a control-flow override: a loop wholly inside one\n// may still use its own break and continue.\nexport def loopInsideFinally(values: List<number>) -> number:\n    let seen = 0\n    try:\n        seen += 1\n    finally:\n        for value in values:\n            if value < 0:\n                continue\n            if value > 10:\n                break\n            seen += value\n    return seen`
+const expressionCode = `type Config:\n    retries: number\n\ndef readPort() -> number:\n    return 8080\n\nasync def load(url: string) -> string:\n    return url\n\nexport async def tryExpression(untrusted: unknown, url: string) -> string:\n    const parsed = try Config.parse(untrusted)\n    const port = try readPort() ?? 8080\n    const body = try await load(url)\n    // try reaches exactly as far as await does — over the whole postfix chain\n    // — so a failure anywhere in the chain produces one absent answer.\n    const chained = try url.trim().upper().slice(0, 3)\n    return f"{parsed?.retries} {port} {body} {chained}"\n\n// The result must be consumed; a bare try statement is rejected.\nexport def consumedResult(untrusted: unknown) -> number:\n    const config = try Config.parse(untrusted)\n    if config == null:\n        return 0\n    return config.retries`
+const bareErrorCode = "type Config:\n    retries: number\n\nexport def load(untrusted: unknown):\n    try Config.parse(untrusted)"
+const bareErrorOutput = "main.vel:5:5 error VEL4034: A 'try' result must be consumed — bind it, test it, or supply a fallback with '??'; to run something and ignore its failure on purpose, use a try/catch block\n    try Config.parse(untrusted)\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+const assertionsCode = `type Config:\n    retries: number\n\nexport def assertions(width: number, user: Config?) -> number:\n    assert 0 < width <= 4096 else "Width is outside the supported range"\n    // A successful assertion narrows checked optional and type facts.\n    assert user != null else "A configuration is required"\n    return user.retries + width\n\nexport def bareAssertion(flag: bool):\n    assert flag`
+
+const pointsLook = look:
+    display = "grid"
+    gap = 8px
+    margin = 0
+    paddingInlineStart = 20px
+
+const sections = [
+    {id: "blocks", label: "try, catch, finally", labelZh: "try、catch、finally"},
+    {id: "classes", label: "The published classes", labelZh: "已发布的错误类"},
+    {id: "custom", label: "Custom hierarchies", labelZh: "自定义层级"},
+    {id: "expression", label: "Expected failure", labelZh: "预期中的失败"},
+    {id: "assertions", label: "Assertions", labelZh: "断言"},
+]
+
+export component LanguageErrors:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/guide/language/errors", locale.isChinese())}
+            description={locale.text("The error hierarchy VelarScript publishes, the try expression, and what an assertion promises at runtime.", "VelarScript 发布的错误层级、try 表达式，以及断言在运行时承诺了什么。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Language / 10", "语言 / 10")}
+                title={locale.text("Errors and assertions", "错误与断言")}
+                summary={locale.text("try, catch, finally, the compiler-raised and capability error classes, and assertions that stay in production.", "try、catch、finally，编译器抛出的错误类与能力错误类，以及在生产中依然生效的断言。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <h2 id="blocks">{locale.text("try, catch, finally", "try、catch、finally")}</h2>
+                <p>
+                    {locale.text("catch binds the error and finally runs on every path out of the block. Either clause may stand without the other, so cleanup with no recovery needs no empty catch. Only an Error value can be thrown, which is what lets the caught binding carry a known contract rather than an unknown one.", "catch 绑定错误，finally 在离开该块的每条路径上执行。两个子句都可以单独出现，因此「只清理不恢复」不需要写一个空的 catch。只有 Error 值可以被抛出，正因如此，捕获到的绑定携带的是一份已知契约，而不是未知的东西。")}
+                </p>
+                <CodeBlock code={blocksCode} />
+                <p>
+                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                </p>
+                <CodeBlock code={textErrorCode} />
+                <p>
+                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                </p>
+                <CodeBlock code={textErrorOutput} />
+
+                <h2 id="classes">{locale.text("The published classes", "已发布的错误类")}</h2>
+                <p>
+                    {locale.text("Three classes are raised by the compiler's own checks: a failed validation, a stale flow fact, and an out-of-range position. Five more describe capability failures a program can recover from, and each carries the detail its site can report. All eight are reserved Core bindings, so recovery needs no import.", "有三个类由编译器自身的检查抛出：验证失败、过期的流事实，以及越界的位置。另有五个描述程序可以从中恢复的能力失败，每一个都携带其发生位置能够报告的细节。这八个都是保留的 Core 绑定，因此恢复代码无需导入。")}
+                </p>
+                <CodeBlock code={raisedCode} />
+                <CodeBlock code={capabilityCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Discrimination is the class, tested with is. code is that same identity in string form, for a boundary where classes cannot travel.", "判别的依据是类，用 is 检验。code 是同一身份的字符串形式，供类无法穿越的边界使用。")}
+                    </li>
+                    <li>
+                        {locale.text("The two always agree, so a log line and a branch never disagree about what failed.", "两者始终一致，因此日志行与分支不会对「失败的是什么」给出不同答案。")}
+                    </li>
+                </ul>
+
+                <h2 id="custom">{locale.text("Custom hierarchies", "自定义层级")}</h2>
+                <p>
+                    {locale.text("A program's own error classes extend Error and may add fields. A subclass reports under its declared name, and a type test narrows to the fields that subclass adds, so recovery reads the detail without a cast. finally remains cleanup rather than a control-flow override: a loop wholly inside one keeps its own break and continue.", "程序自己的错误类继承 Error，并可以增加字段。子类以自己声明的名字报告，类型检验会收窄到该子类新增的字段上，因此恢复代码不需要强制转换就能读到细节。finally 始终是清理而不是控制流的覆盖：完全位于其内部的循环仍然保有自己的 break 与 continue。")}
+                </p>
+                <CodeBlock code={customCode} />
+
+                <h2 id="expression">{locale.text("Expected failure", "预期中的失败")}</h2>
+                <p>
+                    {locale.text("Some failures are answers rather than incidents. The try expression turns one into an optional, so a caller that already has a fallback does not open a block for it. It reaches exactly as far as await does — over the whole postfix chain — and its result must be consumed, which keeps a swallowed failure from being invisible.", "有些失败是答案，而不是事故。try 表达式把这样的失败变成可选值，让本来就有回退方案的调用方不必为它开一个块。它的作用范围与 await 完全相同——覆盖整条后缀链——并且它的结果必须被消费，这让被吞掉的失败无法保持不可见。")}
+                </p>
+                <CodeBlock code={expressionCode} />
+                <p>
+                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                </p>
+                <CodeBlock code={bareErrorCode} />
+                <p>
+                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                </p>
+                <CodeBlock code={bareErrorOutput} />
+
+                <h2 id="assertions">{locale.text("Assertions", "断言")}</h2>
+                <p>
+                    {locale.text("An assertion states an invariant the program depends on, and it stays active in production. That is the whole reason it carries a message: the message is what a person reads when the invariant turns out to be false in a running system. A successful assertion also narrows, so the line after it may use the fact it established.", "断言陈述程序所依赖的不变量，并且在生产中依然生效。它带有一条消息正是出于这个理由：当这个不变量在运行中的系统里被证伪时，人读到的就是这条消息。成功的断言同样会收窄，因此它之后的一行可以使用它所建立的事实。")}
+                </p>
+                <CodeBlock code={assertionsCode} />
+                <Callout title={locale.text("An assertion is not a development-only check", "断言不是仅限开发期的检查")}>
+                    <p>
+                        {locale.text("Nothing strips assertions from a build. A condition worth asserting is worth checking where the program actually runs, and a condition not worth checking there should not be written as an assertion in the first place.", "没有任何构建会剥掉断言。值得断言的条件，也值得在程序真正运行的地方被检查；而在那里不值得检查的条件，一开始就不该写成断言。")}
+                    </p>
+                </Callout>
+            </Prose>
+            <DocsPager previous={guidePrevious("/guide/language/errors")} next={guideNext("/guide/language/errors")} />
+        </DocsShell>
+    </main>

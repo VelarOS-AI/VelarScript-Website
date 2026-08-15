@@ -1,0 +1,172 @@
+import {Head, Link} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
+
+const reactivityJsCode = `import { useCallback, useMemo, useState } from "react";\n\nfunction TaskRow({ task, onComplete }) {\n  return (\n    <li data-task={task.id}>\n      <button type="button" onClick={() => onComplete(task.id)} disabled={task.done}>\n        {task.title}\n      </button>\n    </li>\n  );\n}\n\nexport function TaskPanel() {\n  const [tasks, setTasks] = useState([\n    { id: "read", title: "Read the chapter", done: false },\n    { id: "write", title: "Write a module", done: false },\n  ]);\n  const [visits, setVisits] = useState(0);\n\n  const openCount = useMemo(() => tasks.filter((task) => !task.done).length, [tasks]);\n\n  const complete = useCallback((id) => {\n    setTasks((current) =>\n      current.map((task) => (task.id === id ? { ...task, done: true } : task)),\n    );\n    setVisits((current) => current + 1);\n  }, []);\n\n  return (\n    <section data-task-panel>\n      <p data-summary>{openCount} of {tasks.length} open, {visits} visits</p>\n      <ul>\n        {tasks.map((task) => (\n          <TaskRow key={task.id} task={task} onComplete={complete} />\n        ))}\n      </ul>\n    </section>\n  );\n}`
+const reactivityCode = `type Task:\n    id: string\n    title: string\n    done: bool\n\n// A record prop enters as a transitive readonly view, so a row reports the\n// identity it was given and the owner performs the change.\ncomponent TaskRow(task: Task, complete: (string) -> null):\n    def onClick():\n        complete(task.id)\n\n    return <li data-task={task.id}>\n        <button type="button" on:click={onClick} disabled={task.done}>{task.title}</button>\n    </li>\n\n// The same screen. There is no dependency array, no memo call, and no batching\n// call, because the compiler owns what those APIs exist to control: a derived\n// value is a computed accessor, an update is an assignment, and a burst of\n// synchronous assignments publishes once.\nexport component TaskPanel:\n    state tasks: List<Task> = [\n        {id: "read", title: "Read the chapter", done: false},\n        {id: "write", title: "Write a module", done: false},\n    ]\n    state visits = 0\n\n    const openCount = computed(() => tasks.filter(task => not task.done).size)\n\n    def complete(id: string):\n        for task in tasks:\n            if task.id == id:\n                task.done = true\n        visits += 1\n\n    return <section data-task-panel>\n        <p data-summary>{f"{openCount()} of {tasks.size} open, {visits} visits"}</p>\n        <ul>{tasks.map(task => <TaskRow key={task.id} task={task} complete={complete} />)}</ul>\n    </section>`
+const lookCode = `import {rgb, spacing} from "velar/look"\n\nconst ink = rgb(24, 31, 46)\n\n// The literal is built once, where it is written, so the compiler extracts it\n// into the build's stylesheet. A variant that depends on a value is still a\n// literal: the function returns a Look, and the element chooses between them.\ndef panelLook(compact: bool) -> Look:\n    return look:\n        display = "grid"\n        gap = 16px\n        padding = spacing(16px, 20px)\n        color = ink\n\n        if compact:\n            gap = 8px\n            padding = 8px\n\n        if viewport.width <= 720px:\n            padding = 12px\n\nexport component Panel(compact: bool = false, children: WebNode):\n    return <section look={panelLook(compact)}>{children}</section>`
+const schemaTsCode = `import { z } from "zod";\n\n// The declaration the type checker reads.\nexport interface Profile {\n  id: string;\n  name: string;\n  plan: "free" | "team";\n}\n\n// The declaration the runtime checks. Two statements of one fact, in two\n// languages, kept in agreement by review.\nexport const ProfileSchema = z.object({\n  id: z.string(),\n  name: z.string(),\n  plan: z.enum(["free", "team"]),\n});\n\nexport async function loadProfile(): Promise<Profile> {\n  const response = await fetch("/api/profile");\n  return ProfileSchema.parse(await response.json());\n}`
+const boundaryCode = `import {http} from "velar/http"\nimport {storage} from "velar/storage"\n\nexport enum Plan:\n    free\n    team\n\n// One declaration. The compiler checks every use of Profile, and the same\n// declaration is the runtime validator at the boundary — there is no second\n// schema to keep in agreement with the first.\nexport type Profile:\n    id: string\n    name: string\n    plan: Plan\n\nconst unknownProfile: Profile = {id: "", name: "", plan: Plan.free}\n\nexport async def loadProfile() -> Profile:\n    return await http.get("/api/profile").parse(Profile)\n\nexport def cachedProfile() -> Profile:\n    return storage.get("profile", Profile, unknownProfile)`
+const determinismCode = `import {expect} from "velar/test"\n\nstate pending = 0\nstate completed = 0\n\naction submit() -> number:\n    pending += 1\n    await Promise.sleep(10ms)\n    pending -= 1\n    completed += 1\n    return completed\n\n// The unit half needs no fake clock and no wrapper that flushes the framework:\n// tick() answers the pending reactive flush, and an action's own pending flag is\n// part of the language rather than a testing convention.\ntest "a submission publishes its progress and its result":\n    expect(submit.pending).toBe(false)\n    const running = submit()\n    expect(submit.pending).toBe(true)\n    expect(await running).toBe(1)\n    await tick()\n    expect(submit.pending).toBe(false)\n    expect(pending).toBe(0)\n    expect(completed).toBe(1)`
+const outputNodeCode = `type Task:\n    id: string\n    title: string\n    done: bool\n\ndef openCount(tasks: readonly List<Task>) -> number:\n    return tasks.filter(task => not task.done).size\n\nconst tasks: List<Task> = [{id: "read", title: "Read the chapter", done: false}]\nprint(f"{openCount(tasks)} of {tasks.size} open")`
+const outputJsCode = `import {\n  __velarCollectionSize,\n  __velarListFilter,\n} from "velar/compiler-runtime-collection-lowering-v1";\n\nfunction openCount(tasks) {\n  return __velarCollectionSize(__velarListFilter(tasks, task => !(task.done)));\n}\n\nconst tasks = [{ id: "read", title: "Read the chapter", done: false }];\n\nconsole.log(\`${openCount(tasks)} of ${__velarCollectionSize(tasks)} open\`);`
+
+const sections = [
+    {id: "reactivity", label: "The reactive model", labelZh: "响应式模型"},
+    {id: "styling", label: "Where the styles are computed", labelZh: "样式在哪里被算出来"},
+    {id: "boundary", label: "One declaration at the boundary", labelZh: "边界上只有一份声明"},
+    {id: "testing", label: "The host owns the seams", labelZh: "宿主拥有各处接缝"},
+    {id: "output", label: "The output and the exit", labelZh: "产物与出口"},
+]
+
+const pointsLook = look:
+    display = "grid"
+    gap = 7px
+    marginTop = 18px
+    marginBottom = 4px
+    paddingLeft = 22px
+
+const linkLook = look:
+    color = sea
+    textDecoration = "none"
+
+    if @hover:
+        textDecoration = "underline"
+
+export component GuideForFrameworks:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/guide/for-frameworks", locale.isChinese())}
+            description={locale.text("Property-level reactivity, statically extracted Look, one declaration at the data boundary, owned test seams, and readable output — with the cost of each.", "属性级响应、静态提取的 Look、数据边界上的单份声明、受拥有的测试接缝，以及可读产物——并列出各自的代价。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Start / 04", "开始 / 04")}
+                title={locale.text("For framework users", "写给框架使用者")}
+                summary={locale.text("What the Web extension does differently from a component framework you already know, by what mechanism, and at what cost.", "Web 扩展与你已经熟悉的组件框架有何不同、依据什么机制，以及代价是什么。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <p>
+                    {locale.text("This page assumes you have written components before. Everything below is a mechanism comparison: what the compiler owns here that a library must ask the application to manage there. It contains no measurements. VelarScript compiles to JavaScript and runs on the same engine, so a hot loop runs at the same speed as the JavaScript it becomes; the only claims worth making are about framework-level mechanisms, and those are stated as mechanisms rather than as scores.", "本页假定你写过组件。下面的一切都是机制对照：在这里由编译器拥有的东西，在那里则需要库请应用自己管理。本页不包含任何测量数据。VelarScript 编译到 JavaScript 并运行在同一个引擎上，因此热循环的速度与它变成的那份 JavaScript 相同；唯一值得作出的断言是关于框架级机制的，而这些断言以机制的方式陈述，不以分数的方式陈述。")}
+                </p>
+
+                <h2 id="reactivity">{locale.text("The reactive model", "响应式模型")}</h2>
+                <p>
+                    {locale.text("A virtual-DOM framework re-runs a component function and compares the result, so the application supplies the hints that keep the comparison cheap: a dependency array so a derived value is not rebuilt, a stable callback identity so a child is not re-rendered, an immutable update so the comparison can be shallow.", "虚拟 DOM 框架会重新运行组件函数并比较结果，因此应用需要提供让比较保持廉价的提示：依赖数组，避免派生值被重建；稳定的回调身份，避免子组件被重渲染；不可变更新，让比较可以是浅比较。")}
+                </p>
+                <CodeBlock code={reactivityJsCode} />
+                <p>
+                    {locale.text("The Web extension tracks the property or the collection key a reader actually read, and updates the elements that read it. There is no tree to diff, so there is nothing for a memo or a batching call to repair — and those names are ordinary identifiers rather than removed APIs, because they were never part of the surface. The same screen is written as a state assignment and a derived accessor.", "Web 扩展追踪读取者实际读到的属性或集合键，并更新读取了它的那些元素。没有需要 diff 的树，因此也没有需要 memo 或批处理调用去修补的东西——而这些名字只是普通标识符，不是被移除的 API，因为它们从未属于这个表面。同一个界面写作一次 state 赋值加一个派生访问器。")}
+                </p>
+                <CodeBlock code={reactivityCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Consecutive synchronous assignments publish once, as a compiler and runtime contract; the assignment and the visit counter above are one commit rather than two.", "连续的同步赋值只发布一次，这是编译器与运行时的契约；上面的赋值与访问计数是一次提交，而不是两次。")}
+                    </li>
+                    <li>
+                        {locale.text("A derived value is computed(() => value), the single derived-cache API. It has no dependency list because the dependencies are what it read.", "派生值是 computed(() => value)，唯一的派生缓存 API。它没有依赖列表，因为它的依赖就是它读到的东西。")}
+                    </li>
+                    <li>
+                        {locale.text("The cost is that reactivity is a language declaration rather than a library call: state, watch, resource, and action are compiler-owned words, so a project cannot swap in a different reactive library and keep the same source.", "代价是：响应式是语言声明，而不是库调用。state、watch、resource 与 action 都是编译器拥有的词，因此项目无法在保留同一份源码的前提下换用另一个响应式库。")}
+                    </li>
+                    <li>
+                        {locale.text("A second cost is that a record prop enters as a transitive readonly view, so a child reports an identity and the owner performs the change — which is why the row above passes an id rather than mutating the task it was given.", "第二个代价是：记录 prop 以传递性只读视图进入，因此子组件报告身份、由拥有者执行改动——这正是上面那一行传的是 id、而不是直接改动收到的 task 的原因。")}
+                    </li>
+                </ul>
+
+                <h2 id="styling">{locale.text("Where the styles are computed", "样式在哪里被算出来")}</h2>
+                <p>
+                    {locale.text("A runtime style library evaluates a template or an object during render, derives a class name from the result, and inserts or updates a rule in the document. That work is per render and per instance, and the rule text only exists once the component has run.", "运行时样式库在渲染期间求值一个模板或一个对象，从结果导出类名，并向文档中插入或更新一条规则。这份工作按每次渲染、每个实例发生，而规则文本只有在组件运行之后才存在。")}
+                </p>
+                <p>
+                    {locale.text("A look literal is built once, where it is written, and the compiler extracts it into the build's stylesheet. A variant that depends on a value is still a literal — a function returns a Look and the element chooses between Looks — so the rule text exists before the application starts and nothing is injected while it runs. Conditions that a runtime library expresses by re-evaluating, such as a breakpoint or a colour scheme, are media conditions inside the literal.", "look 字面量在它被书写的位置构建一次，编译器把它提取进构建的样式表。依赖某个取值的变体仍然是字面量——由函数返回一个 Look，元素在多个 Look 之间选择——因此规则文本在应用启动之前就已存在，运行期间不注入任何东西。运行时库靠重新求值来表达的条件，例如断点或配色方案，在这里是字面量内部的媒体条件。")}
+                </p>
+                <CodeBlock code={lookCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Equal literals share one emitted rule, including across module boundaries, and the emitted selectors are readable tokens rather than generated class names.", "写法相同的字面量共享一条发出的规则，跨模块边界也是如此；发出的选择器是可读的记号，而不是生成的类名。")}
+                    </li>
+                    <li>
+                        {locale.text("The cost is a controlled closed set: the property table, the value kinds, the element states, the pseudo-element targets, and the media conditions are all fixed. Multi-column layout, generated-content counters, container queries, and the print and orientation media types have no Look spelling.", "代价是一个受控的封闭集合：属性表、取值种类、元素状态、伪元素目标与媒体条件全部是固定的。多栏布局、生成内容计数器、容器查询，以及 print 与 orientation 媒体类型都没有 Look 拼写。")}
+                    </li>
+                    <li>
+                        {locale.text("Reaching outside that set is an explicit boundary — a native stylesheet imported before or after Look — which is unchecked CSS whose class names and cascade are the stylesheet author's responsibility.", "越出该集合是一条显式边界——以 before look 或 after look 导入的原生样式表——那是未受检的 CSS，其类名与层叠由样式表作者负责。")}
+                    </li>
+                    <li>
+                        {locale.text("A third cost: a look literal cannot read reactive state, because that read would be a snapshot. The reactive decision belongs on the element instead.", "第三项代价：look 字面量不能读取响应式状态，因为那样的读取会是一份快照。响应式的决定应当放在元素上。")}
+                    </li>
+                </ul>
+
+                <h2 id="boundary">{locale.text("One declaration at the boundary", "边界上只有一份声明")}</h2>
+                <p>
+                    {locale.text("Static types are erased before the program runs, so a typed codebase that also validates its inputs states each shape twice: once for the type checker and once for the validator. The two are kept in agreement by review, and the failure mode is silent — a field added to one and not the other type-checks and passes validation until the data disagrees.", "静态类型在程序运行前被擦除，因此既有类型又要验证输入的代码库会把每个形状陈述两遍：一遍给类型检查器，一遍给验证器。两者靠人工评审保持一致，而失败方式是静默的——只加到其中一边的字段既能通过类型检查也能通过验证，直到数据本身不一致为止。")}
+                </p>
+                <CodeBlock code={schemaTsCode} />
+                <p>
+                    {locale.text("A declared type in VelarScript is the runtime validator. The same declaration the compiler checks against is the one that parses an HTTP response, reads a stored value, decodes a form, and validates the manifest's public configuration — so a change reaches every use at once and there is no second schema to keep in agreement.", "在 VelarScript 中，已声明的类型就是运行时验证器。编译器据以检查的那份声明，正是解析 HTTP 响应、读取存储值、解码表单以及验证清单公开配置时使用的那一份——因此一次改动同时抵达每一处用法，也不存在需要保持一致的第二套 schema。")}
+                </p>
+                <CodeBlock code={boundaryCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("A validator is a real compiler-known type even when it is reached through a dynamic JavaScript boundary, so an arbitrary object cannot silently disable validation.", "即使经由动态 JavaScript 边界抵达，验证器也必须是编译器认识的真实类型，因此任意对象无法静默地关闭验证。")}
+                    </li>
+                    <li>
+                        {locale.text("A stored value written by JavaScript in a different representation is foreign data and returns the declared fallback rather than entering typed code.", "由 JavaScript 以另一种表示写入的存储值属于外来数据，读取时返回声明的回退值，而不是进入带类型的代码。")}
+                    </li>
+                    <li>
+                        {locale.text("The cost is that the boundary decoder is the language's, not yours: it supports the shapes the decoder documents, and business rules such as required text, trimming, and minimums stay ordinary application code.", "代价是：边界解码器属于语言而不属于你——它支持解码器文档所载的那些形状，而必填文本、去空白、最小值这类业务规则仍然是普通的应用代码。")}
+                    </li>
+                </ul>
+
+                <h2 id="testing">{locale.text("The host owns the seams", "宿主拥有各处接缝")}</h2>
+                <p>
+                    {locale.text("A test is flaky when the thing it waits for is not the thing the framework schedules. Here the scheduler is part of the language: tick() answers the pending reactive flush, an action publishes its own pending flag, and a timer or a subscription answers its own stop function — so a test asserts on declared surfaces rather than on a sleep.", "当测试等待的东西不是框架真正调度的东西时，测试就会不稳定。在这里调度器属于语言：tick() 回答待处理的响应式刷新，action 发布它自己的 pending 标志，定时器与订阅各自返回自己的 stop 函数——因此测试断言的是已声明的表面，而不是一次 sleep。")}
+                </p>
+                <CodeBlock code={determinismCode} />
+                <p>
+                    {locale.text("The browser half is the same idea one level out. The test command builds a real production site with its content security policy, starts an isolated local host, and gives each test a fresh browser context; the controller owns the storage and network seams, so a recovery path is tested against malformed bytes and a streaming interface is driven by an installed response, without shipping a debug affordance or a fake-provider branch in the product.", "浏览器那一半是同一个想法向外一层。测试命令会构建一个带内容安全策略的真实生产站点、启动隔离的本地宿主，并为每个测试提供全新的浏览器上下文；控制器拥有存储与网络接缝，因此可以针对畸形字节测试恢复路径、用安装的响应驱动流式界面，而不必在产品中塞入调试口或假数据源分支。")}
+                </p>
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("The run fails automatically on page errors and on console error and warning messages, so a warning is a failure rather than a habit.", "该运行在出现页面错误以及控制台的错误与警告消息时自动失败，因此警告是一次失败，而不是一种习惯。")}
+                    </li>
+                    <li>
+                        {locale.text("The cost is a deliberately compact automation surface. The controller is not a general page-evaluation escape hatch, so a test that wants arbitrary scripting inside the page does not have it.", "代价是一个刻意保持紧凑的自动化表面。该控制器不是通用的页面求值逃生通道，因此想在页面内做任意脚本操作的测试无法做到。")}
+                    </li>
+                </ul>
+
+                <h2 id="output">{locale.text("The output and the exit", "产物与出口")}</h2>
+                <p>
+                    {locale.text("The compiler emits ordinary JavaScript modules with your names in them, source-mapped, plus a generated directory containing the standard-module runtime as plain readable JavaScript. That generated runtime is part of the build output rather than part of the toolchain. The module below is the whole source, and the JavaScript under it is that module's unedited emitted output.", "编译器发出普通的 JavaScript 模块，模块里带着你自己的名字，并带 source map，另外还有一个生成目录，其中的标准模块运行时是纯粹可读的 JavaScript。该生成的运行时属于构建产物，而不属于工具链。下面的模块就是全部源码，其下的 JavaScript 是这个模块未经编辑的发出产物。")}
+                </p>
+                <CodeBlock code={outputNodeCode} />
+                <CodeBlock code={outputJsCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("A production Web build additionally bundles, minifies, and content-hashes its assets, which is what a browser deployment wants; the names above are what the emitted modules contain before that step, and source maps lead back to the original source.", "生产 Web 构建还会打包、压缩并对资源做内容哈希，这正是浏览器部署所需要的；上面这些名字是该步骤之前发出的模块所包含的内容，而 source map 会指回原始源码。")}
+                    </li>
+                    <li>
+                        {locale.text("The anti-lock-in property is enforced by a permanent acceptance gate that builds a program, copies only the emitted output into an empty directory, and runs it with nothing but Node.", "反锁定这一性质由一道常设的验收门禁强制执行：它构建一个程序，只把发出的产物复制进一个空目录，然后仅用 Node 运行它。")}
+                    </li>
+                    <li>
+                        {locale.text("The cost is that ejecting is one-way — you maintain the JavaScript from then on — which is exactly what makes it an honest exit rather than a promise: the code you leave with is code a JavaScript team can own.", "代价是弹出是单向的——从那以后由你维护那份 JavaScript——而这恰恰使它成为一个诚实的出口而不是一句承诺：你带走的代码是 JavaScript 团队能够拥有的代码。")}
+                    </li>
+                </ul>
+                <Callout title={locale.text("What is not being claimed", "这里没有作出的断言")}>
+                    <p>
+                        {locale.text("No page on this site publishes a benchmark number, and none will until the measurement runs in continuous integration and can be reproduced from the repository. Language-level speed is not a claim available to VelarScript at all: the output is JavaScript running on the same engine as its neighbours. Read the escape hatches page for the exits, and the introduction for the state of the project.", "本站没有任何页面发布基准数字；在测量进入持续集成、并且可以从仓库复现之前也不会发布。语言级速度对 VelarScript 来说根本不是可作出的断言：产物就是 JavaScript，运行在与其邻居相同的引擎上。出口见逃生通道页，项目状态见介绍页。")}
+                    </p>
+                    <p>
+                        <Link to="/reference/escape-hatches" look={linkLook}>
+                            {locale.text("Escape hatches", "逃生通道")}
+                        </Link>
+                    </p>
+                </Callout>
+            </Prose>
+            <DocsPager previous={guidePrevious("/guide/for-frameworks")} next={guideNext("/guide/for-frameworks")} />
+        </DocsShell>
+    </main>

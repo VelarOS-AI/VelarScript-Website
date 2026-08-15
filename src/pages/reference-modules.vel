@@ -1,0 +1,200 @@
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
+import {headTitle, referenceNav} from "../content.vel"
+
+const collectionsCode = `import {enumerate, groupBy, partition, sortBy, sum, unique} from "velar/collections"\n\ntype Row:\n    id: string\n    group: string\n    rank: number\n\nconst rows: List<Row> = [\n    {id: "a", group: "x", rank: 2},\n    {id: "b", group: "y", rank: 1},\n    {id: "c", group: "x", rank: 3},\n]\n\n// \`range\` is the prelude name: importing it is an error that teaches the bare\n// spelling. It materializes a checked List, not a hidden lazy object.\nconst pages = enumerate(range(1, 4), 10)\nconst descending = range(start=5, end=0, step=-2)\n\nconst byGroup = groupBy(rows, row => row.group)\nconst split = partition(rows, row => row.rank > 1)\nconst ranked = sortBy(values=rows, key=row => row.rank, descending=true)\nconst distinct = unique([3, 1, 2, 3])\nconst total = sum([3, 1, 2])\n\nexport const summary = f"{pages.size} {descending.size} {byGroup.size} {split.matches.size} {ranked.size} {distinct.size} {total}"`
+const urlCode = `import {decode, encode, isExternal, join, normalize, parse, parseQuery, query, withHash, withQuery} from "velar/url"\n\nconst parsed = parse("https://example.test/api/v1?page=2#top")\nconst relative = parse("/api/v1", "https://example.test")\n\n// \`join\` is a pure rest call, so its segments stay positional.\nconst endpoint = join("https://example.test", "api", "v1")\n\nconst search = query({page: "2", sort: "name"})\nconst fields = parseQuery("page=2&sort=name")\nconst withPage = withQuery("https://example.test/api", {page: "2"})\nconst withFragment = withHash("https://example.test/api", "top")\nconst offsite = isExternal("https://other.test/x", "https://example.test")\nconst escaped = encode("a b&c")\nconst unescaped = decode("a%20b%26c")\nconst canonical = normalize("https://example.test/api/../v1")\n\nexport const summary = f"{parsed.origin}{parsed.path} {parsed.query.size} {relative.href} {endpoint} {search} {fields.size} {withPage} {withFragment} {offsite} {escaped} {unescaped} {canonical}"`
+const timeCode = `import {date, format, iso, monotonic, now, parse, parts, utc} from "velar/time"\n\n// Months are one-based, and an impossible calendar value is rejected rather\n// than rolled over: 2024-02-31 never becomes March.\nconst launched = utc(2026, 8, 1)\nconst localMidnight = date(2026, 8, 15)\n\nexport def report() -> string:\n    const milliseconds = now()\n    const elapsed = monotonic()\n    const text = iso(milliseconds)\n    const roundTripped = parse(text)\n    const readable = format(value=milliseconds, locale="en-GB", timeZone="UTC")\n    const broken = parts(milliseconds, "UTC")\n    return f"{launched} {localMidnight} {text} {roundTripped ?? 0} {readable} {elapsed > 0} {broken.year}-{broken.month}-{broken.day}"`
+const idCode = `import {isUuid, uuid} from "velar/id"\n\n// uuid() delegates to the host's crypto.randomUUID(). It fails explicitly when\n// that capability is missing; it never falls back to a timestamp or a random.\nexport def newIdentifier() -> string:\n    const identifier = uuid()\n    assert isUuid(identifier) else "uuid() answers a UUID"\n    return identifier`
+const logCode = `import {level, log, logger, setLevel, useSink} from "velar/log"\n\nexport def record() -> string:\n    // Fields are Map<string, unknown>, so a mutable map is built rather than\n    // converted from a narrower one.\n    const fields: Map<string, unknown> = Map()\n    fields.set("route", "/api")\n\n    log.info("an info line", fields)\n    log.warn("a warning")\n    log.error("a failure", Error("the cause"), fields)\n\n    const checkout = logger("checkout")\n    checkout.debug("scoped line")\n\n    const current = level()\n    setLevel("warn")\n    setLevel(current)\n    return current\n\nlet captured = 0\n\ndef countMessage(message: string) -> number:\n    captured += message.size\n    return captured\n\n// A sink redirects records while it is installed and returns its own cleanup.\nexport def collect() -> number:\n    const stop = useSink(entry => countMessage(entry.message))\n    log.info("counted")\n    stop()\n    return captured`
+const testCode = `import {expect} from "velar/test"\n\ndef slug(title: string) -> string:\n    return title.lower().replace(" ", "-")\n\ntest "a title becomes a url slug":\n    expect(slug("Release Notes")).toBe("release-notes")\n    expect(slug("Release Notes")).toHaveLength(13)\n    expect(["a", "b"]).toContain("b")\n    expect({id: "r-1"}).toEqual({id: "r-1"})\n    expect(0 / 0).toBe(0 / 0)`
+
+const collectionsMembers = [
+    {name: "range", signature: "range(end) · range(start, end, step?)", summary: "The prelude spelling, no import. Stop-exclusive; negative steps count down, and a zero or non-advancing step fails. Importing it is an error that teaches the bare name.", summaryZh: "prelude 拼写，无需导入。上界开区间；负步长向下计数，步长为零或无法推进则失败。导入它是错误，并会教你使用裸名字。"},
+    {name: "enumerate", signature: "enumerate(values, start?) -> List", summary: "Returns {index, value} entries, with an optional integer start.", summaryZh: "返回 {index, value} 条目，起始索引可选。"},
+    {name: "zip", signature: "zip(left, right) -> List", summary: "Pairs two lists as {first, second} up to the shorter length.", summaryZh: "把两个列表配对为 {first, second}，长度取较短者。"},
+    {name: "unique", signature: "unique(values) -> List", summary: "Keeps the first value for each Set identity.", summaryZh: "对每个 Set 同一性保留第一个出现的值。"},
+    {name: "chunk", signature: "chunk(values, size) -> List", summary: "Splits a list into positive-sized chunks.", summaryZh: "把列表切成大小为正数的分块。"},
+    {name: "flatten", signature: "flatten(values) -> List", summary: "Flattens exactly one list level.", summaryZh: "只展平一层列表。"},
+    {name: "compact", signature: "compact(values) -> List", summary: "Removes null and narrows the result element type.", summaryZh: "移除 null，并收窄结果的元素类型。"},
+    {name: "reversed", signature: "reversed(values) -> List", summary: "Returns a reversed copy.", summaryZh: "返回反转后的副本。"},
+    {name: "take", signature: "take(values, count) -> List", summary: "Selects a non-negative number of leading values.", summaryZh: "取前若干个值，数量非负。"},
+    {name: "drop", signature: "drop(values, count) -> List", summary: "Skips a non-negative number of leading values; direct positional windows normally use List.slice.", summaryZh: "跳过前若干个值；直接的位置窗口通常使用 List.slice。"},
+    {name: "first", signature: "first(values)", summary: "The first value, or null.", summaryZh: "第一个值，或 null。"},
+    {name: "last", signature: "last(values)", summary: "The last value, or null.", summaryZh: "最后一个值，或 null。"},
+    {name: "find", signature: "find(values, test)", summary: "The first value satisfying a predicate, or null. The predicate must return an actual bool.", summaryZh: "第一个满足谓词的值，或 null。谓词必须返回真正的 bool。"},
+    {name: "index", signature: "index(values, value) -> number?", summary: "The position of an exact value, or null.", summaryZh: "某个精确值的位置，或 null。"},
+    {name: "has", signature: "has(values, value) -> bool", summary: "Membership, using the same identity rule as Set and Map keys.", summaryZh: "成员判断，使用与 Set、Map 键相同的同一性规则。"},
+    {name: "count", signature: "count(values, value) -> number", summary: "How many times a value occurs, under that same identity rule.", summaryZh: "在同一同一性规则下，某个值出现的次数。"},
+    {name: "some", signature: "some(values, test) -> bool", summary: "Any value satisfies the predicate. A dynamic callback cannot reintroduce truthiness.", summaryZh: "存在满足谓词的值。动态回调无法把「真值性」重新引入。"},
+    {name: "every", signature: "every(values, test) -> bool", summary: "Every value satisfies the predicate.", summaryZh: "所有值都满足谓词。"},
+    {name: "partition", signature: "partition(values, test) -> {matches, rest}", summary: "Two lists without changing source order.", summaryZh: "拆成两个列表，且不改变原顺序。"},
+    {name: "groupBy", signature: "groupBy(values, key) -> Map", summary: "Groups values in a Map keyed by the callback result.", summaryZh: "按回调结果作为键，把值分组到 Map 中。"},
+    {name: "keyBy", signature: "keyBy(values, key) -> Map", summary: "One value per key; the last value wins for a repeated key.", summaryZh: "每个键一个值；键重复时后者胜出。"},
+    {name: "countBy", signature: "countBy(values, key) -> Map", summary: "Counts callback keys in a Map.", summaryZh: "在 Map 中统计回调键的出现次数。"},
+    {name: "sortBy", signature: "sortBy(values, key, descending?) -> List", summary: "A stable key-sorted copy. Keys are all strings or all non-NaN numbers, and equal-key input order is retained even descending.", summaryZh: "按键稳定排序的副本。键要么全是字符串，要么全是非 NaN 的数字；即使降序，键相同者也保持输入顺序。"},
+    {name: "minBy", signature: "minBy(values, key)", summary: "The value with the smallest uniform key, or null.", summaryZh: "键最小者对应的值，或 null。"},
+    {name: "maxBy", signature: "maxBy(values, key)", summary: "The value with the largest uniform key, or null.", summaryZh: "键最大者对应的值，或 null。"},
+    {name: "sum", signature: "sum(values: List<number>) -> number", summary: "Adds a number list from zero.", summaryZh: "从零开始累加一个数字列表。"},
+    {name: "join", signature: "join(values: List<string>, separator?) -> string", summary: "Joins one checked snapshot; the result cannot exceed 16 MiB.", summaryZh: "连接一份受检快照；结果不得超过 16 MiB。"},
+    {name: "repeat", signature: "repeat(value, count) -> List", summary: "A list containing a value a non-negative number of times.", summaryZh: "包含某个值若干次的列表，次数非负。"},
+]
+
+const urlMembers = [
+    {name: "parse", signature: "parse(value, base?) -> UrlInfo", summary: "Returns href, protocol, host, hostname, port, path, a query Map, hash, and origin; a base makes a relative URL absolute.", summaryZh: "返回 href、protocol、host、hostname、port、path、查询 Map、hash 与 origin；给出 base 时可把相对 URL 变为绝对 URL。"},
+    {name: "join", signature: "join(…) -> string", summary: "A pure rest call: joins URL or path segments without duplicate separators, preserving a leading scheme://.", summaryZh: "纯粹的剩余参数调用：连接 URL 或路径片段而不产生重复分隔符，并保留开头的 scheme://。"},
+    {name: "query", signature: "query(params) -> string", summary: "Builds a query string. Values are string, number, bool, null, or dense Lists of those; a record or class is rejected instead of becoming [object Object].", summaryZh: "构建查询串。值可以是 string、number、bool、null，或它们的稠密 List；记录或类会被拒绝，而不是变成 [object Object]。"},
+    {name: "parseQuery", signature: "parseQuery(value) -> Map<string, string>", summary: "Parses a query string; a duplicate key keeps its last value.", summaryZh: "解析查询串；键重复时保留最后一个值。"},
+    {name: "withQuery", signature: "withQuery(value, params) -> string", summary: "Returns a URL or path with its query replaced.", summaryZh: "返回替换了查询串的 URL 或路径。"},
+    {name: "withHash", signature: "withHash(value, hash) -> string", summary: "Returns a URL or path with its hash replaced.", summaryZh: "返回替换了 hash 的 URL 或路径。"},
+    {name: "isExternal", signature: "isExternal(value, base?) -> bool", summary: "Compares a URL with an explicit base, or with the current location origin.", summaryZh: "把 URL 与显式的 base 比较，或与当前位置的 origin 比较。"},
+    {name: "encode", signature: "encode(value) -> string", summary: "Encodes one URL component.", summaryZh: "编码一个 URL 组件。"},
+    {name: "decode", signature: "decode(value) -> string", summary: "Decodes one URL component.", summaryZh: "解码一个 URL 组件。"},
+    {name: "normalize", signature: "normalize(value, base?) -> string", summary: "Resolves and normalizes a URL or path.", summaryZh: "解析并规范化一个 URL 或路径。"},
+]
+
+const timeMembers = [
+    {name: "now", signature: "now() -> number", summary: "Current Unix epoch milliseconds.", summaryZh: "当前的 Unix epoch 毫秒。"},
+    {name: "monotonic", signature: "monotonic() -> number", summary: "Monotonic milliseconds, for measuring elapsed time.", summaryZh: "单调毫秒，用于测量经过的时间。"},
+    {name: "parse", signature: "parse(value) -> number?", summary: "Parses ISO YYYY-MM-DD, or a T datetime with Z or a numeric offset. Invalid text answers null; non-ISO locale text is deliberately unsupported.", summaryZh: "解析 ISO 的 YYYY-MM-DD，或带 Z 或数字偏移的 T 日期时间。无效文本返回 null；非 ISO 的本地化文本被有意排除。"},
+    {name: "iso", signature: "iso(value?) -> string", summary: "Formats epoch milliseconds as an ISO 8601 UTC string; defaults to now().", summaryZh: "把 epoch 毫秒格式化为 ISO 8601 的 UTC 字符串；默认使用 now()。"},
+    {name: "format", signature: "format(value, locale?, timeZone?) -> string", summary: "Locale formatting through the host internationalization data. Output is limited to 65,536 characters.", summaryZh: "通过宿主的国际化数据做本地化格式化。输出限制为 65,536 个字符。"},
+    {name: "date", signature: "date(year, month, day, hour?, minute?, second?) -> number", summary: "Local epoch milliseconds from strict calendar fields. Months are one-based and years run 0 through 9999.", summaryZh: "由严格的日历字段构造本地 epoch 毫秒。月份从 1 开始，年份为 0 到 9999。"},
+    {name: "utc", signature: "utc(year, month, day, hour?, minute?, second?) -> number", summary: "The same construction in UTC.", summaryZh: "同样的构造，但以 UTC 为准。"},
+    {name: "parts", signature: "parts(value, timeZone?) -> TimeParts", summary: "Numeric year, month, day, weekday, hour, minute, second, and millisecond, in local time or an explicit zone.", summaryZh: "以数字给出 year、month、day、weekday、hour、minute、second 与 millisecond，按本地时间或显式时区。"},
+]
+
+const idMembers = [
+    {name: "uuid", signature: "uuid() -> string", summary: "A cryptographically secure host UUID. It fails explicitly when the capability is unavailable or the result is not canonical.", summaryZh: "密码学安全的宿主 UUID。当该能力不可用或结果不规范时会显式失败。"},
+    {name: "isUuid", signature: "isUuid(value) -> bool", summary: "Checks canonical UUID text without changing it, rejecting non-36-character input before matching.", summaryZh: "检查规范的 UUID 文本而不改动它；长度不是 36 的输入在匹配前即被拒绝。"},
+]
+
+const logMembers = [
+    {name: "log", signature: "log.debug · log.info · log.warn · log.error", summary: "The unscoped logger. error optionally receives an Error and additional fields.", summaryZh: "无作用域的 logger。error 可以额外接收一个 Error 与更多字段。"},
+    {name: "logger", signature: "logger(scope, fields?) -> Logger", summary: "A scoped logger with optional base fields. Fields are Map<string, unknown>.", summaryZh: "带作用域的 logger，可附带基础字段。字段类型为 Map<string, unknown>。"},
+    {name: "level", signature: "level() -> string", summary: "The current threshold.", summaryZh: "当前的级别阈值。"},
+    {name: "setLevel", signature: "setLevel(value) -> null", summary: "Accepts debug, info, warn, error, or silent.", summaryZh: "接受 debug、info、warn、error 或 silent。"},
+    {name: "useSink", signature: "useSink(sink) -> () -> null", summary: "Redirects records while at least one custom sink exists, and returns an explicit cleanup function. A record carries timestamp, level, scope, message, fields, and an optional error.", summaryZh: "只要存在自定义 sink，就把记录重定向过去，并返回显式的清理函数。记录携带 timestamp、level、scope、message、fields 与可选的 error。"},
+]
+
+const testMembers = [
+    {name: "expect", signature: "expect(actual)", summary: "The one export. The matchers below are read on its result.", summaryZh: "唯一的导出。下列匹配器写在它的结果上。"},
+    {name: "toBe", signature: "expect(actual).toBe(expected)", summary: "Value equality — the same SameValueZero comparison a == b lowers to. expect(nan).toBe(nan) passes for exactly the reason nan == nan is true.", summaryZh: "值相等——与 a == b 降级到的 SameValueZero 比较完全相同。expect(nan).toBe(nan) 通过，理由与 nan == nan 为 true 完全一致。"},
+    {name: "toEqual", signature: "expect(actual).toEqual(expected)", summary: "Content equality — the prelude equals, the same implementation and not a matching one. It refuses cyclic or over-deep data rather than answering a quiet false.", summaryZh: "内容相等——就是 prelude 的 equals，同一份实现而非另一份相似实现。对含环或过深的数据，它拒绝，而不是悄悄返回 false。"},
+    {name: "toBeTruthy", signature: "expect(actual).toBeTruthy()", summary: "Requires actual true, not JavaScript truthiness.", summaryZh: "要求确实为 true，而不是 JavaScript 的真值性。"},
+    {name: "toBeFalsy", signature: "expect(actual).toBeFalsy()", summary: "Requires actual false.", summaryZh: "要求确实为 false。"},
+    {name: "toContain", signature: "expect(actual).toContain(value)", summary: "Accepts text or a dense List.", summaryZh: "接受文本或稠密 List。"},
+    {name: "toHaveLength", signature: "expect(actual).toHaveLength(size)", summary: "Accepts text or a dense List.", summaryZh: "接受文本或稠密 List。"},
+    {name: "toMatch", signature: "expect(actual).toMatch(expression)", summary: "A Unicode string pattern of at most 4,096 code units, through the captured intrinsic rather than a replaced global.", summaryZh: "至多 4096 个码元的 Unicode 字符串模式，走被捕获的内建实现，而不是被替换的全局对象。"},
+    {name: "toThrow", signature: "expect(callable).toThrow()", summary: "Requires a synchronous function.", summaryZh: "要求一个同步函数。"},
+    {name: "toReject", signature: "expect(promise).toReject()", summary: "Requires an actual Promise or a function returning one; an arbitrary thenable is rejected without reading a then accessor.", summaryZh: "要求真正的 Promise 或返回 Promise 的函数；任意 thenable 会被拒绝，且不会读取 then 访问器。"},
+]
+
+const sections = [
+    {id: "collections", label: "velar/collections", labelZh: "velar/collections"},
+    {id: "url", label: "velar/url", labelZh: "velar/url"},
+    {id: "time", label: "velar/time", labelZh: "velar/time"},
+    {id: "id", label: "velar/id", labelZh: "velar/id"},
+    {id: "log", label: "velar/log", labelZh: "velar/log"},
+    {id: "test", label: "velar/test", labelZh: "velar/test"},
+]
+
+export component ReferenceModules:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/reference/modules", locale.isChinese())}
+            description={locale.text("What each pure module exports and why some of them stay behind an import despite being pure.", "每个纯模块导出什么，以及其中一些为何尽管是纯的仍留在导入之后。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={referenceNav}>
+            <PageHeader
+                kicker={locale.text("Reference", "参考")}
+                title={locale.text("Pure modules", "纯模块")}
+                summary={locale.text("velar/collections, url, time, id, log, and test — modules imported by name, member by member.", "velar/collections、url、time、id、log 与 test——按名导入的模块，逐个成员列出。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <h2 id="collections">{locale.text("velar/collections", "velar/collections")}</h2>
+                <p>
+                    {locale.text("This is a different table from the checked List methods. List has map and no groupBy; this module has groupBy and no map. It stays behind an import because it is a toolbox a program reaches for, not vocabulary every program speaks. Core Lists use the same direct vocabulary beside it: append(value) adds one item, extend(values) adds a typed List atomically, and slice(…) returns a copy.", "这张表与受检的 List 方法是两张不同的表。List 有 map 而没有 groupBy；本模块有 groupBy 而没有 map。它留在导入之后，是因为它是程序按需取用的工具箱，而不是每个程序都在说的词汇。与之并列，Core 的 List 使用同样直接的词汇：append(value) 添加一项，extend(values) 原子地添加一个带类型的 List，slice(…) 返回副本。")}
+                </p>
+                <MemberTable
+                    rows={collectionsMembers}
+                    caption={locale.text("velar/collections — iteration, lookup, grouping, ordering, aggregation", "velar/collections —— 迭代、查找、分组、排序、聚合")}
+                />
+                <CodeBlock code={collectionsCode} />
+                <p>
+                    {locale.text("Language-level callback methods read a checked shallow snapshot, so callback mutation cannot silently extend, truncate, or replace the values participating in the current operation. The imported helpers use the same snapshot boundary, including for Array subclasses with overridden methods or iterators, and values returned from host callbacks normalize JavaScript undefined to null before becoming observable.", "语言层的回调方法读取一份受检的浅快照，因此回调中的修改无法悄悄扩展、截断或替换参与当前操作的值。导入的辅助函数使用同一条快照边界，即使面对重写了方法或迭代器的 Array 子类也是如此；从宿主回调返回的值在变为可观察之前，会把 JavaScript 的 undefined 规范化为 null。")}
+                </p>
+                <Callout title={locale.text("Ordering never borrows JavaScript's relational coercion", "排序绝不借用 JavaScript 的关系型强制转换")}>
+                    <p>
+                        {locale.text("The compiler rejects known boolean, record, optional, mixed, and enum key results. An enum carries no runtime order, so the diagnostic teaches sorted(by=rank) or a string-backed enum whose values encode the order. Dynamic keys are checked before comparison.", "编译器拒绝已知的布尔、记录、可选、混合类型以及枚举作为键的结果。枚举不携带运行时顺序，因此诊断会教你使用 sorted(by=rank)，或使用值本身编码了顺序的字符串枚举。动态键在比较之前接受检查。")}
+                    </p>
+                </Callout>
+
+                <h2 id="url">{locale.text("velar/url", "velar/url")}</h2>
+                <p>
+                    {locale.text(`Query names are strings. Values are explicit string, number, and bool scalars, null, or dense Lists of those; records, classes, and functions are rejected instead of becoming "[object Object]". null values are omitted, List values produce repeated keys, and duplicate parsed keys keep their last value. Query numbers must be finite.`, `查询名是字符串。值是显式的 string、number、bool 标量，或 null，或它们的稠密 List；记录、类与函数会被拒绝，而不是变成 "[object Object]"。null 值被省略，List 值产生重复的键，解析出的重复键保留最后一个值。查询中的数字必须是有限数。`)}
+                </p>
+                <MemberTable
+                    rows={urlMembers}
+                    caption={locale.text("velar/url — ten exports", "velar/url —— 十个导出")}
+                />
+                <CodeBlock code={urlCode} />
+                <p>
+                    {locale.text("URL text operations validate actual strings at dynamic boundaries rather than inheriting JavaScript String(...) coercion; this includes the browser's current base URL and every field copied from a native URL result. URL text and encoded query output are limited to 2 MiB, and query maps contain at most 100,000 fields.", "URL 文本操作在动态边界上验证真正的字符串，而不是继承 JavaScript 的 String(...) 强制转换；这包括浏览器的当前 base URL，以及从原生 URL 结果复制过来的每一个字段。URL 文本与编码后的查询输出限制为 2 MiB，查询 map 至多包含 100,000 个字段。")}
+                </p>
+
+                <h2 id="time">{locale.text("velar/time", "velar/time")}</h2>
+                <p>
+                    {locale.text("Time values are Unix epoch milliseconds, matching the host runtime without exposing mutable Date objects. date and utc reject out-of-range or nonexistent calendar values instead of using JavaScript Date rollover, and years do not receive JavaScript's special 1900 offset for 0 through 99.", "时间值是 Unix epoch 毫秒，与宿主运行时一致，但不暴露可变的 Date 对象。date 与 utc 拒绝超出范围或不存在的日历值，而不是使用 JavaScript Date 的滚动行为；年份也不会获得 JavaScript 对 0 到 99 的 1900 特殊偏移。")}
+                </p>
+                <MemberTable
+                    rows={timeMembers}
+                    caption={locale.text("velar/time — eight exports", "velar/time —— 八个导出")}
+                />
+                <CodeBlock code={timeCode} />
+                <p>
+                    {locale.text("ISO parsing is owned and deterministic: a date-only value is UTC midnight, and a datetime must carry Z or a numeric offset, which keeps results identical across JavaScript engines and host time zones. Locale formatting and named-time-zone projection still use the host internationalization data; VelarScript does not invent a second timezone database or datetime object model.", "ISO 解析由语言自己拥有且是确定性的：只有日期的值表示 UTC 午夜，日期时间必须带 Z 或数字偏移，从而让结果在不同 JavaScript 引擎与宿主时区下保持一致。本地化格式化与具名时区投影仍使用宿主的国际化数据；VelarScript 不发明第二套时区数据库或日期时间对象模型。")}
+                </p>
+
+                <h2 id="id">{locale.text("velar/id", "velar/id")}</h2>
+                <p>
+                    {locale.text("Two exports, and an import line, because generating an identifier reads the host entropy source. That is question 1 answered: it reaches outside the program.", "两个导出，加一行导入——因为生成标识符要读取宿主的熵源。这就是第一问的答案：它触达程序之外。")}
+                </p>
+                <MemberTable
+                    rows={idMembers}
+                    caption={locale.text("velar/id — two exports", "velar/id —— 两个导出")}
+                />
+                <CodeBlock code={idCode} />
+
+                <h2 id="log">{locale.text("velar/log", "velar/log")}</h2>
+                <p>
+                    {locale.text("Structured logging replaces direct source-level access to console while remaining on the existing JavaScript runtime. Without a custom sink the runtime writes through the host console internally; VelarScript source still receives no console global. VelarScript never uploads logs or telemetry automatically.", "结构化日志取代了源码层对 console 的直接访问，同时仍然运行在既有的 JavaScript 运行时之上。没有自定义 sink 时，运行时在内部通过宿主 console 写出；VelarScript 源码依然拿不到 console 全局。VelarScript 绝不自动上传日志或遥测数据。")}
+                </p>
+                <MemberTable
+                    rows={logMembers}
+                    caption={locale.text("velar/log — five exports", "velar/log —— 五个导出")}
+                />
+                <CodeBlock code={logCode} />
+                <p>
+                    {locale.text("Each sink receives its own fields snapshot, so mutation inside one callback cannot rewrite what another sink observes. One logger accepts at most 1,000 merged fields, field names are limited to 1,024 characters, messages to 64 KiB, scopes to 1,024 characters, and an application may install at most 1,000 sinks. Sink failures fall back to the internal host logger and cannot recursively invoke the failing sink.", "每个 sink 收到属于自己的字段快照，因此某个回调内部的修改无法改写另一个 sink 观察到的内容。单个 logger 至多接受 1,000 个合并字段，字段名限制为 1,024 个字符，消息限制为 64 KiB，作用域限制为 1,024 个字符，应用至多安装 1,000 个 sink。sink 失败时回落到内部宿主 logger，且不会递归调用出错的那个 sink。")}
+                </p>
+
+                <h2 id="test">{locale.text("velar/test", "velar/test")}</h2>
+                <p>
+                    {locale.text("velar/test provides the small assertion surface velar test runs, without introducing a second testing language. The two comparison matchers do the language's two comparison jobs, and each is the operation it names rather than a second implementation of it: an assertion that disagreed with the language's own equality would be the worst kind of trap.", "velar/test 提供 velar test 所运行的那一小片断言表面，而不引入第二门测试语言。两个比较匹配器承担语言自身的两项比较工作，并且每一个就是它所命名的那个操作，而不是它的第二份实现：一条与语言自身相等性不一致的断言，会是最糟糕的那类陷阱。")}
+                </p>
+                <MemberTable
+                    rows={testMembers}
+                    caption={locale.text("velar/test — expect and its matchers", "velar/test —— expect 及其匹配器")}
+                />
+                <CodeBlock code={testCode} />
+                <p>
+                    {locale.text("A test name is a sentence about the code rather than an identifier — it is what you read when the test fails. Failure display is deliberately bounded to 1,000 visited nodes, 16 levels, 50 collection items, and 256 string code units, and it reads only accepted dense List and data-record fields: assertion diagnostics never become an unbounded object inspector.", "测试名是一句关于代码的话，而不是一个标识符——测试失败时你读到的正是它。失败展示被有意限制在 1,000 个访问节点、16 层深度、50 个集合元素与 256 个字符串码点之内，并且只读取被接受的稠密 List 与数据记录字段：断言诊断绝不会变成一个无界的对象检视器。")}
+                </p>
+            </Prose>
+        </DocsShell>
+    </main>

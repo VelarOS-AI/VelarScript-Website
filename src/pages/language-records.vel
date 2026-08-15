@@ -1,0 +1,121 @@
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
+
+const shapesCode = `export type User:\n    id: string\n    name: string\n    avatar: string?\n\ntype Nested:\n    owner: User\n    tags: List<string>\n    lookup: Map<string, number>\n    counts: Record<number>\n    readonly frozenId: string\n\n// A record type is structurally open, so a field a newer producer added\n// travels through the shape rather than failing it.\nconst forwardCompatible: unknown = {id: "u-3", name: "Lin", avatar: null, addedLater: 1}\n\nexport def acceptsExtraFields() -> string:\n    return User.parse(forwardCompatible).name`
+const interfaceErrorCode = "interface User:\n    id: string\n    name: string"
+const interfaceErrorOutput = "main.vel:1:1 error VEL2026: Use 'type'; VelarScript declares record shapes with 'type Name:'\ninterface User:\n^^^^^^^^^"
+const aliasesCode = `export type User:\n    id: string\n    name: string\n    avatar: string?\n\n// The same type keyword, written with an equals sign.\nexport type UserId = string\nexport type UserHandler = (User) -> null\ntype Scores = Map<string, number>\ntype MaybeUser = User?\ntype Either = User | Error\ntype UserList = readonly List<User>\n\nconst identifier: UserId = "u-1"\nconst handler: UserHandler = user => print(user.name)\nconst scores: Scores = Map()\nconst maybe: MaybeUser = null\nconst readonlyUsers: UserList = []`
+const validatorCode = `export type User:\n    id: string\n    name: string\n    avatar: string?\n\nconst untrusted: unknown = {id: "u-1", name: "Ada", avatar: null}\n\n// parse answers the checked value or throws ValidationError; is answers a bool\n// and narrows the value on the branch that follows.\nexport def validate() -> string:\n    const user = User.parse(untrusted)\n    if untrusted is User:\n        return untrusted.name\n    return user.name\n\n// A failed parse carries the position and reason of the first field that did\n// not fit.\nexport def validateOrExplain(candidate: unknown) -> string:\n    try:\n        return User.parse(candidate).name\n    catch error:\n        if error is ValidationError:\n            return f"{error.path}: {error.reason}"\n        throw error`
+const carrierCode = `export type User:\n    id: string\n    name: string\n\nexport type UserId = string\n\nconst untrusted: unknown = {id: "u-1", name: "Ada"}\n\n// A validator is first class through a compiler-known carrier, so a decoder\n// can be written once for every type.\nexport def decode<T>(value: unknown, target: Type<T>) -> T:\n    return target.parse(value)\n\nexport def accepts<T>(value: unknown, target: Type<T>) -> bool:\n    return target.is(value)\n\nconst decoded: User = decode(untrusted, User)\nconst isUser = accepts(untrusted, User)\n\n// An alias and an enum are equally assignable to the carrier.\nconst decodedThroughAlias: UserId = decode("u-2", UserId)`
+const enumsCode = `export enum Status:\n    pending\n    active\n    done\n\nconst status: Status = Status.active\nconst parsed = Status.parse("done")\nconst members = Status.values()\nconst isStatus = Status.is("done")\n\n// values() answers a fresh mutable List in declaration order.\nconst spreadMembers = [...Status.values()]\n\nexport def iterateMembers() -> string:\n    let joined = ""\n    for member in Status.values():\n        joined += str(member)\n    return joined\n\n// A member may map its readable name onto one explicit wire string.\nexport enum ProviderEventKind:\n    textDelta = "response.output_text.delta"\n    completed = "response.completed"\n    unmapped\n\nconst wireValue = str(ProviderEventKind.textDelta)\n\n// The one-way wire exit: a member converts to text, never back on its own.\nexport def wireComparison(raw: string) -> bool:\n    // parse states that the text must name a member and throws otherwise;\n    // comparing the text form deliberately answers false for an unknown value.\n    const strict = try Status.parse(raw)\n    const forgiving = str(Status.done) == raw\n    return strict == Status.done or forgiving`
+const wireErrorCode = "enum Status:\n    pending\n    done\n\nexport def isDone(raw: string) -> bool:\n    return raw == Status.done"
+const wireErrorOutput = "main.vel:6:12 error VEL4001: string and Status.done can meet only where an enum member matches a raw string, and the enum and string domains never meet in '=='; an enum member converts to string only as a one-way wire exit, so choose by what an unknown value means here: write Status.parse(text) == Status.done when the text must name a member — Status.parse throws on anything else — or str(Status.done) == text when unknown values are expected and must be ignored, as on an open wire protocol\n    return raw == Status.done\n           ^^^^^^^^^^^^^^^^^^"
+const unionsCode = `export enum EventKind:\n    text\n    tool\n\nexport type TextEvent:\n    kind: EventKind.text\n    text: string\n\nexport type ToolEvent:\n    kind: EventKind.tool\n    toolId: string\n\nexport type Event = TextEvent | ToolEvent\n\nexport def describe(event: Event) -> string:\n    if event.kind == EventKind.text:\n        return event.text\n    return event.toolId\n\nexport def describeByMatch(event: Event) -> string:\n    match event:\n        case {kind: EventKind.text}:\n            return event.text\n        case {kind: EventKind.tool}:\n            return event.toolId\n\n// Reading a field every member shares produces the union of its field types.\nexport def sharedField(event: Event) -> EventKind:\n    return event.kind\n\n// An assertion carries a singleton fact back to the owning record too.\nexport def assertedVariant(event: Event) -> string:\n    assert event.kind == EventKind.tool else "expected a tool event"\n    return event.toolId`
+
+const pointsLook = look:
+    display = "grid"
+    gap = 8px
+    margin = 0
+    paddingInlineStart = 20px
+
+const sections = [
+    {id: "shapes", label: "Record shapes", labelZh: "记录形状"},
+    {id: "aliases", label: "Aliases", labelZh: "别名"},
+    {id: "validator", label: "The runtime validator", labelZh: "运行时验证器"},
+    {id: "carrier", label: "Validators as values", labelZh: "作为值的验证器"},
+    {id: "enums", label: "Enums", labelZh: "枚举"},
+    {id: "unions", label: "Discriminated unions", labelZh: "可判别联合"},
+]
+
+export component LanguageRecords:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/guide/language/records", locale.isChinese())}
+            description={locale.text("How a record type is declared, what its runtime validator accepts, and how enums carry workflow values.", "记录类型如何声明、它的运行时验证器接受什么，以及枚举如何承载工作流值。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Language / 04", "语言 / 04")}
+                title={locale.text("Records and enums", "记录与枚举")}
+                summary={locale.text("Record shapes, transparent aliases, the runtime validator every record carries, and enums.", "记录形状、透明别名、每个记录自带的运行时验证器，以及枚举。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <h2 id="shapes">{locale.text("Record shapes", "记录形状")}</h2>
+                <p>
+                    {locale.text("One keyword declares both record shapes and aliases. The colon form declares a structural record: fields may be optional or read-only, and may hold Lists, Maps, Records, functions, classes, enums, and bounded unions. A record type is structurally open, so a field a newer producer added arrives without breaking the shape.", "一个关键字同时声明记录形状与别名。冒号形式声明一个结构化记录：字段可以是可选的或只读的，也可以承载 List、Map、Record、函数、类、枚举与有界联合。记录类型在结构上是开放的，因此更新过的生产者新增的字段能够到达，而不会撑破形状。")}
+                </p>
+                <CodeBlock code={shapesCode} />
+                <p>
+                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                </p>
+                <CodeBlock code={interfaceErrorCode} />
+                <p>
+                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                </p>
+                <CodeBlock code={interfaceErrorOutput} />
+                <p>
+                    {locale.text("The words interface, record, and struct all report the same way. Three spellings for one idea would make a reader ask what the choice meant, so there is one.", "interface、record、struct 三个词得到同样的报告。一个想法有三种拼写会让读者追问这次选择意味着什么，因此这里只有一种。")}
+                </p>
+
+                <h2 id="aliases">{locale.text("Aliases", "别名")}</h2>
+                <p>
+                    {locale.text("The equals form gives an existing type a readable name. An alias is transparent: it expands for checking and crosses module boundaries without creating a wrapper the caller has to unwrap. It also carries the origin's validator, so an alias is usable everywhere a record type is.", "等号形式给现有类型一个可读的名字。别名是透明的：检查时展开，跨模块传递，且不会造出一个调用方还得拆开的包装。它同样携带原类型的验证器，因此别名可以用在任何能用记录类型的位置。")}
+                </p>
+                <CodeBlock code={aliasesCode} />
+
+                <h2 id="validator">{locale.text("The runtime validator", "运行时验证器")}</h2>
+                <p>
+                    {locale.text("Every record type, alias, and enum carries parse and is. The declaration that checks the source is the same declaration that validates data arriving from JSON, HTTP, storage, and forms — there is no second schema to keep in step with the first. parse answers the checked value or throws ValidationError with the path and reason of the first field that did not fit; is answers a bool and narrows the value on the branch that follows.", "每个记录类型、别名与枚举都自带 parse 与 is。检查源码的那份声明，同时验证来自 JSON、HTTP、存储与表单的数据——不存在第二套需要与第一套保持同步的 schema。parse 给出受检的值，或抛出 ValidationError 并带上第一个不合形状字段的路径与原因；is 给出一个 bool，并在随后的分支中收窄该值。")}
+                </p>
+                <CodeBlock code={validatorCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Validation reads data. It never invokes a getter merely to inspect a value.", "验证只读取数据，绝不会仅仅为了检查一个值而调用取值器。")}
+                    </li>
+                    <li>
+                        {locale.text("The try expression turns a parse into an optional when a fallback exists, which the errors chapter covers.", "当存在回退方案时，try 表达式把一次 parse 变成可选值；这一点在错误一章展开。")}
+                    </li>
+                </ul>
+
+                <h2 id="carrier">{locale.text("Validators as values", "作为值的验证器")}</h2>
+                <p>
+                    {locale.text("A type name in value position is a compiler-known carrier, so a decoder can be written once and reused for every type. That carrier is what lets a boundary helper stay generic without a type-level program behind it.", "处于值位置的类型名是一个编译器已知的载体，因此解码器只需写一次，就能对每个类型复用。正是这个载体让边界辅助函数保持通用，而背后不需要一段类型级程序。")}
+                </p>
+                <CodeBlock code={carrierCode} />
+
+                <h2 id="enums">{locale.text("Enums", "枚举")}</h2>
+                <p>
+                    {locale.text("An enum is a finite, string-backed workflow state. Members serialize under their own names unless a member maps its name onto one explicit wire string. values() answers a fresh List in declaration order, so iterating the member set needs no spread of the enum itself.", "枚举是有限的、以字符串承载的工作流状态。成员按自身名字序列化，除非某个成员把名字映射到一个显式的传输字符串。values() 给出按声明顺序排列的全新 List，因此遍历成员集合无需展开枚举本身。")}
+                </p>
+                <CodeBlock code={enumsCode} />
+                <p>
+                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                </p>
+                <CodeBlock code={wireErrorCode} />
+                <p>
+                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                </p>
+                <CodeBlock code={wireErrorOutput} />
+                <Callout title={locale.text("The diagnostic asks a design question", "这条诊断问的是一个设计问题")}>
+                    <p>
+                        {locale.text("The two suggested spellings differ in what an unknown value means. Parsing states that the text must name a member and throws on anything else; comparing the text form answers false for a value this program does not know, which is what an open wire protocol wants. The compiler cannot pick for the author, so it names both.", "两种建议拼写的差别在于：未知值意味着什么。parse 声明该文本必须命名一个成员，遇到别的就抛出；比较文本形式则对本程序不认识的值答 false，这正是开放传输协议所需要的。编译器无法替作者做这个选择，于是把两条都点了出来。")}
+                    </p>
+                </Callout>
+
+                <h2 id="unions">{locale.text("Discriminated unions", "可判别联合")}</h2>
+                <p>
+                    {locale.text("An enum member is usable in type position, which makes a field a singleton. A union of records whose discriminating field is a singleton is discriminated: comparing that field, matching a record pattern on it, or asserting it all narrow the whole record. Reading a field every member shares produces the union of its field types.", "枚举成员可以出现在类型位置，这让一个字段成为单例。若一组记录的判别字段是单例，它们的联合就是可判别的：比较该字段、对它做记录模式匹配，或对它断言，都会收窄整条记录。读取每个成员共有的字段，得到的是这些字段类型的联合。")}
+                </p>
+                <CodeBlock code={unionsCode} />
+            </Prose>
+            <DocsPager
+                previous={guidePrevious("/guide/language/records")}
+                next={guideNext("/guide/language/records")}
+            />
+        </DocsShell>
+    </main>

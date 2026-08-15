@@ -1,53 +1,145 @@
-import {Head, Link} from "velar/web"
-import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
-import {docsNav} from "../content.vel"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
-const configCode = "import {publicConfig} from \"velar/config\"\n\ntype RuntimeConfig:\n    apiBase: string\n    releaseChannel: string\n\nconst config = publicConfig(RuntimeConfig)"
-const httpCode = "import {HttpAbortError, HttpError, http} from \"velar/http\"\n\ntype Project:\n    id: string\n    name: string\n\nconst request = http.get(\"/api/projects/1\", {timeout: 5000, maxBytes: 1048576})\nconst project = await request.parse(Project)\nrequest.cancel()"
-const uploadCode = "import {formBody, http} from \"velar/http\"\nimport {pick} from \"velar/files\"\n\nconst selected = await pick({accept: \"image/*\", multiple: true})\nconst body = formBody()\nbody.field(\"title\", \"Profile images\")\nbody.files(\"images\", selected)\nconst result = await http.post(\"/api/images\", {body}).parse(UploadResult)"
-const formsCode = "import {clearErrors, focusFirstError, read, setError, setPending} from \"velar/forms\"\n\ntype SignupDraft:\n    name: string\n    role: AccountRole\n    updates: bool\n    age: number?\n\nlet form: Element? = null\n\ndef submit():\n    if form:\n        clearErrors(form)\n        const draft = read(form, SignupDraft)\n        if draft.name == \"\":\n            setError(form, \"name\", \"Enter your name\")\n            focusFirstError(form)\n            return null\n        setPending(form, true)\n\nreturn <form ref={form} on:submit.prevent={submit}>...</form>"
-const storageCode = "import {database, storage} from \"velar/storage\"\n\ntype Settings:\n    theme: string\n\nconst preferences = storage.scope(\"studio\")\nconst settings = preferences.get(\"settings\", Settings, {theme: \"system\"})\npreferences.set(\"settings\", settings)\n\nconst cache = database(\"studio\")\nawait cache.set(\"settings\", settings)\nconst saved = await cache.get(\"settings\", Settings)"
+const callsCode = `import {http} from "velar/http"\nimport {storage} from "velar/storage"\nimport {scrollTo} from "velar/browser"\n\ntype User:\n    id: string\n    name: string\n\nconst emptyUser: User = {id: "", name: ""}\n\n// Every fixed Web API uses the same call rule as an ordinary function:\n// arguments may be positional or explicitly named. Names are part of the\n// checked contract, optional values may be omitted, and supplied expressions\n// still run from left to right as written even when their names are out of\n// declaration order.\nexport def callConventions():\n    const request = http.get(options={timeout: 5000}, url="/api/users")\n    const current = storage.get(target=User, key="current", fallback=emptyUser)\n    storage.set(value=current, key="current")\n    scrollTo(behavior="smooth", y=400, x=0)\n    request.cancel()`
+const storageCode = `import {session, storage} from "velar/storage"\n\nexport type Draft:\n    title: string\n    body: string\n\nconst emptyDraft: Draft = {title: "", body: ""}\n\n// storage and session publish the same seven members, and storage.scope answers\n// a namespaced view with the same seven. A typed get validates the stored JSON\n// against a record type and falls back when it does not match, so a half-written\n// key cannot travel under a declared type.\nexport component LocalStorageRound:\n    state stored = "not read"\n    state scoped = "not read"\n    state stashed = "not read"\n    let stopWatch: (() -> null)? = null\n\n    @mounted:\n        storage.set("draft", {title: "Draft", body: "from local storage"})\n        storage.set("capped", emptyDraft, 8192)\n        const current = storage.get("draft", Draft, emptyDraft)\n        stored = f"{current.title}|{storage.has("draft")}|{storage.keys().size}"\n        stopWatch = storage.watch("draft", Draft, (next, previous) => print(f"{next?.title} was {previous?.title}"))\n\n        const namespaced = storage.scope("panel")\n        namespaced.set("draft", {title: "Scoped", body: "inside a namespace"})\n        const scopedDraft = namespaced.get("draft", Draft, emptyDraft)\n        scoped = f"{scopedDraft.title}|{namespaced.has("draft")}|{namespaced.keys().size}"\n\n        session.set("draft", {title: "Session", body: "until the tab closes"})\n        const sessionDraft = session.get("draft", Draft, emptyDraft)\n        stashed = f"{sessionDraft.title}|{session.has("draft")}|{session.keys().size}"\n\n    @cleanup:\n        if stopWatch != null:\n            stopWatch()\n\n    def clearEverything():\n        storage.remove("capped")\n        storage.clear()\n        session.remove("draft")\n        session.clear()\n        stored = "cleared"\n        scoped = "cleared"\n        stashed = "cleared"\n\n    return <div data-storage>\n        <p data-stored>{stored}</p>\n        <p data-scoped>{scoped}</p>\n        <p data-stashed>{stashed}</p>\n        <button type="button" data-clear-storage on:click={clearEverything}>Clear every store</button>\n    </div>`
+const databaseCode = `import {database} from "velar/storage"\n\ntype Draft:\n    title: string\n    body: string\n\nconst emptyDraft: Draft = {title: "", body: ""}\n\n// database(name) answers the IndexedDB-backed store: the same vocabulary, every\n// member asynchronous, and no scope or watch.\nexport component DatabaseRound:\n    state report = "not opened"\n\n    action openAndRead():\n        const drafts = database("field-notes")\n        await drafts.set("first", {title: "Stored", body: "in IndexedDB"})\n        const stored = await drafts.get("first", Draft, emptyDraft)\n        const present = await drafts.has("first")\n        const names = await drafts.keys()\n        report = f"{stored.title}|{present}|{names.size}"\n\n    action clearDatabase():\n        const drafts = database("field-notes")\n        await drafts.remove("first")\n        await drafts.clear()\n        report = "cleared"\n\n    @mounted:\n        async openAndRead()\n\n    return <div data-database>\n        <p data-database-state>{report}</p>\n        <button type="button" data-open-database on:click={openAndRead} disabled={openAndRead.pending}>\n            Read the database\n        </button>\n        <button type="button" data-clear-database on:click={clearDatabase} disabled={clearDatabase.pending}>\n            Clear the database\n        </button>\n    </div>`
+const httpCode = `import {HttpAbortError, HttpError, HttpTransportError, HttpTransportPhase, http} from "velar/http"\n\ntype Draft:\n    title: string\n    body: string\n\n// A request answers a handle whose readers each consume the body once, and\n// parse(Target) is the one that validates it into a record type through the\n// same runtime validator the language already has. There is no second schema\n// system.\nexport component HttpRound:\n    state fetched = "not fetched"\n    state failure = "no failure"\n\n    action fetchHealth() -> string:\n        const response = await http.get("/api/health").response()\n        fetched = f"{response.ok}|{response.status}|{response.statusText}|{response.headers.size}|{await response.text()}"\n        return fetched\n\n    action fetchTyped() -> string:\n        try:\n            const draft: Draft = await http.get("/api/draft", {timeout: 5000}).parse(Draft)\n            fetched = f"typed:{draft.title}"\n        catch error:\n            failure = describeHttpFailure(error)\n        return fetched\n\n    return <div data-http>\n        <p data-fetched>{fetched}</p>\n        <p data-failure>{failure}</p>\n        <button type="button" data-fetch-health on:click={fetchHealth} disabled={fetchHealth.pending}>\n            Fetch health\n        </button>\n        <button type="button" data-fetch-typed on:click={fetchTyped} disabled={fetchTyped.pending}>\n            Fetch a typed draft\n        </button>\n    </div>\n\n// The three error classes and the one enum. velar/http keeps its own hierarchy\n// because a caller branches on status, reason, and phase directly.\nexport def describeHttpFailure(error: Error) -> string:\n    if error is HttpAbortError:\n        return f"aborted: {error.reason}"\n    if error is HttpTransportError:\n        match error.phase:\n            case HttpTransportPhase.request:\n                return "transport failed while sending the request"\n            case HttpTransportPhase.response:\n                return "transport failed while reading the response"\n    if error is HttpError:\n        return f"http {error.status} from {error.url}"\n    return f"unclassified: {error.message}"`
+const formBodyCode = `import {formBody, http} from "velar/http"\n\ntype Draft:\n    title: string\n    body: string\n\n// formBody() is the Web-only export of velar/http: a checked multipart builder\n// with six members. It is a body value, so it is handed to a request through\n// the usual options record, and the browser owns the multipart boundary.\nexport async def uploadSpellings(cover: File):\n    const body = formBody()\n    body.field("title", "Field notes")\n    body.file("cover", cover)\n    body.file("cover", cover, "cover.png")\n    body.files("gallery", [cover])\n    print(f"{body.has("title")}|{body.names().size}")\n    body.remove("title")\n\n    const request = http.post("/api/drafts", {body: body, headers: Map([["accept", "application/json"]]), timeout: 5000, maxBytes: 65536, credentials: "same-origin", cache: "no-store"})\n    const response = await request.response()\n    await response.streamText(async chunk => print(chunk))\n\n    http.put("/api/draft", {body: "replaced"}).cancel()\n    await http.patch("/api/draft", {body: "patched"}).text()\n    await http.delete("/api/draft").text()\n    await http.head("/api/draft").text()\n    await http.request("OPTIONS", "/api/draft").text()\n    const typed: Draft = await request.parse(Draft)\n    print(typed.title)`
+const realtimeCode = `import {eventStream, socket} from "velar/realtime"\n\ntype Draft:\n    title: string\n    body: string\n\nconst emptyDraft: Draft = {title: "", body: ""}\n\n// Both realtime handles publish close(), so "using" supplies their release\n// contract and each connection is closed at the end of the block. A connection\n// an application keeps open instead lives beside a component and is closed from\n// the sibling @cleanup block.\nexport async def realtimeSpellings():\n    using live = socket("wss://example.test/live", {\n        open: () => print("socket open"),\n        message: text => print(text),\n        error: reason => print(reason),\n        close: (code, reason) => print(f"closed {code}: {reason}"),\n    })\n    live.send("hello")\n    live.sendJson(emptyDraft)\n    print(f"{live.url} {live.state()}")\n    live.close(1000, "done")\n\n    using feed = eventStream("/api/events", {\n        open: () => print("stream open"),\n        message: (event, data) => print(f"{event}: {data}"),\n        error: reason => print(reason),\n    }, true)\n    print(f"{feed.url} {feed.state()}")\n    feed.close()`
+
+const sections = [
+    {id: "calls", label: "One call convention", labelZh: "单一调用约定"},
+    {id: "storage", label: "Typed local and session storage", labelZh: "带类型的 local 与 session 存储"},
+    {id: "database", label: "The IndexedDB store", labelZh: "IndexedDB 存储"},
+    {id: "http", label: "Requests and typed responses", labelZh: "请求与带类型的响应"},
+    {id: "failures", label: "Discriminated failures", labelZh: "被区分的失败"},
+    {id: "multipart", label: "Multipart bodies", labelZh: "multipart 请求体"},
+    {id: "realtime", label: "Realtime connections", labelZh: "实时连接"},
+]
+
+const pointsLook = look:
+    display = "grid"
+    gap = 7px
+    marginTop = 18px
+    marginBottom = 4px
+    paddingLeft = 22px
+
+const failureRows: List<MemberRow> = [
+    {name: "HttpError", signature: "status, url, body", summary: "A non-2xx response. Its url is the final response URL after redirects.", summaryZh: "非 2xx 响应。它的 url 是重定向之后的最终响应 URL。"},
+    {name: "HttpAbortError", signature: `reason: "cancelled" | "timeout"`, summary: "Cancellation and timeout, so recovery does not depend on browser-specific abort errors.", summaryZh: "取消与超时；因此恢复逻辑不依赖各浏览器各自的中止错误。"},
+    {name: "HttpTransportError", signature: "phase: HttpTransportPhase", summary: "A native request or response-stream failure, with the phase saying which side it happened on.", summaryZh: "原生请求或响应流的失败，phase 说明它发生在哪一侧。"},
+]
 
 export component WebData:
     const locale = useLocale()
     return <main>
-        <Head title={locale.text("Forms, HTTP and storage · VelarScript", "表单、HTTP 与存储 · VelarScript")} description={locale.text("VelarScript public config, typed HTTP, multipart uploads, native forms, runtime validation, local/session storage, and IndexedDB.", "VelarScript 的公开配置、类型化 HTTP、多段上传、原生表单、运行时验证、本地/会话存储与 IndexedDB。")} themeColor="#f7f5f0" />
-        <DocsShell items={docsNav}>
-            <PageHeader kicker={locale.text("Web framework / 04", "Web 框架 / 04")} title={locale.text("External data crosses checked boundaries.", "外部数据通过受检查边界。")} summary={locale.text("One record type validates public configuration, HTTP responses, form input, storage, and IndexedDB without duplicate schemas.", "同一个记录类型验证公开配置、HTTP 响应、表单输入、存储与 IndexedDB，不重复维护 schema。")} tags={["velar/config", "velar/http", "velar/forms", "velar/storage"]} />
+        <Head
+            title={headTitle("/guide/web/data", locale.isChinese())}
+            description={locale.text("How stored and fetched data is validated against a declared type, and how HTTP failures are discriminated.", "存储与获取的数据如何按已声明的类型验证，以及 HTTP 失败如何被区分。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Web extension / 12", "Web 扩展 / 12")}
+                title={locale.text("Storage, HTTP and realtime", "存储、HTTP 与实时")}
+                summary={locale.text("Typed local and session storage, the IndexedDB store, HTTP under one call convention, and realtime connections as owned handles.", "带类型的 local 与 session 存储、IndexedDB 存储、单一调用约定下的 HTTP，以及作为受拥有句柄的实时连接。")}
+            />
+            <SectionList items={sections} />
             <Prose>
-                <h2 id="config">velar/config</h2>
-                <CodeBlock code={configCode} />
-                <p><code>publicConfig(Type)</code>{locale.text(" validates the complete ", " 验证完整 ")}<code>velar.json.web.publicConfig</code>{locale.text(" object and returns the named type. ", " 对象并返回命名类型。")}<code>has(key)</code>{locale.text(" and sorted ", " 与排序后的 ")}<code>keys()</code>{locale.text(" support optional discovery. Config is JSON-only, recursively frozen, bounded to 64 KiB, baked into hashed entry, and never reads ", " 支持可选发现。配置仅限 JSON、递归冻结、限制 64 KiB、写入哈希入口，并且绝不读取 ")}<code>.env</code>{locale.text(", process state, server config, or secrets.", "、进程状态、服务器配置或密钥。")}</p>
+                <h2 id="calls">{locale.text("One call convention", "单一调用约定")}</h2>
+                <p>
+                    {locale.text("Every fixed Web API uses the same call rule as an ordinary function: arguments may be positional or explicitly named. The names are part of the checked contract, optional values may be omitted, and supplied expressions still run from left to right as written even when their names are out of declaration order. Use positional arguments where the meaning is already obvious and named arguments where they remove ambiguity; the compiler rejects unknown, repeated, or missing names instead of guessing.", "每个固定的 Web API 都使用与普通函数相同的调用规则：实参可以是位置形式，也可以显式具名。名字属于受检契约的一部分，可选值可以省略，且即使名字顺序与声明顺序不同，给出的表达式仍按书写的从左到右顺序求值。含义已经显而易见时用位置实参，需要消除歧义时用具名实参；编译器会拒绝未知、重复或缺失的名字，而不是去猜。")}
+                </p>
+                <CodeBlock code={callsCode} />
 
-                <h2 id="http">velar/http</h2>
-                <CodeBlock code={httpCode} />
-                <p><code>request</code>, <code>get</code>, <code>post</code>, <code>put</code>, <code>patch</code>, <code>delete</code>{locale.text(", and ", " 与 ")}<code>head</code>{locale.text(" create lazy requests. Options include string Map headers, body, timeout, max bytes, credentials, and cache policy. Requests expose ", " 创建惰性请求。选项包括字符串 Map 响应头、请求体、超时、最大字节、凭据与缓存策略。请求暴露 ")}<code>response</code>, <code>json</code>, <code>text</code>, <code>blob</code>, <code>parse(Type)</code>{locale.text(", and idempotent ", " 与幂等 ")}<code>cancel</code>{locale.text(".", "。")}</p>
-                <ul>
-                    <li>{locale.text("First body read starts fetch; cancelling before it prevents fetch entirely.", "首次读取响应体才启动 fetch；此前取消可完全阻止 fetch。")}</li>
-                    <li>{locale.text("Timeout/cancellation reject with ", "超时/取消以 ")}<code>HttpAbortError</code>{locale.text(" and stable reasons ", " 拒绝，并带稳定原因 ")}<code>timeout</code>{locale.text(" or ", " 或 ")}<code>cancelled</code>{locale.text(".", "。")}</li>
-                    <li>{locale.text("Non-2xx responses throw ", "非 2xx 响应抛出 ")}<code>HttpError</code>{locale.text(" with status, URL, and unknown body.", "，包含状态、URL 与 unknown 响应体。")}</li>
-                    <li>{locale.text("Responses stream up to ", "响应以流方式读取到 ")}<code>maxBytes</code>{locale.text(", then cache for stable repeated readers.", "，随后缓存以保证重复读取稳定。")}</li>
-                    <li>{locale.text("Object bodies use strict lossless JSON; unsupported values fail before fetch.", "对象请求体使用严格无损 JSON；不支持的值在 fetch 前失败。")}</li>
-                    <li>{locale.text("Headers, methods, options, credentials, cache modes, metadata, and URL sizes validate before native coercion.", "响应头、方法、选项、凭据、缓存模式、元数据与 URL 大小都在原生强制转换前验证。")}</li>
+                <h2 id="storage">{locale.text("Typed local and session storage", "带类型的 local 与 session 存储")}</h2>
+                <p>
+                    {locale.text("storage and session publish the same seven members, and scope answers a namespaced view with the same seven. A typed get validates the stored text against a record type and falls back when it does not match, so a half-written key cannot travel under a declared type. Every write goes through the strict data contract, and each read and write accepts a byte budget.", "storage 与 session 发布同样的七个成员，scope 返回一个带命名空间的视图，同样是这七个。带类型的 get 会按记录类型验证存下的文本，不匹配时使用回退值，因此写了一半的键无法顶着已声明的类型流通。每次写入都经过严格的数据契约，且每次读写都接受一个字节预算。")}
+                </p>
+                <CodeBlock code={storageCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("A read whose stored text exceeds the budget returns the declared fallback without parsing it, and a write over budget fails before any storage mutation.", "存储文本超出预算的读取会直接返回声明的回退值而不解析它；超出预算的写入在任何存储改动之前就失败。")}
+                    </li>
+                    <li>
+                        {locale.text("watch observes same-page writes and browser storage events and returns an explicit cleanup function; a throwing callback is reported through velar/app while cleanup still removes the listener.", "watch 观察同页写入与浏览器存储事件，并返回一个显式的清理函数；抛错的回调经由 velar/app 上报，清理仍会正常移除监听器。")}
+                    </li>
+                    <li>
+                        {locale.text("Values written directly by JavaScript in a different representation are foreign data and return the declared fallback rather than entering typed code.", "由 JavaScript 以另一种表示直接写入的取值属于外来数据，读取时返回声明的回退值，而不是进入带类型的代码。")}
+                    </li>
                 </ul>
 
-                <h2 id="multipart">{locale.text("Multipart form bodies", "多段表单请求体")}</h2>
-                <CodeBlock code={uploadCode} />
-                <p><code>formBody()</code>{locale.text(" exposes ", " 暴露 ")}<code>field</code>, <code>file</code>, <code>files</code>, <code>remove</code>, <code>has</code>{locale.text(", and ", " 与 ")}<code>names</code>{locale.text(". Files must be opaque records returned by ", "。文件必须是 ")}<code>velar/files.pick</code>{locale.text("; forged structural objects have no native authority. Browser owns multipart boundary, so manual content-type is rejected.", " 返回的不透明记录；伪造结构对象没有原生权限。浏览器拥有 multipart boundary，因此手动 content-type 会被拒绝。")}</p>
+                <h2 id="database">{locale.text("The IndexedDB store", "IndexedDB 存储")}</h2>
+                <p>
+                    {locale.text("database(name) provides the same vocabulary with every member asynchronous, and without scope or watch. Values are stored as canonical strict text rather than arbitrary structured clones, which is what allows an oversized value to be rejected before parsing and a foreign value to return the declared fallback.", "database(name) 提供同样的词汇，但每个成员都是异步的，且没有 scope 与 watch。取值以规范的严格文本存储，而不是任意的结构化克隆，这正是超大取值能在解析前被拒绝、外来取值能返回声明回退值的原因。")}
+                </p>
+                <CodeBlock code={databaseCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Operations resolve only when their transaction commits, not merely when the individual request reports success, so a later abort is observable as the original failure.", "操作只在其事务提交时才解决，而不是在单个请求报告成功时就解决，因此之后的中止会以原始失败的形式被观察到。")}
+                    </li>
+                    <li>
+                        {locale.text("A failed or blocked open resets the cached connection so a later operation may retry, and version changes or unexpected closes discard stale handles.", "打开失败或被阻塞会重置缓存的连接，使之后的操作可以重试；版本变化或意外关闭会丢弃陈旧的句柄。")}
+                    </li>
+                </ul>
 
-                <h2 id="forms">velar/forms</h2>
-                <CodeBlock code={formsCode} />
-                <p><code>values</code>{locale.text(" and ", " 与 ")}<code>fieldValue</code>{locale.text(" expose raw form shapes. ", " 暴露原始表单形状。")}<code>textValue</code>, <code>numberValue</code>, <code>checkedValue</code>{locale.text(", and ", " 与 ")}<code>fieldValues</code>{locale.text(" provide typed reads. ", " 提供类型化读取。")}<code>read(form, Type)</code>{locale.text(" decodes flat string, finite number, bool checkbox, enum, repeated ", " 把扁平字符串、有限数字、布尔复选框、枚举、重复 ")}<code>List&lt;string&gt;</code>{locale.text(", and optional scalars into the existing record type.", " 与可选标量解码为现有记录类型。")}</p>
-                <p><code>setError</code>, <code>clearError</code>, <code>clearErrors</code>, <code>errors</code>{locale.text(", and ", " 与 ")}<code>focusFirstError</code>{locale.text(" own accessible field-error relationships. ", " 拥有无障碍字段错误关系。")}<code>setPending</code>{locale.text(" owns ", " 拥有 ")}<code>aria-busy</code>{locale.text(" and temporary disabled state. ", " 与临时禁用状态。")}<code>reset</code>{locale.text(" restores ownership before native reset. Business validation, trimming, submission, and nested construction remain application code.", " 在原生重置前恢复所有权。业务验证、裁剪、提交与嵌套构造仍由应用代码负责。")}</p>
+                <h2 id="http">{locale.text("Requests and typed responses", "请求与带类型的响应")}</h2>
+                <p>
+                    {locale.text("The seven request constructors create lazy requests, and a request exposes response, json, text, streamText, blob, parse, and cancel. parse uses the existing runtime validator for a declared type, so there is no second schema system to keep in agreement with the first. Options are plain data records with only documented fields; accessors, unknown fields, non-string headers, and forbidden methods fail at request creation.", "七个请求构造函数创建惰性请求，请求暴露 response、json、text、streamText、blob、parse 与 cancel。parse 使用已有的运行时验证器来验证一个已声明的类型，因此不存在需要与第一套保持一致的第二套 schema 系统。选项是只含文档字段的纯数据记录；访问器、未知字段、非字符串请求头与被禁止的方法都会在创建请求时失败。")}
+                </p>
+                <CodeBlock code={httpCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Successful bytes are cached, so repeated text, json, and blob reads are stable and concurrent buffered readers coalesce onto one body read.", "成功读到的字节会被缓存，因此重复的 text、json 与 blob 读取是稳定的，并发的缓冲读取者会合并到同一次 body 读取上。")}
+                    </li>
+                    <li>
+                        {locale.text("streamText remains an exclusive incremental reader, decoding valid chunks and awaiting each consumer before pulling the next one.", "streamText 保持为独占的增量读取器，逐块解码有效数据，并在拉取下一块之前等待消费者。")}
+                    </li>
+                    <li>
+                        {locale.text("Cancellation is idempotent and owns the whole lazy request: cancelling before the first body reader prevents the request from starting at all.", "取消是幂等的，并拥有整个惰性请求：在第一个 body 读取者之前取消会让请求根本不启动。")}
+                    </li>
+                </ul>
 
-                <h2 id="storage">velar/storage</h2>
-                <CodeBlock code={storageCode} />
-                <p><code>storage</code>{locale.text(" and ", " 与 ")}<code>session</code>{locale.text(" expose scoped/unscoped ", " 暴露有/无作用域的 ")}<code>get</code>, <code>set</code>, <code>has</code>, <code>keys</code>, <code>remove</code>, <code>clear</code>{locale.text(", and ", " 与 ")}<code>watch</code>{locale.text(". Typed reads/watches use a compiler-registered Type. Watches observe same-page writes and browser events, return cleanup, and report callbacks through ", "。类型化读取/监听使用编译器注册 Type。监听观察同页写入与浏览器事件，返回 cleanup，并通过 ")}<code>velar/app</code>{locale.text(".", " 报告回调失败。")}</p>
-                <p><code>database(name)</code>{locale.text(" provides asynchronous IndexedDB operations. Writes resolve after transaction commit, failed/blocked opens retry, version changes close stale handles, keys sort, and every value obeys strict JSON.", " 提供异步 IndexedDB 操作。写入在事务提交后解析，失败/阻塞打开可重试，版本变化关闭旧句柄，键列表排序，所有值遵循严格 JSON。")}</p>
-                <Callout title={locale.text("Strict JSON everywhere", "处处使用严格 JSON")}><p>{locale.text("Network and persistence accept only finite primitives, ", "网络与持久化只递归接受有限基础值、")}<code>null</code>{locale.text(", dense Lists, and plain records recursively. Maps, Sets, classes, functions, sparse/accessor Lists, non-finite numbers, and cycles fail instead of silent omission/conversion.", "、稠密 List 与普通记录。Map、Set、类、函数、稀疏/访问器 List、非有限数字与循环会失败，而不是被静默省略或转换。")}</p></Callout>
+                <h2 id="failures">{locale.text("Discriminated failures", "被区分的失败")}</h2>
+                <p>
+                    {locale.text("velar/http keeps its own error hierarchy because a caller branches on status, reason, and phase directly rather than on message text. The module does not retry implicitly: status policy, backoff, idempotency, and replay safety belong to the caller.", "velar/http 保留自己的错误层级，因为调用方是直接按 status、reason 与 phase 分支的，而不是按消息文本。该模块不隐式重试：状态策略、退避、幂等性与重放安全都属于调用方。")}
+                </p>
+                <MemberTable rows={failureRows} caption={locale.text("The three failure classes", "三个失败类")} />
 
-                <div class="next-links"><Link to="/docs/web/browser"><strong>{locale.text("Next: Browser capabilities", "下一步：浏览器能力")}</strong><span>{locale.text("Own platform effects and resource lifetimes explicitly.", "显式拥有平台副作用与资源生命周期。")}</span></Link><Link to="/docs/core"><strong>{locale.text("Core modules", "Core 模块")}</strong><span>{locale.text("Parse, compare, transform, schedule, and format data.", "解析、比较、变换、调度并格式化数据。")}</span></Link></div>
+                <h2 id="multipart">{locale.text("Multipart bodies", "multipart 请求体")}</h2>
+                <p>
+                    {locale.text("formBody is the export the Web target adds: a checked multipart builder whose file members accept only opaque records returned by the file picker, so a forged structural object fails at runtime even when it resembles the public file metadata. The browser owns the multipart boundary, which is why supplying a content-type header with a form body is rejected rather than risking an invalid one.", "formBody 是 Web 目标额外添加的导出：一个受检的 multipart 构建器，它的文件成员只接受文件选择器返回的不透明记录，因此伪造的结构化对象即使看起来与公开的文件元数据相同，也会在运行时失败。multipart 的分隔串由浏览器拥有，这正是为 form 请求体同时提供 content-type 请求头会被拒绝、而不是冒险产生无效分隔串的原因。")}
+                </p>
+                <CodeBlock code={formBodyCode} />
+                <p>
+                    {locale.text("A JSON request body uses the same strict lossless data contract as storage: records, dense lists, finite primitives, and null are accepted, while maps, sets, class and function values, cycles, sparse lists, and non-finite numbers fail before the request starts.", "JSON 请求体使用与存储相同的严格无损数据契约：接受记录、稠密列表、有限的基本值与 null，而 Map、Set、类与函数取值、环、稀疏列表与非有限数字都会在请求开始之前失败。")}
+                </p>
+
+                <h2 id="realtime">{locale.text("Realtime connections", "实时连接")}</h2>
+                <p>
+                    {locale.text("socket wraps text WebSocket messages and eventStream wraps server-sent events. Both publish close, so both are ordinary owned resources: a scoped block releases them at its end, and a connection an application keeps open is closed from a sibling cleanup block. The API introduces no effects and no hidden lifecycle behaviour.", "socket 包装文本 WebSocket 消息，eventStream 包装服务器推送事件。两者都发布 close，因此都是普通的受拥有资源：作用域块在结束时释放它们，而应用保持开启的连接则由兄弟清理块关闭。该 API 不引入 effect，也不引入隐藏的生命周期行为。")}
+                </p>
+                <CodeBlock code={realtimeCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Handler records accept only documented enumerable callable fields; accessors and unknown fields fail before the native connection is constructed.", "处理器记录只接受有文档的可枚举可调用字段；访问器与未知字段在构造原生连接之前就失败。")}
+                    </li>
+                    <li>
+                        {locale.text("Event streams report connecting, open, or closed; WebSockets additionally expose closing, and an unknown native state fails rather than being mislabeled.", "事件流报告 connecting、open 或 closed；WebSocket 另外暴露 closing，未知的原生状态会失败，而不是被贴错标签。")}
+                    </li>
+                    <li>
+                        {locale.text("Binary WebSocket messages are reported to the error handler and close the text-only channel.", "二进制 WebSocket 消息会上报给错误处理器，并关闭这条只接受文本的通道。")}
+                    </li>
+                </ul>
+                <Callout title={locale.text("One validator, three boundaries", "一个验证器，三条边界")}>
+                    <p>
+                        {locale.text("Storage, HTTP, and realtime all validate through the same type declaration the rest of the program already uses. A declared type is the runtime validator, so the boundary check and the compile-time check cannot drift apart, and there is no second schema to keep in agreement.", "存储、HTTP 与实时都通过程序其余部分已经在用的同一份类型声明来验证。已声明的类型就是运行时验证器，因此边界检查与编译期检查不会各自漂移，也不存在需要保持一致的第二套 schema。")}
+                    </p>
+                </Callout>
             </Prose>
+            <DocsPager previous={guidePrevious("/guide/web/data")} next={guideNext("/guide/web/data")} />
         </DocsShell>
     </main>

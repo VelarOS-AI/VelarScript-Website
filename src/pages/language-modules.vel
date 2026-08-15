@@ -1,48 +1,132 @@
-import {Head, Link} from "velar/web"
-import {CodeBlock, Callout, DocsShell, PageHeader, Prose} from "@velarscript/docs-kit"
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
-import {docsNav} from "../content.vel"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
-const moduleCode = "// src/models.vel\nexport type User:\n    id: string\n    name: string\n\nexport def displayName(user: User) -> string:\n    return user.name\n\n// src/app.vel\nimport {User, displayName} from \"./models.vel\""
-const dynamicCode = "const reports = await import(\"./pages/reports.vel\")\nconst summary = reports.createSummary()\n\nconst Reports = lazy(\n    () => import(\"./pages/reports.vel\"),\n    \"Reports\",\n    PageLoading,\n    PageFailed,\n)"
-const jsCode = "import js {marked} from \"marked\"\n\nconst html = marked(source) // checked from the package declaration\n\nimport js unsafe {legacyRender} from \"legacy-renderer\"\n// legacyRender enters as any only at this explicit unsafe boundary."
-const externCode = "extern module \"small-parser\":\n    export const version: string\n    export def parse(source: string) -> ParseResult\n\n    export class Parser:\n        const source: string\n        let position: number\n        constructor(source: string, position: number = 0)\n        def parse() -> ParseResult\n        static def from(source: string) -> Parser"
-const packageCode = "{\n  \"name\": \"@example/velar-cards\",\n  \"version\": \"1.0.0\",\n  \"velar\": {\"entry\": \"src/index.vel\"},\n  \"files\": [\"src\"]\n}"
+const exportsCode = `export const version = "1"\n\nexport let requestCount = 0\n\nexport def bumpRequestCount() -> number:\n    requestCount += 1\n    return requestCount\n\nexport def encode(value: unknown) -> string:\n    return Json.stringify(value)\n\nexport async def encodeLater(value: unknown) -> string:\n    return encode(value)\n\nexport type User:\n    id: string\n    name: string\n\nexport type UserId = string\n\nexport enum Role:\n    owner\n    viewer\n\nexport class Badge:\n    constructor(const label: string):\n        pass\n\n    def render() -> string:\n        return f"[{self.label}]"\n\n// A name that is never exported stays private to this module; a value may\n// still carry its shape across the graph.\ntype Internal:\n    seed: number\n\nexport def makeInternal(seed: number) -> Internal:\n    return {seed}`
+const importsCode = `import {join, parse} from "velar/url"\nimport {join as joinUrl} from "velar/url"\nimport * as urls from "velar/url"\nimport {groupBy} from "velar/collections"\n\ntype Row:\n    id: string\n    group: string\n\nconst rows: List<Row> = [{id: "a", group: "x"}]\n\n// A named import brings the names in; as renames one at the import site.\nconst joined = join("https://example.test", "api", "v1")\nconst aliased = joinUrl("https://example.test", "health")\nconst parsed = parse("https://example.test/api?page=2")\n\n// A namespace import reads a whole module through one name. Its fields are\n// always read-only, and a namespace member cannot stand in a type position.\nconst throughNamespace = urls.join("https://example.test", "api")\n\nconst grouped = groupBy(rows, row => row.group)`
+const barrelCode = `// A barrel re-exports another module's named exports without creating local\n// bindings, and it may add exports of its own. Re-exported names join this\n// module's interface with the full origin contract, live-export mutability\n// included.\nexport {join, parse} from "velar/url"\nexport {join as joinPath} from "velar/url"\n\nexport const barrelName = "the url barrel"`
+const relativeChunkCode = `export const version = "1"\n\nexport type User:\n    id: string\n    name: string\n\nexport def describe(user: User) -> string:\n    return f"{user.name} ({user.id})"`
+
+const relativeCode = `import {User, describe} from "./chunk.vel"\nimport {describe as describeUser} from "./chunk.vel"\nimport * as dependency from "./chunk.vel"\n\nconst user: User = {id: "u-1", name: "Nova"}\n\nexport const direct = describe(user)\nexport const renamed = describeUser(user)\nexport const throughNamespace = dependency.describe(user)`
+
+const livePairChunkCode = "export let requestCount = 0\n\nexport def bumpRequestCount() -> number:\n    requestCount += 1\n    return requestCount"
+
+const livePairCode = `import {bumpRequestCount, requestCount} from "./chunk.vel"\n\nexport def observeLiveBinding() -> string:\n    const before = requestCount\n    bumpRequestCount()\n    return f"{before} -> {requestCount}"`
+const effectErrorCode = `import "./reports.vel"\n\nexport const ready = true`
+const effectErrorOutput = `main.vel:1:1 error VEL2029: A module's effects must be visible where they happen; export a function and call it — import {install} from "./reports.vel", then install()\nimport "./reports.vel"\n^^^^^^^^^^^^^^^^^^^^^^`
+const dynamicChunkCode = `export const banner = "reports loaded"`
+
+const dynamicCode = `export async def loadBanner() -> string:\n    const reports = await import("./chunk.vel")\n    return reports.banner`
+
+const packageErrorCode = `export async def loadUrls() -> string:\n    const urls = await import("velar/url")\n    return "loaded"`
+const packageErrorOutput = `main.vel:2:31 error VEL2014: Dynamic imports require a literal relative path ending in '.vel'\n    const urls = await import("velar/url")\n                              ^^^^^^^^^^^`
+
+const pointsLook = look:
+    display = "grid"
+    gap = 8px
+    margin = 0
+    paddingInlineStart = 20px
+
+const sections = [
+    {id: "exports", label: "Every export form", labelZh: "每种导出形式"},
+    {id: "imports", label: "What each spelling brings in", labelZh: "每种拼写带入什么"},
+    {id: "barrel", label: "Re-exports", labelZh: "再导出"},
+    {id: "live", label: "Live bindings", labelZh: "活绑定"},
+    {id: "side-effects", label: "No side-effect import", labelZh: "没有副作用导入"},
+    {id: "dynamic", label: "Dynamic import", labelZh: "动态导入"},
+]
 
 export component LanguageModules:
     const locale = useLocale()
     return <main>
-        <Head title={locale.text("Modules and JavaScript · VelarScript", "模块与 JavaScript · VelarScript")} description={locale.text("VelarScript static and dynamic modules, npm source packages, JavaScript imports, declaration bridging, extern modules, and unsafe adapters.", "VelarScript 的静态与动态模块、npm 源码包、JavaScript 导入、声明桥接、extern 模块与 unsafe 适配器。")} themeColor="#f7f5f0" />
-        <DocsShell items={docsNav}>
-            <PageHeader kicker={locale.text("Language / 06", "语言 / 06")} title={locale.text("Explicit boundaries, complete project knowledge.", "边界明确，项目知识完整。")} summary={locale.text("Static VelarScript modules form the checked application graph. Dynamic imports retain types and chunks. JavaScript enters only through a visible interop boundary.", "静态 VelarScript 模块组成受检查的应用图；动态导入保留类型与分块；JavaScript 只通过可见互操作边界进入。")} tags={["import + export", "checked chunks", "npm source", "import js"]} />
+        <Head
+            title={headTitle("/guide/language/modules", locale.isChinese())}
+            description={locale.text("How VelarScript modules export and import, why a module with live exports cannot be namespace-imported, and how lazy loading is written.", "VelarScript 模块如何导出与导入、带有活绑定导出的模块为何不能用命名空间导入，以及惰性加载如何书写。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Language / 11", "语言 / 11")}
+                title={locale.text("Modules", "模块")}
+                summary={locale.text("Every export form, what each import spelling brings in, live bindings, and dynamic import.", "每种导出形式、每种导入拼写带入什么、活绑定，以及动态导入。")}
+            />
+            <SectionList items={sections} />
             <Prose>
-                <h2 id="velar-modules">{locale.text("VelarScript modules", "VelarScript 模块")}</h2>
-                <CodeBlock code={moduleCode} />
-                <p>{locale.text("Every ", "每个 ")}<code>.vel</code>{locale.text(" file is a module. Imports and exports are explicit, relative paths include the ", " 文件都是模块。导入导出明确可见，相对路径包含 ")}<code>.vel</code>{locale.text(" suffix, and exported types, classes, functions, components, constants, aliases, enums, docs, and symbol identities cross the same semantic graph used by compiler and language server.", " 后缀；导出的类型、类、函数、组件、常量、别名、枚举、文档与符号身份都跨越编译器和语言服务器共用的语义图。")}</p>
+                <h2 id="exports">{locale.text("Every export form", "每种导出形式")}</h2>
+                <p>
+                    {locale.text("A file is a module and its module system is ES modules. const, let, def, async def, type, an alias, enum, and class all export by writing the word in front of the declaration. A name that is never exported stays private to its module, and a value may still carry that private shape across the graph.", "一个文件就是一个模块，其模块系统就是 ES 模块。const、let、def、async def、type、别名、enum 与 class，都通过在声明前写下这个词来导出。从未被导出的名字保持为该模块私有，而一个值仍然可以带着这份私有形状穿过模块图。")}
+                </p>
+                <CodeBlock code={exportsCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Import declarations are hoisted above every other statement, so a dependency has finished initializing before the first line of the importing module runs.", "导入声明被提升到其他所有语句之上，因此在导入方模块的第一行执行之前，依赖已经完成初始化。")}
+                    </li>
+                    <li>
+                        {locale.text("An unused import is not an error and produces no warning; importing a name still initializes the module it comes from.", "未使用的导入不是错误，也不会产生警告；导入一个名字仍然会初始化它所来自的模块。")}
+                    </li>
+                </ul>
 
-                <h2 id="dynamic">{locale.text("Checked dynamic imports", "受检查的动态导入")}</h2>
+                <h2 id="imports">{locale.text("What each spelling brings in", "每种拼写带入什么")}</h2>
+                <p>
+                    {locale.text("A named import brings the names in, as renames one at the import site, and a namespace import reads a whole module through one name. A namespace field is always read-only, and a namespace member cannot stand in a type position — a type is imported by name.", "具名导入把名字带入，as 在导入处重命名其中之一，命名空间导入则通过一个名字读取整个模块。命名空间字段始终只读，且命名空间成员不能出现在类型位置——类型要按名字导入。")}
+                </p>
+                <CodeBlock code={importsCode} />
+                <p>
+                    {locale.text("The same three spellings work against your own modules. The two blocks below are two modules of one project — the dependency, chunk.vel, and the module that imports it — and both compile together in the site's gate.", "同样的三种拼写也作用于你自己的模块。下面两个代码块是同一个项目里的两个模块——依赖模块 chunk.vel 与导入它的模块——两者在本站门禁中一起编译。")}
+                </p>
+                <CodeBlock code={relativeChunkCode} />
+                <CodeBlock code={relativeCode} />
+
+                <h2 id="barrel">{locale.text("Re-exports", "再导出")}</h2>
+                <p>
+                    {locale.text("A module can re-export another module's named exports without creating local bindings, which is how a package entry exposes symbols from its internal modules. Re-exported names join the barrel's interface under their aliases with the full origin contract. Re-exporting everything at once is deliberately absent: every symbol is named, so the module interface stays readable as a list.", "一个模块可以再导出另一个模块的具名导出，而不创建本地绑定；包的入口正是这样把内部模块的符号暴露出去的。再导出的名字以其别名加入桶模块的接口，并保留完整的来源契约。「一次性再导出全部」被刻意排除：每个符号都要写出名字，模块接口因此始终能作为一份清单被读懂。")}
+                </p>
+                <CodeBlock code={barrelCode} />
+
+                <h2 id="live">{locale.text("Live bindings", "活绑定")}</h2>
+                <p>
+                    {locale.text("An imported name is read-only in the importing module, but an exported let remains live: the exporting module may reassign it between a consumer's reads. That is also why a module with live exports must be imported by name rather than through a namespace — a namespace field cannot carry the write.", "被导入的名字在导入方模块中是只读的，但导出的 let 仍然是活的：导出方可以在消费者两次读取之间重新赋值。这也正是带有活绑定导出的模块必须按名字导入、而不能通过命名空间导入的原因——命名空间字段承载不了那次写入。")}
+                </p>
+                <CodeBlock code={livePairChunkCode} />
+                <CodeBlock code={livePairCode} />
+
+                <h2 id="side-effects">{locale.text("No side-effect import", "没有副作用导入")}</h2>
+                <p>
+                    {locale.text("An import written only for its effect is refused. A module that has to run something exports a function and the caller calls it, so the effect appears where it happens rather than in a line that looks like a declaration.", "只为副作用而写的导入会被拒绝。需要执行某些动作的模块导出一个函数，由调用方调用它，于是副作用出现在它真正发生的位置，而不是藏在一行看起来像声明的代码里。")}
+                </p>
+                <p>
+                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                </p>
+                <CodeBlock code={effectErrorCode} />
+                <p>
+                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                </p>
+                <CodeBlock code={effectErrorOutput} />
+
+                <h2 id="dynamic">{locale.text("Dynamic import", "动态导入")}</h2>
+                <p>
+                    {locale.text("A dynamic import takes a literal relative path ending in the VelarScript extension — never a package name, never a resident module, never a computed string — because the module graph must stay decidable at compile time. The result is the target module's checked interface, so its exported bindings keep their types and reading a name it does not export is a compile error. Caching belongs to the module graph: the first load initializes the module and every later import of the same path answers the same namespace.", "动态导入接受一个以 VelarScript 扩展名结尾的字面相对路径——不能是包名，不能是常驻模块，也不能是计算出来的字符串——因为模块图必须在编译期保持可判定。其结果是目标模块的受检接口，因此它导出的绑定保留各自的类型，而读取它没有导出的名字是一个编译错误。缓存属于模块图：第一次加载初始化该模块，之后每一次对同一路径的导入都给出同一个命名空间。")}
+                </p>
+                <CodeBlock code={dynamicChunkCode} />
                 <CodeBlock code={dynamicCode} />
-                <p>{locale.text("A dynamic VelarScript path is a literal relative ", "动态 VelarScript 路径必须是字面量相对 ")}<code>.vel</code>{locale.text(" path. Its Promise resolves to a checked export object and participates in dependency confinement, incremental invalidation, editor navigation, manifests, and deterministic splitting. Computed paths, bare package names, and dynamic JavaScript imports are rejected.", " 路径。其 Promise 解析为受检查导出对象，并参与依赖限制、增量失效、编辑器跳转、清单与确定性分块。运行时计算路径、裸包名与动态 JavaScript 导入会被拒绝。")}</p>
-                <p>{locale.text("Dynamic modules cannot export top-level reactive state. Web ", "动态模块不能导出顶层响应式状态。Web 的 ")}<code>lazy</code>{locale.text(" adds loading, failure, retry, route ownership, and cleanup around a checked component export.", " 围绕受检查组件导出加入加载、失败、重试、路由所有权与清理。")}</p>
-
-                <h2 id="packages">{locale.text("npm VelarScript source packages", "npm VelarScript 源码包")}</h2>
-                <CodeBlock code={packageCode} />
-                <p>{locale.text("A package declares one relative ", "包在根目录内声明一个相对 ")}<code>velar.entry</code>{locale.text(" and publishes source files. Consumers resolve and analyze that source directly. Package-relative imports stay root-confined, and one lockfile version controls local development, CI, editor semantics, and production bundling.", " 并发布源码文件。消费项目直接解析并分析源码。包内相对导入保持在根目录内，同一锁文件版本控制本地开发、CI、编辑器语义与生产打包。")}</p>
-
-                <h2 id="javascript">{locale.text("JavaScript packages", "JavaScript 包")}</h2>
-                <CodeBlock code={jsCode} />
-                <p>{locale.text("Safe ", "安全的 ")}<code>import js</code>{locale.text(" reads a limited practical subset of package TypeScript declarations. Understood functions, constants, records, promises, simple unions, aliases, and complete non-generic classes receive VelarScript types. Unsupported overloads, generics, recursive/type-level constructs, or unresolved hierarchies become ", " 读取包 TypeScript 声明的有限实用子集。可理解的函数、常量、记录、Promise、简单联合、别名与完整非泛型类获得 VelarScript 类型。不支持的重载、泛型、递归/类型层结构或未解析层级会带提示变为 ")}<code>unknown</code>{locale.text("; unknown values cannot be called or inspected.", "；unknown 值不能调用或检查。")}</p>
-                <p><code>import js unsafe</code>{locale.text(" is the only ordinary source of ", " 是普通源码中唯一的 ")}<code>any</code>{locale.text(". It is a visible trust boundary for audited, adapted code. Complex compatibility belongs in a separate ", " 来源。它是已审计并适配代码的可见信任边界。复杂兼容应放在独立 ")}<code>.js</code>{locale.text(" adapter, not embedded JavaScript inside ", " 适配器中，而不是嵌入 ")}<code>.vel</code>{locale.text(".", "。")}</p>
-
-                <h2 id="extern">{locale.text("Manual declarations", "手动声明")}</h2>
-                <CodeBlock code={externCode} />
-                <p>{locale.text("An ", "")}<code>extern module</code>{locale.text(" describes a small JavaScript surface in VelarScript syntax. Extern constants are read-only runtime exports, functions reuse ordinary signatures/rest parameters, and classes retain construction, field mutability, static/instance members, aliases, and nominal module identity.", " 用 VelarScript 语法描述小型 JavaScript 表面。extern 常量是只读运行时导出，函数复用普通签名与剩余参数，类保留构造、字段可变性、静态/实例成员、别名与名义模块身份。")}</p>
-
-                <h2 id="official">{locale.text("Official modules", "官方模块")}</h2>
-                <p>{locale.text("Core capabilities live under explicit ", "Core 能力通过显式 ")}<code>velar/*</code>{locale.text(" imports. Web capabilities appear only when a project declares ", " 导入使用。只有项目声明 ")}<code>@velarscript/web</code>{locale.text(". Nothing patches native prototypes or creates hidden globals. Core projects cannot accidentally use JSX, browser globals, or Web lifecycle syntax.", " 时才会提供 Web 能力。任何东西都不会修改原生原型或创建隐藏全局。Core 项目无法意外使用 JSX、浏览器全局或 Web 生命周期语法。")}</p>
-                <Callout title={locale.text("JavaScript is the ABI, not source authority", "JavaScript 是 ABI，不是源码权威")}><p>{locale.text("VelarScript keeps the existing engine and ecosystem while deciding which source patterns are safe, clear, and supported. Interop never expands the language into “JavaScript with indentation.”", "VelarScript 保留现有引擎与生态，同时决定哪些源码模式安全、清晰且受支持。互操作绝不会把语言扩张为“带缩进的 JavaScript”。")}</p></Callout>
-
-                <div class="next-links"><Link to="/docs/core"><strong>{locale.text("Core module reference", "Core 模块参考")}</strong><span>{locale.text("Use collections, text, math, JSON, async, URL, time, IDs, and logs.", "使用集合、文本、数学、JSON、异步、URL、时间、ID 与日志。")}</span></Link><Link to="/docs/web"><strong>{locale.text("Web framework overview", "Web 框架概览")}</strong><span>{locale.text("Activate the official browser development layer.", "启用官方浏览器开发层。")}</span></Link></div>
+                <p>
+                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                </p>
+                <CodeBlock code={packageErrorCode} />
+                <p>
+                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                </p>
+                <CodeBlock code={packageErrorOutput} />
+                <Callout title={locale.text("Failure is ordinary and catchable", "失败是普通的、可捕获的")}>
+                    <p>
+                        {locale.text("A module that throws while initializing rejects the promise the dynamic import answers, so a plugin that fails to load is handled with the same try and catch as any other failure. Nothing about lazy loading needs a second error mechanism.", "在初始化过程中抛出的模块，会让动态导入返回的 promise 被拒绝，因此加载失败的插件用与其他失败完全相同的 try 与 catch 处理。惰性加载不需要第二套错误机制。")}
+                    </p>
+                </Callout>
             </Prose>
+            <DocsPager
+                previous={guidePrevious("/guide/language/modules")}
+                next={guideNext("/guide/language/modules")}
+            />
         </DocsShell>
     </main>

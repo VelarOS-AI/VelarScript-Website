@@ -1,0 +1,134 @@
+import {Head, Link} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
+
+const habitErrorCode = "export def visible(done: bool) -> bool:\n    return !done"
+const unitTestCode = `import {expect} from "velar/test"\n\nexport def slug(title: string) -> string:\n    return title.lower().replace(" ", "-")\n\ntest "a title becomes a url slug":\n    expect(slug("Release Notes")).toBe("release-notes")`
+
+const habitErrorOutput = "src/app.vel:2:12 error VEL1005: Use 'not'; VelarScript uses readable logical operators\n    return !done\n           ^"
+
+const createShellCode = "npm create velar@latest my-app\ncd my-app\nnpm install"
+const templatesShellCode = "npm create velar@latest api -- --template node\nnpm create velar@latest desktop-app -- --template desktop\nnpm create velar@latest product-docs -- --template docs\nnpm create velar@latest shared-library -- --template library\nnpm create velar@latest component-library -- --template component"
+const structureTreeCode = "my-app/\n  velar.json                  project format, entry, extensions, web settings\n  package.json                npm dependencies and the script names below\n  AGENTS.md                   instructions for the model that will write this app\n  public/                     files copied to the build as-is\n  src/\n    main.vel                  entry — mounts the app\n    app.vel                   the application itself\n    app.test.vel              unit tests, run in Node\n    app.browser.test.vel      browser tests, run in a real browser"
+const devShellCode = "npm run dev"
+const checkShellCode = "npm run check"
+const fixShellCode = "npx velar fix"
+const testShellCode = "npm test              # unit tests, in Node\nnpm run test:browser  # browser tests, in a real browser"
+const buildShellCode = "npm run build     # produces dist/\nnpm run verify    # checks the build is actually deployable\nnpm run preview   # serves dist/ locally"
+const validateShellCode = "npm run validate"
+const skillShellCode = "npx velar skill"
+
+const sections = [
+    {id: "create", label: "Create", labelZh: "创建"},
+    {id: "structure", label: "What you got", labelZh: "你得到了什么"},
+    {id: "run", label: "Run it", labelZh: "运行它"},
+    {id: "diagnostics", label: "Let the compiler teach you", labelZh: "让编译器教你"},
+    {id: "test", label: "Test it", labelZh: "测试它"},
+    {id: "build", label: "Build it", labelZh: "构建它"},
+    {id: "model", label: "Hand it to your model", labelZh: "把它交给你的模型"},
+]
+
+const inlineLinkLook = look:
+    color = sea
+
+export component GuideQuickStart:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/guide/quick-start", locale.isChinese())}
+            description={locale.text("From nothing to a running, tested application: the commands that create, run, check, test, and build a project, and what each one reports.", "从零到一个可运行、有测试的应用：创建、运行、检查、测试与构建项目的命令，以及每条命令报告什么。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Start / 02", "开始 / 02")}
+                title={locale.text("Quick start", "快速开始")}
+                summary={locale.text("From nothing to a running, tested application. You need Node.js 24 or newer; everything else comes from npm.", "从零到一个可运行、有测试的应用。你需要 Node.js 24 或更新版本；其余一切都来自 npm。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <h2 id="create">{locale.text("Create", "创建")}</h2>
+                <CodeBlock code={createShellCode} />
+                <p>
+                    {locale.text("That gives you a Web application. For the other shapes, add a template. Creation refuses a non-empty target and assembles the complete project in a sibling staging directory before the final rename; it does not install dependencies, install browsers, initialize Git, publish, or deploy.", "这会给你一个 Web 应用。要得到其他形态，加上模板参数。创建过程拒绝非空目标，并在同级暂存目录中组装完整项目，最后再重命名；它不安装依赖、不安装浏览器、不初始化 Git、不发布、不部署。")}
+                </p>
+                <CodeBlock code={templatesShellCode} />
+
+                <h2 id="structure">{locale.text("What you got", "你得到了什么")}</h2>
+                <CodeBlock code={structureTreeCode} />
+                <p>
+                    {locale.text("Two things are worth noticing now. velar.json lists extensions explicitly: a Web project activates @velarscript/web and a Node project activates nothing, because the language does not guess what target you are on. And AGENTS.md is there because the model is the author — velar skill prints the full brief, and AGENTS.md points your tools at it.", "现在有两件事值得注意。velar.json 显式列出 extensions：Web 项目激活 @velarscript/web，Node 项目什么都不激活——因为语言不去猜你在哪个目标上。而 AGENTS.md 存在，是因为作者是模型——velar skill 会打印完整的语言说明，AGENTS.md 则把你的工具指向它。")} <Link
+                        to="/reference/project"
+                        look={inlineLinkLook}
+                    >
+                        {locale.text("The manifest reference lists every field.", "项目清单参考页列出了每一个字段。")}
+                    </Link>
+                </p>
+
+                <h2 id="run">{locale.text("Run it", "运行它")}</h2>
+                <CodeBlock code={devShellCode} />
+                <p>
+                    {locale.text("The dev server rebuilds on save and serves the app. Edit src/app.vel and the page updates.", "开发服务器在保存时重建并提供应用服务。编辑 src/app.vel，页面就会更新。")}
+                </p>
+
+                <h2 id="diagnostics">{locale.text("Let the compiler teach you", "让编译器教你")}</h2>
+                <p>
+                    {locale.text("Open src/app.vel and write a JavaScript habit on purpose.", "打开 src/app.vel，故意写一个 JavaScript 习惯。")}
+                </p>
+                <CodeBlock code={habitErrorCode} />
+                <p>
+                    {locale.text("Then check it.", "然后检查它。")}
+                </p>
+                <CodeBlock code={checkShellCode} />
+                <CodeBlock code={habitErrorOutput} />
+                <p>
+                    {locale.text("This is the shape of every diagnostic in VelarScript: it names the one current spelling, not a list of possibilities. You do not have to know the language to fix it, and neither does a model — which is the point. Write not done and the error goes away.", "这就是 VelarScript 中每一条诊断的形状：它给出当前唯一的那种拼写，而不是罗列可能性。你不需要懂这门语言就能改对它，模型也一样——这正是重点所在。写成 not done，错误就消失了。")}
+                </p>
+                <p>
+                    {locale.text("Where a rewrite is purely mechanical, the compiler will do it for you. fix applies only the rewrites that are provably equivalent, which is why it is safe to run unattended; anything requiring a judgment call stays a diagnostic for you to answer.", "当一次改写纯粹是机械的，编译器会替你完成。fix 只应用可证明等价的改写，这正是它可以无人值守运行的原因；任何需要判断的地方都仍然是诊断，交给你来回答。")}
+                </p>
+                <CodeBlock code={fixShellCode} />
+
+                <h2 id="test">{locale.text("Test it", "测试它")}</h2>
+                <CodeBlock code={testShellCode} />
+                <p>
+                    {locale.text("A unit test is a named block in a *.test.vel module. The name is a sentence about the code rather than an identifier — it is what you read when the test fails.", "单元测试是 *.test.vel 模块中的一个具名块。这个名字是一句关于代码的话，而不是一个标识符——测试失败时你读到的正是它。")}
+                </p>
+                <CodeBlock code={unitTestCode} />
+                <p>
+                    {locale.text("Browser tests live in *.browser.test.vel and drive the real page through velar/web-test. They only run under velar test --browser, and importing that module anywhere else is refused at the import line rather than left to fail at the call.", "浏览器测试位于 *.browser.test.vel，通过 velar/web-test 驱动真实页面。它们只在 velar test --browser 下运行，从别处导入该模块会在 import 行被拒绝，而不是留到调用时才失败。")}
+                </p>
+                <Callout title={locale.text("A green suite means no test printed an error anywhere", "套件全绿，意味着没有任何测试在任何地方打印过错误")}>
+                    <p>
+                        {locale.text("Both runners hold one trust rule: any unowned error during a test fails that test. A detached-task failure report, an uncaught exception, an unhandled rejection, a page error, or an error or warning console message in a browser run all mark that test failed. The runner itself keeps running — the failure belongs to the test, never to the process — and the exit code reports it. A green suite therefore means more than that every awaited assertion passed.", "两个运行器都持有同一条信任规则：测试期间任何无主的错误都会让该测试失败。分离任务的失败报告、未捕获的异常、未处理的拒绝、页面错误，或浏览器运行中 error 与 warning 级别的控制台消息，都会把那个测试标记为失败。运行器本身继续运行——失败属于测试，绝不属于进程——并由退出码报告出来。因此套件全绿的含义，比「每一条被等待的断言都通过了」要多。")}
+                    </p>
+                </Callout>
+
+                <h2 id="build">{locale.text("Build it", "构建它")}</h2>
+                <CodeBlock code={buildShellCode} />
+                <p>
+                    {locale.text("verify is where the difference between a directory that exists and a build that deploys is decided: it requires exact equality between the output tree and the build's asset inventory, rejects symbolic links and unsafe or duplicate paths, checks every size and hash, recomputes the build identity, and cross-checks the entry, stylesheet, deployment, CSP, cache, fallback, and adapter contracts. preview always runs that verification first.", "verify 正是在「目录存在」与「构建可部署」之间做出判决的地方：它要求输出树与构建的资源清单完全一致，拒绝符号链接以及不安全或重复的路径，检查每一项大小与哈希，重新计算构建标识，并交叉核对入口、样式表、部署、CSP、缓存、回退与适配器契约。preview 总是先运行这道验证。")}
+                </p>
+                <p>
+                    {locale.text("Or run the whole gate in one command, which is what CI does.", "也可以用一条命令运行整道门禁，这正是 CI 所做的事。")}
+                </p>
+                <CodeBlock code={validateShellCode} />
+
+                <h2 id="model">{locale.text("Hand it to your model", "把它交给你的模型")}</h2>
+                <CodeBlock code={skillShellCode} />
+                <p>
+                    {locale.text("That prints the brief describing the whole language — every spelling, every trap, the migration table. Give it to whatever model is writing your code. It is version-locked to the compiler you have installed, which is what makes it safe to paste: it describes that toolchain rather than a documented ideal.", "这会打印描述整门语言的说明——每种拼写、每个陷阱、迁移表。把它交给正在写你代码的那个模型。它与你安装的编译器版本锁定，这正是它可以放心粘贴的原因：它描述的是那套工具链，而不是文档里的理想。")}
+                </p>
+                <p>
+                    {locale.text("From here, the language chapters teach the core, the Web chapters teach the extension, and the reference lists the modules member by member.", "从这里开始，语言各章讲授核心，Web 各章讲授扩展，参考区逐个成员列出模块。")} <Link
+                        to="/reference"
+                        look={inlineLinkLook}
+                    >
+                        {locale.text("Open the reference", "打开参考")}
+                    </Link>
+                </p>
+            </Prose>
+            <DocsPager previous={guidePrevious("/guide/quick-start")} next={guideNext("/guide/quick-start")} />
+        </DocsShell>
+    </main>

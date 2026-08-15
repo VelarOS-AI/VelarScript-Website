@@ -1,0 +1,122 @@
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
+
+const loadersCode = `export type Profile:\n    id: string\n    name: string\n\nexport type SaveReceipt:\n    id: string\n    at: number\n\nstate loadCount = 0\nstate saveCount = 0\n\nasync def loadProfile(id: string) -> Profile:\n    await Promise.sleep(10ms)\n    loadCount += 1\n    return {id: id, name: f"Profile {id} (load {loadCount})"}\n\nasync def saveProfile(profile: readonly Profile) -> SaveReceipt:\n    await Promise.sleep(10ms)\n    saveCount += 1\n    return {id: profile.id, at: saveCount}\n\n// A module-level action lives for the life of the module and is never disposed,\n// so a shared store owns an operation together with its pending and error\n// surface. A resource stays component-owned because its stale-result handling\n// is tied to component destruction.\nexport action refreshEverything() -> number:\n    await Promise.sleep(10ms)\n    return loadCount\n\nexport component RefreshControl:\n    return <div data-refresh>\n        <button type="button" data-refresh-everything on:click={refreshEverything} disabled={refreshEverything.pending}>\n            Refresh everything\n        </button>\n        <p data-module-action-error>{refreshEverything.error?.message ?? "no error"}</p>\n    </div>`
+const reloadOnChangeCode = `type Profile:\n    id: string\n    name: string\n\nasync def loadProfile(id: string) -> Profile:\n    await Promise.sleep(10ms)\n    return {id: id, name: f"Profile {id}"}\n\n// The expectation. userId is read by the initializer, which makes it look like\n// a dependency. It is not: this resource loads once, when the component mounts,\n// and a later userId keeps showing the first load.\ncomponent ResourceWithoutReload(userId: string):\n    resource profile: Profile = loadProfile(userId)\n\n    return <div data-resource-without-reload>\n        <p data-value>{profile.value?.name ?? "no value yet"}</p>\n        <p data-input>{userId}</p>\n    </div>\n\n// The same component saying what it means. "Refetch when the input changes" is\n// spelled by watching the input and reloading; a watch body is synchronous, so\n// the reload is started with the detached async statement.\ncomponent ResourceWithReload(userId: string):\n    resource profile: Profile = loadProfile(userId)\n\n    watch userId:\n        async profile.reload()\n\n    return <div data-resource-with-reload>\n        <p data-value>{profile.value?.name ?? "no value yet"}</p>\n        <p data-input>{userId}</p>\n    </div>\n\nexport component ProfilePair(userId: string):\n    return <div data-profile-pair>\n        <ResourceWithoutReload userId={userId} />\n        <ResourceWithReload userId={userId} />\n    </div>`
+const reloadSpellingsCode = `type Profile:\n    id: string\n    name: string\n\nasync def loadProfile(id: string) -> Profile:\n    await Promise.sleep(10ms)\n    return {id: id, name: f"Profile {id}"}\n\n// Both reload spellings in one component. A watch body is synchronous, so the\n// reload there is started with the detached async statement; an action body is\n// asynchronous, so the same call is awaited and its Promise of null is the\n// point where the reload has settled.\nexport component ReloadSpellings(userId: string):\n    resource profile: Profile = loadProfile(userId)\n    state detachedStarts = 0\n\n    watch userId:\n        detachedStarts += 1\n        async profile.reload()\n\n    action reloadAndReport() -> string:\n        await profile.reload()\n        return profile.value?.name ?? "no value"\n\n    return <div data-reload-spellings>\n        <p data-value>{profile.value?.name ?? "no value yet"}</p>\n        <p data-detached-starts>{detachedStarts}</p>\n        <button type="button" data-reload-awaited on:click={reloadAndReport} disabled={reloadAndReport.pending}>\n            Reload and report\n        </button>\n    </div>`
+const fieldsCode = `type Profile:\n    id: string\n    name: string\n\nasync def loadProfile(id: string) -> Profile:\n    await Promise.sleep(10ms)\n    return {id: id, name: f"Profile {id}"}\n\nasync def failingLoad(id: string) -> Profile:\n    await Promise.sleep(10ms)\n    throw Error(f"Profile {id} is unavailable")\n\n// All five resource fields, and the failure contract: a failed load keeps the\n// last successful value, publishes the failure in error, sets ready to true and\n// loading to false, and a successful reload clears error when it starts.\nexport component ResourceFields(userId: string):\n    resource profile: Profile = loadProfile(userId)\n    resource broken: Profile = failingLoad(userId)\n\n    return <div data-resource-fields>\n        <p data-loading>{profile.loading ? "loading" : "idle"}</p>\n        <p data-ready>{profile.ready ? "ready" : "pending"}</p>\n        <p data-value>{profile.value?.name ?? "no value"}</p>\n        <p data-error>{profile.error?.message ?? "no error"}</p>\n        <p data-broken-error>{broken.error?.message ?? "no error"}</p>\n        <p data-broken-ready>{broken.ready ? "ready" : "pending"}</p>\n        <button type="button" data-reload on:click={profile.reload}>Reload</button>\n    </div>`
+const actionsCode = `type Profile:\n    id: string\n    name: string\n\ntype SaveReceipt:\n    id: string\n    at: number\n\nstate saveCount = 0\n\nasync def saveProfile(profile: readonly Profile) -> SaveReceipt:\n    await Promise.sleep(10ms)\n    saveCount += 1\n    return {id: profile.id, at: saveCount}\n\n// The expectation. Two clicks start two runs; there is no implicit queue, drop,\n// or debounce. pending means some call is active and turns false only when the\n// last one settles, and error belongs to the newest call.\ncomponent OverlappingAction(profile: Profile):\n    state finished = 0\n\n    action save() -> SaveReceipt:\n        const receipt = await saveProfile(profile)\n        finished += 1\n        return receipt\n\n    return <div data-overlapping-action>\n        <p data-pending>{save.pending ? "pending" : "settled"}</p>\n        <p data-error>{save.error?.message ?? "no error"}</p>\n        <p data-finished>{finished}</p>\n        <button type="button" data-save on:click={save}>Save (overlapping)</button>\n    </div>\n\n// The two ways an application says "not twice". Guard the call, or disable the\n// control. Both are application decisions because the language refuses to guess\n// which one an operation wants.\ncomponent GuardedAction(profile: Profile):\n    state finished = 0\n\n    action save():\n        await saveProfile(profile)\n        finished += 1\n\n    def saveOnce():\n        if not save.pending:\n            async save()\n\n    return <div data-guarded-action>\n        <p data-pending>{save.pending ? "pending" : "settled"}</p>\n        <p data-finished>{finished}</p>\n        <button type="button" data-save-guarded on:click={saveOnce}>Save (guarded)</button>\n        <button type="button" data-save-disabled on:click={save} disabled={save.pending}>\n            Save (disabled while pending)\n        </button>\n    </div>\n\nexport component ActionPanel(profile: Profile):\n    return <div data-actions>\n        <OverlappingAction profile={profile} />\n        <GuardedAction profile={profile} />\n    </div>`
+const actionFailureCode = `// An action reports its failure through the Web error chain and still rejects\n// its call; failures are never converted into successful null results. Use try\n// and catch when the caller owns recovery.\nexport component ActionFailure:\n    state recovered = ""\n\n    action alwaysFails() -> string:\n        await Promise.sleep(10ms)\n        throw Error("This action always fails")\n\n    action recover() -> string:\n        try:\n            return await alwaysFails()\n        catch error:\n            recovered = error.message\n            return recovered\n\n    return <div data-action-failure>\n        <p data-recovered>{recovered == "" ? "not run" : recovered}</p>\n        <p data-error>{alwaysFails.error?.message ?? "no error"}</p>\n        <button type="button" data-recover on:click={recover} disabled={recover.pending}>Recover</button>\n    </div>`
+
+const sections = [
+    {id: "resource", label: "A resource loads once", labelZh: "resource 只加载一次"},
+    {id: "reload", label: "Refetch is written, not assumed", labelZh: "重新取数是写出来的，不是假定的"},
+    {id: "fields", label: "The five resource fields", labelZh: "resource 的五个字段"},
+    {id: "action", label: "Actions run in parallel", labelZh: "action 并行运行"},
+    {id: "failure", label: "Where a failure surfaces", labelZh: "失败在哪里浮现"},
+    {id: "choosing", label: "Choosing between the two", labelZh: "在两者之间选择"},
+]
+
+const pointsLook = look:
+    display = "grid"
+    gap = 7px
+    marginTop = 18px
+    marginBottom = 4px
+    paddingLeft = 22px
+
+const fieldRows: List<MemberRow> = [
+    {name: "value", signature: "Profile?", summary: "The last successful result, or null before the first one lands.", summaryZh: "最近一次成功的结果；第一次结果落地前为 null。"},
+    {name: "loading", signature: "bool", summary: "True while a load is in flight. It does not turn back on because an input changed.", summaryZh: "有加载在进行时为 true。它不会因为输入改变而重新变为 true。"},
+    {name: "ready", signature: "bool", summary: "True once a load has settled, whether it succeeded or failed.", summaryZh: "一次加载结束后为 true，无论成功还是失败。"},
+    {name: "error", signature: "Error?", summary: "The failure of the newest load, cleared when a reload starts.", summaryZh: "最近一次加载的失败；重新加载开始时被清除。"},
+    {name: "reload", signature: "() -> Promise<null>", summary: "Re-evaluates the initializer against the inputs it reads now.", summaryZh: "按初始化器此刻读到的输入重新求值。"},
+]
+
+export component WebResources:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/guide/web/resources", locale.isChinese())}
+            description={locale.text("How asynchronous data enters a component, how an action publishes progress, and where failures surface.", "异步数据如何进入组件、action 如何发布进度，以及失败在哪里浮现。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Web extension / 05", "Web 扩展 / 05")}
+                title={locale.text("Resources and actions", "资源与动作")}
+                summary={locale.text("resource for data a view reads, action for work a control starts, and the pending state each publishes.", "用于视图读取数据的 resource、用于控件发起工作的 action，以及各自发布的 pending 状态。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <h2 id="resource">{locale.text("A resource loads once", "resource 只加载一次")}</h2>
+                <p>
+                    {locale.text("resource declares asynchronous component data. Its initializer runs when the component's scope mounts, not when the declaration is reached, and it is a load rather than a formula. When a prop or a state it reads changes, nothing reloads: the old value stays on screen and loading does not turn back on.", "resource 声明组件的异步数据。它的初始化器在组件作用域挂载时运行，而不是在执行到该声明时运行，并且它是一次加载，而不是一条公式。当它读取的 prop 或 state 改变时，什么都不会重新加载：旧值留在屏幕上，loading 也不会重新变为 true。")}
+                </p>
+                <CodeBlock code={loadersCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("A module-level action lives for the life of the module and is never disposed, so a shared store owns an operation together with its pending and error surface.", "模块级 action 存活到模块结束且永不被释放，因此共享存储可以同时拥有一个操作及其 pending 与 error 表面。")}
+                    </li>
+                    <li>
+                        {locale.text("A resource stays component-owned, because its stale-result handling is tied to component destruction.", "resource 保持由组件拥有，因为它对陈旧结果的处理与组件销毁绑定在一起。")}
+                    </li>
+                    <li>
+                        {locale.text("Every load supersedes the previous one: a result that lands after a newer reload started is discarded, as is one that lands after the component is destroyed.", "每次加载都取代前一次：在更新的重载开始之后落地的结果会被丢弃，组件销毁之后落地的结果同样被丢弃。")}
+                    </li>
+                </ul>
+
+                <h2 id="reload">{locale.text("Refetch is written, not assumed", "重新取数是写出来的，不是假定的")}</h2>
+                <p>
+                    {locale.text("This is a common source of surprise in a data-driven component, so both spellings stand side by side. The first component reads userId in its initializer, which makes the prop look like a dependency. It is not one. The second component says what it means: watch the input, then reload.", "这是数据驱动组件中常见的意外来源，因此两种拼写并排放在一起。第一个组件在初始化器中读取 userId，这让该 prop 看起来像一个依赖。它不是。第二个组件如实写出意图：watch 输入，然后 reload。")}
+                </p>
+                <CodeBlock code={reloadOnChangeCode} />
+                <p>
+                    {locale.text("reload() re-evaluates the initializer against the inputs it reads now and answers a Promise of null, setting loading and clearing error as it starts. Because a watch body is synchronous, the reload there is started with the detached async statement; inside an action the same call is awaited, and that await is the point where the reload has settled.", "reload() 按初始化器此刻读到的输入重新求值，返回 Promise<null>，并在开始时置位 loading、清除 error。由于 watch 体是同步的，那里的重载用分离的 async 语句启动；在 action 中同一个调用被 await，而这个 await 就是重载已经结束的那一刻。")}
+                </p>
+                <CodeBlock code={reloadSpellingsCode} />
+
+                <h2 id="fields">{locale.text("The five resource fields", "resource 的五个字段")}</h2>
+                <p>
+                    {locale.text("A resource publishes exactly five members. A failed load keeps the last successful value and publishes the failure in error, with ready true and loading false — so a view that was showing data keeps showing it while the error is displayed beside it.", "resource 恰好发布五个成员。失败的加载会保留最近一次成功的 value 并把失败发布在 error 上，同时 ready 为 true、loading 为 false——因此原本在显示数据的视图继续显示数据，错误显示在它旁边。")}
+                </p>
+                <MemberTable rows={fieldRows} caption={locale.text("What a resource publishes", "resource 发布了什么")} />
+                <CodeBlock code={fieldsCode} />
+                <p>
+                    {locale.text("The same failure is reported through velar/app under the resource phase with the resource's declared name as the detail, so the field and the application error chain agree about what happened.", "同一个失败会经由 velar/app 在 resource 阶段上报，detail 是该 resource 的声明名，因此字段与应用错误链对发生了什么的说法一致。")}
+                </p>
+
+                <h2 id="action">{locale.text("Actions run in parallel", "action 并行运行")}</h2>
+                <p>
+                    {locale.text("An action does not serialize, queue, or debounce its calls. A second call starts while the first is in flight, and both run to completion. pending is true while any call is active and becomes false when the last one settles, so it is a busy flag rather than a per-call state; error belongs to the newest call.", "action 不会串行化、排队或防抖它的调用。第一次调用还在进行时第二次就开始，两次都会跑完。只要有任何调用在进行，pending 就是 true，最后一次结束时才变为 false，因此它是一个忙碌标志而不是每次调用的状态；error 属于最新的那次调用。")}
+                </p>
+                <CodeBlock code={actionsCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("When overlapping runs are wrong for an operation, the application says so: disabled on the control, or an explicit guard on pending.", "当重叠运行对某个操作是错误的，应用要如实写出来：在控件上写 disabled，或者对 pending 做显式守卫。")}
+                    </li>
+                    <li>
+                        {locale.text("After the owning component is destroyed, calling the action rejects with an owned Error instead of starting application work.", "拥有它的组件销毁后，调用该 action 会以一个受拥有的 Error 拒绝，而不是启动应用工作。")}
+                    </li>
+                </ul>
+
+                <h2 id="failure">{locale.text("Where a failure surfaces", "失败在哪里浮现")}</h2>
+                <p>
+                    {locale.text("Every action failure both reports and rejects the call, so a caller that owns recovery uses try and catch. A failure is never converted into a successful null result, and an older failure superseded by a newer call is still reported exactly once through velar/app even though only the newest generation owns the public error field.", "每次 action 失败都既上报又拒绝该次调用，因此负责恢复的调用方使用 try 与 catch。失败永远不会被转换成成功的 null 结果；被更新调用取代的旧失败仍会经由 velar/app 恰好上报一次，尽管只有最新一代拥有公开的 error 字段。")}
+                </p>
+                <CodeBlock code={actionFailureCode} />
+
+                <h2 id="choosing">{locale.text("Choosing between the two", "在两者之间选择")}</h2>
+                <p>
+                    {locale.text("The question is who started the work. Data a view reads because it exists is a resource; work a control starts is an action. JSX rendering and computed callbacks are synchronous, so neither is a place for asynchronous data, and setup that must finish after insertion belongs in @mounted instead.", "问题是谁发起了这项工作。视图因其存在而读取的数据是 resource；控件发起的工作是 action。JSX 渲染与 computed 回调都是同步的，因此两者都不是放异步数据的地方；必须在插入之后完成的初始化则属于 @mounted。")}
+                </p>
+                <Callout title={locale.text("Process-lifetime work with no UI surface", "没有界面表面的进程期工作")}>
+                    <p>
+                        {locale.text("Work that has no pending or error surface to publish uses the async statement, which runs a checked Promise of null detached and reports its failure through the velar/app chain under the detached phase. With no handler installed, that failure still surfaces through the host runtime rather than silently.", "没有 pending 或 error 表面需要发布的工作使用 async 语句，它分离地运行一个受检的 Promise<null>，并在 detached 阶段经由 velar/app 链上报失败。即使没有安装处理器，该失败仍会经由宿主运行时浮现，而不是被静默吞掉。")}
+                    </p>
+                </Callout>
+            </Prose>
+            <DocsPager previous={guidePrevious("/guide/web/resources")} next={guideNext("/guide/web/resources")} />
+        </DocsShell>
+    </main>

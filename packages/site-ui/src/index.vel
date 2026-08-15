@@ -3,6 +3,7 @@ import {SkipLink} from "@velarscript/ui"
 import {FoundationFrame, codeInk, ink, inkFaint, inkSoft, paper, paperPure, rule, ruleStrong, sea, seaSoft} from "./foundation.vel"
 import {LocaleComposer as InternalLocaleComposer, useLocale as createLocaleComposer} from "./locale.vel"
 import {SyntaxCode as SyntaxCodeRenderer} from "./syntax.vel"
+import {border, clamp, lighten, minmax, rgba, shadow, spacing, tracks, transition} from "velar/look"
 
 export const foundationInk: Color = ink
 export const foundationInkSoft: Color = inkSoft
@@ -47,7 +48,9 @@ export component SyntaxCode(code: string):
 
 export component SiteFoundation(children: WebNode):
     const locale = useLocale()
-    return <FoundationFrame><div lang={locale.languageTag()}><SkipLink target="#main-content" />{children}</div></FoundationFrame>
+    return <FoundationFrame>
+        <div lang={locale.languageTag()}><SkipLink target="#main-content" />{children}</div>
+    </FoundationFrame>
 
 const brandLinkLook = look:
     display = "inline-flex"
@@ -73,7 +76,13 @@ const brandLabelLook = look:
 
 export component Brand(compact: bool = false):
     const locale = useLocale()
-    return <span class="brand"><Link to="/" look={brandLinkLook}><img look={brandImageLook} src="/brand/velar-sail.png" alt="" /><span class="brand-name" look={brandNameLook}>VelarScript</span>{compact ? null : <span look={brandLabelLook}>{locale.text("Language + Web", "语言 + Web")}</span>}</Link></span>
+    return <span class="brand">
+        <Link to="/" look={brandLinkLook}>
+            <img look={brandImageLook} src="/brand/velar-sail.png" alt="" />
+            <span class="brand-name" look={brandNameLook}>VelarScript</span>
+            {compact ? null : <span look={brandLabelLook}>{locale.text("Language + Web", "语言 + Web")}</span>}
+        </Link>
+    </span>
 
 def containerLook(narrow: bool) -> Look:
     return look:
@@ -134,7 +143,10 @@ const headingSummaryLook = look:
     lineHeight = 1.7
 
 export component SectionHeading(kicker: string, title: string, summary: string):
-    return <header look={headingLook}><div><Eyebrow label={kicker} /><h2 look={headingTitleLook}>{title}</h2></div><p look={headingSummaryLook}>{summary}</p></header>
+    return <header look={headingLook}>
+        <div><Eyebrow label={kicker} /><h2 look={headingTitleLook}>{title}</h2></div>
+        <p look={headingSummaryLook}>{summary}</p>
+    </header>
 
 def surfaceLook(dark: bool) -> Look:
     return look:
@@ -227,4 +239,7 @@ const codeBodyLook = look:
     lineHeight = 1.75
 
 export component CodeWindow(code: string, label: string = "main.vel"):
-    return <figure look={codeWindowLook}><figcaption look={codeBarLook}><span look={codeDotsLook}>● ● ●</span><span>{label}</span></figcaption><pre look={codeBodyLook}><SyntaxCode code={code} /></pre></figure>
+    return <figure look={codeWindowLook}>
+        <figcaption look={codeBarLook}><span look={codeDotsLook}>● ● ●</span><span>{label}</span></figcaption>
+        <pre look={codeBodyLook}><SyntaxCode code={code} /></pre>
+    </figure>

@@ -1,0 +1,172 @@
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
+import {headTitle, referenceNav} from "../content.vel"
+
+const mathCode = "// Constants, then the operations a number member cannot be.\nconst pi = Math.pi\nconst infinity = Math.infinity\n\n// `min` and `max` are pure rest calls, so their arguments stay positional.\nconst smallest = Math.min(3, 1, 2)\nconst bounded = Math.clamp(value=11, minimum=0, maximum=10)\nconst raised = Math.pow(base=2, exponent=8)\nconst logWithBase = Math.log(8, 2)\nconst angle = Math.atan2(y=1, x=1)\nconst asDegrees = Math.degrees(Math.pi)\nconst distance = Math.hypot(3, 4)\nconst dieRoll = Math.randomInt(1, 6)\nconst common = Math.gcd(12, 18)\n\n// The receiver-shaped operations are number members, not namespace members.\nconst magnitude = (-3.7).abs()\nconst whole = 3.0.isInteger()\n\nexport const summary = f\"{pi} {infinity} {smallest} {bounded} {raised} {logWithBase} {angle} {asDegrees} {distance} {dieRoll} {common} {magnitude} {whole}\""
+const textCode = `const paragraph = "  release notes  "\n\n// The transformations that are not receiver operations.\nconst heading = Text.title(Text.trimStart(paragraph))\nconst anchor = Text.slug("Release Notes 1.0")\nconst rows = Text.lines("first\\nsecond")\nconst shortened = Text.truncate(value="a long sentence", length=6, suffix="…")\nconst bytes = Text.utf8Size("a😀b")\nconst composed = Text.normalize("café", "NFC")\n\n// The pattern family is stateless: each call creates a fresh Unicode pattern.\nconst isDate = Text.matches("2026-08-15", r"^\\d{4}-\\d{2}-\\d{2}$")\nconst firstNumber = Text.findMatch("ticket-42", r"\\d+")\nconst masked = Text.replaceMatches("a1b2", r"\\d", "#")\nconst fields = Text.splitPattern("one, two; three", " *[,;] *")\n\n// The string members stay on the receiver: size, trim, slice, has, and the rest.\nconst trimmed = paragraph.trim()\nconst initial = trimmed.char(0)\n\nexport const summary = f"{heading} {anchor} {rows.size} {shortened} {bytes} {composed} {isDate} {firstNumber != null} {masked} {fields.size} {initial ?? "?"}"`
+const jsonCode = `type Report:\n    id: string\n    total: number\n\nconst report: Report = {id: "r-1", total: 3}\n\n// Serialization is strict: Map, Set, class instances, cycles, and non-finite\n// numbers are rejected rather than silently omitted.\nconst encoded = Json.stringify(report)\nconst indented = Json.stringify(report, 2)\nconst stable = Json.stableStringify(report)\nconst copied = Json.clone(report, Report)\nconst storable = Json.isSerializable(report)\n\n// The second argument is the record type itself, not a parallel schema.\nconst parsed = Json.parse(\`{"id":"r-2","total":4}\`, Report)\nconst attempted = Json.tryParse("not json", Report, report)\n\n// Content comparison is the prelude \`equals\`, which needs no import either.\nconst unchanged = equals(parsed, attempted)\n\nexport const summary = f"{encoded.size} {indented.size} {stable.size} {copied.id} {storable} {parsed.total} {attempted.id} {unchanged}"`
+const promiseCode = `type Report:\n    id: string\n    total: number\n\nasync def loadReport(id: string) -> Report:\n    return {id, total: id.size}\n\n// A wait is a Duration, written with \`ms\` or \`s\`, never a bare number.\nexport async def collect() -> string:\n    await Promise.sleep(200ms)\n\n    const both = await Promise.all([loadReport("a"), loadReport("b")])\n    const firstToSettle = await Promise.race([loadReport("a"), loadReport("b")])\n    const bounded = await Promise.timeout(loadReport("a"), 2s, "the report took too long")\n    const retried = await Promise.retry(() => loadReport("a"), 3, 100ms)\n    const mapped = await Promise.map(["a", "b"], async id => await loadReport(id), 2)\n    const inSeries = await Promise.series([() => loadReport("a"), () => loadReport("b")])\n\n    return f"{both.size} {firstToSettle.id} {bounded.id} {retried.id} {mapped.size} {inSeries.size}"`
+
+const mathMembers = [
+    {name: "pi", signature: "Math.pi -> number", summary: "The circle constant. A constant, not a call.", summaryZh: "圆周率。它是常量，不是调用。"},
+    {name: "e", signature: "Math.e -> number", summary: "The base of the natural logarithm.", summaryZh: "自然对数的底。"},
+    {name: "tau", signature: "Math.tau -> number", summary: "Two pi, for code that reasons in whole turns.", summaryZh: "两倍圆周率，供以整圈为单位推理的代码使用。"},
+    {name: "infinity", signature: "Math.infinity -> number", summary: "Positive infinity as a named constant.", summaryZh: "以具名常量表达的正无穷。"},
+    {name: "min", signature: "Math.min(…) -> number", summary: "A pure rest call, so its arguments stay positional and it invents no keyword surface.", summaryZh: "纯粹的剩余参数调用，因此实参保持位置形式，不凭空发明关键字表面。"},
+    {name: "max", signature: "Math.max(…) -> number", summary: "The same rest contract as min.", summaryZh: "与 min 相同的剩余参数契约。"},
+    {name: "clamp", signature: "Math.clamp(value, minimum, maximum) -> number", summary: "Bounds a value; all three parameters may be named at the call site.", summaryZh: "把值限制在界内；三个形参都可以在调用处具名。"},
+    {name: "sign", signature: "Math.sign(value) -> number", summary: "Answers -1, 0, or 1 for a finite number.", summaryZh: "对有限数返回 -1、0 或 1。"},
+    {name: "trunc", signature: "Math.trunc(value) -> number", summary: "Removes the fractional part without rounding.", summaryZh: "去掉小数部分，不做舍入。"},
+    {name: "sqrt", signature: "Math.sqrt(value) -> number", summary: "The square root.", summaryZh: "平方根。"},
+    {name: "cbrt", signature: "Math.cbrt(value) -> number", summary: "The cube root, defined for negative values too.", summaryZh: "立方根，对负值同样有定义。"},
+    {name: "pow", signature: "Math.pow(base, exponent) -> number", summary: "Exponentiation as a call, beside the ** operator.", summaryZh: "以调用形式表达乘幂，与 ** 运算符并存。"},
+    {name: "exp", signature: "Math.exp(value) -> number", summary: "e raised to the given power.", summaryZh: "以 e 为底的指数。"},
+    {name: "log", signature: "Math.log(value, base?) -> number", summary: "The natural logarithm, or the logarithm in the base the second argument names.", summaryZh: "自然对数；给出第二个实参时，则以该实参为底。"},
+    {name: "log2", signature: "Math.log2(value) -> number", summary: "The binary logarithm.", summaryZh: "以 2 为底的对数。"},
+    {name: "log10", signature: "Math.log10(value) -> number", summary: "The decimal logarithm.", summaryZh: "以 10 为底的对数。"},
+    {name: "sin", signature: "Math.sin(value) -> number", summary: "Sine of an angle in radians.", summaryZh: "以弧度为单位的正弦。"},
+    {name: "cos", signature: "Math.cos(value) -> number", summary: "Cosine of an angle in radians.", summaryZh: "以弧度为单位的余弦。"},
+    {name: "tan", signature: "Math.tan(value) -> number", summary: "Tangent of an angle in radians.", summaryZh: "以弧度为单位的正切。"},
+    {name: "asin", signature: "Math.asin(value) -> number", summary: "The inverse sine, in radians.", summaryZh: "反正弦，结果为弧度。"},
+    {name: "acos", signature: "Math.acos(value) -> number", summary: "The inverse cosine, in radians.", summaryZh: "反余弦，结果为弧度。"},
+    {name: "atan", signature: "Math.atan(value) -> number", summary: "The inverse tangent, in radians.", summaryZh: "反正切，结果为弧度。"},
+    {name: "atan2", signature: "Math.atan2(y, x) -> number", summary: "The angle of a point, with the vertical coordinate first.", summaryZh: "点的角度，纵坐标在前。"},
+    {name: "degrees", signature: "Math.degrees(radians) -> number", summary: "Converts radians to degrees; its parameter is named for what it receives.", summaryZh: "把弧度转为角度；形参以它接收的量命名。"},
+    {name: "radians", signature: "Math.radians(degrees) -> number", summary: "The inverse conversion.", summaryZh: "反向转换。"},
+    {name: "hypot", signature: "Math.hypot(x, y) -> number", summary: "The length of the hypotenuse for two legs.", summaryZh: "两条直角边对应的斜边长度。"},
+    {name: "random", signature: "Math.random() -> number", summary: "The host's random source in [0, 1). Not cryptographically secure.", summaryZh: "宿主的随机源，取值在 [0, 1)。不具备密码学安全性。"},
+    {name: "randomInt", signature: "Math.randomInt(…) -> number", summary: "Positional: an inclusive lower and exclusive upper safe-integer bound, or one bound with an implied zero.", summaryZh: "位置形式：闭下界与开上界的安全整数；只给一个实参时下界为零。"},
+    {name: "gcd", signature: "Math.gcd(left, right) -> number", summary: "The greatest common divisor of two safe integers.", summaryZh: "两个安全整数的最大公约数。"},
+    {name: "lcm", signature: "Math.lcm(left, right) -> number", summary: "The least common multiple; an inexact result is rejected.", summaryZh: "最小公倍数；结果不精确时会被拒绝。"},
+]
+
+const textMembers = [
+    {name: "trimStart", signature: "Text.trimStart(value) -> string", summary: "Removes leading whitespace only.", summaryZh: "只去掉开头的空白。"},
+    {name: "trimEnd", signature: "Text.trimEnd(value) -> string", summary: "Removes trailing whitespace only.", summaryZh: "只去掉末尾的空白。"},
+    {name: "capitalize", signature: "Text.capitalize(value) -> string", summary: "Raises the first character.", summaryZh: "把首字符改为大写。"},
+    {name: "title", signature: "Text.title(value) -> string", summary: "Title-cases text, treating separators as word boundaries.", summaryZh: "转为标题大小写，把分隔符视为词边界。"},
+    {name: "lines", signature: "Text.lines(value) -> List<string>", summary: "Splits into lines.", summaryZh: "按行拆分。"},
+    {name: "lineStarts", signature: "Text.lineStarts(value) -> List<number>", summary: "One bounded scan returning the code-point offset after each line feed, so a large-file line index needs no repeated char lookups.", summaryZh: "一次有界扫描，返回每个换行符之后的码点偏移，使大文件的行索引无需反复调用 char。"},
+    {name: "chunks", signature: "Text.chunks(value, size) -> List<string>", summary: "Non-empty pieces of at most size code points; never splits a surrogate pair.", summaryZh: "每片至多 size 个码点且非空；绝不切开代理对。"},
+    {name: "words", signature: "Text.words(value) -> List<string>", summary: "Splits on whitespace runs.", summaryZh: "按连续空白拆分为词。"},
+    {name: "slug", signature: "Text.slug(value) -> string", summary: "Lowercases, removes punctuation, joins word runs with -. It does not transliterate non-Latin text.", summaryZh: "转小写、移除标点、以 - 连接词段。它不会音译非拉丁文本。"},
+    {name: "normalize", signature: "Text.normalize(value, form?) -> string", summary: "Applies NFC, NFD, NFKC, or NFKD; any other form throws RangeError.", summaryZh: "应用 NFC、NFD、NFKC 或 NFKD；其他形式抛出 RangeError。"},
+    {name: "truncate", signature: "Text.truncate(value, length, suffix?) -> string", summary: "Shortens text and reserves room for its suffix.", summaryZh: "缩短文本，并为后缀预留位置。"},
+    {name: "indent", signature: "Text.indent(value, prefix?) -> string", summary: "Adds a prefix to every line.", summaryZh: "为每一行加上前缀。"},
+    {name: "dedent", signature: "Text.dedent(value) -> string", summary: "Removes the common leading indentation.", summaryZh: "去掉公共的前导缩进。"},
+    {name: "normalizeWhitespace", signature: "Text.normalizeWhitespace(value) -> string", summary: "Collapses whitespace runs to single spaces.", summaryZh: "把连续空白压缩为单个空格。"},
+    {name: "utf8Size", signature: "Text.utf8Size(value) -> number", summary: "The exact byte count used by UTF-8 transport, JSON, and filesystem budgets.", summaryZh: "UTF-8 传输、JSON 与文件系统预算所使用的精确字节数。"},
+    {name: "escapeHtml", signature: "Text.escapeHtml(value) -> string", summary: "Escapes for HTML content and attribute contexts. It does not mark the result as trusted HTML.", summaryZh: "为 HTML 内容与属性上下文转义。它不会把结果标记为可信 HTML。"},
+    {name: "codePoint", signature: "Text.codePoint(value) -> number?", summary: "The code point of exactly one character, and null for anything else.", summaryZh: "恰好一个字符的码点；其他情况返回 null。"},
+    {name: "fromCodePoint", signature: "Text.fromCodePoint(value) -> string", summary: "The inverse. A value outside 0–1114111 or inside the surrogate range throws RangeError.", summaryZh: "上一项的逆运算。超出 0–1114111 或落在代理区间的值抛出 RangeError。"},
+    {name: "matches", signature: "Text.matches(value, expression, options?) -> bool", summary: "Tests a Unicode pattern. Options carry only ignoreCase, multiline, and dotAll.", summaryZh: "测试一个 Unicode 模式。选项只包含 ignoreCase、multiline 与 dotAll。"},
+    {name: "findMatch", signature: "Text.findMatch(value, expression, options?) -> Match?", summary: "Returns {value, index, groups} or null; index is a code-point position.", summaryZh: "返回 {value, index, groups} 或 null；index 是码点位置。"},
+    {name: "findMatches", signature: "Text.findMatches(value, expression, options?) -> List<Match>", summary: "Every match, with unmatched captures normalized to null.", summaryZh: "全部匹配；未匹配的捕获组规范化为 null。"},
+    {name: "replaceMatches", signature: "Text.replaceMatches(value, expression, replacement, options?) -> string", summary: "Replaces every match with one literal string.", summaryZh: "把每一处匹配替换为一个字面字符串。"},
+    {name: "splitPattern", signature: "Text.splitPattern(value, expression, options?) -> List<string>", summary: "Splits on a pattern and omits capture groups from the result.", summaryZh: "按模式拆分，结果中不含捕获组。"},
+]
+
+const jsonMembers = [
+    {name: "parse", signature: "Json.parse(text, target?) -> unknown", summary: "Parses JSON; a VelarScript type as the second argument validates and types the result.", summaryZh: "解析 JSON；第二个实参给出 VelarScript 类型时，会验证并为结果赋予类型。"},
+    {name: "tryParse", signature: "Json.tryParse(text, target?, fallback?) -> unknown", summary: "A validated value, an explicit fallback, or null.", summaryZh: "返回验证通过的值、显式的兜底值，或 null。"},
+    {name: "stringify", signature: "Json.stringify(value, pretty?) -> string", summary: "Strict serialization. pretty is false, true (two spaces), or an integer from 0 through 10.", summaryZh: "严格序列化。pretty 可为 false、true（两个空格）或 0 到 10 的整数。"},
+    {name: "stableStringify", signature: "Json.stableStringify(value, pretty?) -> string", summary: "The same serialization, with record keys recursively ordered.", summaryZh: "同样的序列化，并递归地对记录键排序。"},
+    {name: "clone", signature: "Json.clone(value, target?) -> unknown", summary: "A strict JSON clone, optionally validated against a type.", summaryZh: "严格的 JSON 克隆，可选地依据类型验证。"},
+    {name: "isSerializable", signature: "Json.isSerializable(value) -> bool", summary: "Reports whether a value is losslessly representable as JSON data.", summaryZh: "报告一个值能否无损地表示为 JSON 数据。"},
+]
+
+const promiseMembers = [
+    {name: "sleep", signature: "Promise.sleep(duration) -> Promise<null>", summary: "Resolves after a non-negative Duration, written 250ms or 1s.", summaryZh: "在一个非负 Duration 之后解析，写作 250ms 或 1s。"},
+    {name: "all", signature: "Promise.all(values) -> Promise<…>", summary: "A List of Promises to a List of results, or a record of Promises to a record of the same shape. A List whose elements resolve to different types is rejected in favour of the record form, so every result keeps a name.", summaryZh: "把 Promise 的 List 变为结果的 List，或把 Promise 的记录变为同形状的记录。元素解析出不同类型的 List 会被拒绝，从而改用记录形式，让每个结果都保有名字。"},
+    {name: "race", signature: "Promise.race(values) -> Promise<…>", summary: "Settles with the first Promise in a List to settle. A runtime-empty race throws RangeError, because an empty race would never settle.", summaryZh: "以 List 中最先落定的 Promise 落定。运行时为空的 race 抛出 RangeError——空的竞速永远不会落定。"},
+    {name: "timeout", signature: "Promise.timeout(value, duration, message?) -> Promise<…>", summary: "Rejects if a Promise does not settle before a Duration.", summaryZh: "若 Promise 未在给定 Duration 内落定则拒绝。"},
+    {name: "retry", signature: "Promise.retry(task, attempts?, delay?) -> Promise<…>", summary: "Runs a zero-argument sync or async task again after failure, up to the attempt count.", summaryZh: "失败后重新运行一个零参数的同步或异步任务，直到达到尝试次数。"},
+    {name: "map", signature: "Promise.map(values, worker, concurrency?) -> Promise<List<…>>", summary: "Maps a list with a sync or async worker and an optional positive concurrency limit, preserving result order.", summaryZh: "用同步或异步 worker 映射一个列表，可选正整数并发上限，并保持结果顺序。"},
+    {name: "series", signature: "Promise.series(tasks) -> Promise<List<…>>", summary: "Runs a list of zero-argument sync or async tasks sequentially.", summaryZh: "顺序运行一组零参数的同步或异步任务。"},
+]
+
+const sections = [
+    {id: "math", label: "Math.", labelZh: "Math."},
+    {id: "text", label: "Text.", labelZh: "Text."},
+    {id: "json", label: "Json.", labelZh: "Json."},
+    {id: "promise", label: "Promise.", labelZh: "Promise."},
+]
+
+export component ReferenceNamespaces:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/reference/namespaces", locale.isChinese())}
+            description={locale.text("The members each resident namespace publishes and the guarantees they share.", "每个常驻命名空间发布的成员，以及它们共同的保证。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={referenceNav}>
+            <PageHeader
+                kicker={locale.text("Reference", "参考")}
+                title={locale.text("Resident namespaces", "常驻命名空间")}
+                summary={locale.text("Math., Text., Json., and Promise. — the four namespaces reachable without an import, member by member.", "Math.、Text.、Json. 与 Promise.——四个无需导入即可访问的命名空间，逐个成员列出。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <h2 id="math">{locale.text("Math.", "Math.")}</h2>
+                <p>
+                    {locale.text(`The namespace exposes JavaScript Number mathematics without claiming Python integer or decimal behavior. Every operation nevertheless requires an actual number at runtime: the JavaScript Math global's coercion cannot turn "2", [], or another dynamic value into a VelarScript number. What belongs on a number is a number member, so what is left here is exactly what cannot be one — the constants, the multi-argument functions, and the transcendentals.`, `该命名空间提供 JavaScript Number 的数学运算，并不宣称具备 Python 的整数或十进制行为。但每个操作在运行时都要求真正的 number：JavaScript Math 全局的强制转换无法把 "2"、[] 或其他动态值变成 VelarScript 的 number。属于数字本身的应当是数字的受检成员，因此留在这里的正是无法成为成员的那些——常量、多参数函数与超越函数。`)}
+                </p>
+                <MemberTable
+                    rows={mathMembers}
+                    caption={locale.text("Math. — constants, bounds, powers and logarithms, trigonometry, numeric helpers", "Math. —— 常量、边界、幂与对数、三角函数、数值辅助")}
+                />
+                <CodeBlock code={mathCode} />
+                <Callout title={locale.text("The receiver-shaped operations are number members", "接收者形态的操作是数字的成员")}>
+                    <p>
+                        {locale.text(".abs(), .round(), .floor(), .ceil(), .toFixed(digits), and the predicates .isInteger(), .isNaN(), and .isFinite() are written on the number itself. round answers the nearest integer, toFixed returns decimal text with 0 through 100 digits, and isInteger follows Number.isInteger, so Infinity and NaN are not integers.", ".abs()、.round()、.floor()、.ceil()、.toFixed(digits)，以及谓词 .isInteger()、.isNaN()、.isFinite()，都写在数字自身上。round 返回最近的整数，toFixed 返回 0 到 100 位小数的文本，isInteger 遵循 Number.isInteger，因此 Infinity 与 NaN 都不是整数。")}
+                    </p>
+                </Callout>
+
+                <h2 id="text">{locale.text("Text.", "Text.")}</h2>
+                <p>
+                    {locale.text("Text. is the extension toolbox beside the checked string methods. It needs no import, and nothing moves between the two, so the member list a reader must hold in mind never grows. The receiver operations — size, trim, upper, lower, slice, char, has, index, count, startsWith, endsWith, isBlank, split, replace, replaceAll, repeat, padStart, and padEnd — stay on the string; the transformations that are not receiver operations live here.", "Text. 是与受检字符串方法并列的扩展工具箱。它无需导入，两边也不互相移动，因此读者需要记住的成员清单不会增长。接收者操作——size、trim、upper、lower、slice、char、has、index、count、startsWith、endsWith、isBlank、split、replace、replaceAll、repeat、padStart 与 padEnd——留在字符串上；不属于接收者操作的那些变换住在这里。")}
+                </p>
+                <MemberTable
+                    rows={textMembers}
+                    caption={locale.text("Text. — transformations and the stateless pattern family", "Text. —— 变换与无状态的模式族")}
+                />
+                <CodeBlock code={textCode} />
+                <p>
+                    {locale.text("Positions are Unicode code points, matching string iteration rather than JavaScript UTF-16 units, so a match index can be passed straight to char or slice. Pattern expressions use JavaScript pattern syntax in Unicode mode through a captured intrinsic; each operation creates a fresh pattern and source code never receives RegExp or its mutable lastIndex. Pattern source is limited to 4,096 code units, pattern input and returned match text to 16 MiB, and list-producing pattern operations to 1,000,000 results.", "位置以 Unicode 码点计，与字符串迭代一致，而不是 JavaScript 的 UTF-16 单元，因此匹配得到的 index 可以直接交给 char 或 slice。模式表达式通过被捕获的内建实现使用 Unicode 模式下的 JavaScript 模式语法；每次操作都创建全新的模式，源码永远不会拿到 RegExp 或它可变的 lastIndex。模式源限制为 4096 个码元，模式输入与返回的匹配文本限制为 16 MiB，产生列表的模式操作限制为 1,000,000 条结果。")}
+                </p>
+                <Callout title={locale.text("Equality is code-point identity", "相等是码点序列的同一性")}>
+                    <p>
+                        {locale.text("Canonically equivalent text is not equal: a precomposed accented character and the letter plus its combining accent render identically but compare unequal, report a different size, and miss each other as Map and Set keys. Normalize where such text enters the program — macOS filenames arrive decomposed while typed text is usually composed.", "规范等价的文本并不相等：预组合的重音字符与「字母加组合重音」渲染完全相同，却比较不相等、size 不同，并且作为 Map 与 Set 的键时互不命中。应在这类文本进入程序的位置做归一化——macOS 的文件名是分解形式，而键入的文本通常是组合形式。")}
+                    </p>
+                </Callout>
+
+                <h2 id="json">{locale.text("Json.", "Json.")}</h2>
+                <p>
+                    {locale.text("JSON data is deliberately narrower than arbitrary JavaScript values: finite numbers, strings, booleans, null, dense Lists, fixed records, and Record<T> dynamic string-key records, recursively. Map, Set, class instances, functions, sparse Lists, accessor and symbol fields, non-finite numbers, and cyclic graphs are rejected instead of inheriting JSON.stringify's silent field omission or {} substitution. Repeated references are allowed when the graph is acyclic.", "JSON 数据被有意地限制得比任意 JavaScript 值更窄：有限数、字符串、布尔、null、稠密 List、固定记录，以及 Record<T> 动态字符串键记录，并可递归嵌套。Map、Set、类实例、函数、稀疏 List、访问器与 symbol 字段、非有限数与含环的图都会被拒绝，而不是继承 JSON.stringify 那种默默丢字段或替换成 {} 的行为。当图无环时，允许重复引用。")}
+                </p>
+                <MemberTable
+                    rows={jsonMembers}
+                    caption={locale.text("Json. — six members, and no parallel schema language", "Json. —— 六个成员，没有并行的 schema 语言")}
+                />
+                <CodeBlock code={jsonCode} />
+                <p>
+                    {locale.text("The second argument is the existing runtime form of a record type, a runtime transparent alias, or an enum; there is no parallel schema declaration. The compiler registers those frozen Type values under one shared runtime identity, including across module boundaries, and parse, tryParse, and clone check that identity before parsing or cloning. They never inspect an arbitrary object's is or parse fields as permission to skip validation. Parsing and encoded output are limited to 16 MiB, and validation stops beyond 1,000,000 values or 128 nested collections.", "第二个实参就是记录类型、运行时透明别名或枚举的既有运行时形态；不存在并行的 schema 声明。编译器把这些冻结的 Type 值登记在同一个共享的运行时标识之下，跨模块边界亦然；parse、tryParse 与 clone 会在解析或克隆之前检查该标识。它们绝不会把任意对象上的 is 或 parse 字段当作跳过验证的许可。解析与编码输出限制为 16 MiB，验证在超过 1,000,000 个值或 128 层嵌套集合时停止。")}
+                </p>
+
+                <h2 id="promise">{locale.text("Promise.", "Promise.")}</h2>
+                <p>
+                    {locale.text("These helpers use the host Promise queue. They do not create threads, cancel a Promise, or replace the JavaScript event loop. all, race, and timeout require actual Promises at runtime, including across JavaScript realms; an arbitrary thenable is rejected without probing a then accessor.", "这些辅助函数使用宿主的 Promise 队列。它们不创建线程、不取消 Promise，也不替换 JavaScript 事件循环。all、race 与 timeout 在运行时要求真正的 Promise，跨 JavaScript realm 亦然；任意 thenable 会被拒绝，且不会去探测 then 访问器。")}
+                </p>
+                <MemberTable
+                    rows={promiseMembers}
+                    caption={locale.text("Promise. — the async combinators", "Promise. —— 异步组合子")}
+                />
+                <CodeBlock code={promiseCode} />
+                <p>
+                    {locale.text("The bounds are explicit: all and race may start at most 10,000 operations at once, map concurrency is at most 1,024, retry is at most 10,000 attempts, and timer durations stay within the signed 32-bit host timer range. Short asynchronous workers use the language's expression arrow directly, and a named async worker declared -> T may return either T or another Promise<T> without adding return await merely to satisfy the checker.", "边界是显式的：all 与 race 一次至多启动 10,000 个操作，map 的并发上限为 1,024，retry 至多 10,000 次尝试，定时器时长保持在宿主定时器的有符号 32 位范围内。短小的异步 worker 直接使用语言的表达式箭头；声明为 -> T 的具名 async worker 可以返回 T 或另一个 Promise<T>，无需仅为满足检查器而添加 return await。")}
+                </p>
+            </Prose>
+        </DocsShell>
+    </main>

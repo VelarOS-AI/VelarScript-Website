@@ -1,0 +1,133 @@
+import {Head, Link} from "velar/web"
+import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
+import {headTitle, referenceNav} from "../content.vel"
+
+const manifestJsonCode = `{\n  "formatVersion": 2,\n  "entry": "src/main.vel",\n  "outDir": "dist",\n  "publicDir": "public",\n  "extensions": ["@velarscript/web"],\n  "web": {\n    "title": "My VelarScript App",\n    "base": "/",\n    "publicConfig": {},\n    "build": { "sourceMaps": false },\n    "security": { "contentSecurityPolicy": true },\n    "deployment": { "spaFallback": true, "adapter": "neutral" }\n  }\n}`
+const coreManifestJsonCode = `{\n  "formatVersion": 2,\n  "entry": "src/main.vel",\n  "extensions": []\n}`
+const securityJsonCode = `{\n  "web": {\n    "security": {\n      "contentSecurityPolicy": true,\n      "connectSources": ["https://api.example.com"],\n      "imageSources": ["https://images.example.com"]\n    },\n    "deployment": {\n      "spaFallback": true,\n      "adapter": "netlify"\n    }\n  }\n}`
+const layoutTreeCode = "my-app/\n  velar.json                  project format, entry, extensions, web settings\n  package.json                npm dependencies and the script names\n  AGENTS.md                   instructions for the model that will write this app\n  public/                     files copied to the build as-is\n  src/\n    main.vel                  entry — mounts the app\n    app.vel                   the application itself\n    app.test.vel              unit tests, run in Node\n    app.browser.test.vel      browser tests, run in a real browser"
+const buildTreeCode = "dist/\n  index.html                  framework-host-owned entry with production CSP metadata\n  404.html                    optional SPA fallback copy for simple static hosts\n  velar-deploy.json           format 2: base path, fallback, header and cache contract\n  velar-build.json            format 3: build identity and a hash for every emitted file\n  assets/                     content-hashed JavaScript, CSS, and maps\n  _headers                    Netlify adapter output, when that adapter is selected\n  _redirects                  Netlify adapter output, when that adapter is selected"
+
+const manifestMembers = [
+    {name: "formatVersion", signature: "2", summary: "Required. There is deliberately no legacy loader and no velar upgrade command: missing, format-1, and unknown future versions fail before source is compiled.", summaryZh: "必需。这里有意地既没有遗留加载器，也没有 velar upgrade 命令：缺失、format-1 与未知的未来版本都会在源码被编译之前失败。"},
+    {name: "entry", signature: `"src/main.vel"`, summary: "The entry module the whole graph is resolved from.", summaryZh: "整张模块图从这里解析出来的入口模块。"},
+    {name: "outDir", signature: `"dist"`, summary: "The build output directory. Only a successful build replaces it.", summaryZh: "构建输出目录。只有构建成功才会替换它。"},
+    {name: "publicDir", signature: `"public"`, summary: "Files copied to the build as-is. Public symbolic links are rejected so a build cannot copy files outside the declared asset root.", summaryZh: "原样复制到构建产物中的文件。公共目录中的符号链接会被拒绝，因此构建无法把声明的资源根之外的文件复制进来。"},
+    {name: "extensions", signature: `["@velarscript/web"]`, summary: "Required. A Core library uses [] and does not install the Web package. Unknown project fields and unknown extension-owned fields fail closed.", summaryZh: "必需。Core 库使用 [] 且不安装 Web 包。未知的项目字段与未知的扩展字段一律失败关闭。"},
+    {name: "web", signature: "{title, base, publicConfig, build, security, deployment}", summary: "The Web extension's own manifest block, validated by that extension rather than by the CLI.", summaryZh: "Web 扩展自己的清单块，由该扩展验证，而不是由 CLI 验证。"},
+    {name: "desktop", signature: "{productName, identifier, permissions}", summary: "The Desktop extension's block, including the permission lists that bound what the application may reach.", summaryZh: "桌面扩展的清单块，包含限定应用可触达范围的权限列表。"},
+]
+
+const webMembers = [
+    {name: "title", signature: `"My VelarScript App"`, summary: "The document title the framework host writes into the generated HTML.", summaryZh: "框架宿主写入生成 HTML 的文档标题。"},
+    {name: "base", signature: `"/" or "/studio/"`, summary: `The application base path. With base /studio/, navigate("/settings") resolves to /studio/settings while the router still matches /settings.`, summaryZh: `应用的 base 路径。当 base 为 /studio/ 时，navigate("/settings") 解析为 /studio/settings，而路由器仍然匹配 /settings。`},
+    {name: "publicConfig", signature: "{ }", summary: "A JSON object of at most 64 KiB, compiled into the content-hashed entry. Changing it changes the build identity, and secrets must never be placed here.", summaryZh: "至多 64 KiB 的 JSON 对象，被编入内容哈希的入口。修改它就会改变构建标识，密钥绝不可放在这里。"},
+    {name: "build.sourceMaps", signature: "false", summary: "Production maps are off by default because linked maps contain VelarScript source content. Opting in records the policy in velar-build.json and includes the maps in the file inventory.", summaryZh: "生产环境的 source map 默认关闭，因为链接的 map 会包含 VelarScript 源码内容。选择开启会把该策略记录在 velar-build.json 中，并把 map 纳入文件清单。"},
+    {name: "security.contentSecurityPolicy", signature: "true", summary: "Scripts and fonts same-origin, objects and base URLs disabled, forms same-origin. Script execution never receives an inline escape hatch.", summaryZh: "脚本与字体同源，禁用 object 与 base URL，表单同源。脚本执行永远得不到内联的逃逸口。"},
+    {name: "security.connectSources", signature: `["https://api.example.com"]`, summary: "Additional API origins. Only secure origin values are accepted; paths, credentials, queries, hashes, and arbitrary CSP fragments fail configuration loading.", summaryZh: "额外的 API 来源。只接受安全来源值；路径、凭据、查询、hash 与任意 CSP 片段都会让配置加载失败。"},
+    {name: "security.imageSources", signature: `["https://images.example.com"]`, summary: "Additional image origins, under the same rule.", summaryZh: "额外的图片来源，遵循同一规则。"},
+    {name: "deployment.spaFallback", signature: "true", summary: "Whether unknown application paths are rewritten to index.html by the static host.", summaryZh: "静态宿主是否把未知的应用路径重写到 index.html。"},
+    {name: "deployment.adapter", signature: `"neutral" or "netlify"`, summary: "neutral emits the provider-neutral contract; netlify additionally writes _headers and _redirects. The Netlify adapter currently rejects a non-root base.", summaryZh: "neutral 产出与供应商无关的契约；netlify 另外写出 _headers 与 _redirects。Netlify 适配器目前拒绝非根 base。"},
+]
+
+const templateMembers = [
+    {name: "web", signature: "velar create my-app", summary: "The default. An interactive component, Core tests, and browser tests.", summaryZh: "默认模板。一个交互式组件、Core 测试与浏览器测试。"},
+    {name: "node", signature: "velar create api --template node", summary: "A checked HTTP server. It activates no extension.", summaryZh: "一个受检的 HTTP 服务器。它不激活任何扩展。"},
+    {name: "desktop", signature: "velar create desktop-app --template desktop", summary: "One system-WebView project with no renderer and main source split, plus Core and browser tests.", summaryZh: "一个系统 WebView 项目，没有渲染进程与主进程的源码分割，并带有 Core 与浏览器测试。"},
+    {name: "docs", signature: "velar create product-docs --template docs", summary: "A documentation site, with the same Core and browser test pair.", summaryZh: "一个文档站点，带有同样的 Core 与浏览器测试组合。"},
+    {name: "library", signature: "velar create shared-library --template library", summary: "A framework-free Core source package.", summaryZh: "一个不含框架的 Core 源码包。"},
+    {name: "component", signature: "velar create component-library --template component", summary: "A Web source package with a single published velar.entry, a local preview application, a Core contract test, a browser rendering test, and the Web package as both a development dependency and a consumer peer contract.", summaryZh: "一个 Web 源码包，带有单一的已发布 velar.entry、本地预览应用、Core 契约测试、浏览器渲染测试，并把 Web 包同时作为开发依赖与消费方的 peer 契约。"},
+]
+
+const sections = [
+    {id: "manifest", label: "The manifest", labelZh: "清单"},
+    {id: "web", label: "The web block", labelZh: "web 块"},
+    {id: "templates", label: "Templates", labelZh: "模板"},
+    {id: "layout", label: "Project layout", labelZh: "项目结构"},
+    {id: "deployment", label: "The deployment contract", labelZh: "部署契约"},
+]
+
+const chapterLinkLook = look:
+    color = sea
+    fontSize = 0.92rem
+
+export component ReferenceProject:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/reference/project", locale.isChinese())}
+            description={locale.text("What a VelarScript project manifest declares, which template writes which shape, and what a build must satisfy to deploy.", "VelarScript 项目清单声明了什么、各个模板写出什么形态，以及一次构建要满足什么才可部署。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={referenceNav}>
+            <PageHeader
+                kicker={locale.text("Reference", "参考")}
+                title={locale.text("Project manifest", "项目清单")}
+                summary={locale.text("The velar.json vocabulary, the six templates, and the contract a build has to satisfy before it can be deployed.", "velar.json 的词汇表、六个模板，以及一次构建在可部署之前必须满足的契约。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <h2 id="manifest">{locale.text("The manifest", "清单")}</h2>
+                <p>
+                    {locale.text("Format 2 makes the language and framework boundary explicit. extensions is required, and extension selection is always declared in the selected manifest rather than inferred from source text. An extension package opts in through its own package.json velar.extension object, so compiler composition has no official Web or future Game source-semantic branch: the CLI only resolves and composes those contributions.", "format 2 让语言与框架的边界变得显式。extensions 是必需的，而扩展的选择永远在被选中的清单里声明，绝不从源码文本推断。扩展包通过自己 package.json 中的 velar.extension 对象加入，因此编译器的组合过程里没有针对官方 Web 或未来 Game 的源语义分支：CLI 只负责解析并组合这些贡献。")}
+                </p>
+                <CodeBlock code={manifestJsonCode} />
+                <MemberTable
+                    rows={manifestMembers}
+                    caption={locale.text("velar.json — the top-level vocabulary", "velar.json —— 顶层词汇")}
+                    signatureLabel={locale.text("Example", "示例")}
+                />
+                <p>
+                    {locale.text("A Core library declares no extension at all, which is what keeps the compiler independently usable without the Web package installed.", "Core 库完全不声明扩展，这正是让编译器在未安装 Web 包时仍可独立使用的原因。")}
+                </p>
+                <CodeBlock code={coreManifestJsonCode} />
+
+                <h2 id="web">{locale.text("The web block", "web 块")}</h2>
+                <p>
+                    {locale.text("The @velarscript/web package contributes component and JSX syntax, reactive and lifecycle semantics, Web types, standard modules, runtime code, manifest validation, and syntax-aware project-editor behavior. Its separate host export provides the framework-owned application and error HTML plus the CSP, reload, deployment, and browser-test contract; the CLI validates protocol version 1 and supplies only generic host mechanics.", "@velarscript/web 包贡献了 component 与 JSX 语法、响应式与生命周期语义、Web 类型、标准模块、运行时代码、清单验证，以及理解语法的项目编辑行为。它单独的 host 导出提供由框架拥有的应用与错误 HTML，以及 CSP、热重载、部署与浏览器测试契约；CLI 只验证协议版本 1，并提供通用的宿主机制。")}
+                </p>
+                <MemberTable
+                    rows={webMembers}
+                    caption={locale.text("velar.json web — the Web extension's own fields", "velar.json 的 web —— Web 扩展自己的字段")}
+                    signatureLabel={locale.text("Example", "示例")}
+                />
+                <CodeBlock code={securityJsonCode} />
+                <p>
+                    <Link to="/reference/desktop" look={chapterLinkLook}>
+                        {locale.text("The desktop block is documented on the Desktop extension page", "desktop 块记录在桌面扩展页")}
+                    </Link>
+                </p>
+
+                <h2 id="templates">{locale.text("Templates", "模板")}</h2>
+                <p>
+                    {locale.text("The six templates share one creator. Creation refuses non-empty targets and assembles the complete project in a sibling staging directory before the final rename; it does not install dependencies, install browsers, initialize Git, publish, or deploy. The three application targets begin with a branded hello experience while retaining their target's ordinary project model.", "六个模板共用同一个创建器。创建过程拒绝非空目标，并在同级暂存目录中组装完整项目，最后再重命名；它不安装依赖、不安装浏览器、不初始化 Git、不发布、不部署。三个应用目标以带品牌的初始体验开始，同时保留各自目标通常的项目模型。")}
+                </p>
+                <MemberTable
+                    rows={templateMembers}
+                    caption={locale.text("velar create — six shapes", "velar create —— 六种形态")}
+                    signatureLabel={locale.text("Command", "命令")}
+                />
+
+                <h2 id="layout">{locale.text("Project layout", "项目结构")}</h2>
+                <p>
+                    {locale.text("A project is source, a manifest, and the npm scripts that wrap the toolchain. Assertions come from velar/test; browser automation is imported from velar/web-test and runs only through velar test --browser, and that import is legal only inside a *.browser.test.vel module.", "一个项目就是源码、一份清单，以及包装工具链的 npm 脚本。断言来自 velar/test；浏览器自动化从 velar/web-test 导入、只通过 velar test --browser 运行，而该导入只在 *.browser.test.vel 模块内合法。")}
+                </p>
+                <CodeBlock code={layoutTreeCode} />
+
+                <h2 id="deployment">{locale.text("The deployment contract", "部署契约")}</h2>
+                <p>
+                    {locale.text("velar build creates a complete static Web application in an isolated staging directory, and only a successful build replaces the configured output directory. That removes stale assets and leaves the previous complete build intact when compilation, public-asset validation, bundling, or manifest generation fails.", "velar build 在隔离的暂存目录中创建完整的静态 Web 应用，只有构建成功才会替换配置的输出目录。这既清除了陈旧资源，又在编译、公共资源验证、打包或清单生成失败时，让上一份完整构建保持原样。")}
+                </p>
+                <CodeBlock code={buildTreeCode} />
+                <p>
+                    {locale.text("Repeated builds of identical inputs must produce identical manifest and asset bytes even when the output directories differ. Static host adapters consume velar-deploy.json: they must apply its security headers and rewrite unknown application paths to index.html without rewriting real asset requests. Content-hashed assets are immutable for one year; HTML and manifests use no-cache.", "对相同输入的重复构建，即使输出目录不同，也必须产生完全相同的清单与资源字节。静态宿主适配器消费 velar-deploy.json：它们必须应用其中的安全头部，并把未知的应用路径重写到 index.html，同时不改写真实的资源请求。内容哈希的资源一年内不可变；HTML 与清单使用 no-cache。")}
+                </p>
+                <Callout title={locale.text("Integrity is not authenticity", "完整性不等于真实性")}>
+                    <p>
+                        {locale.text("verify and verify-deployment perform integrity and self-consistency verification. Authenticity still requires a trusted release signature or provenance over the build manifest in the external release pipeline. The production pipeline reserves index.html, 404.html, velar-build.json, velar-deploy.json, _headers, and _redirects: files with those names in the public directory fail the build rather than overriding the security boundary.", "verify 与 verify-deployment 执行的是完整性与自洽性验证。真实性仍需要外部发布流水线中，对构建清单的可信发布签名或来源证明。生产流水线保留 index.html、404.html、velar-build.json、velar-deploy.json、_headers 与 _redirects 这几个名字：公共目录中出现同名文件会让构建失败，而不是覆盖安全边界。")}
+                    </p>
+                </Callout>
+            </Prose>
+        </DocsShell>
+    </main>

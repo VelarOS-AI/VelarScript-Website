@@ -1,20 +1,75 @@
 import {expect} from "velar/test"
+import {DocsNavGroup} from "@velarscript/docs-kit"
 import {UI_API_VERSION} from "@velarscript/ui"
-import {docsNav, examples, features, learningSteps, pageTitle, primaryNav} from "./content.vel"
+import {routePaths} from "./app.vel"
+import {guideNav, guideNext, guideOrder, guidePrevious, headTitle, pageTitle, primaryNav, referenceNav, referenceOrder} from "./content.vel"
 
-def test_primary_information_architecture():
+def labels(groups: List<DocsNavGroup>, chinese: bool) -> List<string>:
+    let collected: List<string> = []
+    for group in groups:
+        collected.append(chinese ? group.labelZh : group.label)
+        for item in group.items:
+            collected.append(chinese ? item.labelZh : item.label)
+    return collected
+
+test "the information architecture has the shape the site is built for":
     expect(UI_API_VERSION).toBe("0.2")
     expect(primaryNav).toHaveLength(3)
-    expect(docsNav).toHaveLength(4)
-    expect(docsNav[1].items).toHaveLength(6)
-    expect(docsNav[2].items).toHaveLength(6)
-    expect(pageTitle("/docs/web")).toBe("Web framework")
-    expect(pageTitle("/docs/language/classes")).toBe("Classes")
-    expect(pageTitle("/docs/testing")).toBe("Testing and deployment")
-    expect(pageTitle("/missing")).toBe("Page not found")
+    expect(guideNav).toHaveLength(3)
+    expect(guideNav[0].items).toHaveLength(4)
+    expect(guideNav[1].items).toHaveLength(13)
+    expect(guideNav[2].items).toHaveLength(13)
+    expect(referenceNav).toHaveLength(1)
+    expect(referenceNav[0].items).toHaveLength(9)
 
-def test_home_content_has_real_depth():
-    expect(features).toHaveLength(3)
-    expect(learningSteps).toHaveLength(3)
-    expect(examples).toHaveLength(3)
-    expect(examples[1].traits).toContain("runtime validation")
+test "the guide order covers every guide path exactly once":
+    expect(guideOrder).toHaveLength(30)
+    let seen: Set<string> = Set()
+    for item in guideOrder:
+        expect(seen.has(item.path)).toBe(false)
+        seen.add(item.path)
+    for group in guideNav:
+        for item in group.items:
+            expect(seen.has(item.path)).toBe(true)
+
+test "every navigation label carries both languages and neither repeats":
+    for entries in [labels(guideNav, false), labels(guideNav, true), labels(referenceNav, false), labels(referenceNav, true)]:
+        let seen: Set<string> = Set()
+        for label in entries:
+            expect(label.size > 0).toBe(true)
+            expect(seen.has(label)).toBe(false)
+            seen.add(label)
+    let primarySeen: Set<string> = Set()
+    for item in primaryNav:
+        expect(item.label.size > 0).toBe(true)
+        expect(item.labelZh.size > 0).toBe(true)
+        expect(primarySeen.has(item.label)).toBe(false)
+        expect(primarySeen.has(item.labelZh)).toBe(false)
+        primarySeen.add(item.label)
+        primarySeen.add(item.labelZh)
+
+test "every navigated path has a route the router really serves":
+    const served: Set<string> = Set(routePaths)
+    for item in guideOrder:
+        expect(served.has(item.path)).toBe(true)
+    for item in referenceOrder:
+        expect(served.has(item.path)).toBe(true)
+    for item in primaryNav:
+        expect(served.has(item.path)).toBe(true)
+    expect(served.has("/")).toBe(true)
+    expect(served.has("/examples")).toBe(true)
+
+test "the pager walks the chain from the first page to the last":
+    expect(guidePrevious("/guide")).toBe(null)
+    expect(guideNext("/guide")?.path).toBe("/guide/quick-start")
+    expect(guidePrevious("/guide/language/values")?.path).toBe("/guide/for-frameworks")
+    expect(guideNext("/guide/web/testing")).toBe(null)
+
+test "a page title reads the label its sidebar entry declares":
+    expect(pageTitle("/guide/language/values").en).toBe("Values")
+    expect(pageTitle("/guide/language/values").zh).toBe("值")
+    expect(pageTitle("/reference/cli").en).toBe("CLI commands")
+    expect(pageTitle("/missing").en).toBe("Page not found")
+    expect(headTitle("/guide/web/look", false)).toBe("Look · VelarScript")
+    expect(headTitle("/guide/web/look", true)).toBe("Look · VelarScript")
+    expect(headTitle("/", false)).toBe("VelarScript")

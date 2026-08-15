@@ -1,0 +1,258 @@
+import {Head} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {useLocale} from "@velarscript/site-ui"
+import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
+
+const transfersCode = `import {join} from "velar/url"\n\n// let and const keep their meaning, closures capture the same bindings,\n// promises are the same promises, and the module system is ES modules.\nexport def makeReader() -> (() -> number):\n    let count = 0\n    count += 1\n    return () => count\n\nasync def fetchLater(url: string) -> string:\n    return url\n\nexport async def load(base: string) -> string:\n    const url = join(base, "api", "v1")\n    return await fetchLater(url)\n\n// Records and Lists are JavaScript objects and arrays; instances are\n// references, and the host engine owns garbage collection.\ntype Task:\n    id: string\n    done: bool\n\nconst tasks: List<Task> = [{id: "t-1", done: false}]\nconst open = tasks.filter(task => not task.done)`
+const silentJsCode = "// JavaScript\nconst label = `${user.name} has ${count} items`;\nconst pages = total // perPage;"
+const silentCode = `const value = 42\nconst total = 7\nconst perPage = 2\n\n// Only the f prefix interpolates. This binding holds the six literal\n// characters, in this delimiter and in a backtick one alike.\nconst literalDollarBrace = "${value}"\nconst interpolated = f"{value}"\n\n// A double slash starts a comment in every position, so the first binding\n// takes the left operand and the rest of its line is gone.\nconst looksLikeFloorDivision = total // perPage\nconst floorDivision = (total / perPage).floor()`
+const conditionCode = "type User:\n    name: string\n    active: bool\n\nexport def conditionShapes(flag: bool, maybeFlag: bool?, values: List<string>, user: User?) -> string:\n    // `bool` and `bool?` are the only types a condition accepts; an absent\n    // `bool?` is `false`.\n    if flag:\n        print(\"true\")\n    if maybeFlag:\n        print(\"present and true\")\n    // A presence test is written `!= null`; an emptiness test is `.size == 0`.\n    if user != null:\n        print(user.name)\n    if values.size == 0:\n        print(\"empty\")\n    // Inline conditions use the JavaScript-shaped form.\n    return flag ? \"yes\" : \"no\""
+const truthinessErrorCode = `type Account:\n    id: string\n    name: string\n\nexport def label(account: Account?) -> string:\n    if account:\n        return account.name\n    return "no account"`
+const truthinessErrorOutput = "main.vel:6:8 error VEL4001: A condition judges truth, not presence; write 'account != null' to test Account? for a value\n    if account:\n       ^^^^^^^"
+const equalityErrorCode = "export def matches(count: number, raw: string) -> bool:\n    return count == raw"
+const equalityErrorOutput = "main.vel:2:12 error VEL4001: number and string have no values in common, so '==' is always false\n    return count == raw\n           ^^^^^^^^^^^^"
+const structuralCode = `type Point:\n    x: number\n    y: number\n\ntype Named:\n    name: string\n\n// A type is a shape. A value with the right fields fits it, and no declared\n// relationship between the literal and the type is written anywhere.\nconst origin: Point = {x: 0, y: 0}\n\n// Unions are bounded and written out. There are no conditional, mapped, or\n// programmable types, so reading a type means reading its declaration.\ntype Key = string | number\ntype Either = Point | Named\n\nexport def describe(value: Either) -> string:\n    if value is Named:\n        return value.name\n    return f"{value.x},{value.y}"\n\n// A field that may be absent puts the question in the type, where the reader\n// of every other declaration already looks.\ntype Profile:\n    name: string\n    nickname: string?\n\nconst key: Key = "k-1"`
+const schemaTsCode = `// TypeScript\nimport { z } from "zod";\n\n// The compile-time declaration.\ninterface User {\n  id: string;\n  name: string;\n  joinedAt: string;\n}\n\n// The runtime declaration: the same shape written a second time, and kept in\n// step with the first by hand.\nconst UserSchema = z.object({\n  id: z.string(),\n  name: z.string(),\n  joinedAt: z.string(),\n});\n\nexport function loadUser(response: unknown): User {\n  return UserSchema.parse(response);\n}`
+const schemaCode = "type User:\n    id: string\n    name: string\n    joinedAt: string\n\n// The same declaration checks the source and validates the data. parse\n// answers the checked value or throws ValidationError with the path and\n// reason of the first field that did not fit.\nexport def loadUser(response: unknown) -> User:\n    return User.parse(response)\n\nexport def isUser(candidate: unknown) -> bool:\n    return candidate is User\n\n// A generic boundary helper takes the type itself, so one decoder serves\n// every shape.\nexport def decode<T>(value: unknown, target: Type<T>) -> T:\n    return target.parse(value)"
+
+const habits = [
+    {
+        name: "`${value}`",
+        signature: `f"{value}"`,
+        summary: "Only the f prefix interpolates. The dollar-brace form is ordinary text in every string, including a backtick one, so this reflex produces characters and no diagnostic.",
+        summaryZh: "只有 f 前缀会插值。美元花括号形式在每一种字符串中都是普通文本，反引号字符串也不例外，因此这种手感产出的是字符，而不是诊断。",
+    },
+    {
+        name: "a // b",
+        signature: "(a / b).floor()",
+        summary: "A double slash starts a comment in every position, so the rest of the line disappears and the binding takes the left operand.",
+        summaryZh: "双斜杠在任何位置都开启注释，因此该行的其余部分消失，绑定拿到的是左操作数。",
+    },
+    {
+        name: "items.length",
+        signature: "items.size",
+        summary: "One name counts strings, Lists, Sets, Maps, and Records. On a string it counts Unicode code points.",
+        summaryZh: "同一个名字用于 string、List、Set、Map 与 Record 的计数。在字符串上它计的是 Unicode 码点。",
+    },
+    {
+        name: "items.push(x)",
+        signature: "items.append(x)",
+        summary: "Mutation has one spelling per operation. splice, shift, unshift, and the in-place sort and reverse are absent; insert, pop, remove, extend, sorted, and reversed cover the same ground.",
+        summaryZh: "每种修改操作只有一种拼写。splice、shift、unshift 以及原地的 sort 与 reverse 都不存在；insert、pop、remove、extend、sorted 与 reversed 覆盖同样的范围。",
+    },
+    {
+        name: "if (value)",
+        signature: "if value != null:",
+        summary: "A condition accepts bool and bool? only. Truth, presence, and emptiness are three questions, and each is written as itself.",
+        summaryZh: "条件只接受 bool 与 bool?。真假、存在与空是三个问题，各自按自己的样子写出来。",
+    },
+    {
+        name: "a === b",
+        signature: "a == b",
+        summary: "There is one equality, and it requires the operand types to intersect, so a comparison that could never hold is a diagnostic rather than a silent false.",
+        summaryZh: "相等只有一种，并且要求两侧类型有交集；因此一次永远不可能成立的比较得到的是诊断，而不是静默的 false。",
+    },
+    {
+        name: "[1, 2] == [1, 2]",
+        signature: "equals(a, b)",
+        summary: "Collection equality is identity. Content comparison has its own name, compares Lists in order and Sets and Maps by members, and needs no import.",
+        summaryZh: "集合上的相等是身份相等。内容比较有自己的名字：List 按顺序比较，Set 与 Map 按成员比较，且无需导入。",
+    },
+    {
+        name: "switch (value)",
+        signature: "match value:",
+        summary: "Arms are exhaustive over an enum or a closed union, there is no fall-through, and the only fallback is a wildcard arm written where a reader looks for it.",
+        summaryZh: "对枚举或封闭联合，分支是穷尽的；没有贯穿行为；唯一的兜底是通配分支，写在读者会去找它的位置。",
+    },
+    {
+        name: "count++",
+        signature: "count += 1",
+        summary: "Increment and decrement are absent, and the compound assignment states the amount it adds.",
+        summaryZh: "自增与自减不存在，复合赋值写明了它加上的量。",
+    },
+    {
+        name: "map[key]",
+        signature: "map.get(key)",
+        summary: "A Map read answers an optional, because a missing key is an ordinary answer. On a List, an index throws on a bug and get answers null when absence is expected.",
+        summaryZh: "Map 的读取给出可选值，因为键不存在是一个普通答案。在 List 上，索引在出错时抛出，而当缺失本就在预期之内时用 get 得到 null。",
+    },
+    {
+        name: "Number.isNaN(x)",
+        signature: "x.isNaN()",
+        summary: "Number predicates are members on the value. Equality is SameValueZero, so the undefined quotient agrees with itself and the self-comparison trick has nothing left to detect.",
+        summaryZh: "数字判定是值上的成员。相等采用 SameValueZero，因此未定义商与自身相等，自比较那个技巧也就无从检测。",
+    },
+    {
+        name: "interface X { … }",
+        signature: "type X:",
+        summary: "One keyword declares record shapes and aliases. The words record, struct, and interface all report the same way.",
+        summaryZh: "一个关键字同时声明记录形状与别名。record、struct、interface 三个词得到同样的报告。",
+    },
+    {
+        name: "function f() { … }",
+        signature: "def f() -> T:",
+        summary: "One declaration keyword, and a block opens with a trailing colon and is carried by indentation rather than braces.",
+        summaryZh: "只有一个声明关键字；块以行尾冒号开启，由缩进而不是花括号承载。",
+    },
+    {
+        name: "call({ name: value })",
+        signature: "call(name=value)",
+        summary: "Named arguments are part of the call grammar, so an options record is not what makes a long call site readable.",
+        summaryZh: "具名实参是调用语法的一部分，因此让长调用变得可读的并不是一个 options 记录。",
+    },
+    {
+        name: "task()",
+        signature: "await task() / async task()",
+        summary: "A dropped promise is a compile error. Waiting for a task and running it detached are both written, so nothing is left to a reader's guess.",
+        summaryZh: "被丢弃的 promise 是编译错误。等待一个任务与让它脱离流程运行都要写出来，读者不必猜。",
+    },
+]
+
+const pointsLook = look:
+    display = "grid"
+    gap = 8px
+    margin = 0
+    paddingInlineStart = 20px
+
+const sections = [
+    {id: "transfers", label: "What transfers unchanged", labelZh: "可以直接迁移的部分"},
+    {id: "habits", label: "The habit map", labelZh: "习惯映射"},
+    {id: "silent", label: "The two silent traps", labelZh: "两个静默陷阱"},
+    {id: "truthiness", label: "A condition judges truth", labelZh: "条件只判断真假"},
+    {id: "equality", label: "One equality", labelZh: "只有一种相等"},
+    {id: "types", label: "The type system, side by side", labelZh: "类型系统对照"},
+    {id: "removed", label: "The surface that was removed", labelZh: "被移除的表面"},
+]
+
+export component GuideForJavaScript:
+    const locale = useLocale()
+    return <main>
+        <Head
+            title={headTitle("/guide/for-javascript", locale.isChinese())}
+            description={locale.text("A map from JavaScript and TypeScript habits to VelarScript spellings, with the diagnostics that mark the difference.", "从 JavaScript 与 TypeScript 习惯到 VelarScript 拼写的对照，并附上标记差异的诊断。")}
+            themeColor="#f7f5f0"
+        />
+        <DocsShell items={guideNav}>
+            <PageHeader
+                kicker={locale.text("Start / 03", "开始 / 03")}
+                title={locale.text("For JavaScript developers", "写给 JavaScript 开发者")}
+                summary={locale.text("The habits that transfer, the ones the compiler refuses, and the spelling it asks for instead.", "哪些习惯可以直接迁移，哪些会被编译器拒绝，以及它要求改用的拼写。")}
+            />
+            <SectionList items={sections} />
+            <Prose>
+                <h2 id="transfers">{locale.text("What transfers unchanged", "可以直接迁移的部分")}</h2>
+                <p>
+                    {locale.text("The runtime is JavaScript. let and const keep their meaning, closures capture the same bindings, promises are the same promises, and the module system is ES modules. Records and Lists are objects and arrays, instances are references, and the host engine owns garbage collection. Nothing on this page describes a new runtime; what follows is a difference in what the source is allowed to say about it.", "运行时就是 JavaScript。let 与 const 保持原义，闭包以相同方式捕获，Promise 就是同样的 Promise，模块系统就是 ES 模块。记录与 List 就是对象与数组，实例是引用，垃圾回收属于宿主引擎。本页没有任何内容在描述一个新的运行时；下面讲的是源码被允许如何谈论它，这一点上的差别。")}
+                </p>
+                <CodeBlock code={transfersCode} />
+
+                <h2 id="habits">{locale.text("The habit map", "习惯映射")}</h2>
+                <p>
+                    {locale.text("Every row below was hit by real models writing VelarScript without reading it first. All but the first two produce a diagnostic that names the current spelling, so the compiler teaches them once and the habit changes. The first column is the reflex, the second is what to write, and the third is the mechanism that makes the difference matter.", "下面每一行，都被真实的模型在没有先读文档就写 VelarScript 时撞到过。除前两行外，其余都会给出一条点名当前拼写的诊断，因此编译器教一次，习惯就改过来了。第一列是手感，第二列是应当写的形式，第三列是让这个差别有意义的机制。")}
+                </p>
+                <MemberTable
+                    rows={habits}
+                    caption={locale.text("The habit map", "习惯映射")}
+                    nameLabel={locale.text("Reflex", "手感")}
+                    signatureLabel={locale.text("VelarScript spelling", "VelarScript 拼写")}
+                    summaryLabel={locale.text("Mechanism", "机制")}
+                />
+
+                <h2 id="silent">{locale.text("The two silent traps", "两个静默陷阱")}</h2>
+                <p>
+                    {locale.text("Two rows in that table produce no diagnostic, because both spellings are legal VelarScript that means something else. Template interpolation is the first: the dollar-brace form is literal text in every string, since generating JavaScript source is a use these strings are expected to serve. Floor division is the second: a double slash is a comment in every position, so the rest of the line is gone and the binding takes the left operand.", "上表中有两行不会产生任何诊断，因为两种拼写都是合法的 VelarScript，只是含义不同。第一个是模板插值：美元花括号形式在每一种字符串中都是字面文本，因为生成 JavaScript 源码正是这些字符串要服务的用途。第二个是向下取整的除法：双斜杠在任何位置都是注释，因此该行其余部分消失，绑定拿到的是左操作数。")}
+                </p>
+                <p>
+                    <strong>{locale.text("The JavaScript that reads naturally", "读起来很自然的 JavaScript")}</strong>
+                </p>
+                <CodeBlock code={silentJsCode} />
+                <p>
+                    <strong>{locale.text("What each spelling means in VelarScript", "同样的拼写在 VelarScript 中的含义")}</strong>
+                </p>
+                <CodeBlock code={silentCode} />
+                <Callout title={locale.text("Where to look when output is wrong but nothing failed", "输出不对、却什么都没报错时先看哪里")}>
+                    <p>
+                        {locale.text("A string that renders the dollar-brace characters and a numeric binding that is suspiciously equal to its own left operand are the two shapes worth checking first. Both are visible in the emitted JavaScript, which the build leaves readable.", "两种形状值得先检查：渲染出美元花括号字符的字符串，以及数值绑定恰好等于它自己的左操作数。两者在生成的 JavaScript 中都看得见，而构建产物是保持可读的。")}
+                    </p>
+                </Callout>
+
+                <h2 id="truthiness">{locale.text("A condition judges truth", "条件只判断真假")}</h2>
+                <p>
+                    {locale.text("bool and bool? are the only types a condition accepts. A presence test is written against null and an emptiness test against size, so the three questions JavaScript folds into one stay three. An absent bool? behaves as false, which is the one place the fold is kept — and it is kept because the type says so.", "条件只接受 bool 与 bool?。存在性检查针对 null 书写，空检查针对长度书写；JavaScript 折叠成一个的三个问题在这里仍然是三个。缺失的 bool? 表现为 false，这是唯一保留折叠的地方——而它之所以被保留，是因为类型这样声明了。")}
+                </p>
+                <CodeBlock code={conditionCode} />
+                <p>
+                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                </p>
+                <CodeBlock code={truthinessErrorCode} />
+                <p>
+                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                </p>
+                <CodeBlock code={truthinessErrorOutput} />
+
+                <h2 id="equality">{locale.text("One equality", "只有一种相等")}</h2>
+                <p>
+                    {locale.text("There is no loose equality to choose against, so the strict spelling loses its extra sign. What remains requires the operand types to intersect: comparing two types with no values in common is a diagnostic rather than a silent false, and comparing an enum member with raw text asks the author which of two meanings was intended.", "这里没有可以对照的宽松相等，因此严格拼写失去了多余的那个符号。留下的这一种要求两侧类型有交集：比较两个没有公共值的类型得到的是诊断而不是静默的 false；而把枚举成员与裸文本比较，则会要求作者说明想要的是两种含义中的哪一种。")}
+                </p>
+                <p>
+                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                </p>
+                <CodeBlock code={equalityErrorCode} />
+                <p>
+                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                </p>
+                <CodeBlock code={equalityErrorOutput} />
+
+                <h2 id="types">{locale.text("The type system, side by side", "类型系统对照")}</h2>
+                <p>
+                    {locale.text("Typing is structural, as it is in TypeScript: a type is a shape, and a value with the right fields fits it with no declared relationship written anywhere. Two things are different. There is no type-level programming — no conditional, mapped, or programmable types, and no user-defined bound — so reading a type means reading its declaration rather than evaluating a second program. And a named type carries a runtime validator, so the declaration that checks the source is the declaration that validates the data.", "类型是结构化的，与 TypeScript 一致：类型就是形状，带有正确字段的值即可契合它，任何地方都不必写出声明性的从属关系。有两处不同。其一，没有类型级编程——没有条件类型、映射类型或可编程类型，也没有用户自定义的界——因此读懂一个类型靠读它的声明，而不是再执行一段程序。其二，具名类型自带运行时验证器，于是检查源码的那份声明，就是验证数据的那份声明。")}
+                </p>
+                <CodeBlock code={structuralCode} />
+                <p>
+                    <strong>{locale.text("One shape, declared twice", "同一个形状，声明两次")}</strong>
+                </p>
+                <CodeBlock code={schemaTsCode} />
+                <p>
+                    <strong>{locale.text("One shape, declared once", "同一个形状，声明一次")}</strong>
+                </p>
+                <CodeBlock code={schemaCode} />
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("In the first program a field added to the interface and not to the schema compiles, and the mismatch surfaces at the boundary at run time. In the second there is one declaration, so there is no pair to fall out of step.", "在第一段程序中，只加到 interface 而没加到 schema 的字段依然能编译，不一致会在运行时的边界处才浮现。第二段程序只有一份声明，因此不存在会失步的一对。")}
+                    </li>
+                    <li>
+                        {locale.text("The validator is reachable as a value, so a decoder can be written once and reused for every type instead of once per schema.", "验证器可以作为值取用，因此解码器只需写一次就能对每个类型复用，而不是每个 schema 写一遍。")}
+                    </li>
+                    <li>
+                        {locale.text("A record type is structurally open: a field a newer producer added arrives without failing the shape.", "记录类型在结构上开放：更新过的生产者新增的字段能够到达，而不会撑破形状。")}
+                    </li>
+                </ul>
+
+                <h2 id="removed">{locale.text("The surface that was removed", "被移除的表面")}</h2>
+                <p>
+                    {locale.text("The charter keeps a full list of deliberately absent source features. It is long, and reading it as a list is less useful than reading it as five reasons, each of which decides many entries at once.", "章程保有一份刻意缺席的源码特性全表。它很长，而把它当成一份清单来读，不如把它当成五条理由来读——每一条理由一次就决定了其中许多条目。")}
+                </p>
+                <ul look={pointsLook}>
+                    <li>
+                        {locale.text("Two spellings for one idea. var, undefined beside null, single and triple quotes, dollar-brace interpolation, hexadecimal and binary and octal literals, coercive equality, and automatic aliases for removed spellings. A second spelling makes a reader ask what the choice meant.", "一个想法两种拼写。var、与 null 并列的 undefined、单引号与三引号、美元花括号插值、十六进制与二进制与八进制字面量、强制转换的相等，以及为已移除拼写自动保留的别名。第二种拼写会让读者追问这次选择意味着什么。")}
+                    </li>
+                    <li>
+                        {locale.text("Effects the line does not show. Class setters, user-defined decorators, side-effect imports, implicit global CSS, magical JSX control-flow attributes, and a public effect primitive. An assignment or a declaration should not run code the line does not name.", "行本身没有显示出来的副作用。类的设值器、用户自定义装饰器、副作用导入、隐式的全局 CSS、带魔法的 JSX 控制流属性，以及公开的 effect 原语。赋值或声明不应执行该行没有点名的代码。")}
+                    </li>
+                    <li>
+                        {locale.text("Object-model surgery. new, this in class methods, delete, typeof, instanceof, eval, regular-expression literals, bitwise operators, private identifier sigils, prototype and proto manipulation, and extending a class declared through the JavaScript boundary. What the compiler cannot see through, a reader cannot either.", "对象模型手术。new、类方法中的 this、delete、typeof、instanceof、eval、正则字面量、位运算符、私有标识符符号、prototype 与 proto 的操作，以及继承一个通过 JavaScript 边界声明的类。编译器看不穿的东西，读者同样看不穿。")}
+                    </li>
+                    <li>
+                        {locale.text("Type-level programming. TypeScript-style interfaces, assertions, overloads, conditional and mapped types, and user-defined type-parameter bounds. A type should be readable by looking at its declaration.", "类型级编程。TypeScript 风格的 interface、断言、重载、条件类型与映射类型，以及用户自定义的类型参数界。一个类型应当通过看它的声明就能读懂。")}
+                    </li>
+                    <li>
+                        {locale.text("Statements that do not state anything. An expression statement that only computes a value, an equality chain, a mixed-direction comparison chain, a bare string used as a docstring, and generators with their suspend-and-resume protocol. A statement must do something, and a chain must point one way.", "什么也没陈述的语句。只计算一个值的表达式语句、相等链、方向混合的比较链、被当作文档字符串的裸字符串，以及带挂起与恢复协议的生成器。语句必须做点什么，链必须指向同一个方向。")}
+                    </li>
+                </ul>
+                <p>
+                    {locale.text("The source grammar is an allowlist: a syntax addition to JavaScript never becomes VelarScript syntax without an explicit language decision, an AST node, an analysis rule, a lowering, and a proof test. Where a removed spelling is common enough to be a likely mistake, the compiler reports the current spelling instead of keeping the old behavior alive.", "源码语法是一份白名单：JavaScript 新增的语法，若没有一次明确的语言裁决、一个 AST 节点、一条分析规则、一次降级实现与一个证明测试，就不会成为 VelarScript 的语法。当某种被移除的拼写常见到足以成为可能的错误时，编译器会报出当前的拼写，而不是让旧行为继续存活。")}
+                </p>
+            </Prose>
+            <DocsPager previous={guidePrevious("/guide/for-javascript")} next={guideNext("/guide/for-javascript")} />
+        </DocsShell>
+    </main>
