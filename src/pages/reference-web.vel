@@ -177,7 +177,7 @@ export component ReferenceWeb:
             <SectionList items={sections} />
             <Prose>
                 <Paragraph>
-                    {locale.text("These modules exist only when velar.json activates @velarscript/web. The language core owns no browser word: component, JSX, state, resource, action, watch, @mounted, @cleanup, look, keyframes, the unsafe CSS import, and the three reserved globals computed, mount, and tick are the complete addition the extension makes to the language. Everything below is a module, not syntax.", "只有当 velar.json 激活 @velarscript/web 时，这些模块才存在。语言核心不拥有任何浏览器词汇：component、JSX、state、resource、action、watch、@mounted、@cleanup、look、keyframes、unsafe CSS 导入，以及三个保留全局 computed、mount 与 tick，构成了该扩展对语言的全部增补。下面列出的都是模块，而不是语法。")}
+                    {locale.text("These modules exist only when velar.json activates @velarscript/web. The language core owns no browser word: component, JSX, state, computed name = expression, resource, action, watch, @mounted, @cleanup, look, keyframes, the unsafe CSS import, and the three reserved globals cached, mount, and tick are the complete addition the extension makes to the language. computed is a keyword here, not a global — the function that answers a cached reader is cached. Everything below is a module, not syntax.", "只有当 velar.json 激活 @velarscript/web 时，这些模块才存在。语言核心不拥有任何浏览器词汇：component、JSX、state、computed name = expression、resource、action、watch、@mounted、@cleanup、look、keyframes、unsafe CSS 导入，以及三个保留全局 cached、mount 与 tick，构成了该扩展对语言的全部增补。computed 在这里是关键字，不是全局函数——返回缓存读取器的那个函数叫 cached。下面列出的都是模块，而不是语法。")}
                 </Paragraph>
                 <CodeBlock code={webServicesCode} />
 

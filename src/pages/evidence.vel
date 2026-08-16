@@ -26,9 +26,9 @@ const lookCode = `import {rgb, spacing} from "velar/look"\n\nconst ink = rgb(24,
 
 const lookCssCode = `[data-velar-look~="base:display"]{display:var(--velar-look-base-display)}\n[data-velar-look~="base:gap"]{gap:var(--velar-look-base-gap)}\n[data-velar-look~="base:padding"]{padding:var(--velar-look-base-padding)}\n[data-velar-look~="base:color"]{color:var(--velar-look-base-color)}\n@media (width <= 720px){[data-velar-look~="viewport-width-lte-720px:padding"][data-velar-look]{padding:var(--velar-look-viewport-width-lte-720px-padding)}}`
 
-const readonlyErrorCode = `type Task:\n    id: string\n    title: string\n    done: bool\n\ncomponent TaskRow(task: Task):\n    def toggle():\n        task.done = true\n\n    return <li><button type="button" on:click={toggle}>{task.title}</button></li>`
+const readonlyErrorCode = `type Task:\n    id: string\n    title: string\n    done: bool\n\n// This component's author declared the prop readonly, so the compiler holds\n// the guarantee the author asked for.\ncomponent TaskRow(task: readonly Task):\n    def toggle():\n        task.done = true\n\n    return <li><button type="button" on:click={toggle}>{task.title}</button></li>`
 
-const readonlyErrorOutput = "main.vel:8:9 error VEL3002: Cannot assign through readonly Task; it is a read-only view\n        task.done = true\n        ^^^^^^^^^"
+const readonlyErrorOutput = "main.vel:10:9 error VEL3002: Cannot mutate prop 'task': this component's author explicitly declared it 'readonly'. Cannot assign through readonly Task; it is a read-only view\n        task.done = true\n        ^^^^^^^^^"
 
 const validatorNodeCode = `export enum Plan:\n    free\n    team\n\nexport type Profile:\n    id: string\n    name: string\n    plan: Plan\n\ndef read(text: string) -> string:\n    try:\n        const profile = Json.parse(text, Profile)\n        return f"ok — {profile.name} on {profile.plan}"\n    catch error:\n        if error is ValidationError:\n            return f"rejected — {error.message}"\n        throw error\n\nprint(read(\`{"id":"u1","name":"Ada","plan":"team"}\`))\nprint(read(\`{"id":"u1","name":"Ada","plan":"enterprise"}\`))\nprint(read(\`{"id":"u1","name":"Ada"}\`))\nprint(read(\`{"id":"u1","name":42,"plan":"free"}\`))`
 
@@ -151,13 +151,13 @@ export component Evidence:
 
                     <SectionHeading id="refuse">{locale.text("What the compiler refuses", "编译器拒绝什么")}</SectionHeading>
                     <Paragraph>
-                        {locale.text("A row component receives a task and marks it done the obvious way. In most component systems this compiles, runs, and quietly writes into the parent's data.", "一个行组件收到一个 task，用最自然的方式把它标记为完成。在多数组件系统里，这段代码能编译、能运行，并且悄悄写进了父组件的数据。")}
+                        {locale.text("A row component receives a task and marks it done the obvious way. In most component systems this compiles, runs, and quietly writes into the parent's data. Here it compiles too — unless the component's author wrote one word.", "一个行组件收到一个 task，用最自然的方式把它标记为完成。在多数组件系统里，这段代码能编译、能运行，并且悄悄写进了父组件的数据。在这里它也能编译——除非这个组件的作者写了一个词。")}
                     </Paragraph>
                     <CodeBlock code={readonlyErrorCode} />
-                    <Paragraph>{locale.text("Here it does not compile:", "在这里它编译不过：")}</Paragraph>
+                    <Paragraph>{locale.text("With that word, it does not compile:", "写了那个词，它就编译不过：")}</Paragraph>
                     <CodeBlock code={readonlyErrorOutput} />
                     <Paragraph>
-                        {locale.text("A record prop arrives as a transitive read-only view, so the child reports which item it is and the owner performs the change. The cost is one callback hop; what it buys is that every change to a piece of state has exactly one possible author.", "记录 prop 是以传递性只读视图进来的，所以子组件只说「是哪一个」，真正的改动由数据的拥有者做。代价是多一次回调往返；换到的是：每一份状态的每一次改动，都只可能有一个作者。")}
+                        {locale.text("readonly on the prop makes the view transitive and the refusal reaches nested writes too, so the child reports which item it is and the owner performs the change. The cost is one callback hop; what it buys is that every change to that piece of state has exactly one possible author. Leave the word out and the prop is an ordinary mutable reference, because that is what the JavaScript underneath hands over — the guarantee is available rather than imposed, and the diagnostic says which of the two you chose.", "prop 上的 readonly 让这层视图具有传递性，拒绝也照样管到嵌套写入，于是子组件只说「是哪一个」，真正的改动由数据的拥有者做。代价是多一次回调往返；换到的是：那份状态的每一次改动，都只可能有一个作者。不写这个词，prop 就是普通的可变引用——底下的 JavaScript 交出来的本来就是这个。保证是可以要的，不是强加的，而诊断会说清你选的是哪一种。")}
                     </Paragraph>
                     <GateNote>
                         {locale.text("Gate: this pair is a checked counter-example. The site's gate compiles the sample and fails the build if it stops producing a diagnostic, and it verifies that every VEL code quoted above is one the sample really produces.", "门禁：这一对是受检的教学反例。本站门禁会编译该样本，一旦它不再报错就让构建失败；并且会校验上面引用的每个 VEL 码确实由这个样本产生。")}

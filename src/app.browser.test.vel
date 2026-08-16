@@ -17,9 +17,12 @@ test "the header brand draws the language mark in currentColor":
     expect(await browser.count(".brand .brand-mark path")).toBe(3)
     expect(await browser.count(".brand img")).toBe(0)
 
-test "the primary navigation reaches the guide as a route change":
+test "the primary navigation moves between pages as a route change":
     await browser.open("/")
     await browser.click(".primary-nav a:first-of-type")
+    await browser.waitFor("[data-why]")
+    expect(await browser.currentPath()).toBe("/why")
+    await browser.click(".primary-nav a:nth-of-type(2)")
     await browser.waitFor(".docs")
     expect(await browser.currentPath()).toBe("/guide")
 
@@ -34,7 +37,7 @@ test "the language switch flips the navigation and flips it back":
     await browser.waitFor(".primary-nav")
     const before = await browser.text(".primary-nav a:first-of-type")
     await browser.click(".language-switch")
-    const flipped = before == "Guide" ? "指南" : "Guide"
+    const flipped = before == "Why" ? "为什么" : "Why"
     await browser.waitForText(".primary-nav a:first-of-type", flipped)
     await browser.click(".language-switch")
     await browser.waitForText(".primary-nav a:first-of-type", before)
@@ -77,7 +80,7 @@ test "every block a chapter lays out comes from the prose vocabulary":
     // chapter-wide. /examples is also the one page that lays out a deliberate
     // non-prose structure inside Prose — a grid of example cards — so the list
     // assertion excludes it by class rather than by leaving the page unchecked.
-    for path in ["/guide", "/guide/quick-start", "/guide/for-javascript", "/guide/language/operators", "/guide/web/templates", "/reference/cli", "/guide/for-frameworks", "/examples", "/evidence"]:
+    for path in ["/why", "/guide", "/guide/quick-start", "/guide/for-javascript", "/guide/language/operators", "/guide/web/templates", "/reference/cli", "/guide/for-frameworks", "/examples", "/evidence"]:
         await browser.open(path)
         await browser.waitFor(".velar-docs-prose")
         expect(await browser.count(".velar-docs-prose > p:not(.velar-docs-paragraph)")).toBe(0)
@@ -92,6 +95,20 @@ test "a chapter's bullet points are the owned list, not a list the page invented
     await browser.waitFor(".velar-docs-prose")
     expect(await browser.count(".velar-docs-prose > .velar-docs-points")).toBe(5)
     expect(await browser.count(".velar-docs-prose > ul:not(.velar-docs-points)")).toBe(0)
+
+// D78 ruling 197: the positioning is answered in eight questions, in one fixed
+// order, and the eighth — what the language refuses to promise — is the one a
+// page like this loses first, because it is the only one that costs something
+// to publish. So the eight ids are pinned by name rather than counted, and the
+// refusals section is asserted on its own.
+test "the why page answers all eight questions, refusals included":
+    await browser.open("/why")
+    await browser.waitFor(".velar-docs-prose")
+    for id in ["#for", "#problem", "#now", "#tenets", "#choose", "#good", "#promises", "#refuses"]:
+        expect(await browser.count(id)).toBe(1)
+    expect(await browser.count(".velar-docs-prose > .velar-docs-heading")).toBe(8)
+    expect(await browser.count(".velar-docs-prose > .velar-docs-gate-note")).toBe(1)
+    expect(await browser.text("#refuses")).toBe("What it does not promise")
 
 // D66 ruling 5B: the built-in AI skill brief is half of "models write, people
 // own", and before this it appeared on the whole site twice, both times as a

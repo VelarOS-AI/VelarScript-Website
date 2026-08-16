@@ -47,6 +47,7 @@ import {WebRouting} from "./pages/web-routing.vel"
 import {WebState} from "./pages/web-state.vel"
 import {WebTemplates} from "./pages/web-templates.vel"
 import {WebTesting} from "./pages/web-testing.vel"
+import {Why} from "./pages/why.vel"
 
 const config = publicConfig(SiteRuntimeConfig)
 
@@ -90,6 +91,7 @@ component NotFound(route: RouteContext):
 
 const routes = [
     route("/", Home),
+    route("/why", Why),
     route("/guide", GuideIntroduction),
     route("/guide/quick-start", GuideQuickStart),
     route("/guide/for-javascript", GuideForJavaScript),

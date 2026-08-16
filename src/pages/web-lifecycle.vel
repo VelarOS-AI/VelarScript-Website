@@ -163,7 +163,7 @@ export component WebLifecycle:
                 </Paragraph>
                 <Callout title={locale.text("mount is the application's own boundary", "mount 是应用自己的边界")}>
                     <Paragraph>
-                        {locale.text("mount, tick, and computed are the three reserved global functions, so no binding in a Web module may spell them. mount attaches one root, constructs it synchronously, and mounts one component instance exactly once; the activation chapter covers the spellings and the failure states in full.", "mount、tick、computed 是三个保留的全局函数，所以 Web 模块里的任何绑定都不能占用这些名字。mount 挂载一个根、同步构造它，同一个组件实例只挂载一次；激活那一章把它的写法和失败状态讲完了。")}
+                        {locale.text("mount, tick, and cached are the three reserved global functions, so no binding in a Web module may spell them. mount attaches one root, constructs it synchronously, and mounts one component instance exactly once; the activation chapter covers the spellings and the failure states in full.", "mount、tick、cached 是三个保留的全局函数，所以 Web 模块里的任何绑定都不能占用这些名字。mount 挂载一个根、同步构造它，同一个组件实例只挂载一次；激活那一章把它的写法和失败状态讲完了。")}
                     </Paragraph>
                 </Callout>
             </Prose>

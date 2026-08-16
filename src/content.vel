@@ -16,6 +16,7 @@ export type PageTitle:
     zh: string
 
 export const primaryNav: List<NavItem> = [
+    {path: "/why", label: "Why", labelZh: "为什么"},
     {path: "/guide", label: "Guide", labelZh: "指南"},
     {path: "/reference", label: "Reference", labelZh: "参考"},
     {path: "/examples", label: "Examples", labelZh: "示例"},
@@ -124,6 +125,8 @@ export def pageTitle(path: string) -> PageTitle:
             return {en: item.label, zh: item.labelZh}
     if path == "/":
         return {en: "VelarScript", zh: "VelarScript"}
+    if path == "/why":
+        return {en: "Why VelarScript", zh: "为什么有 VelarScript"}
     if path == "/examples":
         return {en: "Examples", zh: "示例"}
     if path == "/evidence":

@@ -4,7 +4,7 @@ import {CodeBlock} from "@velarscript/docs-kit"
 import {ActionLink, CodeWindow, Container, Eyebrow, Section, Surface, foundationInk as ink, foundationInkFaint as inkFaint, foundationInkSoft as inkSoft, foundationPaperPure as paperPure, foundationRule as rule, foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {headTitle} from "../content.vel"
 
-const taskAppCode = `import {border, color, rgb, spacing} from "velar/look"\n\ntype Task:\n    id: string\n    title: string\n    done: bool\n\nconst cardLook = look:\n    display = "grid"\n    gap = 8px\n    padding = spacing(14px, 16px)\n    border = border(1px, color("silver"))\n    borderRadius = 10px\n\ndef titleLook(done: bool) -> Look:\n    return look:\n        margin = 0\n        fontSize = 1.05rem\n\n        if done:\n            color = rgb(94, 96, 102)\n            textDecoration = "line-through"\n\ncomponent TaskCard(task: Task):\n    state done = task.done\n\n    def toggle():\n        done = not done\n\n    return <article look={cardLook}>\n        <h2 look={titleLook(done)}>{task.title}</h2>\n        <button type="button" on:click={toggle}>{done ? "Reopen" : "Complete"}</button>\n    </article>\n\nconst first: Task = {id: "read", title: "Read the guide", done: false}\n\nmount(<TaskCard task={first} />, "#app")`
+const taskAppCode = `import {border, color, rgb, spacing} from "velar/look"\n\ntype Task:\n    id: string\n    title: string\n    done: bool\n\nconst cardLook = look:\n    display = "grid"\n    gap = 8px\n    padding = spacing(14px, 16px)\n    border = border(1px, color("silver"))\n    borderRadius = 10px\n\ndef titleLook(done: bool) -> Look:\n    return look:\n        margin = 0\n        fontSize = 1.05rem\n\n        if done:\n            color = rgb(94, 96, 102)\n            textDecoration = "line-through"\n\ncomponent TaskCard(task: Task):\n    state done = task.done\n    computed label = done ? "Reopen" : "Complete"\n\n    def toggle():\n        done = not done\n\n    return <article look={cardLook}>\n        <h2 look={titleLook(done)}>{task.title}</h2>\n        <button type="button" on:click={toggle}>{label}</button>\n    </article>\n\nconst first: Task = {id: "read", title: "Read the guide", done: false}\n\nmount(<TaskCard task={first} />, "#app")`
 
 const presenceErrorCode = `type Account:\n    id: string\n    name: string\n\nexport def label(account: Account?) -> string:\n    if account:\n        return account.name\n    return "no account"`
 
@@ -193,23 +193,26 @@ export component Home:
     return <main>
         <Head
             title={headTitle("/", locale.isChinese())}
-            description={locale.text("VelarScript is an application language that compiles to JavaScript: a Python-shaped writing surface over JavaScript's runtime semantics, with the Web as an official extension.", "VelarScript 是一门编译到 JavaScript 的应用语言：写起来是 Python，跑起来是 JavaScript。Web 是它的官方扩展。")}
+            description={locale.text("An extensible programming language for the AI era, where the framework is the language. Models write code faster than anyone can check it, so what is silent everywhere else is a compile error here.", "面向 AI 时代的一门可扩展的编程语言，语言与框架一体化。模型写代码的速度已经超过了任何人验证它的速度，所以别处静默的错误，在这里是编译错误。")}
             themeColor="#f7f5f0"
         />
 
         <section class="opening" look={openingLook} data-home-definition>
             <Container>
-                <Eyebrow label={locale.text("Language and official Web extension", "语言与官方 Web 扩展")} />
+                <Eyebrow label={locale.text("An extensible language for the AI era", "面向 AI 时代的可扩展语言")} />
                 <h1 look={openingTitleLook}>VelarScript</h1>
                 <p class="definition" look={definitionLook}>
-                    {locale.text("An application language that compiles to JavaScript: Python's writing surface over JavaScript's runtime semantics. The language core stands on its own, and the Web is an official extension a project activates.", "一门编译到 JavaScript 的应用语言：写起来是 Python，跑起来是 JavaScript。语言核心自己就能立住；Web 是官方扩展，项目要用的时候才激活。")}
+                    {locale.text("An extensible programming language for the AI era, where the framework is the language. component, state, computed, watch, look and keyframes are keywords, not imports — nothing is layered on top, because the framework is the language.", "面向 AI 时代的一门可扩展的编程语言，语言与框架一体化。component、state、computed、watch、look、keyframes 是关键字，不是导入——上面没有另铺一层，因为框架就是语言。")}
                 </p>
                 <p look={missionLook}>
-                    {locale.text("It is designed for code that a model writes and a person owns: the reader has to be able to check what the code does, and the compiler has to say so when it cannot.", "它为「模型书写、人来拥有」的代码而设计：读者必须能够核验代码在做什么，而当编译器无法确认时，它必须说出来。")}
+                    {locale.text("A model can write code faster than anyone can check it, so the bottleneck moved from writing to trusting. One language covers markup, styling, state, tests and the server side, which shrinks what has to be verified; and the core itself knows nothing about a DOM, a stylesheet, a filesystem or a window, which is what stops that unification from becoming the pile it replaced. A wrong Look value, a misspelled aria-*, a missed reactive dependency, a coercion — silent everywhere else, compile errors here.", "模型写代码的速度，已经超过了任何人验证它的速度，于是瓶颈从「写」移到了「信」。一门语言覆盖结构、样式、状态、测试与服务端，把要验证的面收小；而核心本身不知道什么是 DOM、样式表、文件系统或窗口，这才让这次收小不至于攒成它要取代的那一堆。写错的 Look 取值、拼错的 aria-*、漏掉的响应式依赖、一次强转——在别处全是静默的，在这里是编译错误。")}
+                </p>
+                <p look={missionLook}>
+                    {locale.text("The division of labour follows from that rather than defining it: the model writes the code and every later change to it, you read and own the result, and the compiler guards each change.", "分工是由此推出来的，不是它的定义：模型写这些代码，也写之后的每一次修改；你阅读并拥有结果；每一次变更由编译器把关。")}
                 </p>
                 <div class="actions" look={actionsLook}>
                     <ActionLink to="/guide/quick-start" label={locale.text("Quick start", "快速开始")} />
-                    <ActionLink to="/guide" label={locale.text("Read the guide", "阅读指南")} quiet={true} />
+                    <ActionLink to="/why" label={locale.text("Why it exists", "它为什么存在")} quiet={true} />
                 </div>
             </Container>
         </section>
@@ -227,9 +230,9 @@ export component Home:
                                 {locale.text("type, def, const, and the control flow are the language. They exist in every VelarScript project, including one that never touches a browser.", "type、def、const 与控制流属于语言本身。它们存在于每个 VelarScript 项目中，包括从不接触浏览器的项目。")}
                             </li>
                             <li>
-                                <span look={readingTermLook}>component · state · look · JSX · mount</span>
+                                <span look={readingTermLook}>component · state · computed · look · JSX · mount</span>
                                 <br />
-                                {locale.text("component, state, look, JSX, and mount come from the Web extension. Without @velarscript/web in velar.json, none of those words exist.", "component、state、look、JSX 与 mount 来自 Web 扩展。如果 velar.json 中没有 @velarscript/web，这些词一个都不存在。")}
+                                {locale.text("component, state, computed, look, JSX, and mount are keywords the Web extension adds to the grammar, not values it exports. Without @velarscript/web in velar.json, none of those words exist — the core does not know what a DOM or a stylesheet is.", "component、state、computed、look、JSX 与 mount 是 Web 扩展加进语法里的关键字，不是它导出的值。如果 velar.json 中没有 @velarscript/web，这些词一个都不存在——核心不知道什么是 DOM、什么是样式表。")}
                             </li>
                             <li>
                                 <span look={readingTermLook}>velar check</span>

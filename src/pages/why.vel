@@ -1,0 +1,241 @@
+import {Head, Link} from "velar/web"
+import {BulletList, Callout, CodeBlock, GateNote, PageHeader, Paragraph, Prose, SectionHeading, SectionList, Subheading} from "@velarscript/docs-kit"
+import {Container, Section, foundationSea as sea, useLocale} from "@velarscript/site-ui"
+import {headTitle} from "../content.vel"
+
+// Both samples on this page are compiled by the site's gate: the first as an
+// ordinary excerpt, the second as a counter-example that has to keep failing.
+const keywordsCode = `import {color, rgb, spacing} from "velar/look"\n\n// Only the colour helpers are imported. Every word that shapes this file —\n// component, state, computed, watch, look, keyframes — is a keyword the Web\n// extension adds to the grammar, so there is no framework object to import and\n// nothing to configure before they mean anything.\nconst pulse = keyframes:\n    from:\n        opacity = 0.4\n    to:\n        opacity = 1\n\nconst badgeLook = look:\n    display = "inline-grid"\n    padding = spacing(4px, 10px)\n    borderRadius = 999px\n    color = color("white")\n    background = rgb(24, 31, 46)\n\nexport component Unread(total: number):\n    state seen = 0\n    computed remaining = total - seen\n\n    watch remaining:\n        print(f"{remaining} left")\n\n    def markOne():\n        seen += 1\n\n    return <button type="button" look={badgeLook} on:click={markOne}>{remaining}</button>`
+
+const silentErrorCode = `import {spacing} from "velar/look"\n\nconst panelLook = look:\n    display = "gird"\n    padding = spacing(12px, 16px)`
+
+const silentErrorOutput = `main.vel:4:15 error VEL5038: Look property 'display' does not accept 'gird'; did you mean 'grid'?\n    display = "gird"\n              ^^^^^^`
+
+const sections = [
+    {id: "for", label: "What it is for", labelZh: "它是干什么的"},
+    {id: "problem", label: "What problem it solves", labelZh: "它解决什么问题"},
+    {id: "now", label: "Why it appeared, and why now", labelZh: "它为什么出现，为什么是现在"},
+    {id: "tenets", label: "What decides a design question", labelZh: "设计上的分歧靠什么裁"},
+    {id: "choose", label: "Why you would choose it", labelZh: "你为什么会选它"},
+    {id: "good", label: "What it is good at", labelZh: "它擅长什么"},
+    {id: "promises", label: "What it promises", labelZh: "它承诺什么"},
+    {id: "refuses", label: "What it does not promise", labelZh: "它不承诺什么"},
+]
+
+const linkLook = look:
+    color = sea
+    textDecoration = "none"
+
+    if @hover:
+        textDecoration = "underline"
+
+export component Why:
+    const locale = useLocale()
+    return <main data-why>
+        <Head
+            title={headTitle("/why", locale.isChinese())}
+            description={locale.text("An extensible programming language for the AI era, where the framework is the language — what it is for, what it solves, what it promises, and what it refuses to promise.", "面向 AI 时代的一门可扩展的编程语言，语言与框架一体化——它是干什么的、解决什么、承诺什么，以及拒绝承诺什么。")}
+            themeColor="#f7f5f0"
+        />
+        <Section>
+            <Container narrow={true}>
+                <PageHeader
+                    kicker={locale.text("Why VelarScript", "为什么有 VelarScript")}
+                    title={locale.text("An extensible programming language for the AI era, where the framework is the language", "面向 AI 时代的一门可扩展的编程语言，语言与框架一体化")}
+                    summary={locale.text("Eight questions, in the order somebody deciding whether to use this would ask them. The last one is the one most languages skip.", "八个问题，按一个正在决定要不要用它的人会问的顺序排。最后那一问，多数语言都跳过。")}
+                />
+                <SectionList items={sections} />
+                <Prose>
+                    <SectionHeading id="for">{locale.text("What it is for", "它是干什么的")}</SectionHeading>
+                    <Paragraph>
+                        {locale.text("A model can now write code faster than anyone can check it. The bottleneck moved from writing to trusting.", "模型写代码的速度，已经超过了任何人验证它的速度。瓶颈从「写」移到了「信」。")}
+                    </Paragraph>
+                    <Paragraph>
+                        {locale.text("Every stack in use today was built for the other era — the one where a person wrote each line and held the whole thing in their head. That era could afford a silent mistake, because the author knew what they had meant. The author is often not a person any more, and the stacks have not moved.", "今天在用的每一套技术栈，都是为另一个时代造的：每一行由人写，整件事装在一个人脑子里。那个时代承受得起静默的错误，因为写的人知道自己是什么意思。现在写的人常常已经不是人了，而技术栈没有动。")}
+                    </Paragraph>
+                    <Paragraph>
+                        {locale.text("VelarScript exists so that code a person did not write can still be owned by that person — checked by a compiler instead of by reading every line.", "VelarScript 存在，是为了让一个人没有亲手写的代码，仍然属于这个人——靠编译器来核验，而不是靠逐行读完。")}
+                    </Paragraph>
+
+                    <SectionHeading id="problem">
+                        {locale.text("What problem it solves", "它解决什么问题")}
+                    </SectionHeading>
+                    <Paragraph>
+                        {locale.text("Two things break when a model writes the code, and neither of them is that the model cannot program.", "当代码由模型来写，有两件事会坏掉，而这两件都不是「模型不会编程」。")}
+                    </Paragraph>
+                    <Subheading>{locale.text("The seams", "接缝")}</Subheading>
+                    <Paragraph>
+                        {locale.text("One feature in a conventional web stack has to be right at the same time against JavaScript semantics, JSX, some approach to CSS, a state library, a router, a build configuration, and a test runner. Most failures land in the joints between those, not inside any one of them. Here there are no joints to land in: styling is syntax, state is syntax, tests are syntax. The task shrinks from getting six ecosystems right at once to getting one language right.", "在常规的 Web 技术栈里，一个功能要同时对得起 JavaScript 语义、JSX、某一套 CSS 方案、一个状态库、一个路由、一份构建配置和一个测试运行器。多数失败落在这些东西之间的接缝上，而不是落在其中任何一个里面。在这里没有接缝可落：样式是语法，状态是语法，测试是语法。任务从「把六个生态正确地拼起来」缩成「把一门语言写对」。")}
+                    </Paragraph>
+                    <Paragraph>
+                        {locale.text("That is what language and framework being one thing actually means. component, state, computed, watch, look and keyframes are keywords, not imports — nothing is layered on top of the language, because the framework is the language.", "「语言与框架一体化」说的就是这件事。component、state、computed、watch、look、keyframes 是关键字，不是导入——语言之上没有另铺一层，因为框架就是语言。")}
+                    </Paragraph>
+                    <CodeBlock code={keywordsCode} />
+                    <Paragraph>
+                        {locale.text("And the language core knows none of those words. It does not know what a DOM, a stylesheet, a filesystem or a window is. Every capability arrives as an extension that adds real syntax through a compiler protocol, which is the half of the positioning that keeps the other half honest: unification shrinks what has to be verified, and extensibility is what stops that shrinking from turning the core into the pile it was supposed to replace.", "而语言核心不认识上面任何一个词。它不知道什么是 DOM、样式表、文件系统或窗口。每一项能力都由扩展经编译器协议加入真正的语法。这是定位的另一半，也是让第一半站得住的那一半：一体化把要验证的面收小，可扩展则让这次收小不至于把核心变成它本来要取代的那一堆。")}
+                    </Paragraph>
+                    <Subheading>{locale.text("The silence", "静默")}</Subheading>
+                    <Paragraph>
+                        {locale.text("In JavaScript most mistakes compile and pass: a misspelled CSS property, a wrong aria-* value, a missing reactive dependency, a coercion, a floating promise. The person who owns the product, who often cannot read the code, has no way to tell whether the model got it right.", "在 JavaScript 里，多数错误既能编译也能跑过去：拼错的 CSS 属性、写错的 aria-* 取值、漏掉的响应式依赖、一次强转、一个没人接的 promise。而拥有这个产品的人——他常常读不了代码——没有任何办法判断模型有没有做对。")}
+                    </Paragraph>
+                    <CodeBlock code={silentErrorCode} />
+                    <Paragraph>{locale.text("velar check answers:", "velar check 的回答：")}</Paragraph>
+                    <CodeBlock code={silentErrorOutput} />
+                    <Paragraph>
+                        {locale.text("One letter, and in a stylesheet it would have been a rule that quietly does nothing. Every Look property that takes keywords carries its own closed set, ARIA is checked, reactive dependencies are discovered rather than declared, and there is no coercion, no truthiness, no silently dropped statement, and no failure without an owner. The compiler is the reviewer.", "一个字母。在样式表里，那会是一条什么也不做、也不说话的规则。每个取关键字的 Look 属性都带着自己的封闭集合，ARIA 受检，响应式依赖是被发现的而不是被声明的；而且没有强转、没有 truthiness、没有被静默丢掉的语句，也没有没人管的失败。编译器就是那个审稿人。")}
+                    </Paragraph>
+                    <Paragraph>
+                        {locale.text("There is a third one, quieter. Model output varies between prompts, sessions and models, so a codebase written across many sessions reads like several codebases. One obvious spelling per idea is what makes any VelarScript codebase read like any other — which is what makes it maintainable by whoever, or whatever, picks it up next.", "还有第三件，安静一些。模型的输出在不同提示、不同会话、不同模型之间会变，于是跨多次会话写出来的代码库，读起来像好几个代码库。「每个概念只有一种明确写法」，就是让任何一份 VelarScript 代码读起来都像同一份的原因；也正因如此，下一个接手的人——或者下一个接手的模型——才维护得下去。")}
+                    </Paragraph>
+                    <GateNote>
+                        {locale.text("Gate: the first block is compiled by scripts/check-code-samples.mjs as an ordinary excerpt. The second is a checked counter-example — the build fails if it ever stops producing a diagnostic, and it verifies that VEL5038 is a code the sample really produces.", "门禁：第一块由 scripts/check-code-samples.mjs 当作普通片段编译。第二块是受检的教学反例——它一旦不再报错，构建就失败；并且会核对 VEL5038 确实是这个样本产生的诊断码。")}
+                    </GateNote>
+
+                    <SectionHeading id="now">
+                        {locale.text("Why it appeared, and why now", "它为什么出现，为什么是现在")}
+                    </SectionHeading>
+                    <Paragraph>
+                        {locale.text("Its author could not live inside React's pile of constraints, or Vue's template syntax. That is where it started. It is not why it could be built.", "它的作者受不了 React 那一堆条框，也受不了 Vue 的模板写法。它是从这里开始的，但这不是它得以被造出来的原因。")}
+                    </Paragraph>
+                    <Paragraph>
+                        {locale.text("No single constraint makes anyone rewrite a language. React's are each defensible, each documented, each justified when it was added. It is the accumulation nobody can stand — which means the dangerous constraints are exactly the ones that look worth it on their own. A language that promises backward compatibility can only add, so the friction it discovers is friction it carries forever, and it drifts toward being the thing you wanted to escape.", "没有哪一条约束会单独逼人重写一门语言。React 的每一条都站得住、都有文档、当初加进去时都有充分理由。让人受不了的是累积——这也就是说，真正危险的恰恰是那些单独看很值的约束。而承诺向后兼容的语言只能往上加，于是它发现的摩擦就是它要永远背着的摩擦，然后它慢慢变成你当初想逃开的那个东西。")}
+                    </Paragraph>
+                    <Paragraph>
+                        {locale.text("The way out is to be able to remove. Removal has always been possible in principle and unaffordable in practice, because migration was human labour and somebody always depended on the old spelling.", "出路是能够拿掉。拿掉这件事一直在原理上可行、在实践上付不起——因为迁移是人力，而且总有人依赖着旧写法。")}
+                    </Paragraph>
+                    <Paragraph>
+                        {locale.text("That is the part that changed. When the author is the model, a breaking change costs one rewrite the model performs and one diagnostic that teaches it in a single round. VelarScript could not have been built before this moment — not because the syntax needed models, but because its central mechanism did.", "变的正是这一点。当作者是模型，一次破坏性改动的代价，是模型执行的一次重写，加上一条一轮就教会它的诊断。VelarScript 在这一刻之前造不出来——不是语法需要模型，是它的核心机制需要。")}
+                    </Paragraph>
+
+                    <SectionHeading id="tenets">
+                        {locale.text("What decides a design question", "设计上的分歧靠什么裁")}
+                    </SectionHeading>
+                    <Paragraph>
+                        {locale.text("Two parents. JavaScript is the mother: the program lives and runs inside her, so behaviour defers to her. Python is the father: the visible surface carries his name, so spelling and readability follow him. A question about meaning asks the mother; a question about spelling follows the father. Where an inherited behaviour is a trap, it is removed rather than documented.", "两位家长。JavaScript 是母亲：程序活在她里面、跑在她里面，所以行为听她的。Python 是父亲：看得见的那一面挂着他的名字，所以拼写与可读性跟着他。语义上的问题问母亲，拼写上的问题跟父亲。遇到继承来的行为本身是个陷阱，就把它拿掉，而不是给它写一段文档。")}
+                    </Paragraph>
+                    <BulletList>
+                        <li>
+                            {locale.text("Normal-language usage. Would someone fluent in JavaScript and Python write it that way without reading documentation?", "普通语言用法。一个熟悉 JavaScript 和 Python 的人，不看文档会不会就这么写？")}
+                        </li>
+                        <li>
+                            {locale.text("One obvious spelling. Does the change keep output uniform across sessions and models?", "一种明确写法。这个改动能不能让不同会话、不同模型的产出保持一致？")}
+                        </li>
+                        <li>
+                            {locale.text("Teaching diagnostics. Does every rejection name the current spelling?", "会教的诊断。每一次拒绝，有没有说出当前该怎么写？")}
+                        </li>
+                        <li>
+                            {locale.text("Evidence over taste. Blind tests and the real-application wall decide, not preference.", "证据压过口味。裁决靠盲测和真实应用撞出来的墙，不靠偏好。")}
+                        </li>
+                        <li>
+                            {locale.text("A design fix beats a diagnostic fix. A diagnostic teaches after the mistake; the right spelling prevents it.", "设计修复优于诊断修复。诊断在错误发生之后才教你；对的写法让错误不发生。")}
+                        </li>
+                        <li>
+                            {locale.text("Core knows nothing. It does not know what a DOM, a stylesheet, a filesystem or a window is, so unification never becomes a kitchen sink.", "Core 什么都不认识。它不知道什么是 DOM、样式表、文件系统或窗口，所以一体化不会攒成一个杂物间。")}
+                        </li>
+                        <li>
+                            {locale.text("A published name must be reachable. Publishing a name no author can reach is worse than publishing nothing.", "公布出来的名字必须够得着。公布一个没人写得到的名字，比什么都不公布更糟。")}
+                        </li>
+                    </BulletList>
+                    <Paragraph>
+                        {locale.text("If a proposal serves engineers but costs the owner's ability to read the code, it loses.", "一个提案如果方便了工程师，却让拥有这份代码的人读不懂它，那它输。")}
+                    </Paragraph>
+
+                    <SectionHeading id="choose">
+                        {locale.text("Why you would choose it", "你为什么会选它")}
+                    </SectionHeading>
+                    <BulletList>
+                        <li>
+                            {locale.text("You want a model to build and maintain a real product, and you want to read and own the result without reading every line.", "你想让模型建起并维护一个真正的产品，而你想读懂它、拥有它，又不必逐行读完。")}
+                        </li>
+                        <li>
+                            {locale.text("You want the compiler to be the reviewer.", "你想让编译器来当那个审稿人。")}
+                        </li>
+                        <li>
+                            {locale.text("You are building something still moving — a prototype, an internal tool, a product still finding its shape.", "你在做的东西还在动——一个原型、一个内部工具、一个还没定型的产品。")}
+                        </li>
+                        <li>
+                            {locale.text("You do not want to be trapped: the emitted JavaScript is legible and source-mapped, and the exit is held by a permanent gate rather than promised in prose.", "你不想被困住：编译出来的 JavaScript 可读、带源码映射，而这条出路由一道永久门禁守着，不是写在文案里的一句承诺。")}
+                        </li>
+                    </BulletList>
+                    <Callout title={locale.text("Why you would not", "什么时候别选它")}>
+                        <Paragraph>
+                            {locale.text("If you need a ten-year support horizon, there is not one here yet. If you have a large JavaScript codebase you cannot rewrite, VelarScript replaces the source surface rather than adopting it a file at a time. And if your project's value is in ecosystem breadth, npm is reachable here through declared boundaries rather than by default, and that boundary is work you write.", "如果你需要十年的支持周期，这里还没有。如果你有一个大到不可能重写的 JavaScript 代码库，VelarScript 是替换源码那一层，而不是一个文件一个文件地渗进去。如果你的项目价值在生态广度上，npm 在这里是经由声明出来的边界够到的，不是默认就在那里，而那道边界是你要写的活。")}
+                        </Paragraph>
+                    </Callout>
+
+                    <SectionHeading id="good">{locale.text("What it is good at", "它擅长什么")}</SectionHeading>
+                    <BulletList>
+                        <li>
+                            {locale.text("One language for the whole application — markup, styling, state, tests, and the server side.", "一门语言覆盖整个应用——结构、样式、状态、测试，以及服务端。")}
+                        </li>
+                        <li>
+                            {locale.text("Surfaces others leave as strings are checked: Look property values, ARIA, DOM attributes.", "别处当字符串放过去的面，在这里受检：Look 属性取值、ARIA、DOM 属性。")}
+                        </li>
+                        <li>
+                            {locale.text("No dependency arrays. A reactive computation subscribes to the reads it performs while it runs, so dependencies are discovered rather than declared, and cannot be forgotten.", "没有依赖数组。一次响应式计算订阅的是它运行期间发生的读取，所以依赖是被发现的，不是被声明的，也就忘不掉。")}
+                        </li>
+                        <li>
+                            {locale.text("Diagnostics name the one current spelling, so a model self-corrects in a single round and a person learns the language from the compiler. This is measured by blind tests in which a model that has never seen VelarScript must produce working programs with no documentation.", "诊断会说出唯一的当前写法，于是模型一轮就能自行纠正，人也可以直接从编译器学这门语言。这一点由盲测来量：一个从没见过 VelarScript 的模型，在没有文档的情况下必须写出能跑的程序。")}
+                        </li>
+                        <li>
+                            {locale.text("Readable, source-mapped output, with no framework runtime in the browser beyond the explicit package.", "产物可读、带源码映射；除了显式引入的那个包，浏览器里没有额外的框架运行时。")}
+                        </li>
+                        <li>
+                            {locale.text("Extensions add syntax, which is what makes the language extensible rather than merely configurable.", "扩展加的是语法——这才叫可扩展，而不只是可配置。")}
+                        </li>
+                    </BulletList>
+
+                    <SectionHeading id="promises">{locale.text("What it promises", "它承诺什么")}</SectionHeading>
+                    <BulletList>
+                        <li>
+                            {locale.text("Every removed or mistaken spelling gets a diagnostic that names the one current spelling — never a silent alias, never permanent compatibility debt. velar fix applies the mechanical part, and only where the rewrite is provably equivalent.", "每一个被移除或写错的拼写，都会得到一条说出唯一当前写法的诊断——绝不做静默别名，也绝不留永久兼容债。纯机械的那部分由 velar fix 完成，而且只在改写可证明等价的地方做。")}
+                        </li>
+                        <li>
+                            {locale.text("No dead ends, in three exits, in order: the diagnostic teaches the fix; checked escape hatches reach JavaScript; and the last exit is the emitted JavaScript itself — if VelarScript becomes the obstacle, take the output and keep shipping without us.", "不留死路，三条出口，按顺序：诊断教你怎么改；受检的逃生通道通到 JavaScript；最后一条出口就是编译产物本身——如果 VelarScript 有一天成了阻碍，带着产物继续交付，不必带上我们。")}
+                        </li>
+                        <li>
+                            {locale.text("Traps are removed rather than documented.", "陷阱是拿掉，不是写进文档。")}
+                        </li>
+                        <li>
+                            {locale.text("The claims above are gates rather than prose: the anti-lock-in exit, the blind tests, and the language's own usage tour are all things CI can fail on.", "上面这些是门禁，不是文案：反锁定的那条出口、盲测，以及这门语言自己的用法巡览，都是 CI 会挂的东西。")}
+                        </li>
+                    </BulletList>
+                    <Paragraph>
+                        {locale.text("This site holds itself to the same rule. Every VelarScript block on it is compiled by the site's own gate before the page can be published, and the pages that print compiler output print what the compiler really said.", "本站对自己用的是同一条规矩。站上每一块 VelarScript 都要先过本站门禁的编译，页面才发得出去；而印着编译器输出的那些页面，印的是编译器真说过的话。")} <Link
+                            to="/evidence"
+                            look={linkLook}
+                        >
+                            {locale.text("The evidence page shows the artifacts.", "证据那一页把实物摆了出来。")}
+                        </Link>
+                    </Paragraph>
+
+                    <SectionHeading id="refuses">
+                        {locale.text("What it does not promise", "它不承诺什么")}
+                    </SectionHeading>
+                    <Paragraph>
+                        {locale.text("A positioning document that lists only promises is an advertisement. These are the refusals, and none of them is softened.", "一份只列承诺的定位文档是广告。下面是拒绝的部分，一条都不打折。")}
+                    </Paragraph>
+                    <BulletList>
+                        <li>
+                            {locale.text("Backward compatibility. Ever. This is the mechanism, not a caveat about immaturity: refusing the promise is what lets a friction be removed once it is found. You pin your toolchain version, and you migrate when you move it.", "向后兼容。永远不承诺。这是机制，不是「现在还不成熟」的免责声明：拒绝这个承诺，才有可能在发现摩擦之后真的把它拿掉。你固定工具链版本，等你要动它的时候再做迁移。")}
+                        </li>
+                        <li>
+                            {locale.text("A stable channel for long-lived products. That is a future milestone, to be earned by evidence rather than declared by a version number.", "面向长周期产品的稳定通道。那是将来的里程碑，要由证据赢得，不是靠版本号宣布。")}
+                        </li>
+                        <li>
+                            {locale.text("Ecosystem breadth by default. The npm ecosystem is reachable, through declared boundaries that cost you something to write.", "默认的生态广度。npm 生态够得着，但要经过你自己写的、有代价的声明边界。")}
+                        </li>
+                        <li>
+                            {locale.text("A new runtime. VelarScript keeps the JavaScript it stands on — objects, references, Promises, the event loop, the browser. It replaces the source surface, not the world.", "一套新的运行时。VelarScript 保留它脚下的 JavaScript——对象、引用、Promise、事件循环、浏览器。它换掉的是源码那一层，不是整个世界。")}
+                        </li>
+                        <li>
+                            {locale.text("That migration is free. It is not. The cost is real, and it is the price of being able to remove.", "迁移免费。它不免费。代价是真的，而这就是「能够拿掉」的价钱。")}
+                        </li>
+                    </BulletList>
+                    <Paragraph>
+                        {locale.text("The goal behind all five is one sentence: nobody using VelarScript should ever have to design a replacement for the reason its author designed this one.", "这五条背后是同一句话：用 VelarScript 的人，不该有一天出于它作者当初设计它的那个理由，去设计一门替代品。")}
+                    </Paragraph>
+                </Prose>
+            </Container>
+        </Section>
+    </main>
