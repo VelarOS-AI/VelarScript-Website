@@ -1,37 +1,46 @@
 import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, GateNote, MemberRow, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
+// The React, Vue and JSON blocks are third-party, so they are *JsCode and
+// *JsonCode and nothing here compiles them. Every VelarScript block is compiled
+// by this site's gate, and each quoted diagnostic is paired with the sample that
+// really produces it.
+const buildConfigJsonCode = `// tsconfig.json — three directories away from the file you are reading\n{\n  "compilerOptions": {\n    "jsx": "react-jsx"\n  },\n  "include": ["src"]\n}`
 const manifestJsonCode = `{\n  "formatVersion": 2,\n  "entry": "src/main.vel",\n  "outDir": "dist",\n  "extensions": ["@velarscript/web"]\n}`
+const reactRootJsCode = `// React 19.2\nimport { createRoot } from "react-dom/client";\n\n// The ! is you telling the type checker something it cannot know. Rename the\n// element in index.html and the assertion becomes a lie.\ncreateRoot(document.getElementById("root")!).render(<App />);`
 const entryAppCode = `import {rgb, spacing} from "velar/look"\n\ntype Task:\n    id: string\n    title: string\n    done: bool\n\nconst panelLook = look:\n    display = "grid"\n    gap = 8px\n    padding = spacing(16px, 20px)\n    color = rgb(24, 31, 46)\n\ncomponent TaskPanel(title: string):\n    state tasks: List<Task> = [{id: "read", title: "Read the chapter", done: false}]\n\n    const open = computed(() => tasks.filter(task => not task.done).size)\n\n    def complete():\n        tasks[0].done = true\n\n    return <section look={panelLook}>\n        <h1>{title}</h1>\n        <p>{f"{open()} of {tasks.size} open"}</p>\n        <button type="button" on:click={complete}>Complete the first task</button>\n    </section>\n\nmount(<TaskPanel title="Tasks" />, "#app")`
+const vueMacroJsCode = "<!-- Vue 3.5 -->\n<script setup>\n// No import above it. defineProps is a compiler macro: you cannot alias it,\n// pass it, or shadow it, and the file does not say which of its names work\n// that way.\nconst props = defineProps({ task: Object })\n</script>"
 const vocabularyCode = `import {after} from "velar/browser"\nimport {animate, rgb} from "velar/look"\n\ntype BadgeHandle:\n    refresh: () -> null\n\nconst spin = keyframes:\n    from:\n        rotate = 0deg\n    to:\n        rotate = 1turn\n\nconst badgeLook = look:\n    color = rgb(24, 31, 46)\n    padding = 8px\n    animation = animate(spin, 1s, easing="linear", loop=true)\n\nasync def loadLabel() -> string:\n    await Promise.sleep(10ms)\n    return "ready"\n\ncomponent Badge(title: string) exposes BadgeHandle:\n    state opened = false\n    resource label: string = loadLabel()\n    let stop: (() -> null)? = null\n\n    const heading = computed(() => f"{title}: {label.value ?? "loading"}")\n\n    watch opened:\n        print(f"opened is now {opened}")\n\n    action reload():\n        await label.reload()\n\n    def refresh():\n        async label.reload()\n\n    def open():\n        opened = true\n\n    @mounted:\n        stop = after(120ms, open)\n\n    @cleanup:\n        if stop != null:\n            stop()\n\n    expose {refresh}\n    return <button type="button" look={badgeLook} on:click={reload}>{heading()}</button>`
-const contextualCode = `// Each contextual keyword declares only in its own shape, so every one of them\n// is still an ordinary name in every other position.\nconst state = "ready"\nconst action = "save"\nconst look = "plain"\n\ncomponent Status:\n    state phase = state\n\n    def promote():\n        phase = action\n\n    return <p data-status={look} on:dblclick={promote}>{phase}</p>`
-const mountCode = `component Secondary:\n    return <p data-secondary>a second root</p>\n\n// mount(node, target) attaches one root and answers null. The target is a CSS\n// selector string or an element, and one component instance mounts exactly\n// once: a repeated mount fails explicitly rather than moving DOM silently.\nexport def mountSpellings(target: Element):\n    mount(<Secondary />, "#tour-secondary")\n    mount(<Secondary />, target)\n\n// The root is constructed synchronously, so a direct await inside the argument\n// is rejected. Module-level preload work is awaited into a binding first.\nexport async def mountAfterPreload() -> string:\n    await Promise.sleep(1ms)\n    const label = "preloaded"\n    mount(<Secondary />, "#tour-secondary")\n    return label`
+const contextualCode = `// state, action and look are ordinary constants here, and the same file still\n// declares a component state. A contextual keyword declares only in its own\n// shape; everywhere else it is a name like any other.\nconst state = "ready"\nconst action = "save"\nconst look = "plain"\n\ncomponent Status:\n    state phase = state\n\n    def promote():\n        phase = action\n\n    return <p data-status={look} on:dblclick={promote}>{phase}</p>`
+const mountCode = `component Secondary:\n    return <p data-secondary>a second root</p>\n\n// One root, attached by selector or by element. The same component instance\n// mounts exactly once: a repeated mount fails rather than moving DOM silently.\nexport def mountSpellings(target: Element):\n    mount(<Secondary />, "#tour-secondary")\n    mount(<Secondary />, target)\n\n// The root is constructed synchronously, so a direct await inside the argument\n// is rejected. Preload work is awaited into a binding first.\nexport async def mountAfterPreload() -> string:\n    await Promise.sleep(1ms)\n    const label = "preloaded"\n    mount(<Secondary />, "#tour-secondary")\n    return label`
 const reservedErrorCode = "component Panel:\n    const computed = 1\n    const tick = 2\n    return <p>{computed + tick}</p>"
 const reservedErrorOutput = "main.vel:2:11 error VEL3007: 'computed' is a reserved extension binding\n    const computed = 1\n          ^^^^^^^^\n\nmain.vel:3:11 error VEL3007: 'tick' is a reserved extension binding\n    const tick = 2\n          ^^^^"
+const wrappedFetchJsCode = "// The analytics agent, loaded by a script tag somebody added last quarter\nconst native = window.fetch;\nwindow.fetch = function (...args) {\n  const started = performance.now();\n  return native.apply(this, args).finally(() => report(performance.now() - started));\n};"
+const globalErrorCode = "// The habit from any JavaScript file: the capability is simply there, so the\n// source never says where it came from.\nexport def transport() -> unknown:\n    return fetch\n\nexport def clock() -> unknown:\n    return Date"
+const globalErrorOutput = "main.vel:4:12 error VEL3008: Use velar/http instead of the raw fetch global\n    return fetch\n           ^^^^^\n\nmain.vel:7:12 error VEL3008: Use velar/time instead of the Date global\n    return Date\n           ^^^^"
 
 const sections = [
-    {id: "activation", label: "Activation is declared", labelZh: "激活是声明出来的"},
+    {id: "activation", label: "Which files may contain UI", labelZh: "哪些文件可以写界面"},
     {id: "entry", label: "One entry, one root", labelZh: "一个入口，一个根"},
-    {id: "vocabulary", label: "What the extension owns", labelZh: "扩展拥有什么"},
-    {id: "reserved", label: "Six words a module refuses", labelZh: "模块拒绝的六个词"},
-    {id: "mount", label: "mount attaches one root", labelZh: "mount 挂载唯一的根"},
-    {id: "modules", label: "The module surface", labelZh: "模块表面"},
+    {id: "vocabulary", label: "The words the extension adds", labelZh: "扩展加进来的词"},
+    {id: "reserved", label: "The six words it takes", labelZh: "它占走的六个词"},
+    {id: "modules", label: "Capabilities arrive as modules", labelZh: "能力以模块的形式到达"},
 ]
 
 const moduleRows: List<MemberRow> = [
     {name: "velar/web", signature: "route, Router, Link, NavLink, lazy, navigate, currentRoute, Head, announce, domId", summary: "Routing, navigation, document metadata, and the live region.", summaryZh: "路由、导航、文档元数据与 live region。"},
-    {name: "velar/app", signature: "onError, reportError", summary: "The application error chain every managed failure reports through.", summaryZh: "每个受管失败都经由其上报的应用错误链。"},
-    {name: "velar/config", signature: "publicConfig, has, keys", summary: "The manifest's public configuration block, validated against a type.", summaryZh: "清单的公开配置块，按类型验证。"},
-    {name: "velar/look", signature: "border, rgb, spacing, tracks, animate, transition, and the rest", summary: "The visual builders and the published visual type names.", summaryZh: "视觉构建器与已发布的视觉类型名。"},
+    {name: "velar/app", signature: "onError, reportError", summary: "The application error chain every managed failure reports through.", summaryZh: "每个受管失败都从这里上报的应用错误链。"},
+    {name: "velar/config", signature: "publicConfig, has, keys", summary: "The manifest's public configuration block, validated against a type.", summaryZh: "清单里的公开配置块，按一个类型验证。"},
+    {name: "velar/look", signature: "border, rgb, spacing, tracks, animate, transition, and the rest", summary: "The visual builders and the published visual type names.", summaryZh: "视觉构建器，以及已发布的视觉类型名。"},
     {name: "velar/browser", signature: "after, every, focus, measure, environment, watchMedia, showDialog", summary: "Timers, environment reads, layout readouts, and element controls.", summaryZh: "定时器、环境读取、布局读数与元素控制。"},
-    {name: "velar/forms", signature: "read, values, textValue, setError, focusFirstError, setPending", summary: "Reading a native form and owning its accessible error surface.", summaryZh: "读取原生表单并拥有其无障碍错误表面。"},
+    {name: "velar/forms", signature: "read, values, textValue, setError, focusFirstError, setPending", summary: "Reading a native form and owning its accessible error surface.", summaryZh: "读取原生表单，并拥有它的无障碍错误表面。"},
     {name: "velar/files", signature: "pick, readText, readDataUrl, download", summary: "The file picker, bounded reads, and text downloads.", summaryZh: "文件选择器、有界读取与文本下载。"},
-    {name: "velar/http", signature: "http, formBody, HttpError, HttpTransportError, HttpAbortError", summary: "Lazy requests, multipart bodies, and the discriminated failure classes.", summaryZh: "惰性请求、multipart 请求体，以及被区分的失败类。"},
+    {name: "velar/http", signature: "http, formBody, HttpError, HttpTransportError, HttpAbortError", summary: "Lazy requests, multipart bodies, and the discriminated failure classes.", summaryZh: "惰性请求、multipart 请求体，以及被区分开的失败类。"},
     {name: "velar/storage", signature: "storage, session, database", summary: "Typed local, session, and IndexedDB stores.", summaryZh: "带类型的 local、session 与 IndexedDB 存储。"},
-    {name: "velar/realtime", signature: "socket, eventStream", summary: "Text WebSockets and server-sent events as owned handles.", summaryZh: "作为受拥有句柄的文本 WebSocket 与服务器推送事件。"},
-    {name: "velar/web-test", signature: "browser, localStorage, sessionStorage, network", summary: "The browser-test controllers, available only under velar test --browser.", summaryZh: "浏览器测试控制器，仅在 velar test --browser 下可用。"},
+    {name: "velar/realtime", signature: "socket, eventStream", summary: "Text WebSockets and server-sent events as owned handles.", summaryZh: "文本 WebSocket 与服务器推送事件，都是受拥有的句柄。"},
+    {name: "velar/web-test", signature: "browser, localStorage, sessionStorage, network", summary: "The browser-test controllers, available only under velar test --browser.", summaryZh: "浏览器测试控制器，只在 velar test --browser 下可用。"},
 ]
 
 export component WebOverview:
@@ -39,96 +48,148 @@ export component WebOverview:
     return <main>
         <Head
             title={headTitle("/guide/web", locale.isChinese())}
-            description={locale.text("Activating @velarscript/web in velar.json, the vocabulary the extension adds, and how one root is mounted.", "在 velar.json 中激活 @velarscript/web、扩展加入的词汇表，以及如何挂载唯一的根。")}
+            description={locale.text("Why activation is declared in the manifest rather than inferred from a build config, which words the extension adds, and what mount attaches.", "为什么激活写在清单里、而不是从构建配置推断出来，扩展加进来哪些词，以及 mount 挂载了什么。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Web extension / 01", "Web 扩展 / 01")}
                 title={locale.text("Activating the extension", "激活扩展")}
-                summary={locale.text("How an extension is activated, which words it owns, and what mount attaches.", "扩展如何激活、它拥有哪些词，以及 mount 挂载了什么。")}
+                summary={locale.text("One line in the manifest decides whether a project has components at all. This chapter covers what that line turns on, what it costs, and the six words it takes.", "清单里的一行，决定这个项目有没有组件。这一章讲这行开了什么、代价是什么，以及它占走的六个词。")}
             />
             <SectionList items={sections} />
             <Prose>
-                <SectionHeading id="activation">{locale.text("Activation is declared", "激活是声明出来的")}</SectionHeading>
+                <SectionHeading id="activation">
+                    {locale.text("Which files may contain UI", "哪些文件可以写界面")}
+                </SectionHeading>
                 <Paragraph>
-                    {locale.text("The language core contains no JSX, no components, no reactivity, and no styling. A project that wants them lists @velarscript/web in velar.json, and only then do those words exist in its modules. A module in a project without the extension is checked as ordinary Core, where component and look are unremarkable identifiers.", "语言核心不包含 JSX、组件、响应式与样式。需要它们的项目在 velar.json 中列出 @velarscript/web，此后这些词才在其模块中存在。未启用扩展的项目里，模块按普通 Core 受检，component 与 look 只是平常的标识符。")}
+                    {locale.text("You open somebody's date-formatting module and want to know one thing: is this file allowed to contain a component? The file does not say. The answer is in a build configuration three directories away, it covers everything under src, and it has no opinion about which of those files are UI and which are plain data.", "你打开别人写的一个日期格式化模块，只想知道一件事：这个文件能不能写组件？文件本身没说。答案在三层目录之外的一份构建配置里，它覆盖 src 下面的一切，而且对「哪些是界面、哪些是纯数据」没有任何看法。")}
+                </Paragraph>
+                <CodeBlock code={buildConfigJsonCode} />
+                <Paragraph>
+                    {locale.text("So a shared package grows a component the day someone needs one, and nobody has to decide anything. Here the decision is one line, and it is in the file a reader already opens first.", "于是某天有人需要一个组件，共享包里就长出来一个，谁都不必拍板。在这里，这个决定就是一行，而且写在读者本来就会先打开的那个文件里。")}
                 </Paragraph>
                 <CodeBlock code={manifestJsonCode} />
+                <Paragraph>
+                    {locale.text("The compiler reads that list before it reads a module, so the project decides the grammar rather than the file. Take the line out and every module is checked as ordinary Core: component and look are unremarkable identifiers, a less-than sign is a comparison, and 12px is a syntax error. A library that activates nothing cannot pick up a framework by accident, because there is nothing to pick up.", "编译器先读这份列表，再读模块，所以决定语法的是项目，不是文件。把这一行去掉，每个模块都按普通 Core 受检：component 和 look 只是平常的标识符，小于号就是比较，12px 是语法错误。一个什么都不激活的库，也就不可能顺手沾上一个框架——根本没有东西可沾。")}
+                </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("extensions is a list, so a project may activate more than one extension.", "extensions 是一个列表，因此一个项目可以激活多个扩展。")}
+                        {locale.text("extensions is a list, so a project may activate more than one. The Desktop extension composes the Web one.", "extensions 是列表，所以一个项目可以激活不止一个。桌面扩展组合了 Web 扩展。")}
                     </li>
                     <li>
-                        {locale.text("entry names the one module the compiler starts from; a .vel file the entry cannot reach is not checked.", "entry 命名编译器的起点模块；入口无法到达的 .vel 文件不参与检查。")}
+                        {locale.text("entry names the one module the compiler starts from. A .vel file the entry cannot reach is not checked at all.", "entry 指定编译器的起点模块。入口到不了的 .vel 文件根本不参与检查。")}
                     </li>
                     <li>
-                        {locale.text("The same manifest carries the web block that velar/config reads and the build settings the CLI uses.", "同一份清单还携带 velar/config 读取的 web 块与 CLI 使用的构建设置。")}
+                        {locale.text("The same manifest carries the web block velar/config reads and the build settings the CLI uses, so there is one file to look in.", "同一份清单还带着 velar/config 要读的 web 块，以及 CLI 用的构建设置——要看的文件只有一个。")}
                     </li>
                 </BulletList>
+                <Paragraph>
+                    {locale.text("The cost is that the target is decided up front and cannot be softened later. Activation is per project, not per directory: a repository that wants a Core library beside a Web application needs two projects. And a module that reached for anything on the extension's list is a real port when it moves into a Core package — the compiler will not paper over the difference, which is the same rigidity that makes the boundary worth anything.", "代价是目标要在一开始就定下来，之后没法含糊。激活是按项目的，不是按目录的：想在一个仓库里同时放一个 Core 库和一个 Web 应用，就要两个项目。而一个用过扩展清单里任何东西的模块，搬进 Core 包时是一次真正的移植——编译器不会替你把差别糊过去。让这条边界有意义的，正是这份不好商量。")}
+                </Paragraph>
 
                 <SectionHeading id="entry">{locale.text("One entry, one root", "一个入口，一个根")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A Web application is an ordinary module graph whose entry ends with a mount call. Nothing about the file is special: the type, the Look, the component, and the state below are the same declarations any other module writes.", "Web 应用是一张普通的模块图，其入口以一次 mount 调用结束。这个文件本身没有任何特殊之处：下面的类型、Look、组件与状态，与其他模块写的是同样的声明。")}
+                    {locale.text("Almost every React application starts with this line, and almost every one of them has the exclamation mark in it.", "几乎每个 React 应用都从这一行开始，而且几乎每一个都带着那个感叹号。")}
+                </Paragraph>
+                <CodeBlock code={reactRootJsCode} />
+                <Paragraph>
+                    {locale.text("Rename that element in index.html and the assertion becomes false. createRoot receives null, throws, and what a visitor sees is a white page — the stack is in a console they will never open. The failure is real and the report is somewhere else.", "把 index.html 里那个元素改个名，这句断言就不成立了。createRoot 收到 null，抛出异常，访客看到的是一片白——报错在控制台里，而他们永远不会打开控制台。失败是真的，报告却在别处。")}
                 </Paragraph>
                 <CodeBlock code={entryAppCode} />
-
-                <SectionHeading id="vocabulary">{locale.text("What the extension owns", "扩展拥有什么")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("The charter names the complete addition: ten contextual keywords, two lifecycle hooks, three reserved global functions, the unsafe CSS import, and the unit literals. Nothing else in a Web module is new syntax, so everything not on that list is Core and behaves exactly as the language chapters describe it.", "典章列出了完整的增补：十个上下文关键字、两个生命周期钩子、三个保留的全局函数、unsafe CSS 导入，以及单位字面量。Web 模块中再没有别的新语法，因此不在这份清单上的一切都属于 Core，行为与语言各章所述完全一致。")}
+                    {locale.text("mount attaches one root and answers null; the target is a selector string or an element. What makes the missing-target case different here is that mounting is a transaction the runtime owns. A failure during the initial render is reported through the mount phase, and an accessible fatal state is rendered into the document body — which is the right place for it, because the target that would have held it is exactly what is absent.", "mount 挂载一个根，返回 null；target 是选择器字符串或者一个元素。这里「目标不存在」之所以不一样，是因为挂载是运行时拥有的一次事务。首次渲染失败会经由 mount 阶段上报，并把一个可访问的致命状态渲染进 document body——放在那里是对的，因为本该容纳它的那个目标恰好就是缺的那个。")}
+                </Paragraph>
+                <CodeBlock code={mountCode} />
+                <Paragraph>
+                    {locale.text("The cost lands on the shape of the entry. The root is constructed synchronously so the runtime can own that transaction, which means a direct await inside the mount argument is rejected: preload work is awaited into a binding first, and only then does the root go up. One component instance mounts exactly once, so a second mount of the same instance fails explicitly rather than moving DOM. Neither restriction is negotiable at the call site.", "代价落在入口的形状上。根是同步构造的，运行时才能拥有那次事务，因此 mount 的参数里直接写 await 会被拒绝：预加载先 await 进一个绑定，然后根才立起来。同一个组件实例只挂载一次，重复挂载会显式失败，而不是把 DOM 搬走。这两条在调用处都没得商量。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: the block above is compiled as a complete web application entry by scripts/check-code-samples.mjs, not quoted from memory. So is every other VelarScript block on this page.", "门禁：上面那一块由 scripts/check-code-samples.mjs 当作完整的 Web 应用入口编译，不是凭记忆抄的。本页其余每个 VelarScript 块也一样。")}
+                </GateNote>
+
+                <SectionHeading id="vocabulary">
+                    {locale.text("The words the extension adds", "扩展加进来的词")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("Here is a Vue single-file component, opened cold.", "下面是一个 Vue 单文件组件，冷启动打开。")}
+                </Paragraph>
+                <CodeBlock code={vueMacroJsCode} />
+                <Paragraph>
+                    {locale.text("defineProps has no import above it, and there is no import that would work. It is a compiler macro: it exists only inside script setup, it is compiled away, and it is not a function you can alias or pass along. Vue's documentation says so plainly, and the point is not that Vue is wrong — it is that the file cannot tell you which of its names behave that way. You find out from the documentation, or by breaking something.", "defineProps 上面没有 import，而且也没有哪个 import 写得出来。它是编译宏：只在 script setup 里存在，编译时被消掉，也不是一个能起别名、能传来传去的函数。Vue 自己的文档就是这么写的。问题不在 Vue 做错了什么，而在于：这个文件没法告诉你，它的名字里哪些是这种东西。你要么去查文档，要么把它弄坏一次才知道。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("VelarScript's answer is a closed list, published in the charter: ten contextual keywords, two lifecycle hooks, three reserved globals, the unsafe CSS import, and the unit literals. Everything not on that list is Core and behaves exactly as the language chapters describe it. The sample below spends the whole list at once.", "VelarScript 的答案是一份封闭清单，写在典章里：十个上下文关键字、两个生命周期钩子、三个保留全局、unsafe CSS 导入，以及单位字面量。不在清单上的一切都属于 Core，行为和语言各章讲的完全一样。下面这个样本把整份清单一次用掉。")}
                 </Paragraph>
                 <CodeBlock code={vocabularyCode} />
                 <BulletList>
                     <li>
-                        {locale.text("The contextual keywords are component with exposes and expose, state, resource, action, watch, look, keyframes, and css in the unsafe stylesheet import.", "上下文关键字是：带 exposes 与 expose 的 component、state、resource、action、watch、look、keyframes，以及 unsafe 样式表导入中的 css。")}
+                        {locale.text("The contextual keywords are component with exposes and expose, state, resource, action, watch, look, keyframes, and css in the unsafe stylesheet import.", "上下文关键字是：带 exposes 与 expose 的 component、state、resource、action、watch、look、keyframes，还有 unsafe 样式表导入里的 css。")}
                     </li>
                     <li>
-                        {locale.text("The two lifecycle hooks are @mounted and @cleanup, written as siblings inside a component.", "两个生命周期钩子是 @mounted 与 @cleanup，作为兄弟块写在组件内部。")}
+                        {locale.text("The two lifecycle hooks are @mounted and @cleanup, written as siblings inside a component.", "两个生命周期钩子是 @mounted 与 @cleanup，作为兄弟块写在组件里。")}
                     </li>
                     <li>
-                        {locale.text("JSX itself, including fragments and the host marker, is part of the grammar rather than a preprocessor step.", "JSX 本身——包括 fragment 与 host 标记——属于语法，而不是预处理步骤。")}
+                        {locale.text("JSX itself, fragments and the host marker included, is part of the grammar rather than a preprocessor step.", "JSX 本身——连同 fragment 与 host 标记——属于语法，不是预处理步骤。")}
                     </li>
                 </BulletList>
                 <Paragraph>
-                    {locale.text("A contextual keyword declares only in its own shape, so it stays available as an ordinary name everywhere else. This module binds state, action, and look as constants and still declares component state in the same file.", "上下文关键字只在自己的形状中起声明作用，因此在其他位置它仍然是可用的普通名字。下面这个模块把 state、action 与 look 绑定为常量，同一个文件里仍然声明了组件 state。")}
+                    {locale.text("A contextual keyword declares only in its own shape, so it stays an ordinary name everywhere else. The module below binds state, action and look as constants and still declares a component state in the same file.", "上下文关键字只在自己的形状里起声明作用，别的位置它就是个普通名字。下面这个模块把 state、action、look 绑成常量，同一个文件里照样声明了组件的 state。")}
                 </Paragraph>
                 <CodeBlock code={contextualCode} />
-
-                <SectionHeading id="reserved">{locale.text("Six words a module refuses", "模块拒绝的六个词")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Three reserved globals — computed, mount, and tick — are real runtime entry points, and the three media subjects — viewport, scheme, and motion — are read by Look conditions. A Web module refuses all six as binding names, and those six words are the whole difference between what a Core module accepts and what a Web module accepts.", "三个保留全局——computed、mount 与 tick——是真实的运行时入口，三个媒体主语——viewport、scheme 与 motion——由 Look 条件读取。Web 模块拒绝把这六个词用作绑定名；这六个词就是 Core 模块与 Web 模块在可接受范围上的全部差别。")}
+                    {locale.text("The cost is that JSX is grammar, not a transform. A tool that wants to read a VelarScript template cannot borrow a JavaScript parser and get most of the way there, and there is no preprocessing seam to insert your own syntax into. The closed list is also a list you have to learn: reading a Web module means knowing which ten words change meaning at the head of a declaration. That is a smaller bill than the alternative, but it is not zero.", "代价是 JSX 属于语法，不是一次转换。想读 VelarScript 模板的工具，没法借一个 JavaScript 解析器蒙混过关；也没有预处理的缝隙可以插进自己的语法。封闭清单同时也是一份要背的清单：读 Web 模块，就得知道哪十个词在声明开头会换一层意思。这笔账比另一条路小，但不是零。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: the block above compiles. state, action and look are ordinary constants in it, in the same file that declares a component state — which is what makes them contextual keywords rather than reserved words.", "门禁：上面那一块能编译。state、action、look 在里面是普通常量，而同一个文件里还声明了组件 state——这就是「上下文关键字」而不是「保留字」的意思。")}
+                </GateNote>
+
+                <SectionHeading id="reserved">{locale.text("The six words it takes", "它占走的六个词")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("Plenty of callback-era JavaScript had a variable named await. When modules made await a keyword everywhere in module code, those files stopped being portable — not because they used async functions, but because the word was taken. That is the standing bill for a reserved word: it is taken in every file, whether or not the file uses the feature.", "回调时代的 JavaScript 里，有不少代码用 await 当变量名。等到模块把 await 在模块代码中处处变成关键字，那些文件就搬不动了——不是因为它们用了 async 函数，只是因为这个词被占走了。保留字的长期账单就是这样：每个文件里都被占走，不管这个文件用不用那个特性。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("A Web module refuses six names, and six is the whole difference between what Core accepts and what Web accepts. Three of them — computed, mount and tick — are real runtime entry points. The other three — viewport, scheme and motion — are the subjects a Look condition reads.", "Web 模块拒绝六个名字，而这六个就是 Core 与 Web 在「能写什么」上的全部差别。其中三个——computed、mount、tick——是真实的运行时入口。另外三个——viewport、scheme、motion——是 Look 条件读的主语。")}
                 </Paragraph>
                 <CodeBlock code={reservedErrorCode} />
+                <Paragraph>{locale.text("velar check answers:", "velar check 的回答：")}</Paragraph>
                 <CodeBlock code={reservedErrorOutput} />
-
-                <SectionHeading id="mount">{locale.text("mount attaches one root", "mount 挂载唯一的根")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("mount(node, target) attaches one root to the document and answers null. The target is a CSS selector string or an element. The root is constructed synchronously so the runtime can own its failure transaction, which is why a direct await inside the argument is rejected and preload work is awaited into a binding first.", "mount(node, target) 把一个根挂载到文档并返回 null。target 是 CSS 选择器字符串或一个元素。根是同步构造的，运行时才能拥有它的失败事务，因此参数中直接写 await 会被拒绝，预加载工作要先 await 进一个绑定。")}
+                    {locale.text("The cost is six names you cannot use, in every Web module, including one that never renders anything. computed and tick are the two that sting, because both are perfectly ordinary words for an application to want. The trade is that they are the only six, and the list does not grow quietly: adding one is a language decision, not a release note.", "代价是六个名字不能用，每个 Web 模块里都不能用，哪怕这个模块从不渲染任何东西。真正扎人的是 computed 和 tick，因为应用想用这两个词太正常了。换回来的是：只有这六个，而且这份清单不会悄悄变长——加一个是一次语言裁决，不是发行说明里的一行。")}
                 </Paragraph>
-                <CodeBlock code={mountCode} />
-                <BulletList>
-                    <li>
-                        {locale.text("One component instance mounts exactly once; a repeated mount fails explicitly rather than moving DOM silently.", "同一个组件实例只挂载一次；重复挂载会显式失败，而不是静默地搬运 DOM。")}
-                    </li>
-                    <li>
-                        {locale.text("Root mounting is lazy: if the initial render fails, the application receives the report and an accessible fatal state is rendered instead of a blank page.", "根挂载是惰性的：若首次渲染失败，应用会收到报告，并渲染一个可访问的致命状态，而不是空白页。")}
-                    </li>
-                    <li>
-                        {locale.text("A missing mount target reports through the mount phase and renders that fatal state into the document body, since the requested target is exactly what is absent.", "缺失的 mount 目标经由 mount 阶段上报，并把该致命状态渲染进文档 body，因为缺的恰好就是被请求的目标。")}
-                    </li>
-                </BulletList>
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example. The site's build compiles the sample and fails if it ever stops producing a diagnostic, and it verifies that VEL3007 is a code the sample really produces.", "门禁：一个受检的教学反例。本站构建会编译这个样本，一旦它不再报错就让构建失败；并且核对 VEL3007 确实是这个样本产生的诊断码。")}
+                </GateNote>
 
-                <SectionHeading id="modules">{locale.text("The module surface", "模块表面")}</SectionHeading>
+                <SectionHeading id="modules">
+                    {locale.text("Capabilities arrive as modules", "能力以模块的形式到达")}
+                </SectionHeading>
                 <Paragraph>
-                    {locale.text("Browser capabilities arrive as explicit modules rather than ambient globals. Direct source-level use of console, document, window, navigator, location, history, fetch, JSON, Math, or Date is reported as VEL3008, and the diagnostic names the official module to import instead. Each official module captures the host objects it needs when it initializes, so JavaScript loaded later cannot redirect an official operation.", "浏览器能力以显式模块而不是环境全局的形式出现。在源码层面直接使用 console、document、window、navigator、location、history、fetch、JSON、Math 或 Date 会得到 VEL3008，诊断会指出应改为导入哪个官方模块。每个官方模块在初始化时捕获它需要的宿主对象，因此稍后加载的 JavaScript 无法改道一次官方操作。")}
+                    {locale.text("Somebody added an analytics script tag last quarter. This is roughly what it does, and it is how most of them measure requests.", "上个季度有人加了一个分析脚本的 script 标签。它大致做的是下面这件事，多数这类工具就是这么量请求的。")}
+                </Paragraph>
+                <CodeBlock code={wrappedFetchJsCode} />
+                <Paragraph>
+                    {locale.text("Your retry logic now runs inside somebody else's function. Nothing in your source says so, because your source only ever said fetch — an ambient global, resolved at call time, replaceable by anything that loaded before you.", "你的重试逻辑现在跑在别人的函数里面。你的源码里没有一处写着这件事，因为你的源码从头到尾只写了 fetch——一个环境全局，调用时才解析，谁比你先加载谁就能把它换掉。")}
+                </Paragraph>
+                <CodeBlock code={globalErrorCode} />
+                <Paragraph>{locale.text("velar check answers:", "velar check 的回答：")}</Paragraph>
+                <CodeBlock code={globalErrorOutput} />
+                <Paragraph>
+                    {locale.text("Browser capabilities arrive as explicit modules, and the diagnostic names the one to import. The mechanism underneath is not the diagnostic though: each official module captures the host objects it needs when it initializes, so JavaScript that loads later cannot redirect an official operation. The import line is not documentation of where the capability came from — it is the reason a later script cannot change the answer.", "浏览器能力以显式模块的形式到达，诊断会点名该导入哪一个。不过底下的机制不是这条诊断：每个官方模块在初始化时就把它需要的宿主对象抓在手里，所以之后加载的 JavaScript 改不了一次官方操作的去向。那行 import 不只是「这个能力从哪来」的说明——它就是后来的脚本改不了答案的原因。")}
                 </Paragraph>
                 <MemberTable
                     rows={moduleRows}
                     caption={locale.text("The modules the Web extension publishes", "Web 扩展发布的模块")}
                 />
-                <Callout title={locale.text("Where the Core language stops", "Core 语言在哪里结束")}>
+                <Paragraph>
+                    {locale.text("The cost is that a JavaScript answer copied from a tutorial does not compile as it stands, and the surface is a published list rather than whatever the browser happens to expose. A capability with no module on that list is reached through the escape hatch — an extern module declaration, which is checked — and not by reaching for the global anyway. That is deliberate, and it is also the boundary where this language gives you the least room.", "代价是从教程里抄来的 JavaScript 答案不能直接编译，而且这个表面是一份已发布的清单，不是浏览器碰巧暴露了什么就有什么。清单上没有模块的能力，要走逃生通道——写一份 extern module 声明，那是受检的——而不是绕回去用全局。这是故意的，也是这门语言留给你余地最少的一条边界。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: another checked counter-example, and VEL3008 is verified against what the sample really produces. The velar/time it names is a Core module — reaching for Date is not a Web-only mistake.", "门禁：又一个受检的教学反例，VEL3008 也核对过确实是这个样本产生的。它点名的 velar/time 是 Core 模块——伸手去拿 Date 并不是 Web 才会犯的错。")}
+                </GateNote>
+                <Callout title={locale.text("Where the Core language stops", "Core 语言到哪里为止")}>
                     <Paragraph>
-                        {locale.text("Everything in the language chapters keeps working inside a Web module: the same types, the same collections, the same control flow, the same error rules. Reading a Web chapter is therefore reading an addition, never a replacement.", "语言各章的一切在 Web 模块中照常有效：同样的类型、同样的集合、同样的控制流、同样的错误规则。因此读 Web 章节读到的始终是增补，而不是替换。")}
+                        {locale.text("Everything in the language chapters keeps working inside a Web module: the same types, the same collections, the same control flow, the same error rules. Reading a Web chapter is reading an addition, never a replacement.", "语言各章讲的一切，在 Web 模块里照样有效：同样的类型、同样的集合、同样的控制流、同样的错误规则。读 Web 章节，读到的始终是增补，不是替换。")}
                     </Paragraph>
                 </Callout>
             </Prose>

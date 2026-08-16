@@ -73,13 +73,17 @@ test "a language chapter carries its sections, its samples, and its pager":
 // surface reads nodes rather than computed style, so the gap itself cannot be
 // asserted from here.
 test "every block a chapter lays out comes from the prose vocabulary":
-    for path in ["/guide", "/guide/quick-start", "/guide/for-javascript", "/guide/language/operators", "/guide/web/templates", "/reference/cli", "/guide/for-frameworks"]:
+    // /examples and /evidence are in this list because the rule is site-wide, not
+    // chapter-wide. /examples is also the one page that lays out a deliberate
+    // non-prose structure inside Prose — a grid of example cards — so the list
+    // assertion excludes it by class rather than by leaving the page unchecked.
+    for path in ["/guide", "/guide/quick-start", "/guide/for-javascript", "/guide/language/operators", "/guide/web/templates", "/reference/cli", "/guide/for-frameworks", "/examples", "/evidence"]:
         await browser.open(path)
         await browser.waitFor(".velar-docs-prose")
         expect(await browser.count(".velar-docs-prose > p:not(.velar-docs-paragraph)")).toBe(0)
         expect(await browser.count(".velar-docs-prose > h2:not(.velar-docs-heading)")).toBe(0)
         expect(await browser.count(".velar-docs-prose > h3:not(.velar-docs-subheading)")).toBe(0)
-        expect(await browser.count(".velar-docs-prose > ul:not(.velar-docs-points)")).toBe(0)
+        expect(await browser.count(".velar-docs-prose > ul:not(.velar-docs-points):not(.velar-docs-cards)")).toBe(0)
         expect(await browser.count(".velar-docs-prose > .velar-docs-paragraph") >= 5).toBeTruthy()
         expect(await browser.count(".velar-docs-prose > .velar-docs-heading") >= 4).toBeTruthy()
 
@@ -102,6 +106,43 @@ test "the introduction gives the built-in skill brief a section of its own":
     expect(await browser.count("#skill")).toBe(1)
     expect(await browser.count(".velar-docs-prose > .velar-docs-heading")).toBe(6)
     expect(await browser.count(".velar-docs-prose > .velar-docs-gate-note")).toBe(3)
+
+// D66 ruling 5A: every Web chapter is written to the same skeleton, and the
+// fifth step of it is evidence. A chapter that loses the note naming its gate
+// is back to asserting things nobody checks, so the note's presence is what
+// this loop refuses to lose — together with the vocabulary rule from ruling 2,
+// which these thirteen pages were rewritten under.
+test "every Web chapter keeps the owned vocabulary and names at least one gate":
+    for path in ["/guide/web", "/guide/web/components", "/guide/web/templates", "/guide/web/state", "/guide/web/resources", "/guide/web/lifecycle", "/guide/web/look", "/guide/web/motion", "/guide/web/beyond-look", "/guide/web/routing", "/guide/web/browser", "/guide/web/data", "/guide/web/testing"]:
+        await browser.open(path)
+        await browser.waitFor(".velar-docs-prose")
+        expect(await browser.count(".velar-docs-prose > p:not(.velar-docs-paragraph)")).toBe(0)
+        expect(await browser.count(".velar-docs-prose > h2:not(.velar-docs-heading)")).toBe(0)
+        expect(await browser.count(".velar-docs-prose > ul:not(.velar-docs-points)")).toBe(0)
+        expect(await browser.count(".velar-docs-prose > .velar-docs-heading") >= 4).toBeTruthy()
+        expect(await browser.count(".velar-docs-prose > .velar-docs-gate-note") >= 1).toBeTruthy()
+
+// D66 ruling 5B item 4: the test seams the Web extension owns — tick(), an
+// action's own pending flag, and a subscription's own stop function — lived
+// only on the framework-comparison page, and left the site when that page was
+// rewritten. The testing chapter is where they belong, so the section's absence
+// has to fail rather than merely read worse.
+test "the testing chapter carries the seams the extension owns":
+    await browser.open("/guide/web/testing")
+    await browser.waitFor(".velar-docs-prose")
+    expect(await browser.count("#seams")).toBe(1)
+    expect(await browser.count("#warnings")).toBe(1)
+    expect(await browser.count(".velar-docs-prose > .velar-docs-heading")).toBe(5)
+    expect(await browser.count(".velar-docs-prose > .velar-docs-gate-note")).toBe(2)
+
+// The tracking trap is the sharpest teaching case for how reads are subscribed,
+// and it was a live bug in this site's own sidebar before it was a chapter
+// section. It opens the state chapter for that reason, so its id is pinned.
+test "the state chapter opens on where the read happens":
+    await browser.open("/guide/web/state")
+    await browser.waitFor(".velar-docs-prose")
+    expect(await browser.count("#tracking")).toBe(1)
+    expect(await browser.text(".velar-docs-prose > .velar-docs-heading:first-of-type")).toBe("Where the read happens")
 
 test "the reference CLI page renders its command tables":
     await browser.open("/reference/cli")

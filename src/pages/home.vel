@@ -193,7 +193,7 @@ export component Home:
     return <main>
         <Head
             title={headTitle("/", locale.isChinese())}
-            description={locale.text("VelarScript is an application language that compiles to JavaScript: a Python-shaped writing surface over JavaScript's runtime semantics, with the Web as an official extension.", "VelarScript 是一门编译到 JavaScript 的应用语言：以 Python 的书写表面承载 JavaScript 的运行时语义，Web 是它的官方扩展。")}
+            description={locale.text("VelarScript is an application language that compiles to JavaScript: a Python-shaped writing surface over JavaScript's runtime semantics, with the Web as an official extension.", "VelarScript 是一门编译到 JavaScript 的应用语言：写起来是 Python，跑起来是 JavaScript。Web 是它的官方扩展。")}
             themeColor="#f7f5f0"
         />
 
@@ -202,7 +202,7 @@ export component Home:
                 <Eyebrow label={locale.text("Language and official Web extension", "语言与官方 Web 扩展")} />
                 <h1 look={openingTitleLook}>VelarScript</h1>
                 <p class="definition" look={definitionLook}>
-                    {locale.text("An application language that compiles to JavaScript: Python's writing surface over JavaScript's runtime semantics. The language core stands on its own, and the Web is an official extension a project activates.", "一门编译到 JavaScript 的应用语言：以 Python 的书写表面，承载 JavaScript 的运行时语义。语言核心独立成立，Web 是项目按需激活的官方扩展。")}
+                    {locale.text("An application language that compiles to JavaScript: Python's writing surface over JavaScript's runtime semantics. The language core stands on its own, and the Web is an official extension a project activates.", "一门编译到 JavaScript 的应用语言：写起来是 Python，跑起来是 JavaScript。语言核心自己就能立住；Web 是官方扩展，项目要用的时候才激活。")}
                 </p>
                 <p look={missionLook}>
                     {locale.text("It is designed for code that a model writes and a person owns: the reader has to be able to check what the code does, and the compiler has to say so when it cannot.", "它为「模型书写、人来拥有」的代码而设计：读者必须能够核验代码在做什么，而当编译器无法确认时，它必须说出来。")}

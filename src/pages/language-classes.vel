@@ -1,15 +1,31 @@
 import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
+import {Callout, CodeBlock, DocsPager, DocsShell, GateNote, PageHeader, Paragraph, Prose, SectionHeading, SectionList, Subheading} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
+const sessionJsCode = "// JavaScript — the whole class, exactly as written\nclass Session {\n  constructor(id) {\n    this.id = id;\n  }\n\n  close() {\n    this.active = false;\n    this.closedAt = Date.now();\n  }\n}"
 const shapeCode = `class Session:\n    let active: bool = true\n\n    constructor(const id: string):\n        pass\n\n    get label() -> string:\n        return self.active ? self.id : f"{self.id} (closed)"\n\n    def close():\n        self.active = false\n\n// Instances are called directly.\nconst session = Session("session-1")\nconst label = session.label\n\n// A class name is not a value: wrap the construction in an arrow to pass a\n// factory around.\nconst openSession = () => Session("session-2")\n\n// Reading a method as a value evaluates the receiver once and binds it there.\nconst closeSession = session.close`
+const fieldErrorCode = "class Session:\n    let closedAt: string\n\n    constructor(const id: string):\n        pass"
+const fieldErrorOutput = "main.vel:2:5 error VEL4001: Field 'closedAt' requires an initializer or one direct 'self.closedAt = ...' constructor assignment\n    let closedAt: string\n    ^^^^^^^^^^^^^^^^^^^^"
 const newErrorCode = `class Session:\n    constructor(const id: string):\n        pass\n\nconst session = new Session("session-1")`
 const newErrorOutput = `main.vel:5:17 error VEL1005: Call a class directly; VelarScript does not expose 'new'\nconst session = new Session("session-1")\n                ^^^`
+const underscoreJsCode = "// JavaScript — private by convention\nclass Connection {\n  constructor(host) {\n    this.host = host;\n    this._token = null;\n  }\n}\n\n// The underscore is the entire enforcement mechanism."
 const membersCode = `type Options:\n    retries: number\n\nclass Connection:\n    // Fields are const or let and require a type; an initializer is optional.\n    const protocol: string = "https"\n    let attempts: number = 0\n    let lastError: string?\n    private let secret: string\n\n    // A parameter prefixed with const, let, or private declares a field and\n    // initializes it from that argument.\n    constructor(const host: string, let port: number, private const token: string, options: Options):\n        // A required body field is initialized through one direct assignment.\n        self.secret = f"{options.retries}"\n        self.lastError = null\n\n    get address() -> string:\n        return f"{self.protocol}://{self.host}:{self.port}"\n\n    def rotate(token: string):\n        self.attempts += 1\n\n    // A method may declare type parameters.\n    def tagged<T>(value: T) -> T:\n        return value\n\n    // static declares class-owned fields and methods.\n    static const scheme: string = "wss"\n\n    static def describe() -> string:\n        return f"connections speak {Connection.scheme}"\n\nconst connection = Connection("example.test", 443, "t-1", {retries: 3})\nconst address = connection.address\nconst socketScheme = Connection.scheme\nconst described = Connection.describe()`
+const privateErrorCode = `class Vault:\n    private let secret: string = "s"\n\nconst vault = Vault()\nconst leaked = vault.secret`
+const privateErrorOutput = "main.vel:5:16 error VEL4001: Member 'secret' is private to class 'Vault'\nconst leaked = vault.secret\n               ^^^^^^^^^^^^"
+const renameJsCode = "// JavaScript — the base renamed render to renderTo this morning\nclass InvoiceReport extends Report {\n  render(target) {\n    return `invoice ${target}`;\n  }\n}\n\n// Still valid. Still constructed. Never called again."
 const inheritanceCode = `abstract class Entity:\n    constructor(const id: string):\n        pass\n\n    abstract def describe() -> string\n\n    abstract get shortName() -> string\n\n    def shared() -> string:\n        return f"entity {self.id}"\n\nclass Player extends Entity:\n    constructor(id: string, let score: number = 0):\n        super(id)\n\n    override def describe() -> string:\n        // super.member reaches the base method a derived definition shadows.\n        return f"{super.shared()}: {self.score}"\n\n    override get shortName() -> string:\n        return self.id\n\nclass Champion extends Player:\n    constructor(id: string, score: number, let titles: number):\n        super(id, score)\n\n    override def describe() -> string:\n        return f"{super.describe()} ({self.titles} titles)"\n\nconst champion = Champion("c-1", 10, 2)\nconst championDescription = champion.describe()\n\n// A base field is one storage location shared by the whole instance, so it is\n// read and written through self.\nclass Counter:\n    let count: number = 0\n\nclass DoubleCounter extends Counter:\n    def bump():\n        self.count += 2`
+const overrideErrorCode = `class Report:\n    // The base renamed 'render' to 'renderTo' this morning.\n    def renderTo(target: string) -> string:\n        return target\n\nclass InvoiceReport extends Report:\n    override def render(target: string) -> string:\n        return f"invoice {target}"`
+const overrideErrorOutput = "main.vel:7:5 error VEL4001: Method 'render' uses 'override' but no base method exists\n    override def render(target: string) -> string:\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+const superDisposeJsCode = "// JavaScript — cleanup by convention\nclass TrackedTerminal extends Terminal {\n  dispose() {\n    this.released = true;\n    // super.dispose() belongs here. It is not here.\n  }\n}\n\n// The base closed the socket. Nothing closes it now."
 const disposeCode = `class Terminal:\n    let open: bool = true\n\n    def close():\n        self.open = false\n\n    // The release block is the one compiler-known class member. It is not\n    // callable from source, it must be safe to run twice, and a class declares\n    // at most one.\n    @dispose:\n        self.close()\n\n    // It may coexist with an ordinary method of the same name.\n    def dispose() -> string:\n        return "an ordinary method"\n\nclass AsyncTerminal:\n    async def stop():\n        print("stopped")\n\n    // A release body may await; releasing then awaits too.\n    @dispose:\n        await self.stop()\n\n// A derived release adds to its base's rather than replacing it: the compiler\n// chains them, derived first and base after.\nclass TrackedTerminal extends Terminal:\n    let released: bool = false\n\n    @dispose:\n        self.released = true`
+const releaseCode = `class Terminal:\n    @dispose:\n        print("base released")\n\nclass TrackedTerminal extends Terminal:\n    @dispose:\n        print("derived released")\n\ndef write():\n    using first = Terminal()\n    using second = TrackedTerminal()\n    print("body ran")\n    throw Error("the write failed")\n\ntry:\n    write()\ncatch error:\n    print(f"caught: {error.message}")`
+const releaseTextCode = "body ran\nderived released\nbase released\nbase released\ncaught: the write failed"
+const earlyReturnJsCode = "// JavaScript — the handle is closed on one path out of three\nconst handle = await open(path);\nconst header = await handle.read(16);\nif (!isValid(header)) return null;\nawait handle.close();\nreturn header;"
 const usingCode = `class Terminal:\n    let open: bool = true\n\n    def close():\n        self.open = false\n\n    @dispose:\n        self.close()\n\nexport def ownedResource() -> string:\n    // Every exit from the enclosing scope releases the value, and several\n    // owned resources release in reverse declaration order.\n    using first = Terminal()\n    using second = Terminal()\n    return f"{first.open} {second.open}"\n\nexport def ownedInALoop(count: number) -> number:\n    let seen = 0\n    // A loop body is an ordinary owning scope: it releases on every iteration.\n    for _ in range(count):\n        using handle = Terminal()\n        seen += 1\n    return seen\n\nexport def ownedWithEarlyExit(flag: bool) -> string:\n    using handle = Terminal()\n    if flag:\n        // return releases before leaving.\n        return "early"\n    return "late"\n\n// An owned value may not leave the scope that releases it, but passing it to a\n// function stays legal: a callee borrows, and a borrow is not ownership.\ndef borrow(handle: Terminal) -> bool:\n    return handle.open\n\nexport def lendsWithoutGivingAway() -> bool:\n    using handle = Terminal()\n    return borrow(handle)`
+const escapeErrorCode = `class Terminal:\n    @dispose:\n        print("released")\n\nexport def open() -> Terminal:\n    using terminal = Terminal()\n    return terminal`
+const escapeErrorOutput = "main.vel:7:12 error VEL4036: 'terminal' is owned by this scope, which releases it on the way out, so returning it would hand on an already-released handle; move the 'using' up to the scope that really owns it, or return the data you read from it instead\n    return terminal\n           ^^^^^^^^"
+const setterJsCode = "// JavaScript — an assignment that is not an assignment\nchart.size = 200;\n\n// A setter behind size re-laid out the chart and posted the new size to the\n// server. The line says assignment. The network tab says request."
 const absentCode = `class Chart:\n    let size: number = 10\n\n    // There is no setter. A field is assigned, or a method names the work it\n    // does.\n    def setSize(value: number):\n        assert 0 < value <= 4096 else "The chart size is outside the supported range"\n        self.size = value\n\n// self is not a reserved member name.\nclass SelfReference:\n    let self: string = "a field called self"\n\n    def read() -> string:\n        return self.self\n\n// A private member is marked with a modifier and reached through ordinary\n// member access.\nclass Vault:\n    private let secret: string = "s"\n\n    def fingerprint() -> number:\n        return self.secret.size\n\nconst chart = Chart()\nchart.setSize(200)\nconst direct = chart.size`
 const setterErrorCode = "class Chart:\n    let stored: number = 10\n\n    get size() -> number:\n        return self.stored\n\n    set size(value: number):\n        self.stored = value"
 const setterErrorOutput = "main.vel:7:5 error VEL2007: VelarScript classes have no setters; assign the field directly, or declare a method such as 'def setSize(value: T)'\n    set size(value: number):\n    ^^^^^^^^"
@@ -20,7 +36,7 @@ const sections = [
     {id: "inheritance", label: "Inheritance", labelZh: "继承"},
     {id: "dispose", label: "The release contract", labelZh: "释放契约"},
     {id: "using", label: "Ownership", labelZh: "所有权"},
-    {id: "absent", label: "What a class does not carry", labelZh: "类不承载什么"},
+    {id: "absent", label: "What a class does not carry", labelZh: "类里没有的东西"},
 ]
 
 export component LanguageClasses:
@@ -28,79 +44,174 @@ export component LanguageClasses:
     return <main>
         <Head
             title={headTitle("/guide/language/classes", locale.isChinese())}
-            description={locale.text("How a class declares fields and a constructor, how inheritance is written, and what the release contract and using promise.", "类如何声明字段与构造函数、继承如何书写，以及释放契约与 using 承诺了什么。")}
+            description={locale.text("What a class declares up front, why override is written rather than inferred, and what the release contract and using are worth to whoever inherits the code.", "一个类要先声明什么，override 为什么是写出来而不是推断出来的，以及释放契约和 using 对接手代码的人值多少。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Language / 09", "语言 / 09")}
                 title={locale.text("Classes and ownership", "类与所有权")}
-                summary={locale.text("Fields, one explicit constructor, inheritance, and the release contract that using consumes.", "字段、唯一的显式构造函数、继承，以及 using 所消费的释放契约。")}
+                summary={locale.text("Everything here is aimed at one reader: the person who opens somebody else's class a year later and has to work out what it holds and who closes it.", "这一章只对着一个读者写：一年后打开别人写的类、得弄明白它里面存着什么、又是谁负责关掉它的那个人。")}
             />
             <SectionList items={sections} />
             <Prose>
                 <SectionHeading id="shape">{locale.text("Fields and one constructor", "字段与唯一构造函数")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A class has at most one constructor, and an instance is produced by calling the class. Fields are const or let and state their type; a field with no initializer must be definitely assigned in the constructor body. A class name is not a value, so passing a factory around is written as an arrow that constructs.", "类至多有一个构造函数，实例由调用这个类产生。字段是 const 或 let 并写出自己的类型；没有初始化器的字段必须在构造函数体中被确定赋值。类名不是值，因此传递工厂的写法是一个执行构造的箭头函数。")}
+                    {locale.text("Read this class and say how many fields an instance has.", "读一遍这个类，说说它的实例有几个字段。")}
+                </Paragraph>
+                <CodeBlock code={sessionJsCode} />
+                <Paragraph>
+                    {locale.text("Three, and two of them do not exist yet. active and closedAt appear the first time close runs, so a session that was never closed answers undefined for active — not true, which is what the name suggests, and not false either. Every guard written as if (session.active) is therefore wrong for the case it was written to protect. The class is the only documentation, and the class is missing two thirds of the answer.", "三个，其中两个还不存在。active 与 closedAt 是 close 第一次执行时才出现的，所以一个从没关闭过的会话，active 读出来是 undefined——不是这个名字暗示的 true，也不是 false。于是每一句写成 if (session.active) 的守卫，恰恰在它本想保护的那种情况下是错的。这个类是唯一的文档，而它缺了三分之二的答案。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("A class here states its fields, and it states them once.", "这里的类把自己的字段写出来，而且只写一次。")}
                 </Paragraph>
                 <CodeBlock code={shapeCode} />
                 <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                    {locale.text("Fields are const or let and carry a type. One with no initializer must be definitely assigned in the constructor body, so there is no third state where the field is declared and absent. A class has at most one constructor, and an instance comes from calling the class. A class name is not a value, which is why passing a factory around is written as an arrow that constructs — the line says what will be built rather than handing on a name that might be built later.", "字段是 const 或 let，并且带类型。没有初始化器的那个，必须在构造函数体里被确定赋值，所以不存在「声明了但还没有」的第三种状态。一个类至多一个构造函数，实例来自调用这个类。类名不是值，所以传递工厂的写法是一个执行构造的箭头函数——这一行写明了将要造出什么，而不是把一个可能以后才被构造的名字递出去。")}
                 </Paragraph>
-                <CodeBlock code={newErrorCode} />
                 <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                    {locale.text("You pay for that in lines, first of all. The VelarScript version of the JavaScript above is longer, every time, and it is longer in exactly the place a class is most tedious to write. One constructor means no overloads, so two ways to build a Session are two static factories rather than two signatures. And the arrow around a construction is a wrapper per registry entry, which is real friction for code that keeps a table of things to build.", "首先是行数。上面那段 JavaScript 换成 VelarScript 一定更长，而且长的地方恰好是写一个类最枯燥的那一段。只有一个构造函数就意味着没有重载，所以造 Session 的两种方式是两个静态工厂，不是两个签名。而围着构造写的那个箭头，每一条注册表项都要包一次——如果你的代码要维护一张表、表上写着有什么可以造，这就是实打实的摩擦。")}
                 </Paragraph>
+                <Subheading>{locale.text("The field that has to exist", "必须存在的那个字段")}</Subheading>
+                <CodeBlock code={fieldErrorCode} />
+                <CodeBlock code={fieldErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example. This site's build compiles the sample on every build and fails if it ever stops producing a diagnostic, and it verifies that VEL4001 is a code the sample really produces. The message states the two ways out rather than the rule, so the fix is the message.", "门禁：受检的教学反例。本站每次构建都编译这个样本，一旦它不再报错就让构建失败；并且会核对 VEL4001 确实由这个样本产生。这条消息给的是两条出路，不是一条规则——所以消息本身就是改法。")}
+                </GateNote>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={newErrorCode} />
                 <CodeBlock code={newErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: the same checked pair, for the reflex every JavaScript reader arrives with — compiled on every build, with VEL1005 checked against what the sample really produces.", "门禁：同样的受检成对样本，管的是每个 JavaScript 读者带过来的那个手感——每次构建都编译，并核对 VEL1005 确实由它产生。")}
+                </GateNote>
 
                 <SectionHeading id="members">{locale.text("Modifiers", "修饰关键字")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A parameter prefixed with const, let, or private declares a field and initializes it from that argument, so the two halves of the usual pattern collapse into one line. private marks a member the outside cannot reach, static marks one that belongs to the class, and a getter is a computed read with no assignment behind it.", "以 const、let 或 private 前缀的参数直接声明一个字段，并用该实参初始化它，于是常见写法的两半合并成一行。private 标记外部无法触及的成员，static 标记属于类本身的成员，而取值器是一次计算出来的读取，背后没有赋值。")}
+                    {locale.text("You went to delete a field that nobody was supposed to be using. Four files you do not own were using it.", "你去删一个本来就不该有人用的字段。有四个不归你管的文件正在用它。")}
+                </Paragraph>
+                <CodeBlock code={underscoreJsCode} />
+                <Paragraph>
+                    {locale.text("The underscore was a request, and requests age badly. By the time the field is load-bearing outside its class, changing it is a coordination problem across teams instead of an edit inside one file. Nothing did anything wrong along the way; the language simply never offered a way to say no.", "那个下划线是一个请求，而请求经不起时间。等到这个字段在类外面开始承重，改它就从「改一个文件」变成了「跨团队协调」。这一路上没有谁做错什么，只是这门语言从头到尾没给过一种说「不行」的写法。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Here the marking is a keyword, and the compiler enforces it.", "在这里，这个标记是一个关键字，由编译器来执行。")}
                 </Paragraph>
                 <CodeBlock code={membersCode} />
+                <Paragraph>
+                    {locale.text("A parameter prefixed with const, let, or private declares a field and initializes it from that argument, so the two halves of the usual pattern collapse into one line. private marks a member the outside cannot reach. static marks one that belongs to the class rather than to an instance. A getter is a computed read with no assignment behind it, so reaching it costs nothing a reader has to look up.", "以 const、let 或 private 作前缀的参数，直接声明一个字段并用该实参初始化它，于是常见写法的两半合成一行。private 标记外部够不着的成员。static 标记属于类本身、而不属于某个实例的成员。取值器是一次算出来的读取，背后没有赋值，所以读它不会牵出别的东西，读者不必再去查什么。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The vocabulary is closed, and that is the charge. There is no protected, no package level, no friend, and no visibility you can invent for a case the language did not anticipate: a member is private to its class or it is public, and a base class cannot open a door to its subclasses alone. The second charge is smaller and shows up in the diff. A constructor that declares six fields is a six-parameter signature line, so the shape of the object is spread along one long line rather than sitting in a block a reader can scan down.", "这份词汇是封闭的，代价就在这里。没有 protected，没有包级别，也没有 friend；语言没预料到的情形，你自己也造不出一种可见性来。一个成员要么对它的类私有，要么公开；基类没法只对自己的子类开一扇门。第二笔小一些，出现在 diff 里。一个声明了六个字段的构造函数，就是一行六参数的签名，于是这个对象的形状被摊在一行长句里，而不是待在一个读者可以竖着扫下来的块里。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={privateErrorCode} />
+                <CodeBlock code={privateErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, compiled on every build with VEL4001 checked against the diagnostics it really produces. The refusal is what turns the marking into a promise you can act on: a private field can be renamed or removed by reading one file.", "门禁：受检的教学反例，每次构建都编译，并核对 VEL4001 确实由它产生。有这条拒绝，那个标记才变成一个你敢照着做事的承诺：一个私有字段，读一个文件就能改名或删掉。")}
+                </GateNote>
 
                 <SectionHeading id="inheritance">{locale.text("Inheritance", "继承")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("abstract, extends, super, and override are the four words. An override is written rather than inferred, so renaming a base member surfaces as a diagnostic at every place that meant to override it. A base field is one storage location shared by the whole instance, and it is read and written through self.", "abstract、extends、super、override 是四个关键词。override 是写出来的而不是推断的，因此基类成员改名会在每一处本打算覆写它的位置以诊断的形式暴露。基类字段是整个实例共享的一处存储位置，读写都通过 self。")}
+                    {locale.text("The invoice pages kept rendering. They just stopped rendering as invoices.", "发票页面一直在正常渲染。只是渲染出来的不再是发票了。")}
+                </Paragraph>
+                <CodeBlock code={renameJsCode} />
+                <Paragraph>
+                    {locale.text("The base was renamed, so this method now overrides nothing and is called by nobody, and the base's own implementation runs in its place. Everything still compiles, every test that constructs an InvoiceReport still passes, and the output is merely wrong. A rename is the most routine edit there is, and in a class hierarchy it is the one that fails most quietly.", "基类改了名，于是这个方法现在什么都没覆写，也没人调用它，跑起来的是基类自己的实现。一切照旧能编译，每一个构造 InvoiceReport 的测试也照旧通过，只是输出错了。改名是最家常的一种改动，而在继承体系里，它恰恰是失败得最安静的那一种。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Four words carry inheritance here, and one of them exists for exactly that morning.", "这里的继承由四个关键词撑着，其中一个的存在，就是为了那个早上。")}
                 </Paragraph>
                 <CodeBlock code={inheritanceCode} />
+                <Paragraph>
+                    {locale.text("abstract, extends, super, and override. The last one is written rather than inferred, which lets the compiler check the relationship in both directions: a method that shadows a base method without the word is refused, and the word with no base method behind it is refused too. super.member reaches the base definition a derived one shadows. A base field is one storage location shared by the whole instance, read and written through self, so a subclass cannot end up with a second slot of the same name.", "abstract、extends、super、override。最后一个是写出来的，不是推断的，这让编译器可以双向核对这层关系：一个遮住基类方法却没写这个词的方法会被拒绝；写了这个词、背后却没有基类方法，同样会被拒绝。super.member 取到被派生定义遮住的那个基类定义。基类字段是整个实例共享的一处存储，通过 self 读写，所以子类不会莫名多出一处同名的存储。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The bill for that is honest and slightly annoying: override is a word you type on every overriding member, forever, and on the day you type it, it tells you nothing you did not know. It is a premium paid by the author for a benefit collected by whoever edits the base class later — possibly you, possibly not. Nothing about the day you write it feels like a good deal, and that is the correct way to feel about insurance.", "这笔账很诚实，也有点烦人：override 是你在每一个覆写成员上都要敲的词，永远都要敲；而在你敲下它的那天，它没告诉你任何你不知道的事。这是作者交的保费，好处由后来改基类的那个人领走——可能是你，也可能不是。写下它的那天怎么算都不划算，而这正是人对保险该有的感觉。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={overrideErrorCode} />
+                <CodeBlock code={overrideErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, compiled on every build with VEL4001 checked against the diagnostics it really produces. This is the JavaScript story above, run through the compiler: the rename that failed silently there stops the build here, at the derived class, by name.", "门禁：受检的教学反例，每次构建都编译，并核对 VEL4001 确实由它产生。这就是上面那个 JavaScript 故事走一遍编译器：在那边悄悄失败的改名，在这边会让构建停下，停在派生类上，点名到位。")}
+                </GateNote>
 
                 <SectionHeading id="dispose">{locale.text("The release contract", "释放契约")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A class declares at most one release block, and it is the one compiler-known class member: it is not callable from source, it must be safe to run twice, and its body may await. A derived release adds to its base's rather than replacing it, so releasing a subclass runs the derived body first and the base body after.", "一个类至多声明一个释放块，它是唯一由编译器认识的类成员：源码不能调用它，它必须可以安全地运行两次，其函数体可以 await。派生类的释放是在基类之上追加而不是取代，因此释放一个子类会先执行派生体、再执行基类体。")}
+                    {locale.text("The connection pool ran dry at three in the morning. The subclass was six weeks old.", "凌晨三点，连接池耗光了。那个子类是六周前写的。")}
+                </Paragraph>
+                <CodeBlock code={superDisposeJsCode} />
+                <Paragraph>
+                    {locale.text("Overriding a cleanup method replaces it, so the base's socket close stopped running the moment this subclass was introduced. Nothing about the subclass looks wrong. The line that should have been there is a line that is not there, and no review catches an absence as reliably as it catches a mistake.", "覆写一个清理方法就是取代它，所以从这个子类被引入的那一刻起，基类关 socket 的那段就不再执行了。这个子类看上去哪里都不像有问题。本该在的那一行，是一行不在的行；而评审抓一处缺失，从来没有抓一处写错那么牢靠。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Release is not a method here, so overriding it is not something a subclass can do.", "在这里，释放不是方法，所以「子类把它覆写掉」这件事根本不存在。")}
                 </Paragraph>
                 <CodeBlock code={disposeCode} />
+                <Paragraph>
+                    {locale.text("A class declares at most one release block, and it is the one member the compiler knows by name. It cannot be called from source, its body may await, and a derived release adds to its base's instead of replacing it — the compiler chains them, derived first and base after. Forgetting the super call is not a mistake that can be made, because there is no super call to write. Here is the whole thing running, with an error thrown in the middle to make the exit paths visible.", "一个类至多声明一个释放块，它是编译器唯一按名字认得的成员。源码不能调用它，它的函数体可以 await。子类写的释放不会取代基类那一份，两份都要跑：编译器把它们串起来，先派生、后基类。「忘了写 super 调用」这个错犯不出来，因为根本没有 super 调用可写。下面是整件事跑起来的样子，中途故意抛了个错，好把各条出口显出来。")}
+                </Paragraph>
+                <CodeBlock code={releaseCode} />
+                <CodeBlock code={releaseTextCode} />
+                <GateNote>
+                    {locale.text("Gate: the program above is compiled by this site's sample gate on every build. The five lines under it are a transcript of running it with velar run on toolchain 0.10.0, not an artifact the build compares. Read the middle three: second releases before first, and each release runs derived body then base body.", "门禁：上面这段程序由本站的样本门禁在每次构建时编译。下面那五行是在 0.10.0 工具链上用 velar run 跑出来的记录，不是构建会比对的产物。请读中间三行：second 比 first 先释放，而每一次释放都是先跑派生体、再跑基类体。")}
+                </GateNote>
+                <Paragraph>
+                    {locale.text("Two costs, and neither is small. The block is not callable, so you cannot run it early, and you cannot test it by calling it — you test it by owning a value and leaving a scope, which means a test for release logic is a test about control flow. And it must be safe to run twice — because the ordinary path where that happens is right there: call close() yourself, and the scope releases the same value again on the way out. Nothing checks it. That is the one rule on this page the compiler states and then leaves entirely to you.", "两笔代价，都不小。这个块不能调用，所以你没法提前跑它，也没法靠调用来测它——测它的办法是拥有一个值、然后离开一个作用域，于是「测释放逻辑」变成了「测控制流」。另外，它必须可以安全地跑两次——会发生这件事的路径就摆在那儿：你自己调一次 close()，离开作用域时同一个值又被释放一次。这一条没有任何检查。它是本页唯一一条编译器说出来、然后完全交给你的规则。")}
+                </Paragraph>
 
                 <SectionHeading id="using">{locale.text("Ownership", "所有权")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("using binds an owned value and releases it on every exit from the enclosing scope, including an early return and a thrown error. Several owned values release in reverse declaration order, and a loop body is an ordinary owning scope. An owned value may not leave the scope that releases it, but a callee may borrow it: a borrow is not ownership.", "using 绑定一个被拥有的值，并在离开所在作用域的每条路径上释放它，包括提前 return 与抛出的错误。多个被拥有的值按声明的逆序释放，循环体本身就是一个普通的拥有作用域。被拥有的值不能离开释放它的作用域，但被调用方可以借用它：借用不是所有权。")}
+                    {locale.text("The leak was only on the path where something had gone wrong, which is the path that runs most under load.", "泄漏只发生在出了问题的那条路径上——而负载一高，跑得最多的正是那条路径。")}
+                </Paragraph>
+                <CodeBlock code={earlyReturnJsCode} />
+                <Paragraph>
+                    {locale.text("Six lines, three exits, one close. The early return leaks and so does anything read throws, and both are invisible until the day traffic makes them count. Whoever wrote this knew about the close — it is right there. What they did not have was a way to attach it to the scope instead of to a line.", "六行，三个出口，一次关闭。提前 return 会泄漏，read 抛错也会泄漏，而这两件事一直看不见，直到某天流量把它们放大。写这段的人当然知道要关——close 就在那儿。他没有的，是一种把关闭挂在作用域上、而不是挂在某一行上的写法。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("using attaches it to the scope.", "using 就是把它挂在作用域上。")}
                 </Paragraph>
                 <CodeBlock code={usingCode} />
-                <BulletList>
-                    <li>
-                        {locale.text("using reads the release contract from the value's static type, which is why the contract and the ownership word are one feature rather than two.", "using 从值的静态类型上读取释放契约，因此契约与所有权关键字是同一项特性，而不是两项。")}
-                    </li>
-                    <li>
-                        {locale.text("A resource whose lifetime does not fit a scope is still closed by an ordinary method call; using is the spelling for the case that does fit.", "生命周期不契合作用域的资源，仍然通过普通方法调用来关闭；using 是给契合那一类情形的拼写。")}
-                    </li>
-                </BulletList>
-
-                <SectionHeading id="absent">{locale.text("What a class does not carry", "类不承载什么")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("There are no setters: a setter makes an assignment run code the assignment does not show, so a field is assigned directly or a method names the work it does. There is no this, no class-header constructor fields, no constructor block, no private identifier sigil, and no user-defined decorator. The modifier keywords are a closed vocabulary, and a new marking arrives as a new keyword.", "没有设值器：设值器会让一次赋值执行赋值本身没有显示出来的代码，因此要么直接给字段赋值，要么由一个方法说明它所做的工作。没有 this，没有类头部的构造字段，没有构造块，没有私有标识符符号，也没有用户自定义装饰器。修饰关键字是一份封闭词汇，新的标记以新关键字的形式到来。")}
+                    {locale.text("An owned value is released on every exit from the enclosing scope, including an early return and a thrown error. Several release in reverse declaration order, and a loop body is an ordinary owning scope, so a handle opened per iteration is closed per iteration. using reads the release contract from the value's static type, which is why the contract and the ownership word are one feature rather than two you have to keep in step. A callee may borrow an owned value, because a borrow is not ownership.", "一个被拥有的值，在离开所在作用域的每一条路径上都会被释放，包括提前 return 和抛出的错误。多个值按声明的逆序释放；循环体就是一个普通的拥有作用域，所以每轮打开的句柄每轮就关掉。using 从值的静态类型上读释放契约——所以契约和这个关键字是同一项特性，而不是两项还要你自己保持同步的东西。被调用方可以借用一个被拥有的值，因为借用不是所有权。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Ownership is a scope, and that is the constraint you will hit. A resource whose lifetime does not fit inside one — a connection held across requests, a handle stored in a field — cannot use this at all, and goes back to an ordinary method call at the right moment, with the same three exits to get right. Worse, a factory that opens a resource and returns it cannot be written with using inside it. The using has to move up to the caller, and moving it up is a change to a public signature. That is a design constraint wearing the clothes of a spelling rule, and it is the reason to read the next block before you design around this feature rather than after.", "所有权是一个作用域，而这就是你会撞上的约束。生命周期塞不进一个作用域的资源——跨请求持有的连接、存在字段里的句柄——完全用不了它，还得回到「在合适的时刻调一次普通方法」，同样有三条出口要照顾好。更麻烦的是：一个打开资源再把它返回的工厂函数，里面没法写 using。using 得往上挪到调用方，而往上挪就是改一个公开签名。这是一条穿着拼写规则外衣的设计约束——所以下面这一块，值得在你按这项特性做设计之前读，而不是之后。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={escapeErrorCode} />
+                <CodeBlock code={escapeErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, compiled on every build with VEL4036 checked against the diagnostics it really produces. The message is long on purpose: it names what went wrong, then both ways out — move the using up, or return the data instead of the handle.", "门禁：受检的教学反例，每次构建都编译，并核对 VEL4036 确实由它产生。这条消息故意写得长：它先说出错在哪，再给出两条出路——把 using 往上挪，或者返回读出来的数据而不是句柄本身。")}
+                </GateNote>
+
+                <SectionHeading id="absent">{locale.text("What a class does not carry", "类里没有的东西")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("One line in a render loop, and the network tab filled up.", "渲染循环里的一行代码，把网络面板刷满了。")}
+                </Paragraph>
+                <CodeBlock code={setterJsCode} />
+                <Paragraph>
+                    {locale.text("An assignment is the one statement everybody reads at a glance, and here it was doing layout and a request. The setter is not visible from the call site and never will be, so the only way to know is to open the class — which nobody does for an assignment, because an assignment is the thing you do not need to check.", "赋值是所有人一眼就读过去的那种语句，而这里它在做布局、还在发请求。设值器在调用点上看不见，也永远不会看见，所以想知道只有一个办法：打开那个类——而没人会为一句赋值去打开类，因为赋值恰恰是那种不用查的东西。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("There are no setters here, so an assignment is an assignment.", "这里没有设值器，所以赋值就是赋值。")}
                 </Paragraph>
                 <CodeBlock code={absentCode} />
                 <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                    {locale.text("Work that needs doing on a write is a method, and the method names it. Beyond setters the list is short and closed: no this, no class-header constructor fields, no constructor block, no private identifier sigil, no user-defined decorator, and no protected. The modifier keywords are a fixed vocabulary, and a new marking arrives as a new keyword through a language decision rather than as a convention that spreads.", "写入时要做的事就是一个方法，方法把它说出来。除了设值器，清单短而封闭：没有 this，没有类头部的构造字段，没有构造块，没有私有标识符符号，没有用户自定义装饰器，也没有 protected。修饰关键字是一份固定词汇；新的标记以新关键字的形式、经由一次语言裁决到来，而不是靠一种约定慢慢传开。")}
                 </Paragraph>
-                <CodeBlock code={setterErrorCode} />
                 <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                    {locale.text("The price lands on API shape, and it lands every time. A value that validates on write is chart.setSize(200) rather than chart.size = 200, so every call site is longer and reads less like the domain it models. A library ported here will not read the way its original does, and a fluent property-style interface is not something you can build. What you get back is that a line of the form a.b = c does what it says, everywhere in the codebase, with no exceptions to remember.", "代价落在 API 的形状上，而且每次都收。一个写入时要校验的值，写法是 chart.setSize(200)，不是 chart.size = 200，于是每个调用点都更长，也更不像它所建模的那件事。一个库移植到这儿来，读起来不会跟原来一样；流畅的属性式接口，你也造不出来。换回来的是：a.b = c 这种形状的一行，在整个代码库里都只做它字面上说的事，没有需要记住的例外。")}
                 </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={setterErrorCode} />
                 <CodeBlock code={setterErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, compiled on every build with VEL2007 checked against the diagnostics it really produces. Notice the getter above it does not fail — a computed read is fine, and it is the write half that was removed.", "门禁：受检的教学反例，每次构建都编译，并核对 VEL2007 确实由它产生。请注意上面那个取值器没有报错——算出来的读取没问题，被拿掉的是写的那一半。")}
+                </GateNote>
                 <Callout title={locale.text("Composition over extending a foreign class", "组合，而不是继承外来的类")}>
                     <Paragraph>
-                        {locale.text("A class declared through the JavaScript boundary cannot be extended: construction would have to chain across the bridge, and the base is a contract whose body the compiler cannot see. Hold the instance in a field and expose the behavior needed. Extending Error is unaffected, because Error is a builtin rather than a declared foreign class.", "通过 JavaScript 边界声明的类不能被继承：构造会不得不跨过桥接，而基类是一份编译器看不到函数体的契约。把实例保存在字段里，只暴露所需要的行为即可。继承 Error 不受影响，因为 Error 是内建类型，而不是声明出来的外来类。")}
+                        {locale.text("A class declared through the JavaScript boundary cannot be extended: construction would have to chain across the bridge, and the base is a contract whose body the compiler cannot see. Hold the instance in a field and expose the behavior you need. Extending Error is unaffected, because Error is a builtin rather than a declared foreign class.", "通过 JavaScript 边界声明的类不能被继承：构造会不得不跨过桥接，而基类是一份编译器看不到函数体的契约。把实例存在字段里，只暴露你需要的行为。继承 Error 不受影响，因为 Error 是内建类型，不是声明出来的外来类。")}
                     </Paragraph>
                 </Callout>
             </Prose>

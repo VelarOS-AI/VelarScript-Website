@@ -1,132 +1,217 @@
-import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
-import {useLocale} from "@velarscript/site-ui"
+import {Head, Link} from "velar/web"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, GateNote, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
+import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
-const moduleStateCode = `export type Task:\n    id: string\n    title: string\n    done: bool\n\n// Scope 1: module scope. A module state lives for the life of the page and\n// every importer sees the same cell. Assigning an imported binding is\n// forbidden; mutating the value inside one is legal and publishes to everyone.\nexport state visits = 0\nexport state tasks: List<Task> = [\n    {id: "read", title: "Read the chapter", done: false},\n    {id: "write", title: "Write a module", done: false},\n]\n\n// An exported computed declares its public accessor result at the export site.\n// computed is a function, not a declaration keyword: there is no\n// "computed name = expression" spelling.\nexport const openTasks: () -> number = computed(() => tasks.filter(task => not task.done).size)\n\n// A module-scope watch is never disposed, so it is for application-wide facts\n// rather than anything a component owns.\nwatch visits:\n    print(f"visit {visits}")\n\nexport def recordVisit():\n    visits += 1\n\n// Helpers may mutate the value owned by a state binding; state does not copy,\n// freeze, or claim linear ownership.\nexport def retitle(task: Task, title: string):\n    task.title = title\n\nexport def appendTask(task: Task):\n    tasks.append(task)`
-const scopedCode = `// Scope 2: component scope, and scope 3: ordinary block or function scope. Each\n// function execution creates a distinct cell, and closures capture that cell\n// normally.\nexport component ScopedState:\n    state expanded = false\n    const label = computed(() => expanded ? "Hide" : "Show")\n\n    def counterFromBlock() -> () -> number:\n        state local = 0\n\n        def bump() -> number:\n            local += 1\n            return local\n\n        return bump\n\n    const bump = counterFromBlock()\n    state bumped = 0\n\n    def toggle():\n        expanded = not expanded\n\n    def bumpLocal():\n        bumped = bump()\n\n    return <div data-scoped-state>\n        <p data-label>{label()}</p>\n        <p data-expanded>{expanded ? "expanded" : "collapsed"}</p>\n        <p data-bumped>{bumped}</p>\n        <button type="button" data-toggle-expanded on:click={toggle}>{label()}</button>\n        <button type="button" data-bump-local on:click={bumpLocal}>Bump the block cell</button>\n    </div>`
-const snapshotCode = `type Task:\n    id: string\n    title: string\n    done: bool\n\nstate tasks: List<Task> = [\n    {id: "read", title: "Read the chapter", done: false},\n    {id: "write", title: "Write a module", done: false},\n]\n\n// The three spellings that differ only slightly, side by side. The first is one\n// ordinary reference snapshot, the second an independent writable cell, and the\n// third a live positional query.\nexport component SnapshotVersusFormula:\n    const currentTask = tasks[0]\n    state selectedTask = tasks[0]\n    const liveFirstTask = computed(() => tasks[0])\n\n    def selectSecond():\n        selectedTask = tasks[1]\n\n    return <div data-snapshots>\n        <p data-const-task>{currentTask.title}</p>\n        <p data-state-task>{selectedTask.title}</p>\n        <p data-computed-task>{liveFirstTask().title}</p>\n        <button type="button" data-select-second on:click={selectSecond}>Select the second task</button>\n    </div>`
+// Every VelarScript block on this page is compiled by the site's gate. The
+// tracking test is run by it too: a block whose first line is `test "..."` is
+// checked as a test module rather than as an entry.
+const trackingTestCode = `import {expect} from "velar/test"\n\nstate count = 0\n\n// Both lines read count. Only one of them keeps reading it.\nconst frozen = count * 2\nconst live: () -> number = computed(() => count * 2)\n\ntest "a const keeps the answer; a computed keeps the question":\n    expect(frozen).toBe(0)\n    expect(live()).toBe(0)\n    count = 5\n    await tick()\n    expect(live()).toBe(10)\n    expect(frozen).toBe(0)`
+const trackingComponentCode = `state count = 0\n\n// Setup runs once. The multiplication happens at construction, and the\n// paragraph shows that one answer for the rest of the page's life.\ncomponent Frozen:\n    const doubled = count * 2\n\n    return <p data-frozen>{doubled}</p>\n\n// The same read, written where the template is evaluated. The template runs\n// again whenever count changes, so this one follows.\ncomponent Live:\n    return <p data-live>{count * 2}</p>\n\nexport component TrackingPanel:\n    def bump():\n        count = 5\n\n    return <section data-tracking>\n        <Frozen />\n        <Live />\n        <button type="button" data-bump on:click={bump}>Bump</button>\n    </section>`
+const moduleStateCode = `export type Task:\n    id: string\n    title: string\n    done: bool\n\n// Module scope. The cell lives for the life of the page and every importer\n// sees the same one. Assigning an imported binding is forbidden; mutating the\n// value inside one is legal and publishes to everyone.\nexport state visits = 0\nexport state tasks: List<Task> = [\n    {id: "read", title: "Read the chapter", done: false},\n    {id: "write", title: "Write a module", done: false},\n]\n\n// An exported computed declares its public accessor result at the export site.\nexport const openTasks: () -> number = computed(() => tasks.filter(task => not task.done).size)\n\n// A module-scope watch is never disposed, so it is for application-wide facts\n// rather than anything a component owns.\nwatch visits:\n    print(f"visit {visits}")\n\nexport def recordVisit():\n    visits += 1\n\n// Helpers may mutate the value a state binding owns. state does not copy,\n// freeze, or claim linear ownership.\nexport def retitle(task: Task, title: string):\n    task.title = title\n\nexport def appendTask(task: Task):\n    tasks.append(task)`
+const scopedCode = `// Component scope, and ordinary block or function scope. Each execution of a\n// function that declares state creates a distinct cell, and closures capture\n// that cell normally.\nexport component ScopedState:\n    state expanded = false\n    const label = computed(() => expanded ? "Hide" : "Show")\n\n    def counterFromBlock() -> () -> number:\n        state local = 0\n\n        def bump() -> number:\n            local += 1\n            return local\n\n        return bump\n\n    const bump = counterFromBlock()\n    state bumped = 0\n\n    def toggle():\n        expanded = not expanded\n\n    def bumpLocal():\n        bumped = bump()\n\n    return <div data-scoped-state>\n        <p data-label>{label()}</p>\n        <p data-expanded>{expanded ? "expanded" : "collapsed"}</p>\n        <p data-bumped>{bumped}</p>\n        <button type="button" data-toggle-expanded on:click={toggle}>{label()}</button>\n        <button type="button" data-bump-local on:click={bumpLocal}>Bump the block cell</button>\n    </div>`
+const memoJsCode = "// React 19.2 — before the compiler, this was the daily tax\nconst total = useMemo(() => items.reduce(sum, 0), [items]);\nconst onPick = useCallback((id) => select(id), [select]);\n// Add a read inside the callback, forget the array, and the value goes stale.\n// React Compiler 1.0 generates this now; the array on useEffect still does not."
+const snapshotCode = `type Task:\n    id: string\n    title: string\n    done: bool\n\nstate tasks: List<Task> = [\n    {id: "read", title: "Read the chapter", done: false},\n    {id: "write", title: "Write a module", done: false},\n]\n\n// The three spellings that differ only slightly, side by side. The first is\n// one ordinary reference snapshot, the second an independent writable cell,\n// and the third a live positional query.\nexport component SnapshotVersusFormula:\n    const currentTask = tasks[0]\n    state selectedTask = tasks[0]\n    const liveFirstTask = computed(() => tasks[0])\n\n    def selectSecond():\n        selectedTask = tasks[1]\n\n    return <div data-snapshots>\n        <p data-const-task>{currentTask.title}</p>\n        <p data-state-task>{selectedTask.title}</p>\n        <p data-computed-task>{liveFirstTask().title}</p>\n        <button type="button" data-select-second on:click={selectSecond}>Select the second task</button>\n    </div>`
 const computedErrorCode = "component Counter:\n    state count = 0\n    computed doubled = count * 2\n\n    return <p>{doubled}</p>"
 const computedErrorOutput = "main.vel:3:5 error VEL5055: Use 'const doubled = computed(() => ...)'; computed is a function that returns a derived accessor, not a declaration keyword\n    computed doubled = count * 2\n    ^^^^^^^^^^^^^^^^"
 const watchCode = `type Task:\n    id: string\n    title: string\n    done: bool\n\nstate tasks: List<Task> = [{id: "read", title: "Read the chapter", done: false}]\n\n// The three watch spellings. The expression is evaluated immediately to\n// establish the dependency and the baseline, and the body runs only for later\n// changes. Both names are required when "as" is present, so a body that needs\n// only the new value writes "as current, _".\nexport component WatchSpellings:\n    state query = ""\n    state history: List<string> = []\n    state changes = 0\n\n    watch query:\n        changes += 1\n\n    watch query as current, previous:\n        history.append(f"{previous} to {current}")\n\n    watch query as current, _:\n        print(f"query is now {current}")\n\n    // Record properties and collection keys are tracked independently, so a\n    // watch on one field is not woken by a change to another.\n    watch tasks[0].done:\n        print("the first task changed its done flag")\n\n    return <div data-watch-spellings>\n        <input data-query type="search" aria-label="Query" bind:value={query} />\n        <p data-changes>{changes}</p>\n        <p data-history>{history.join(",")}</p>\n    </div>`
-const derivationCode = `// A computed may write state — the compiler does not enforce purity — but a\n// derived value that also mutates is a side effect hiding in a cache, and watch\n// is the spelling that says so. These two stand side by side for exactly that\n// comparison.\nexport component DerivationVersusEffect:\n    state term = ""\n    state effectRuns = 0\n    const trimmed = computed(() => term.trim())\n    const shouted = computed(() => trimmed().upper())\n\n    watch trimmed():\n        effectRuns += 1\n\n    return <div data-derivation>\n        <input data-term type="text" aria-label="Term" bind:value={term} />\n        <p data-trimmed>{trimmed()}</p>\n        <p data-shouted>{shouted()}</p>\n        <p data-effect-runs>{effectRuns}</p>\n    </div>`
-const burstCode = `type Message:\n    id: string\n    text: string\n\nstate messages: List<Message> = []\nstate streamingMessageId = ""\n\n// Consecutive synchronous assignments publish once. A computed accessor reading\n// messages recomputes one time for this whole function, and a watch on it fires\n// once, on the microtask flush after the synchronous work completes.\ndef commitSend(userMessage: Message, reply: Message):\n    messages = [...messages, userMessage]\n    messages = [...messages, reply]\n    streamingMessageId = reply.id\n\nexport component Transcript:\n    const count = computed(() => messages.size)\n\n    def send():\n        commitSend({id: "ask", text: "a question"}, {id: "answer", text: "a reply"})\n\n    return <div data-transcript>\n        <p data-count>{count()}</p>\n        <p data-streaming>{streamingMessageId}</p>\n        <button type="button" data-send on:click={send}>Send</button>\n    </div>`
+const derivationCode = `// A computed may write state — the compiler does not enforce purity — but a\n// derived value that also mutates is a side effect hiding in a cache, and\n// watch is the spelling that says so. These two stand side by side for exactly\n// that comparison.\nexport component DerivationVersusEffect:\n    state term = ""\n    state effectRuns = 0\n    const trimmed = computed(() => term.trim())\n    const shouted = computed(() => trimmed().upper())\n\n    watch trimmed():\n        effectRuns += 1\n\n    return <div data-derivation>\n        <input data-term type="text" aria-label="Term" bind:value={term} />\n        <p data-trimmed>{trimmed()}</p>\n        <p data-shouted>{shouted()}</p>\n        <p data-effect-runs>{effectRuns}</p>\n    </div>`
+const batchJsCode = "// The pattern a batching API produces\nbatch(() => {\n  messages = [...messages, userMessage];\n  messages = [...messages, reply];\n  streamingMessageId = reply.id;\n});\n// Forget the wrapper and the interface renders three times instead of once."
+const burstCode = `type Message:\n    id: string\n    text: string\n\nstate messages: List<Message> = []\nstate streamingMessageId = ""\n\n// Consecutive synchronous assignments publish once. A computed accessor\n// reading messages recomputes one time for this whole function, and a watch on\n// it fires once, on the microtask flush after the synchronous work completes.\ndef commitSend(userMessage: Message, reply: Message):\n    messages = [...messages, userMessage]\n    messages = [...messages, reply]\n    streamingMessageId = reply.id\n\nexport component Transcript:\n    const count = computed(() => messages.size)\n\n    def send():\n        commitSend({id: "ask", text: "a question"}, {id: "answer", text: "a reply"})\n\n    return <div data-transcript>\n        <p data-count>{count()}</p>\n        <p data-streaming>{streamingMessageId}</p>\n        <button type="button" data-send on:click={send}>Send</button>\n    </div>`
 
 const sections = [
-    {id: "scopes", label: "Three scopes", labelZh: "三种作用域"},
-    {id: "snapshot", label: "Snapshot, cell, and formula", labelZh: "快照、单元与公式"},
-    {id: "computed", label: "computed is a function", labelZh: "computed 是函数"},
-    {id: "watch", label: "watch is for effects", labelZh: "watch 用于副作用"},
-    {id: "bursts", label: "A burst publishes once", labelZh: "一串赋值只发布一次"},
+    {id: "tracking", label: "Where the read happens", labelZh: "读取发生在哪里"},
+    {id: "scopes", label: "Where the cell lives", labelZh: "单元活在哪里"},
+    {id: "derived", label: "The dependency array, and its absence", labelZh: "依赖数组，以及它的缺席"},
+    {id: "watch", label: "A value, or work performed", labelZh: "是一个值，还是一次执行"},
+    {id: "bursts", label: "Three writes, one render", labelZh: "写三次，渲染一次"},
     {id: "deep", label: "What a reader subscribes to", labelZh: "读取者订阅了什么"},
 ]
+
+const linkLook = look:
+    color = sea
+    textDecoration = "none"
+
+    if @hover:
+        textDecoration = "underline"
 
 export component WebState:
     const locale = useLocale()
     return <main>
         <Head
             title={headTitle("/guide/web/state", locale.isChinese())}
-            description={locale.text("The scopes a state binding can have, how a derived value is declared, and when watch is the right spelling.", "state 绑定可以有的作用域、派生值如何声明，以及何时应当写 watch。")}
+            description={locale.text("Why reactivity tracks where a read happens rather than what it is called, the three scopes a state cell can have, and when watch is the honest spelling.", "响应式为什么追踪「读取发生在哪」而不是「它叫什么」、state 单元的三种作用域，以及什么时候该老实写 watch。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Web extension / 04", "Web 扩展 / 04")}
                 title={locale.text("State and derived values", "状态与派生值")}
-                summary={locale.text("state at module, component, and block scope; computed as a function; and watch for effects that are not values.", "模块、组件与块作用域的 state；作为函数的 computed；以及用于非值副作用的 watch。")}
+                summary={locale.text("One rule explains most of this chapter: reactivity tracks where a read happens. The chapter opens with the bug that rule causes when you forget it.", "这一章的多数内容都由一条规则解释：响应式追踪的是读取发生在哪。开头先讲忘了这条规则会撞上什么 bug。")}
             />
             <SectionList items={sections} />
             <Prose>
-                <SectionHeading id="scopes">{locale.text("Three scopes", "三种作用域")}</SectionHeading>
+                <SectionHeading id="tracking">
+                    {locale.text("Where the read happens", "读取发生在哪里")}
+                </SectionHeading>
                 <Paragraph>
-                    {locale.text("state declares a reactive cell in whichever scope it is written. At module scope the cell lives for the life of the page and every importer sees the same one, which is the right lifetime for an application-wide fact and the wrong one for anything a component owns.", "state 在它被书写的作用域中声明一个响应式单元。在模块作用域，这个单元存活到页面结束，且每个导入方看到的都是同一个——这对应用范围的事实是正确的生命周期，对组件自己拥有的东西则是错误的。")}
+                    {locale.text("This site had this bug. Click the language switch and the body of the page turned into Chinese while the sidebar stayed in English — every label in it had been chosen by a const in component setup, which read the language once, at construction, and then held that answer for as long as the page lived. It survived for a while because a Chinese reader who loaded a Chinese page saw a Chinese sidebar, and because the browser test that covered the switch only ever looked at the top navigation.", "本站出过这个 bug。点一下语言开关，页面正文变成中文，侧栏还留在英文——里面每个标签都是组件初始化里的一个 const 挑好的，它只在构造那一次读了语言，然后一直捧着那个答案，直到页面结束。它活了一阵子，因为中文读者打开中文页面看到的就是中文侧栏，也因为覆盖这个开关的浏览器测试从头到尾只看了顶部导航。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Nothing was misspelled. The read was in the wrong place.", "没有一处拼写是错的。错的是读取的位置。")}
+                </Paragraph>
+                <CodeBlock code={trackingTestCode} />
+                <Paragraph>
+                    {locale.text("Both lines read count. The const kept the answer; the computed kept the question. After count = 5 the accessor answers 10 and the constant is still 0, and it will be 0 for the rest of the program.", "两行都读了 count。const 留下的是答案，computed 留下的是问题。count = 5 之后，访问器回答 10，那个常量还是 0——而且在程序余下的时间里都会是 0。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The same thing in a component, which is where it actually bites.", "同一件事写在组件里，而真正会咬人的正是这个位置。")}
+                </Paragraph>
+                <CodeBlock code={trackingComponentCode} />
+                <Paragraph>
+                    {locale.text("Component setup runs once. The template runs again every time something it read changes. So doubled is computed during setup and never again, while the interpolation in Live is inside the render observer and is re-evaluated with it. That is the whole mechanism: a reactive observer subscribes to the reads performed while it runs, and setup is not an observer.", "组件初始化只跑一次。它读过的东西一变，模板就再跑一次。所以 doubled 是在初始化期间算出来的，之后再不重算；而 Live 里那个插值在渲染观察者内部，跟着它一起重新求值。机制全在这里：响应式观察者订阅的是它运行期间发生的读取，而初始化不是观察者。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The cost is that nothing marks the frozen read. const doubled = count * 2 compiles, because a snapshot is a perfectly reasonable thing to want — the value at construction, deliberately held. The compiler cannot tell which one you meant, so it does not guess, and this is one of the few places on this site where the answer is a rule you hold rather than a rule the compiler holds. The one exception is a look literal, where reading state is refused outright, because there a snapshot can never be what anyone meant.", "代价是：那次冻住的读取，没有任何标记。const doubled = count * 2 能编译，因为「要一份快照」本来就很合理——构造那一刻的取值，故意留住。编译器分不出你要的是哪一个，所以它不猜。本站少有的几处「靠你自己守、不靠编译器守」的规则，这是其中之一。唯一的例外是 look 字面量：在那里读 state 会被直接拒绝，因为在那里，快照绝不可能是任何人的本意。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: the first block is a test, and scripts/check-code-samples.mjs compiles it as one. The numbers in it were run: velar test passes with live() at 10 and frozen at 0. The sidebar bug is pinned by src/app.browser.test.vel, in the test named \"the language switch reaches the sidebar and the section list too\" — it fails against the version of the code described above.", "门禁：第一块是一个测试，scripts/check-code-samples.mjs 就是按测试来编译它的。里面的数字是跑出来的：velar test 通过，live() 是 10，frozen 是 0。侧栏那个 bug 由 src/app.browser.test.vel 钉着，测试名是「the language switch reaches the sidebar and the section list too」——对着上面描述的那版代码跑，它会失败。")}
+                </GateNote>
+
+                <SectionHeading id="scopes">{locale.text("Where the cell lives", "单元活在哪里")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("A store that outlives every screen is a normal thing to want, and in most stacks it arrives as a second system: a store library, its own provider, its own way of subscribing, its own devtools. So a project ends up with two kinds of state that behave differently and are read differently, and the difference is about lifetime rather than about anything the data does.", "「比每个界面都活得久」的存储，是很正常的需求；而在多数技术栈里，它是作为第二套系统到来的：一个 store 库、自己的 provider、自己的订阅方式、自己的调试工具。于是项目里有了两种行为不同、读法也不同的状态，而它们的差别只是生命周期，跟数据本身做什么无关。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Here it is the same declaration in a different scope.", "在这里，它就是同一个声明写在不同的作用域里。")}
                 </Paragraph>
                 <CodeBlock code={moduleStateCode} />
                 <BulletList>
                     <li>
-                        {locale.text("Assigning an imported binding is forbidden; mutating the value inside one is legal and publishes to everyone reading it.", "对导入的绑定赋值是被禁止的；改变它内部的值是合法的，并会发布给每个读取者。")}
+                        {locale.text("Assigning an imported binding is forbidden; mutating the value inside one is legal and publishes to everyone reading it.", "对导入的绑定赋值是禁止的；改动它内部的值是合法的，并且会发布给每个读取者。")}
                     </li>
                     <li>
-                        {locale.text("A helper may mutate the value a state binding owns. state does not copy, freeze, or claim linear ownership of what it holds.", "辅助函数可以改变 state 绑定所拥有的值。state 不复制、不冻结，也不主张对所持之物的线性所有权。")}
+                        {locale.text("A helper may mutate the value a state binding owns. state does not copy, freeze, or claim linear ownership of what it holds.", "辅助函数可以改动 state 绑定拥有的值。state 不复制、不冻结，也不主张对所持之物的线性所有权。")}
                     </li>
                     <li>
-                        {locale.text("A module-scope watch is never disposed. Like a module action, it lives for the life of the page.", "模块作用域的 watch 永不被释放。与模块 action 一样，它存活到页面结束。")}
+                        {locale.text("A module-scope watch is never disposed. Like a module action, it lives for the life of the page.", "模块作用域的 watch 永不释放。和模块 action 一样，它活到页面结束。")}
                     </li>
                 </BulletList>
                 <Paragraph>
-                    {locale.text("Component scope and ordinary block or function scope are the other two. Each execution of a function that declares state creates a distinct cell, and closures capture that cell the way they capture any other binding.", "另外两种是组件作用域与普通的块或函数作用域。声明了 state 的函数每执行一次就创建一个不同的单元，闭包捕获这个单元的方式与捕获其他绑定完全一样。")}
+                    {locale.text("The other two scopes are the component and an ordinary block or function. Each execution of a function that declares state creates a distinct cell, and a closure captures it the way it captures any other binding — so a counter factory is a counter factory, with no store to register it in.", "另外两种作用域是组件，以及普通的块或函数。声明了 state 的函数每执行一次就造一个新单元，闭包捕获它的方式和捕获别的绑定完全一样——所以一个计数器工厂就是一个计数器工厂，不需要往哪个 store 里登记。")}
                 </Paragraph>
                 <CodeBlock code={scopedCode} />
-
-                <SectionHeading id="snapshot">{locale.text("Snapshot, cell, and formula", "快照、单元与公式")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Three declarations that look alike mean three different things. const takes one ordinary reference and keeps it; state creates an independent writable cell initialized from that reference; computed keeps the query itself, so it answers the current value each time it is called.", "三个看起来相似的声明表示三件不同的事。const 取一个普通引用并保留它；state 以该引用为初值创建一个独立的可写单元；computed 保留查询本身，因此每次调用都回答当下的值。")}
+                    {locale.text("The cost is that scope is the only lever. Module scope means for the life of the page, with no eviction, no reset between routes, and no per-user partition — a shared store that should be cleared on sign-out has to be cleared by application code, because nothing about the declaration says when it should end. Component scope ends when the component does, and there is no third lifetime between those two.", "代价是「作用域」是唯一的杠杆。模块作用域就是活到页面结束：没有淘汰、路由之间不重置、也不按用户分区——退出登录时该清空的共享存储，得由应用代码去清，因为那条声明本身没说它什么时候该结束。组件作用域随组件结束，而这两者之间没有第三种生命周期。")}
                 </Paragraph>
-                <CodeBlock code={snapshotCode} />
 
-                <SectionHeading id="computed">{locale.text("computed is a function", "computed 是函数")}</SectionHeading>
+                <SectionHeading id="derived">
+                    {locale.text("The dependency array, and its absence", "依赖数组，以及它的缺席")}
+                </SectionHeading>
                 <Paragraph>
-                    {locale.text("computed(() => value) is the single derived-cache API. It takes a synchronous zero-argument function and returns a callable accessor, so a derived value is read with a call. There is no second memo spelling and no declaration-keyword form; a program that reaches for one is told the current spelling.", "computed(() => value) 是唯一的派生缓存 API。它接受一个同步的零参数函数并返回一个可调用的访问器，因此派生值通过调用来读取。没有第二种 memo 拼写，也没有声明关键字形式；写成那样的程序会被告知当前的拼写。")}
+                    {locale.text("For most of React's life a derived value came with a second declaration beside it: the list of things it read.", "React 存在的大部分时间里，一个派生值旁边都跟着第二条声明：它读了些什么的清单。")}
+                </Paragraph>
+                <CodeBlock code={memoJsCode} />
+                <Paragraph>
+                    {locale.text("That is largely settled now. React Compiler 1.0 has been stable since October 2025 and generates memoization automatically, so useMemo and useCallback are no longer something a person writes. One piece survives: the compiler does not touch useEffect, and react.dev still requires every reactive value the effect reads to be declared in its array.", "这件事现在基本解决了。React Compiler 1.0 从 2025 年 10 月起稳定，自动生成 memoization，useMemo 和 useCallback 不再需要人来写。剩下一处还在：编译器不碰 useEffect，react.dev 仍然要求把 effect 读到的每个响应式值写进它的数组里。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("There is no dependency list here either, and the reason is the one from the first section: a computed subscribes to the reads it performs while it runs, so the dependencies are discovered rather than declared. computed(() => value) is the whole derived-cache API. It takes a synchronous zero-argument function and answers a callable accessor, so a derived value is read with a call. There is no second memo spelling and no declaration-keyword form.", "这里同样没有依赖清单，原因就是第一节那条：computed 订阅的是它运行期间发生的读取，所以依赖是被发现的，不是被声明的。computed(() => value) 就是派生缓存的全部 API。它接一个同步的零参数函数，返回一个可调用的访问器，所以派生值靠调用来读。没有第二种 memo 写法，也没有声明关键字的形式。")}
                 </Paragraph>
                 <CodeBlock code={computedErrorCode} />
                 <CodeBlock code={computedErrorOutput} />
+                <Paragraph>
+                    {locale.text("Three declarations that look alike mean three different things, and it is worth seeing them in one component. const takes one ordinary reference and keeps it. state creates an independent writable cell initialized from that reference. computed keeps the query, so it answers the current value each time it is called.", "三个长得很像的声明，说的是三件不同的事，值得放在一个组件里看一遍。const 取一个普通引用并留着它。state 以那个引用为初值，造一个独立的可写单元。computed 留下的是查询，所以每次调用都回答当下的值。")}
+                </Paragraph>
+                <CodeBlock code={snapshotCode} />
                 <BulletList>
                     <li>
-                        {locale.text("The callback is checked for shape, not for purity. It may write state, and the write publishes like any other, so keeping a derivation pure is a discipline the language states rather than proves.", "回调只按形状受检，不按纯度受检。它可以写入 state，写入会像其他写入一样发布，因此保持派生纯粹是语言陈述而非证明的纪律。")}
+                        {locale.text("The callback is checked for shape, not for purity. It may write state, and the write publishes like any other, so a pure derivation is a discipline the language states rather than proves.", "回调按形状受检，不按纯度受检。它可以写 state，写入照常发布，所以「派生要纯」是语言陈述的纪律，不是它证明的性质。")}
                     </li>
                     <li>
-                        {locale.text("The runtime budget stands between an impure derivation and a frozen page: a computed, render, or watch that invalidates itself more than one hundred times is stopped and reported through velar/app.", "运行时预算挡在不纯的派生与卡死的页面之间：自我失效超过一百次的 computed、渲染或 watch 会被停止并经由 velar/app 上报。")}
+                        {locale.text("A runtime budget stands between an impure derivation and a frozen page: a computed, render, or watch that invalidates itself more than one hundred times is stopped and reported through velar/app.", "不纯的派生和卡死的页面之间挡着一道运行时预算：自我失效超过一百次的 computed、渲染或 watch 会被停下并经由 velar/app 上报。")}
                     </li>
                     <li>
-                        {locale.text("A computed failure is cached as part of the derived result and rethrown to its managed consumer; once the last consumer is disposed, the computed detaches from its dependencies and recomputes only if read again.", "computed 的失败会作为派生结果的一部分被缓存，并重新抛给它受管的消费者；最后一个消费者被释放后，computed 从依赖上脱离，只有再次被读取时才重新计算。")}
+                        {locale.text("A computed failure is cached as part of the derived result and rethrown to its managed consumer. Once the last consumer is disposed the computed detaches from its dependencies and recomputes only if read again.", "computed 的失败会作为派生结果的一部分被缓存，并重新抛给受管的消费者。最后一个消费者释放后，computed 从依赖上脱开，只有被再次读取时才重算。")}
                     </li>
                 </BulletList>
-
-                <SectionHeading id="watch">{locale.text("watch is for effects", "watch 用于副作用")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("watch expression: runs its body when the tracked value changes. The expression is evaluated immediately to register the dependency and record the baseline, so the body does not run for that first value. The as form names the new and the old value, and both names are required with as — a body that needs only the new value writes an underscore for the other.", "watch expression: 在被追踪的值改变时运行它的体。表达式会立即求值以注册依赖并记录基线，因此体不会为这个初值运行。as 形式为新值与旧值命名，且带 as 时两个名字都必须写——只需要新值的体给另一个写下划线。")}
+                    {locale.text("The cost is a pair of parentheses at every read site. A derived value is a function, so it is doubled() and not doubled, everywhere, including inside a template — and a reader who forgets them gets the accessor rather than the number. In exchange the call is the visible marker that this read is live, which is exactly the distinction the first section was about.", "代价是每个读取点都多一对括号。派生值是函数，所以到处都写 doubled() 而不是 doubled，模板里也一样——忘了括号，拿到的是访问器，不是那个数。换回来的是：那对括号就是「这次读取是活的」的可见标记，而这正是第一节讲的那个区别。")}
+                </Paragraph>
+
+                <SectionHeading id="watch">
+                    {locale.text("A value, or work performed", "是一个值，还是一次执行")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("A derived value that also sends an analytics event is a side effect hiding inside a cache. It runs when somebody reads it, it does not run when nobody does, and the number of times it ran depends on how many observers happened to be alive. Nobody writes that on purpose; it happens because the cache was the convenient place to put the line.", "一个顺带发一条分析事件的派生值，是藏在缓存里的副作用。有人读它它就跑，没人读它就不跑，跑了几次取决于当时活着的观察者有多少。没人是故意这么写的；只是因为把那一行塞进缓存最顺手。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("watch is the spelling that says the truth about that code. It runs its body when the tracked value changes, and it has no result for anyone to read.", "watch 就是把这段代码的真相说出来的那种写法。被追踪的值一变，它就跑一遍自己的体，而且它没有结果供人读取。")}
                 </Paragraph>
                 <CodeBlock code={watchCode} />
                 <Paragraph>
-                    {locale.text("The choice between computed and watch is a statement about what the code is. A value that other code reads is a computed; work performed because something changed is a watch. Writing that work inside a computed hides a side effect inside a cache, so these two stand side by side for exactly that comparison.", "在 computed 与 watch 之间的选择，是在陈述这段代码是什么。被其他代码读取的值是 computed；因为某物改变而执行的工作是 watch。把这类工作写进 computed，等于把副作用藏进缓存，因此下面这两者并排放在一起正是为了这个对照。")}
+                    {locale.text("The expression is evaluated immediately to register the dependency and record the baseline, so the body does not run for that first value. The as form names the new value and the old one, and both names are required with as — a body that needs only the new value writes an underscore for the other, which is a small piece of friction that keeps the two positions unambiguous.", "表达式会立即求值，用来注册依赖并记下基线，所以体不会为这个初值跑一次。as 形式给新值和旧值起名，而带 as 时两个名字都得写——只要新值的体给另一个写下划线。这点小别扭换来的是：两个位置永远不会混。")}
                 </Paragraph>
                 <CodeBlock code={derivationCode} />
-
-                <SectionHeading id="bursts">{locale.text("A burst publishes once", "一串赋值只发布一次")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Consecutive synchronous state assignments publish once: every affected computed accessor, watch, and render observer re-runs a single time per burst, delivered on the microtask flush after the synchronous work completes. This is a compiler and runtime contract rather than an application control, so there is no batching API to call and none to forget.", "连续的同步 state 赋值只发布一次：每个受影响的 computed 访问器、watch 与渲染观察者在一串赋值中只重跑一次，在同步工作完成后的微任务刷新中送达。这是编译器与运行时的契约，而不是应用侧的控制项，因此既没有要调用的批处理 API，也就没有会被忘记的批处理 API。")}
+                    {locale.text("The cost is that choosing between the two is a judgement and the compiler will not make it for you. A computed may write state; nothing refuses it. What the language provides is a spelling that reads as what the code is, and the discipline is yours: a value other code reads is a computed, work performed because something changed is a watch.", "代价是：在两者之间选哪个是判断题，编译器不替你做。computed 可以写 state，没有谁拦着。语言提供的是一种「读起来就是这段代码本身」的写法，纪律归你：别的代码要读的值是 computed，因为某物变了而执行的工作是 watch。")}
+                </Paragraph>
+
+                <SectionHeading id="bursts">{locale.text("Three writes, one render", "写三次，渲染一次")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("Sending a message writes three cells: the outgoing message, the reply, and which one is streaming. Three writes, and the transcript should redraw once.", "发一条消息要写三个单元：发出去的那条、回复，以及哪一条在流式输出。写三次，而记录区应该只重画一次。")}
+                </Paragraph>
+                <CodeBlock code={batchJsCode} />
+                <Paragraph>
+                    {locale.text("A batching function works, and it works only when somebody remembers to call it. The failure of forgetting is not an error — it is three renders instead of one, which looks identical and shows up later as a performance question nobody can trace to a line.", "批处理函数是管用的，但只在有人记得调用它的时候管用。忘了调用不会报错——只是渲染三次而不是一次，看起来一模一样，之后变成一个性能问题，而且谁也追不到具体哪一行。")}
                 </Paragraph>
                 <CodeBlock code={burstCode} />
-                <BulletList>
-                    <li>
-                        {locale.text("Assignments still commit immediately, so a read between two assignments always sees the latest value and a derived chain cannot be observed in an intermediate state.", "赋值仍然立即提交，因此两次赋值之间的读取总是看到最新的值，派生链也不会被观察到处于中间状态。")}
-                    </li>
-                    <li>
-                        {locale.text("The boundary of the contract is the synchronous extent: a burst that spans an await publishes per assignment, and the burst may cross ordinary function calls.", "契约的边界是同步范围：跨越 await 的一串赋值按每次赋值发布，而这串赋值可以跨越普通函数调用。")}
-                    </li>
-                    <li>
-                        {locale.text("A throw in the middle of a burst does not tear state; what was assigned before the failure still publishes on the flush.", "一串赋值中途抛出不会撕裂状态；失败之前已赋的值仍会在刷新时发布。")}
-                    </li>
-                </BulletList>
-
-                <SectionHeading id="deep">{locale.text("What a reader subscribes to", "读取者订阅了什么")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A reactive observer subscribes to the property or the collection key it actually read. Nested mutations bubble a version change to the owning state for deep watches, while unrelated property and Map-key consumers stay clean. List size and shifted indexes, Map key structure, and Map values are distinct dependencies, so inserting at one index invalidates only the tracked indexes at or after it, and updating an existing Map value does not invalidate keys or size.", "响应式观察者订阅的是它实际读取的属性或集合键。嵌套改动会把版本变化冒泡给拥有它的 state 以支持深层 watch，而无关的属性与 Map 键的消费者保持不受影响。List 的长度与移位后的索引、Map 的键结构与 Map 的值是彼此独立的依赖，因此在某个索引处插入只会让该位置及其之后被追踪的索引失效，更新一个已有的 Map 值不会让 keys 或 size 失效。")}
+                    {locale.text("Consecutive synchronous assignments publish once. Every affected computed accessor, watch, and render observer re-runs a single time per burst, delivered on the microtask flush after the synchronous work completes. This is a compiler and runtime contract rather than an application control, so there is no batching API to call — and therefore none to forget.", "连续的同步赋值只发布一次。每个受影响的 computed 访问器、watch 与渲染观察者，在这一串里只重跑一次，在同步工作结束后的微任务刷新里送达。这是编译器与运行时的契约，不是应用侧的控制项，所以没有批处理 API 要调用——也就没有会被忘掉的批处理 API。")}
                 </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("Only ordinary mutable records receive lazy reactive proxies. List, Map, and Set keep their native identities and are tracked by compiler-owned collection operations.", "只有普通的可变记录会获得惰性响应代理。List、Map 与 Set 保持它们的原生身份，由编译器拥有的集合操作来追踪。")}
+                        {locale.text("Assignments still commit immediately, so a read between two assignments always sees the latest value and a derived chain is never observed in an intermediate state.", "赋值仍然立即提交，所以两次赋值之间的读取总是看到最新值，派生链也不会被看到处于中间状态。")}
                     </li>
                     <li>
-                        {locale.text("Classes, functions, host objects, frozen records, and non-extensible records are never wrapped.", "类、函数、宿主对象、被冻结的记录与不可扩展的记录永远不会被包装。")}
-                    </li>
-                    <li>
-                        {locale.text("Replacing a state root detaches the old root together with everything only that root owned, so the canonical spread-and-replace update releases the value it replaced instead of leaving a dead owner behind every surviving descendant.", "替换一个 state 根会把旧根与仅由该根拥有的一切一起摘除，因此惯用的展开替换写法会释放被替换的值，而不是在每个存活后代背后留下一个死掉的拥有者。")}
+                        {locale.text("A throw in the middle of a burst does not tear state: what was assigned before the failure still publishes on the flush.", "一串赋值中途抛出不会撕裂状态：失败之前已经赋的值仍然会在刷新时发布。")}
                     </li>
                 </BulletList>
+                <Paragraph>
+                    {locale.text("The cost is the boundary, and it is worth knowing before you meet it. The contract covers the synchronous extent, so a burst that spans an await publishes per assignment: an asynchronous function that writes three cells around two awaits produces three flushes, and no wrapper is available to make it one. The burst may cross ordinary function calls, so the extent is larger than one function body but it stops at the first await.", "代价是那条边界，最好在撞上之前就知道。契约覆盖的是同步范围，所以跨越 await 的一串赋值按每次赋值发布：一个在两次 await 之间写了三个单元的异步函数，会产生三次刷新，而且没有包装器能把它们并成一次。这一串可以跨越普通函数调用，所以范围比一个函数体大——但到第一个 await 为止。")}
+                </Paragraph>
+
+                <SectionHeading id="deep">
+                    {locale.text("What a reader subscribes to", "读取者订阅了什么")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("A table of two hundred rows, and one cell changes. In an immutable model the row is replaced, the array is replaced, and the component that holds the array re-renders — after which the framework's job is to work out that one hundred and ninety-nine rows did not change. That work is proportional to the tree, not to the change.", "两百行的表格，一个格子变了。在不可变模型里，那一行被替换，数组被替换，持有数组的组件重新渲染——然后框架的活儿是把「有一百九十九行没变」这件事算出来。这份工作量正比于树的大小，而不是正比于改动。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("A reactive observer here subscribes to the property or the collection key it actually read, so the update reaches whoever read that one cell. Nested mutations bubble a version change to the owning state for deep watches, while unrelated property and Map-key consumers stay clean. List size and shifted indexes, Map key structure, and Map values are distinct dependencies: inserting at one index invalidates only the tracked indexes at or after it, and updating an existing Map value does not invalidate keys or size.", "这里的响应式观察者订阅的是它实际读到的那个属性或那个集合键，所以更新只会到达读过那一格的人。嵌套改动会把版本变化冒泡给拥有它的 state，好让深层 watch 收到；而无关属性、无关 Map 键的消费者不受影响。List 的长度与移位后的索引、Map 的键结构、Map 的值，是彼此独立的依赖：在某个索引处插入，只让该位置及其之后被追踪的索引失效；更新一个已有的 Map 值，不会让 keys 或 size 失效。")}
+                </Paragraph>
+                <BulletList>
+                    <li>
+                        {locale.text("Only ordinary mutable records receive lazy reactive proxies. List, Map, and Set keep their native identities and are tracked by compiler-owned collection operations.", "只有普通的可变记录会拿到惰性响应代理。List、Map、Set 保持原生身份，由编译器拥有的集合操作来追踪。")}
+                    </li>
+                    <li>
+                        {locale.text("Classes, functions, host objects, frozen records, and non-extensible records are never wrapped.", "类、函数、宿主对象、被冻结的记录、不可扩展的记录，一律不包装。")}
+                    </li>
+                    <li>
+                        {locale.text("Replacing a state root detaches the old root together with everything only that root owned, so the ordinary spread-and-replace update releases what it replaced.", "替换一个 state 根，会把旧根连同只归它拥有的一切一起摘下来，所以常见的展开替换写法会释放被替换掉的东西。")}
+                    </li>
+                </BulletList>
+                <Paragraph>
+                    {locale.text("The cost is the thing React bought with immutability, and it is a real capability rather than a stylistic preference. Because a value can change under a render, there is no cheap snapshot to render and throw away, so interruptible rendering of a stale tree is not on the table here and there is nothing to reach for in its place. What comes back the other way is that an update is bounded by what read the changed property rather than by the size of the tree: less work, rather than work that can be interrupted.", "代价正是 React 用不可变换来的那样东西，而且它是一项真实的能力，不是风格偏好。因为一个值可能在渲染过程中变掉，这里没有一份廉价的快照可以先渲染再丢掉，所以「渲染一棵过期的树、中途打断」这条路在这里不成立，也没有替代品可用。换回来的是另一件事：一次更新的范围由「谁读了那个变化的属性」决定，而不是由树的大小决定——是活更少，不是活可以被打断。")} <Link
+                        to="/guide/for-frameworks"
+                        look={linkLook}
+                    >
+                        {locale.text("The framework comparison spends that trade in full.", "框架对照那一页把这笔交易讲完了。")}
+                    </Link>
+                </Paragraph>
                 <Callout title={locale.text("Serialization crosses back to raw values", "序列化会回到原始值")}>
                     <Paragraph>
-                        {locale.text("Storage, HTTP, realtime, forms, unsafe bridges, and the equality and test boundaries all unwrap a reactive value before validating it, and Map keys and Set members are unwrapped before lookup. A reactive record and its raw identity therefore cannot split membership.", "存储、HTTP、实时、表单、unsafe 桥接，以及相等性与测试边界，都会在验证前解开响应式值；Map 的键与 Set 的成员也在查找前解开。因此响应式记录与它的原始身份不会在成员关系上分裂成两份。")}
+                        {locale.text("Storage, HTTP, realtime, forms, unsafe bridges, and the equality and test boundaries all unwrap a reactive value before validating it, and Map keys and Set members are unwrapped before lookup. So a reactive record and its raw identity cannot split membership between them.", "存储、HTTP、实时、表单、unsafe 桥接，还有相等性与测试这两条边界，都会在验证之前把响应式值解开；Map 的键和 Set 的成员也在查找之前解开。所以响应式记录和它的原始身份，不会在成员关系上分成两份。")}
                     </Paragraph>
                 </Callout>
             </Prose>

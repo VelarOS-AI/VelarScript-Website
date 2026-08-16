@@ -1,26 +1,38 @@
-import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
-import {useLocale} from "@velarscript/site-ui"
+import {Head, Link} from "velar/web"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, GateNote, MemberRow, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
+import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
-const buildersCode = `import {alpha, asset, border, clamp, color, darken, hsl, lighten, linearGradient, max, min, minmax, repeat, rgb, rgba, shadow, spacing, tracks, transition} from "velar/look"\nimport {Border, Color, Image, Length, Shadow, Spacing, Track, TrackList, Transition} from "velar/look"\n\n// Colour: five constructors and three adjustments.\nconst ink: Color = rgb(24, 31, 46)\nconst brand: Color = color("rebeccapurple")\nconst veiled: Color = rgba(24, 31, 46, 0.55)\nconst sky: Color = hsl(210, 70, 45)\nconst faded: Color = alpha(ink, 0.4)\nconst lifted: Color = lighten(ink, 0.2)\nconst sunk: Color = darken(ink, 0.2)\n\n// Composites: borders, shadows, images, and one transition.\nconst hairline: Border = border(1px, faded)\nconst dashedEdge: Border = border(2px, ink, "dashed")\nconst raised: Shadow = shadow(0px, 12px, 32px, veiled)\nconst pressed: Shadow = shadow(0px, 1px, 2px, veiled, spread=0px, inset=true)\nconst wash: Image = linearGradient(180deg, lifted, sunk)\nconst mark: Image = asset("/tour-mark.svg")\nconst fade: Transition = transition("opacity", 200ms, "ease-in-out", 50ms)\n\n// Layout: track lists, spacing in one to four steps, and the three length\n// functions.\nconst flexibleTrack: Track = minmax(120px, 1fr)\nconst threeUp: TrackList = repeat(3, flexibleTrack)\nconst explicitTracks: TrackList = tracks(200px, 1fr, minmax(80px, 240px))\nconst inset: Spacing = spacing(16px, 20px)\nconst narrow: Length = min(16px, 2rem)\nconst wide: Length = max(16px, 2rem)\nconst fluid: Length = clamp(1rem, 4vw, 3rem)\n\n// A builder is an ordinary value: it may be aliased, passed to another\n// function, returned, and called outside a Look block.\nconst makeColor = rgb\n\ndef buildRamp(build: (number, number, number) -> Color) -> List<Color>:\n    return [build(45, 79, 190), build(90, 120, 220)]\n\nconst ramp: Color = makeColor(45, 79, 190)\nconst rampColors: List<Color> = buildRamp(rgb)\n\nexport const panelLook = look:\n    display = "grid"\n    gridTemplateColumns = threeUp\n    gridTemplateRows = explicitTracks\n    gap = narrow\n    width = fluid\n    maxWidth = wide\n    padding = inset\n    color = ink\n    background = wash\n    backgroundImage = mark\n    backgroundColor = brand\n    border = hairline\n    outline = dashedEdge\n    boxShadow = raised\n    textShadow = pressed\n    accentColor = ramp\n    fill = sky\n    transition = fade\n    caretColor = rampColors[0]`
-const unitsCode = `import {tracks} from "velar/look"\nimport {Angle, Duration, Length, LengthPercentage, Percentage, TrackFraction} from "velar/look"\n\n// All thirteen unit suffixes. They belong to the language and need no import,\n// and they are ordinary reusable values outside a Look block.\nconst gutter: Length = 16px\nconst rootScale: Length = 1rem\nconst localScale: Length = 2em\nconst viewportPart: Length = 25vw\nconst viewportTall: Length = 40vh\nconst smallSide: Length = 10vmin\nconst largeSide: Length = 10vmax\nconst share: Percentage = 75%\nconst fraction: TrackFraction = 2fr\nconst quick: Duration = 200ms\nconst slow: Duration = 1s\nconst quarterTurn: Angle = 90deg\nconst halfTurn: Angle = 0.5turn\n\n// Unit arithmetic: addition and subtraction require the same visual dimension,\n// mixing Length and Percentage yields LengthPercentage, and a visual value may\n// be multiplied or divided by a finite number in either order.\nconst mixedMetric: LengthPercentage = share - gutter * 2\nconst doubled: Length = gutter * 2\nconst preDoubled: Length = 2 * gutter\nconst halved: Length = gutter / 2\nconst settle: Duration = slow + quick\nconst swept: Angle = halfTurn + quarterTurn\nconst shrunk: Percentage = share - 25%\n\nexport const measuredLook = look:\n    width = mixedMetric\n    minWidth = viewportPart\n    maxHeight = viewportTall\n    padding = doubled\n    paddingInline = preDoubled\n    gap = halved\n    fontSize = rootScale\n    letterSpacing = localScale / 32\n    marginInline = smallSide\n    marginBlock = largeSide\n    gridTemplateColumns = tracks(fraction, gutter)\n    rotate = swept\n    transitionDuration = settle\n    scrollMarginTop = shrunk`
-const familiesCode = `import {border, minmax, repeat, rgb, shadow, spacing} from "velar/look"\n\nconst ink = rgb(24, 31, 46)\nconst veiled = rgb(200, 205, 215)\n\n// One property from each of the fourteen published families. CSS keyword values\n// are strings, because a bare identifier is a real VelarScript variable.\nexport const vocabularyLook = look:\n    // layout and containment\n    display = "grid"\n    position = "relative"\n    overflow = "hidden"\n    zIndex = 2\n\n    // grid\n    gridTemplateColumns = repeat(3, minmax(120px, 1fr))\n    gridAutoFlow = "row"\n\n    // flex and alignment\n    gap = 16px\n    alignItems = "center"\n    justifyContent = "space-between"\n\n    // size and inset\n    width = 100%\n    minWidth = 240px\n    top = 8px\n\n    // spacing\n    padding = spacing(16px, 20px)\n    marginBlock = 12px\n\n    // background\n    backgroundColor = veiled\n    backgroundRepeat = "no-repeat"\n\n    // border and outline\n    border = border(1px, veiled)\n    borderRadius = 14px\n    outlineOffset = 2px\n\n    // effects\n    boxShadow = shadow(0px, 12px, 32px, veiled)\n    opacity = 1\n\n    // typography and international text\n    color = ink\n    fontSize = 1rem\n    fontWeight = 600\n    lineHeight = 1.5\n    textAlign = "start"\n\n    // lists\n    listStyle = "none"\n\n    // SVG paint\n    fill = ink\n    strokeWidth = 2px\n\n    // transform and transition\n    rotate = 0deg\n    transitionDuration = 200ms\n\n    // interaction and form theme\n    cursor = "pointer"\n    userSelect = "none"\n\n    // scroll\n    scrollBehavior = "smooth"\n    scrollSnapAlign = "start"`
+// The CSS and JavaScript blocks are third-party, so they are *CssCode and
+// *JsCode and nothing here compiles them. Every VelarScript block is compiled
+// by this site's gate.
+const droppedCssCode = ".panel {\n    background-colour: white;   /* one letter, and the browser drops the line */\n    padding: 8;                 /* no unit, so the browser drops this one too */\n    color: #1a1f2e;             /* this one applies */\n}"
 const propertyErrorCode = `const panelLook = look:\n    backgroundColour = "white"\n    padding = 8\n\nexport component Panel:\n    return <p look={panelLook}>a panel</p>`
 const propertyErrorOutput = `main.vel:2:5 error VEL5038: Unknown Look property 'backgroundColour'; did you mean 'backgroundColor'?\n    backgroundColour = "white"\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^\n\nmain.vel:3:15 error VEL5038: Look property 'padding' is a CSS length and requires a unit; write a unit value such as 16px, 1rem, or 50%\n    padding = 8\n              ^`
-const conditionsCode = `import {darken, lighten, rgb, spacing} from "velar/look"\n\nconst ink = rgb(24, 31, 46)\nconst brand = rgb(45, 79, 190)\nconst sky = rgb(90, 140, 220)\nconst faded = lighten(ink, 0.4)\nconst sunk = darken(ink, 0.2)\nconst lifted = lighten(ink, 0.5)\n\n// The nine element states and the seven pseudo-element targets. Conditions may\n// appear inside a target and a target may appear inside a condition; a target\n// may not appear inside another target.\nexport const statefulLook = look:\n    background = brand\n    borderColor = ink\n\n    if @hover:\n        background = lighten(brand, 0.2)\n    if @focus:\n        outlineColor = sky\n    if @focusVisible:\n        outlineOffset = 3px\n    if @active:\n        opacity = 0.8\n    if @current:\n        fontWeight = 700\n    if @disabled:\n        opacity = 0.5\n    if @checked:\n        borderColor = sky\n    if @invalid:\n        borderColor = sunk\n    if @open:\n        maxHeight = "none"\n\n    @before:\n        content = "-"\n\n        if @hover:\n            content = ">"\n\n    @after:\n        content = ""\n        display = "block"\n    @backdrop:\n        background = faded\n    @placeholder:\n        color = faded\n    @selection:\n        background = faded\n    @marker:\n        color = ink\n    @fileSelectorButton:\n        cursor = "pointer"\n\n// Thresholds compare against compile-time px, rem, or em values, which may be a\n// local or imported const unit token or a field of a const token record.\nconst compact: Length = 720px\nconst breakpoints = {wide: 1200px}\n\n// The whole media vocabulary: viewport.width, viewport.height, scheme.dark,\n// scheme.light, and motion.reduced. Media subjects compose with element states\n// and with each other, and "not scheme.dark" is the same condition as\n// "scheme.light".\nexport const responsiveLook = look:\n    padding = spacing(16px, 20px)\n\n    if viewport.width <= compact:\n        padding = 12px\n    if viewport.height >= 600px:\n        marginBlock = 8px\n    if viewport.width > breakpoints.wide:\n        gap = 24px\n    if scheme.dark:\n        color = lifted\n        background = sunk\n    if scheme.light:\n        color = sunk\n    if motion.reduced:\n        transition = null\n    else if scheme.dark and viewport.width <= compact:\n        padding = 10px\n    else:\n        padding = 14px\n\n    @before:\n        if viewport.width <= compact:\n            content = "compact"`
+const familiesCode = `import {border, minmax, repeat, rgb, shadow, spacing} from "velar/look"\n\nconst ink = rgb(24, 31, 46)\nconst veiled = rgb(200, 205, 215)\n\n// One property from each of the fourteen published families. CSS keyword values\n// are strings, because a bare identifier is a real VelarScript variable.\nexport const vocabularyLook = look:\n    // layout and containment\n    display = "grid"\n    position = "relative"\n    overflow = "hidden"\n    zIndex = 2\n\n    // grid\n    gridTemplateColumns = repeat(3, minmax(120px, 1fr))\n    gridAutoFlow = "row"\n\n    // flex and alignment\n    gap = 16px\n    alignItems = "center"\n    justifyContent = "space-between"\n\n    // size and inset\n    width = 100%\n    minWidth = 240px\n    top = 8px\n\n    // spacing\n    padding = spacing(16px, 20px)\n    marginBlock = 12px\n\n    // background\n    backgroundColor = veiled\n    backgroundRepeat = "no-repeat"\n\n    // border and outline\n    border = border(1px, veiled)\n    borderRadius = 14px\n    outlineOffset = 2px\n\n    // effects\n    boxShadow = shadow(0px, 12px, 32px, veiled)\n    opacity = 1\n\n    // typography and international text\n    color = ink\n    fontSize = 1rem\n    fontWeight = 600\n    lineHeight = 1.5\n    textAlign = "start"\n\n    // lists\n    listStyle = "none"\n\n    // SVG paint\n    fill = ink\n    strokeWidth = 2px\n\n    // transform and transition\n    rotate = 0deg\n    transitionDuration = 200ms\n\n    // interaction and form theme\n    cursor = "pointer"\n    userSelect = "none"\n\n    // scroll\n    scrollBehavior = "smooth"\n    scrollSnapAlign = "start"`
+const stringValueJsCode = `// The value built by concatenation, in a style object\nconst style = { border: "1px solid " + theme.line };\n// theme.line is undefined on this code path, so the value reads\n// "1px solid undefined" and the whole declaration is dropped.`
+const borderErrorCode = `export const panelLook = look:\n    border = "1px solid #123"`
+const borderErrorOutput = `main.vel:2:14 error VEL5038: Use 'border(1px, color("#123"))'; Look border shorthand is written with the border builder\n    border = "1px solid #123"\n             ^^^^^^^^^^^^^^^^`
+const buildersCode = `import {alpha, asset, border, clamp, color, darken, hsl, lighten, linearGradient, max, min, minmax, repeat, rgb, rgba, shadow, spacing, tracks, transition} from "velar/look"\nimport {Border, Color, Image, Length, Shadow, Spacing, Track, TrackList, Transition} from "velar/look"\n\n// Colour: five constructors and three adjustments.\nconst ink: Color = rgb(24, 31, 46)\nconst brand: Color = color("rebeccapurple")\nconst veiled: Color = rgba(24, 31, 46, 0.55)\nconst sky: Color = hsl(210, 70, 45)\nconst faded: Color = alpha(ink, 0.4)\nconst lifted: Color = lighten(ink, 0.2)\nconst sunk: Color = darken(ink, 0.2)\n\n// Composites: borders, shadows, images, and one transition.\nconst hairline: Border = border(1px, faded)\nconst dashedEdge: Border = border(2px, ink, "dashed")\nconst raised: Shadow = shadow(0px, 12px, 32px, veiled)\nconst pressed: Shadow = shadow(0px, 1px, 2px, veiled, spread=0px, inset=true)\nconst wash: Image = linearGradient(180deg, lifted, sunk)\nconst mark: Image = asset("/tour-mark.svg")\nconst fade: Transition = transition("opacity", 200ms, "ease-in-out", 50ms)\n\n// Layout: track lists, spacing in one to four steps, and the three length\n// functions.\nconst flexibleTrack: Track = minmax(120px, 1fr)\nconst threeUp: TrackList = repeat(3, flexibleTrack)\nconst explicitTracks: TrackList = tracks(200px, 1fr, minmax(80px, 240px))\nconst inset: Spacing = spacing(16px, 20px)\nconst narrow: Length = min(16px, 2rem)\nconst wide: Length = max(16px, 2rem)\nconst fluid: Length = clamp(1rem, 4vw, 3rem)\n\n// A builder is an ordinary value: it may be aliased, passed to another\n// function, returned, and called outside a Look block.\nconst makeColor = rgb\n\ndef buildRamp(build: (number, number, number) -> Color) -> List<Color>:\n    return [build(45, 79, 190), build(90, 120, 220)]\n\nconst ramp: Color = makeColor(45, 79, 190)\nconst rampColors: List<Color> = buildRamp(rgb)\n\nexport const panelLook = look:\n    display = "grid"\n    gridTemplateColumns = threeUp\n    gridTemplateRows = explicitTracks\n    gap = narrow\n    width = fluid\n    maxWidth = wide\n    padding = inset\n    color = ink\n    background = wash\n    backgroundImage = mark\n    backgroundColor = brand\n    border = hairline\n    outline = dashedEdge\n    boxShadow = raised\n    textShadow = pressed\n    accentColor = ramp\n    fill = sky\n    transition = fade\n    caretColor = rampColors[0]`
+const calcStringJsCode = "// The arithmetic every design system ends up writing\nwidth: `calc(${share}% - ${gutter * 2}px)`,\n// It is a string. A missing bracket, a stray space after calc, or a value that\n// arrived as undefined all produce a declaration the browser silently drops."
+const unitsCode = `import {tracks} from "velar/look"\nimport {Angle, Duration, Length, LengthPercentage, Percentage, TrackFraction} from "velar/look"\n\n// All thirteen unit suffixes. They belong to the language and need no import,\n// and they are ordinary reusable values outside a Look block.\nconst gutter: Length = 16px\nconst rootScale: Length = 1rem\nconst localScale: Length = 2em\nconst viewportPart: Length = 25vw\nconst viewportTall: Length = 40vh\nconst smallSide: Length = 10vmin\nconst largeSide: Length = 10vmax\nconst share: Percentage = 75%\nconst fraction: TrackFraction = 2fr\nconst quick: Duration = 200ms\nconst slow: Duration = 1s\nconst quarterTurn: Angle = 90deg\nconst halfTurn: Angle = 0.5turn\n\n// Addition and subtraction require the same visual dimension, mixing Length and\n// Percentage yields LengthPercentage, and a visual value may be multiplied or\n// divided by a finite number in either order.\nconst mixedMetric: LengthPercentage = share - gutter * 2\nconst doubled: Length = gutter * 2\nconst preDoubled: Length = 2 * gutter\nconst halved: Length = gutter / 2\nconst settle: Duration = slow + quick\nconst swept: Angle = halfTurn + quarterTurn\nconst shrunk: Percentage = share - 25%\n\nexport const measuredLook = look:\n    width = mixedMetric\n    minWidth = viewportPart\n    maxHeight = viewportTall\n    padding = doubled\n    paddingInline = preDoubled\n    gap = halved\n    fontSize = rootScale\n    letterSpacing = localScale / 32\n    marginInline = smallSide\n    marginBlock = largeSide\n    gridTemplateColumns = tracks(fraction, gutter)\n    rotate = swept\n    transitionDuration = settle\n    scrollMarginTop = shrunk`
+const hoverInlineJsCode = `// The two halves of one component's appearance\n<div className="card" style={{ opacity: hot ? 1 : 0.5 }} />\n\n/* card.css — because an inline style cannot express any of this */\n.card:hover { background: #eef1ff; }\n@media (max-width: 720px) { .card { padding: 12px; } }`
+const conditionsCode = `import {darken, lighten, rgb, spacing} from "velar/look"\n\nconst ink = rgb(24, 31, 46)\nconst brand = rgb(45, 79, 190)\nconst sky = rgb(90, 140, 220)\nconst faded = lighten(ink, 0.4)\nconst sunk = darken(ink, 0.2)\nconst lifted = lighten(ink, 0.5)\n\n// The nine element states and the seven pseudo-element targets. Conditions may\n// appear inside a target and a target may appear inside a condition; a target\n// may not appear inside another target.\nexport const statefulLook = look:\n    background = brand\n    borderColor = ink\n\n    if @hover:\n        background = lighten(brand, 0.2)\n    if @focus:\n        outlineColor = sky\n    if @focusVisible:\n        outlineOffset = 3px\n    if @active:\n        opacity = 0.8\n    if @current:\n        fontWeight = 700\n    if @disabled:\n        opacity = 0.5\n    if @checked:\n        borderColor = sky\n    if @invalid:\n        borderColor = sunk\n    if @open:\n        maxHeight = "none"\n\n    @before:\n        content = "-"\n\n        if @hover:\n            content = ">"\n\n    @after:\n        content = ""\n        display = "block"\n    @backdrop:\n        background = faded\n    @placeholder:\n        color = faded\n    @selection:\n        background = faded\n    @marker:\n        color = ink\n    @fileSelectorButton:\n        cursor = "pointer"\n\n// Thresholds compare against compile-time px, rem, or em values, which may be a\n// local or imported const unit token or a field of a const token record.\nconst compact: Length = 720px\nconst breakpoints = {wide: 1200px}\n\n// The whole media vocabulary: viewport.width, viewport.height, scheme.dark,\n// scheme.light, and motion.reduced.\nexport const responsiveLook = look:\n    padding = spacing(16px, 20px)\n\n    if viewport.width <= compact:\n        padding = 12px\n    if viewport.height >= 600px:\n        marginBlock = 8px\n    if viewport.width > breakpoints.wide:\n        gap = 24px\n    if scheme.dark:\n        color = lifted\n        background = sunk\n    if scheme.light:\n        color = sunk\n    if motion.reduced:\n        transition = null\n    else if scheme.dark and viewport.width <= compact:\n        padding = 10px\n    else:\n        padding = 14px\n\n    @before:\n        if viewport.width <= compact:\n            content = "compact"`
+const specificityCssCode = `/* Two class names on one element. Which one wins? */\n<p class="note note-loud">…</p>\n\n/* Not the order in the attribute. This one, because it comes later here. */\n.note-loud { color: #b00020; }\n.note      { color: #1a1f2e; }   /* …and this one wins, being later still */`
 const compositionCode = `import {rgb, spacing} from "velar/look"\n\nconst ramp = rgb(45, 79, 190)\n\n// Composition happens once, at the outer level, and later declarations follow\n// normal CSS cascade order. A Look value has reference identity, so two\n// separately written literals with identical bodies are not equal even though\n// they compile to one shared rule.\nexport const controlLook = look:\n    padding = spacing(10px, 14px)\n    borderRadius = 10px\n\nexport const primaryControlLook = look:\n    ...controlLook\n    color = rgb(255, 255, 255)\n    background = ramp\n\nexport component Controls:\n    return <div data-controls>\n        <button type="button" data-control look={controlLook}>base control</button>\n        <button type="button" data-primary look={primaryControlLook}>composed control</button>\n    </div>`
-const reactiveCode = `import {rgb, spacing} from "velar/look"\n\nconst ink = rgb(24, 31, 46)\nconst brand = rgb(45, 79, 190)\nconst sky = rgb(90, 140, 220)\n\nconst controlLook = look:\n    padding = spacing(10px, 14px)\n    borderRadius = 10px\n\nconst primaryControlLook = look:\n    ...controlLook\n    color = rgb(255, 255, 255)\n    background = brand\n\n// A look literal is built once, where it is written, so it cannot read reactive\n// state. Reactive visuals live on the element instead: look={...} chooses a\n// whole Look and look:property={...} sets one property, and a null value\n// removes the controlled property rather than emitting the text "null".\nexport component ReactiveVisuals:\n    state hot = false\n\n    def toggle():\n        hot = not hot\n\n    return <div data-reactive-visuals>\n        <p\n            data-reactive-look\n            look={hot ? primaryControlLook : controlLook}\n            look:color={hot ? brand : ink}\n            look:borderColor={hot ? sky : null}\n        >\n            reactive visuals\n        </p>\n        <button type="button" data-toggle-hot on:click={toggle}>Toggle</button>\n    </div>`
+const spreadErrorCode = `import {rgb} from "velar/look"\n\nconst baseLook = look:\n    color = rgb(24, 31, 46)\n\nexport const panelLook = look:\n    padding = 8px\n\n    if @hover:\n        ...baseLook`
+const spreadErrorOutput = "main.vel:10:9 error VEL5044: Look composition is only valid at the outer level; compose first, then place the result in a condition or target\n        ...baseLook\n        ^^^^^^^^^^^"
+const reactiveCode = `import {rgb, spacing} from "velar/look"\n\nconst ink = rgb(24, 31, 46)\nconst brand = rgb(45, 79, 190)\nconst sky = rgb(90, 140, 220)\n\nconst controlLook = look:\n    padding = spacing(10px, 14px)\n    borderRadius = 10px\n\nconst primaryControlLook = look:\n    ...controlLook\n    color = rgb(255, 255, 255)\n    background = brand\n\n// A look literal is built once, where it is written, so it cannot read reactive\n// state. Reactive visuals live on the element instead.\nexport component ReactiveVisuals:\n    state hot = false\n\n    def toggle():\n        hot = not hot\n\n    return <div data-reactive-visuals>\n        <p\n            data-reactive-look\n            look={hot ? primaryControlLook : controlLook}\n            look:color={hot ? brand : ink}\n            look:borderColor={hot ? sky : null}\n        >\n            reactive visuals\n        </p>\n        <button type="button" data-toggle-hot on:click={toggle}>Toggle</button>\n    </div>`
 const snapshotErrorCode = "state hot = false\n\nconst panelLook = look:\n    opacity = hot ? 1 : 0.5\n\nexport component Panel:\n    return <p look={panelLook}>a panel</p>"
 const snapshotErrorOutput = "main.vel:4:15 error VEL5058: A Look literal is built once where it is written, so 'hot' is read as a snapshot and the visual never follows it. Put the reactive decision on the element instead: 'look={hot ? oneLook : otherLook}' chooses a whole Look, and 'look:property={...}' sets one property\n    opacity = hot ? 1 : 0.5\n              ^^^"
 
 const sections = [
-    {id: "builders", label: "Builders are ordinary values", labelZh: "构建器是普通的值"},
-    {id: "units", label: "Unit literals and their arithmetic", labelZh: "单位字面量与它们的算术"},
-    {id: "properties", label: "Closed property families", labelZh: "封闭的属性家族"},
-    {id: "conditions", label: "States, targets, and media", labelZh: "状态、目标与媒体"},
-    {id: "composition", label: "Composition and identity", labelZh: "合成与身份"},
-    {id: "reactive", label: "Reactive visuals live on the element", labelZh: "响应式视觉在元素上"},
+    {id: "properties", label: "The declaration the browser threw away", labelZh: "被浏览器扔掉的那条声明"},
+    {id: "builders", label: "Values that are not strings", labelZh: "不是字符串的取值"},
+    {id: "units", label: "Arithmetic that is not text", labelZh: "不是文本的算术"},
+    {id: "conditions", label: "Hover, and the split it causes", labelZh: "hover，以及它造成的分裂"},
+    {id: "composition", label: "Which rule wins", labelZh: "哪条规则赢"},
+    {id: "reactive", label: "A visual that never followed", labelZh: "永远跟不上的那处视觉"},
 ]
 
 const builderRows: List<MemberRow> = [
@@ -28,106 +40,179 @@ const builderRows: List<MemberRow> = [
     {name: "alpha lighten darken", signature: "lighten(ink, 0.2)", summary: "The three adjustments over an existing colour.", summaryZh: "对已有颜色的三种调整。"},
     {name: "border shadow", signature: `border(1px, ink, "dashed")`, summary: "The two composite edge and depth values.", summaryZh: "两个复合的边与深度取值。"},
     {name: "linearGradient asset", signature: `asset("/mark.svg")`, summary: "The two Image values.", summaryZh: "两个 Image 取值。"},
-    {name: "minmax repeat tracks", signature: "repeat(3, minmax(120px, 1fr))", summary: "The grid track vocabulary.", summaryZh: "网格轨道词汇。"},
+    {name: "minmax repeat tracks", signature: "repeat(3, minmax(120px, 1fr))", summary: "The grid track vocabulary.", summaryZh: "网格轨道的词汇。"},
     {name: "spacing", signature: "spacing(16px, 20px)", summary: "One to four steps of edge spacing.", summaryZh: "一到四段的边距。"},
     {name: "min max clamp", signature: "clamp(1rem, 4vw, 3rem)", summary: "The three length functions.", summaryZh: "三个长度函数。"},
-    {name: "transition animate", signature: `transition("opacity", 200ms)`, summary: "The two motion values; the motion chapter spends them.", summaryZh: "两个动效取值；动效那一章会使用它们。"},
+    {name: "transition animate", signature: `transition("opacity", 200ms)`, summary: "The two motion values; the motion chapter spends them.", summaryZh: "两个动效取值；动效那一章会用到它们。"},
 ]
+
+const linkLook = look:
+    color = sea
+    textDecoration = "none"
+
+    if @hover:
+        textDecoration = "underline"
 
 export component WebLook:
     const locale = useLocale()
     return <main>
         <Head
             title={headTitle("/guide/web/look", locale.isChinese())}
-            description={locale.text("How a look block is written and checked, and why its builders, units, and properties are closed sets.", "look 块如何书写与受检，以及它的构建器、单位与属性为何是封闭集合。")}
+            description={locale.text("Why a Look block is a checked literal rather than a style object, what its closed sets buy, and where a reactive visual has to live.", "look 块为什么是受检的字面量而不是样式对象、它的封闭集合换来了什么，以及响应式视觉必须写在哪。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Web extension / 07", "Web 扩展 / 07")}
                 title={locale.text("Look", "Look")}
-                summary={locale.text("The Look literal: builders as ordinary values, unit literals, closed property families, element states, pseudo-element targets, and media conditions.", "Look 字面量：作为普通值的构建器、单位字面量、封闭的属性家族、元素状态、伪元素目标，以及媒体条件。")}
+                summary={locale.text("CSS answers a wrong declaration by throwing it away. A Look block answers by refusing to compile. This chapter is what that costs and what it buys.", "CSS 对一条写错的声明的回答是把它扔掉。look 块的回答是拒绝编译。这一章讲这件事的代价和收益。")}
             />
             <SectionList items={sections} />
             <Prose>
-                <SectionHeading id="builders">{locale.text("Builders are ordinary values", "构建器是普通的值")}</SectionHeading>
+                <SectionHeading id="properties">
+                    {locale.text("The declaration the browser threw away", "被浏览器扔掉的那条声明")}
+                </SectionHeading>
                 <Paragraph>
-                    {locale.text("A look block is a checked literal. Every value inside it comes either from a unit literal or from a builder imported by name from velar/look, so the import list at the top of a file names the visual vocabulary that file uses. A builder is an ordinary value: it may be aliased, passed to another function, returned, and called outside a Look block, with the same checked signature.", "look 块是一个受检的字面量。其中的每个取值要么来自单位字面量，要么来自从 velar/look 按名导入的构建器，因此文件顶部的导入列表就写明了该文件使用的视觉词汇。构建器是普通的值：它可以被起别名、传给另一个函数、被返回，也可以在 Look 块之外调用，签名同样受检。")}
+                    {locale.text("Three declarations, and only one of them does anything.", "三条声明，只有一条起作用。")}
+                </Paragraph>
+                <CodeBlock code={droppedCssCode} />
+                <Paragraph>
+                    {locale.text("This is not a bug in anybody's tooling. Discarding a declaration it does not understand is what a CSS parser is specified to do, and it is what makes the web forward-compatible. The consequence for you is that a misspelling and a property your browser does not support yet are the same event, and the event is silence. You find it by looking at the page.", "这不是谁家工具的 bug。丢掉看不懂的声明，是 CSS 解析器被规定要做的事，也正是它让 Web 能向前兼容。对你的后果是：一个拼错的词，和一个你的浏览器还不支持的属性，是同一件事——而这件事的表现是沉默。你是靠盯着页面才发现的。")}
+                </Paragraph>
+                <CodeBlock code={propertyErrorCode} />
+                <Paragraph>{locale.text("velar check answers:", "velar check 的回答：")}</Paragraph>
+                <CodeBlock code={propertyErrorOutput} />
+                <Paragraph>
+                    {locale.text("The published property table is closed and grouped into fourteen families, and each property has a declared value kind. That is what lets the compiler suggest a spelling instead of shrugging, and it is what lets a length without a unit be refused at the value. CSS keyword values are written as strings, because a bare identifier is a real VelarScript variable.", "已发布的属性表是封闭的，分成十四个家族，每个属性都有声明好的取值种类。正因如此，编译器能给出一个拼写建议，而不是耸耸肩；也正因如此，缺单位的长度能在取值处被拒。CSS 关键字取值写成字符串，因为裸标识符在这里是真正的 VelarScript 变量。")}
+                </Paragraph>
+                <CodeBlock code={familiesCode} />
+                <Paragraph>
+                    {locale.text("The cost of a closed table is that it lags the platform. A property shipped by a browser last month is not in it, so it cannot be written as itself until the table learns it — and unlike a misspelling, that one is a real thing you wanted. The answer is the unsafe CSS import, which is a declared boundary rather than an argument with the compiler, and the chapter after next is about it.", "封闭表格的代价是它落后于平台。浏览器上个月才发布的属性不在表里，在表格学会它之前，你没法照原样写出来——而且和拼错不一样，那是你真正想要的东西。答案是 unsafe CSS 导入，它是一条声明出来的边界，不是跟编译器吵架；再往后一章讲的就是它。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: every VelarScript block on this page is compiled by scripts/check-code-samples.mjs, and each quoted VEL code is verified against the diagnostics its own sample really produces.", "门禁：本页每个 VelarScript 块都由 scripts/check-code-samples.mjs 编译；引用的每个 VEL 码都与它自己那个样本真正产生的诊断核对过。")}
+                </GateNote>
+
+                <SectionHeading id="builders">
+                    {locale.text("Values that are not strings", "不是字符串的取值")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("A border is three things joined by spaces, so in a style object it is built by joining them.", "一条边框是三样东西用空格连起来的，所以在样式对象里，它就是拼出来的。")}
+                </Paragraph>
+                <CodeBlock code={stringValueJsCode} />
+                <Paragraph>
+                    {locale.text("Nothing checks that the pieces fit, because at that point they are all just text. A theme value that is undefined on one code path produces a plausible-looking string that the parser then discards, and the element ends up with no border on that path only.", "没有谁检查这些片段合不合得上，因为到那一步它们全是文本。某条代码路径上取到 undefined 的主题值，会拼出一个看起来挺像那么回事的字符串，解析器随后把它丢掉，于是只有那条路径上的元素没有边框。")}
+                </Paragraph>
+                <CodeBlock code={borderErrorCode} />
+                <CodeBlock code={borderErrorOutput} />
+                <Paragraph>
+                    {locale.text("Every value inside a look block comes either from a unit literal or from a builder imported by name from velar/look, so the import list at the top of a file names the visual vocabulary that file uses. A builder is an ordinary value with a checked signature: it may be aliased, passed to another function, returned, and called outside a Look block.", "look 块里的每个取值，要么来自单位字面量，要么来自从 velar/look 按名导入的构建器，所以文件顶部那份导入清单，就写明了这个文件用了哪些视觉词汇。构建器是签名受检的普通值：可以起别名、传给别的函数、被返回，也可以在 Look 块之外调用。")}
                 </Paragraph>
                 <MemberTable
                     rows={builderRows}
                     caption={locale.text("The builders velar/look publishes", "velar/look 发布的构建器")}
                 />
                 <CodeBlock code={buildersCode} />
+                <Paragraph>
+                    {locale.text("The cost is an import line for every value kind a file uses, and a builder call where CSS had a shorthand. border(1px, faded) is longer than 1px solid, and a file that touches colours, borders, shadows, grids and lengths opens with a long import. That is more typing for the same picture, and the return is that the picture cannot be assembled out of text nobody checked.", "代价是每种取值都要一行导入，而且 CSS 里的简写在这里是一次构建器调用。border(1px, faded) 比 1px solid 长，一个同时用到颜色、边框、阴影、网格和长度的文件，开头是一长串导入。同一张画面要多打字；换回来的是：这张画面不会由没人检查过的文本拼出来。")}
+                </Paragraph>
 
                 <SectionHeading id="units">
-                    {locale.text("Unit literals and their arithmetic", "单位字面量与它们的算术")}
+                    {locale.text("Arithmetic that is not text", "不是文本的算术")}
                 </SectionHeading>
                 <Paragraph>
-                    {locale.text("Visual unit suffixes are language syntax and need no import. Seven of them are Length, one is Percentage, one is TrackFraction, two are Duration, and two are Angle. They are ordinary values, so they can be bound, exported, imported, and calculated outside any Look block.", "视觉单位后缀属于语言语法，无需导入。其中七个是 Length，一个是 Percentage，一个是 TrackFraction，两个是 Duration，两个是 Angle。它们是普通的值，因此可以在任何 Look 块之外被绑定、导出、导入与参与计算。")}
+                    {locale.text("Sooner or later a width is a subtraction, and the subtraction is written as a string.", "早晚有一天，某个宽度是一次减法，而这次减法是写成字符串的。")}
+                </Paragraph>
+                <CodeBlock code={calcStringJsCode} />
+                <Paragraph>
+                    {locale.text("The interpolation is doing string work. Nothing knows that a percentage minus pixels is meaningful and a percentage minus seconds is not, and nothing knows that the space after calc breaks it. Every one of those mistakes produces one dropped declaration.", "那个插值做的是字符串的活儿。没有谁知道「百分比减像素」有意义、「百分比减秒」没意义，也没有谁知道 calc 后面多一个空格会让它失效。这里每一个错误，产生的都是同一个结果：一条被丢掉的声明。")}
                 </Paragraph>
                 <CodeBlock code={unitsCode} />
+                <Paragraph>
+                    {locale.text("Visual unit suffixes are language syntax and need no import: seven are Length, one is Percentage, one is TrackFraction, two are Duration, and two are Angle. They are ordinary values, so they can be bound, exported, imported, and calculated outside any Look block, and the arithmetic is checked for dimension rather than assembled as text.", "视觉单位后缀属于语言语法，不需要导入：七个是 Length，一个是 Percentage，一个是 TrackFraction，两个是 Duration，两个是 Angle。它们是普通的值，可以在任何 Look 块之外绑定、导出、导入、参与计算；算术按维度受检，不是当文本拼起来。")}
+                </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("Addition and subtraction require compatible dimensions; Length mixed with Percentage produces LengthPercentage, and mixed units lower to a calc expression.", "加法与减法要求维度相容；Length 与 Percentage 混合得到 LengthPercentage，混合单位下降为 calc 表达式。")}
+                        {locale.text("Addition and subtraction require compatible dimensions. Length mixed with Percentage produces LengthPercentage, and mixed units lower to a calc expression.", "加法和减法要求维度相容。Length 与 Percentage 混合得到 LengthPercentage，混合单位下降为 calc 表达式。")}
                     </li>
                     <li>
-                        {locale.text("Multiplication and division accept a unit value and a finite scalar, in either order. Unit by unit multiplication, division by a unit, and arithmetic over colours or composite builders are rejected.", "乘法与除法接受一个单位值与一个有限标量，两种顺序都可以。单位乘单位、除以单位，以及对颜色或复合构建器做算术，都会被拒绝。")}
-                    </li>
-                    <li>
-                        {locale.text("A viewport threshold must resolve at compile time to a local or imported const px, rem, or em token.", "viewport 阈值必须在编译期解析为本地或导入的 const px、rem 或 em 记号。")}
+                        {locale.text("Multiplication and division accept a unit value and a finite scalar, in either order. Unit by unit multiplication, division by a unit, and arithmetic over colours or composite builders are rejected.", "乘法和除法接受一个单位值加一个有限标量，两种顺序都行。单位乘单位、除以单位，以及对颜色或复合构建器做算术，都会被拒。")}
                     </li>
                 </BulletList>
-
-                <SectionHeading id="properties">{locale.text("Closed property families", "封闭的属性家族")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("The published property table is grouped into fourteen families, and each property has a declared value kind. CSS keyword values are written as strings, because a bare identifier is a real VelarScript variable. The sample below takes one property from each family rather than the whole table.", "已发布的属性表分为十四个家族，每个属性都有声明好的取值种类。CSS 关键字取值写成字符串，因为裸标识符是真实的 VelarScript 变量。下面的样本从每个家族各取一个属性，而不是整张表。")}
+                    {locale.text("The cost is that a viewport threshold must resolve at compile time to a local or imported const px, rem, or em token. A breakpoint read from configuration, or computed from a measured element, cannot be one — the media condition is emitted into the stylesheet before the program runs, so its value has to exist then. A layout that genuinely needs a runtime breakpoint reads the environment and chooses between Looks on the element instead.", "代价是 viewport 阈值必须在编译期解析成本地或导入的 const px、rem、em 记号。从配置读来的断点，或者由某个实测元素算出来的断点，都不行——媒体条件在程序运行之前就被发到样式表里，所以它的取值那时候就得存在。真正需要运行期断点的布局，改成读取环境、在元素上从若干 Look 里挑一个。")}
                 </Paragraph>
-                <CodeBlock code={familiesCode} />
-                <Paragraph>
-                    {locale.text("Because the table is closed, a misspelled property is a diagnostic with a suggestion rather than a declaration the browser silently discards, and a length written without a unit is refused at the value.", "由于这张表是封闭的，拼错的属性会得到一条带建议的诊断，而不是被浏览器静默丢弃的声明；缺少单位的长度会在取值处被拒绝。")}
-                </Paragraph>
-                <CodeBlock code={propertyErrorCode} />
-                <CodeBlock code={propertyErrorOutput} />
 
-                <SectionHeading id="conditions">{locale.text("States, targets, and media", "状态、目标与媒体")}</SectionHeading>
-                <Paragraph>
-                    {locale.text("A Look condition covers nine element states, seven pseudo-element targets, and five media conditions. Conditions may appear inside a target and a target may appear inside a condition; a target may not appear inside another target. Media subjects compose with element states and with each other, and the negation of one scheme is the other.", "Look 条件覆盖九种元素状态、七个伪元素目标与五种媒体条件。条件可以出现在目标内部，目标也可以出现在条件内部；但目标不能出现在另一个目标内部。媒体主语可以与元素状态、以及彼此组合，并且对一种配色方案取否定就是另一种。")}
-                </Paragraph>
-                <CodeBlock code={conditionsCode} />
-                <BulletList>
-                    <li>
-                        {locale.text("motion.reduced lowers to the reduced-motion preference, so a reduced-motion variant is expressible without leaving Look.", "motion.reduced 下降为降低动效偏好，因此降低动效的变体无需离开 Look 就能表达。")}
-                    </li>
-                    <li>
-                        {locale.text("Container queries, print, and orientation have no Look spelling in this version; they are reached through the unsafe CSS boundary.", "容器查询、print 与 orientation 在本版本中没有 Look 拼写；它们经由 unsafe CSS 边界抵达。")}
-                    </li>
-                    <li>
-                        {locale.text("content is written as CSS text: a string value is emitted quoted, and only the bare keywords none and normal pass through unquoted.", "content 写作 CSS 文本：字符串取值带引号发出，只有裸关键字 none 与 normal 不带引号透传。")}
-                    </li>
-                </BulletList>
-
-                <SectionHeading id="composition">{locale.text("Composition and identity", "合成与身份")}</SectionHeading>
-                <Paragraph>
-                    {locale.text("A spread composes another Look once, at the outer level, and the declarations that follow it obey ordinary CSS cascade order. A Look is an ordinary value with reference identity, so comparing two Looks compares identity rather than declarations: two identical literals are not equal even though they compile to one shared rule. Choose between named Look values, or compare the inputs that produced them.", "展开在外层把另一个 Look 合成进来一次，其后的声明遵循普通的 CSS 层叠顺序。Look 是带引用身份的普通值，因此比较两个 Look 比较的是身份而不是声明：两个写法相同的字面量并不相等，尽管它们编译成同一条共享规则。要么在具名的 Look 值之间选择，要么比较产生它们的输入。")}
-                </Paragraph>
-                <CodeBlock code={compositionCode} />
-
-                <SectionHeading id="reactive">
-                    {locale.text("Reactive visuals live on the element", "响应式视觉在元素上")}
+                <SectionHeading id="conditions">
+                    {locale.text("Hover, and the split it causes", "hover，以及它造成的分裂")}
                 </SectionHeading>
                 <Paragraph>
-                    {locale.text("A look literal is built once, where it is written, and the compiler extracts it into the build's stylesheet. That is why it cannot read reactive state: the read would be a snapshot that never updates. A reactive visual belongs on the element, where look={...} chooses a whole Look and look:property={...} sets one property, and a null value removes the controlled property rather than emitting the text null.", "look 字面量在它被书写的位置构建一次，编译器把它提取进构建的样式表。这正是它不能读取响应式状态的原因：那样的读取会是一份永不更新的快照。响应式视觉属于元素：look={...} 选择一整个 Look，look:property={...} 设置单个属性，取值为 null 时移除被控制的属性，而不是发出文本 null。")}
+                    {locale.text("An inline style cannot express hover, and it cannot express a media query. So a component that has both a hover state and a state-dependent opacity is styled from two files.", "内联样式表达不了 hover，也表达不了媒体查询。所以一个既有 hover 状态、又有取决于状态的不透明度的组件，样式来自两个文件。")}
                 </Paragraph>
-                <CodeBlock code={reactiveCode} />
+                <CodeBlock code={hoverInlineJsCode} />
                 <Paragraph>
-                    {locale.text("Reading state inside a literal is refused at the read, and the diagnostic names both element spellings.", "在字面量内部读取 state 会在读取处被拒绝，诊断会同时指出两种元素上的拼写。")}
+                    {locale.text("Neither half is wrong, and the line between them was not a design decision — the platform put it there. To change how this component looks you open two files, and to know how it looks you read both.", "两半都没写错，而它们之间那条线也不是谁设计出来的——是平台放在那里的。想改这个组件的样子，你要打开两个文件；想知道它长什么样，两个都要读。")}
+                </Paragraph>
+                <CodeBlock code={conditionsCode} />
+                <Paragraph>
+                    {locale.text("A Look condition covers nine element states, seven pseudo-element targets, and five media conditions, all inside one literal. Conditions may appear inside a target and a target may appear inside a condition; a target may not appear inside another target. Media subjects compose with element states and with each other, and the negation of one colour scheme is the other.", "一个 Look 条件覆盖九种元素状态、七个伪元素目标和五种媒体条件，全在同一个字面量里。条件可以出现在目标内部，目标也可以出现在条件内部；但目标不能出现在另一个目标内部。媒体主语可以和元素状态、以及彼此组合；对一种配色方案取否定，就是另一种。")}
+                </Paragraph>
+                <BulletList>
+                    <li>
+                        {locale.text("motion.reduced lowers to the reduced-motion preference, so a reduced-motion variant is expressible without leaving Look.", "motion.reduced 下降为降低动效偏好，所以降低动效的变体不用离开 Look 就写得出来。")}
+                    </li>
+                    <li>
+                        {locale.text("content is written as CSS text: a string value is emitted quoted, and only the bare keywords none and normal pass through unquoted.", "content 写成 CSS 文本：字符串取值带引号发出，只有裸关键字 none 和 normal 不带引号透传。")}
+                    </li>
+                </BulletList>
+                <Paragraph>
+                    {locale.text("The cost is that the condition vocabulary is closed too, and three real ones are outside it: container queries, print, and orientation have no Look spelling in this version. A design that needs a container query reaches the unsafe CSS boundary for that one rule, which puts part of the component's appearance back in a second file — the exact thing this section opened by complaining about. It is smaller than the CSS split, and it is the same shape.", "代价是条件词汇同样封闭，而有三样真实存在的东西在它之外：容器查询、print 和 orientation 在本版本里没有 Look 写法。需要容器查询的设计，会为那一条规则走 unsafe CSS 边界，于是这个组件的一部分外观又回到了第二个文件里——正是本节开头抱怨的那件事。它比 CSS 那种分裂小，但形状是同一个。")}
+                </Paragraph>
+
+                <SectionHeading id="composition">{locale.text("Which rule wins", "哪条规则赢")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("Two class names on one element. Which colour does the paragraph get?", "一个元素上两个类名。这段文字取哪个颜色？")}
+                </Paragraph>
+                <CodeBlock code={specificityCssCode} />
+                <Paragraph>
+                    {locale.text("Not the one written second in the attribute — that order means nothing. The answer is the later of the two rules in the stylesheet, which is in a different file from the element and can be moved by an import order somebody changed for an unrelated reason. This is the mechanism behind most uses of the important keyword, and behind every selector that carries a class name twice.", "不是属性里写在后面的那个——那个顺序不代表任何东西。答案是样式表里排在后面的那条规则，而它在另一个文件里，还可能被某人为了别的原因改动的导入顺序挪走。important 关键字的多数用法背后是这个机制，把一个类名在选择器里写两遍的写法背后也是它。")}
+                </Paragraph>
+                <CodeBlock code={compositionCode} />
+                <Paragraph>
+                    {locale.text("A spread composes another Look once, at the outer level, and the declarations that follow it obey ordinary cascade order — inside one literal, where you can see both. Composition is only valid at the outer level, so a spread inside a condition is refused rather than producing a rule whose precedence depends on where it landed.", "展开在外层把另一个 Look 合成进来一次，其后的声明遵循普通的层叠顺序——都在同一个字面量里，两边你都看得见。合成只在外层有效，所以写在条件内部的展开会被拒，而不是产出一条「优先级取决于它落在哪里」的规则。")}
+                </Paragraph>
+                <CodeBlock code={spreadErrorCode} />
+                <CodeBlock code={spreadErrorOutput} />
+                <Paragraph>
+                    {locale.text("The cost lands on equality. A Look is an ordinary value with reference identity, so comparing two Looks compares identity rather than declarations: two literals with identical bodies are not equal, even though they compile to one shared rule. Code that wants to ask \"is this the primary appearance\" compares named Look values or the inputs that produced them, and a structural comparison of two appearances is not something this type offers.", "代价落在相等性上。Look 是带引用身份的普通值，所以比较两个 Look 比的是身份，不是声明：两个内容相同的字面量并不相等，尽管它们编译成同一条共享规则。想问「这是不是主要外观」的代码，比较的是具名的 Look 值，或者产生它们的输入；至于「结构上比较两个外观」，这个类型不提供。")}
+                </Paragraph>
+
+                <SectionHeading id="reactive">
+                    {locale.text("A visual that never followed", "永远跟不上的那处视觉")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("The state chapter opened with a const that read reactive state once and held the answer forever. A look literal is the same trap with one difference: here the compiler refuses it.", "状态那一章开头讲了一个 const，它读了一次响应式状态，然后把答案捧到最后。look 字面量是同一个陷阱，只有一处不同：在这里，编译器会拒绝它。")}
                 </Paragraph>
                 <CodeBlock code={snapshotErrorCode} />
                 <CodeBlock code={snapshotErrorOutput} />
-                <Callout title={locale.text("What the emitted CSS looks like", "发出的 CSS 是什么样子")}>
+                <Paragraph>
+                    {locale.text("A look literal is built once, where it is written, and the compiler extracts it into the build's stylesheet. There is no later moment at which it could re-read anything, so a read of state inside it can only ever be a snapshot — and unlike a const in setup, a snapshot here is never what anyone meant. That is why this one is refused where the other is allowed.", "look 字面量在它被书写的位置构建一次，编译器把它提取进构建的样式表。之后不存在一个「它可以重新读一遍」的时刻，所以在它内部读 state，永远只能是一份快照——而且和初始化里的 const 不同，这里的快照绝不可能是任何人的本意。所以这一个被拒，那一个被放行。")}
+                </Paragraph>
+                <CodeBlock code={reactiveCode} />
+                <Paragraph>
+                    {locale.text("A reactive visual belongs on the element. look={...} chooses a whole Look, look:property={...} sets one property, and a null value removes the controlled property rather than emitting the text null. The diagnostic above names both spellings, so the correction is one round.", "响应式视觉属于元素。look={...} 挑一整个 Look，look:property={...} 设一个属性，取值为 null 时会移除被控制的属性，而不是发出 null 这个词。上面那条诊断把两种写法都点了名，所以修正只要一轮。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The cost is a named Look per variant. A button with four visual states has four Look values with names, not one literal with four conditions on application state, so the file grows names that a style object would have expressed as one ternary. What the build gets in exchange is a stylesheet whose rules exist before the application starts.", "代价是每个变体一个具名的 Look。有四种视觉状态的按钮，是四个带名字的 Look 值，而不是一个带四个应用状态条件的字面量；于是文件里多出一堆名字，而样式对象里那本来是一个三元表达式。构建换回来的是：一份规则在应用启动之前就已经存在的样式表。")} <Link
+                        to="/evidence"
+                        look={linkLook}
+                    >
+                        {locale.text("The evidence page shows one look literal and the rule it becomes.", "证据页摆出了一个 look 字面量，以及它变成的那条规则。")}
+                    </Link>
+                </Paragraph>
+                <Callout title={locale.text("What the emitted CSS looks like", "发出的 CSS 长什么样")}>
                     <Paragraph>
-                        {locale.text("Look emits readable tokens on a data attribute and readable custom properties rather than random generated class names, and an author's own stable class and data attributes remain public hooks. That is what lets an external stylesheet target the markup at all — the subject of the next-but-one chapter.", "Look 在一个 data 属性上发出可读的记号，并发出可读的自定义属性，而不是随机生成的类名；作者自己稳定的 class 与 data 属性仍然是公开的挂钩点。这正是外部样式表能够选中这些标记的原因——也是再往后一章的主题。")}
+                        {locale.text("Look emits readable tokens on a data attribute and readable custom properties rather than random generated class names, and an author's own stable class and data attributes stay public hooks. An external stylesheet can therefore target the markup at all — the subject of the chapter after next.", "Look 在一个 data 属性上发出可读的记号，并发出可读的自定义属性，而不是随机生成的类名；作者自己稳定的 class 与 data 属性仍然是公开的挂钩点。所以外部样式表才选得中这些标记——再往后一章讲的就是这件事。")}
                     </Paragraph>
                 </Callout>
             </Prose>

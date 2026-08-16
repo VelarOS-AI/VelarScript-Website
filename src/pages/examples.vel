@@ -18,8 +18,11 @@ const sections = [
     {id: "run", label: "Running them", labelZh: "运行它们"},
 ]
 
-// A list of example cards rather than a run of bullets, so it is not a
-// BulletList. Its own margin stays at zero: Prose owns the space around it.
+// A grid of example cards rather than a run of bullets, so it is not a
+// BulletList: each item is a named project with its own run command. Its own
+// margin stays at zero, so Prose still owns the distance around it, and the
+// class is how a browser test tells a deliberate card grid apart from a page
+// that hand-rolled its own bullets.
 const listLook = look:
     display = "grid"
     gap = 16px
@@ -90,7 +93,7 @@ export component Examples:
                         {locale.text("The excerpt below is chapter 11, on errors and assertions. Discrimination is the class; code is that same identity in string form.", "下面的节选来自第 11 章，讲错误与断言。区分靠的是类；code 是同一身份的字符串形式。")}
                     </Paragraph>
                     <CodeBlock code={coreTourCode} />
-                    <ul look={listLook}>
+                    <ul class="velar-docs-cards" look={listLook}>
                         <li look={entryLook}>
                             <span look={entryNameLook}>examples/tour/core</span>
                             <div>
@@ -112,7 +115,7 @@ export component Examples:
                         {locale.text("The excerpt below is the opening of chapter 03, on synchronous reactivity.", "下面的节选是第 03 章的开头，讲同步响应式。")}
                     </Paragraph>
                     <CodeBlock code={webTourCode} />
-                    <ul look={listLook}>
+                    <ul class="velar-docs-cards" look={listLook}>
                         <li look={entryLook}>
                             <span look={entryNameLook}>examples/tour/web</span>
                             <div>
@@ -131,7 +134,7 @@ export component Examples:
                         {locale.text("Four chapters on the Desktop target: the host surface, the three long-lived handles, the desktop test module, and a desktop browser test. The Desktop extension composes the Web extension, so every Web spelling is available unchanged and this tour walks only what Desktop adds.", "桌面目标上的四章：宿主表面、三种长期存活的句柄、桌面测试模块，以及一个桌面浏览器测试。桌面扩展组合了 Web 扩展，因此每一种 Web 拼写都原样可用，这份巡览只走桌面新增的部分。")}
                     </Paragraph>
                     <CodeBlock code={desktopTourDesktopCode} />
-                    <ul look={listLook}>
+                    <ul class="velar-docs-cards" look={listLook}>
                         <li look={entryLook}>
                             <span look={entryNameLook}>examples/tour/desktop</span>
                             <div>
@@ -157,15 +160,15 @@ export component Examples:
                         {locale.text("One complete Web application: a release-readiness console with four routes, one shared store, persisted reader preferences, a form, a checklist, and two kinds of test. The board tracks releases; each release has a stage — planned, building, verifying, released — a target date, and a checklist. One rule holds the application together: a release may leave verifying only once its checklist is clear. Everything else is arithmetic over that.", "一个完整的 Web 应用：发布就绪度控制台，四条路由、一个共享 store、被持久化的阅读者偏好、一个表单、一份清单，以及两种测试。看板跟踪的是发布；每个发布有一个阶段——planned、building、verifying、released——一个目标日期与一份清单。有一条规则把整个应用维系在一起：只有清单清空之后，发布才能离开 verifying。其余的一切都是围绕它的算术。")}
                     </Paragraph>
                     <Paragraph>
-                        {locale.text("What this example teaches is structure — how to divide modules, where state belongs, how routing is declared, and which tests belong in a browser. It does not try to show every spelling; that is the tour's job. The excerpt below is the whole domain layer's core: nothing in it is reactive and nothing touches a document, which is what lets its unit tests exercise all of it with no page and no browser.", "这个示例讲授的是结构——如何划分模块、状态归属何处、路由如何声明，以及哪些测试属于浏览器。它不试图展示每一种拼写，那是巡览的工作。下面的节选是整个领域层的核心：其中没有任何响应式的东西，也不触碰文档，这正是让它的单元测试可以在没有页面、没有浏览器的情况下把它全部跑一遍的原因。")}
+                        {locale.text("What this example teaches is structure — how to divide modules, where state belongs, how routing is declared, and which tests belong in a browser. It does not try to show every spelling; that is the tour's job. The excerpt below is the whole domain layer's core: nothing in it is reactive and nothing touches a document, which is what lets its unit tests exercise all of it with no page and no browser.", "这个示例讲授的是结构——如何划分模块、状态归属何处、路由如何声明，以及哪些测试属于浏览器。它不试图展示每一种拼写，那是巡览的工作。下面的节选是整个领域层的核心：其中没有任何响应式的东西，也不碰文档。所以它的单元测试不需要页面、也不需要浏览器，一遍就能跑完。")}
                     </Paragraph>
                     <CodeBlock code={domainCode} />
-                    <ul look={listLook}>
+                    <ul class="velar-docs-cards" look={listLook}>
                         <li look={entryLook}>
                             <span look={entryNameLook}>examples/app</span>
                             <div>
                                 <p look={entryTextLook}>
-                                    {locale.text("The layering is one-way: model, look, and config are leaves that import only standard modules; state reads them; components and pages read state; app.vel composes the pages and main.vel starts everything. Nothing imports upwards, which is what makes the model testable in milliseconds.", "分层是单向的：model、look 与 config 是叶子，只导入标准模块；state 读取它们；components 与 pages 读取 state；app.vel 组合各个页面，main.vel 启动一切。没有任何模块向上导入，这正是让 model 能在毫秒级被测试的原因。")}
+                                    {locale.text("The layering is one-way: model, look, and config are leaves that import only standard modules; state reads them; components and pages read state; app.vel composes the pages and main.vel starts everything. Nothing imports upwards, which is what makes the model testable in milliseconds.", "分层是单向的：model、look 与 config 是叶子，只导入标准模块；state 读取它们；components 与 pages 读取 state；app.vel 组合各个页面，main.vel 启动一切。没有任何模块向上导入，所以 model 能在毫秒级被测。")}
                                 </p>
                                 <a look={entryLinkLook} href="https://github.com/VelarOS-AI/VelarScript/tree/main/examples/app">
                                     examples/app
@@ -174,7 +177,7 @@ export component Examples:
                         </li>
                     </ul>
                     <Paragraph>
-                        {locale.text(`Four decisions in it are worth copying. State lives at the scope of the question it answers: the board is a fact about the application, so it is module state; a half-typed check title is a fact about one form, so it is state inside that component; server data that is only interesting while a panel is on screen is a resource inside that panel. A component prop is a transitive readonly view, so a view asks for a change by identifier through the store rather than writing to the data it was given. Routing is declared in one module, so "what URLs does this application answer?" has a short answer. And the two test kinds answer different questions: arithmetic and store transitions run in the ordinary test process in milliseconds, while routing, rendering, form validation, and whether a preference survives a reload need a real engine.`, "其中有四个决定值得照搬。状态位于它所回答的那个问题的尺度上：看板是关于整个应用的事实，因此它是模块级 state；一个只打了一半的清单标题是关于某个表单的事实，因此它是那个组件内部的 state；只有当面板在屏幕上时才有意义的服务端数据，是那个面板内部的 resource。组件属性是可传递的只读视图，因此视图通过 store、按标识符请求变更，而不是直接写它拿到的数据。路由在一个模块里声明，于是「这个应用响应哪些 URL？」有一个简短的答案。两种测试回答不同的问题：算术与 store 状态迁移在普通测试进程里以毫秒计运行，而路由、渲染、表单验证，以及某项偏好是否能在重载后存活，都需要真正的引擎。")}
+                        {locale.text(`Four decisions in it are worth copying. State lives at the scope of the question it answers: the board is a fact about the application, so it is module state; a half-typed check title is a fact about one form, so it is state inside that component; server data that is only interesting while a panel is on screen is a resource inside that panel. A component prop is a transitive readonly view, so a view asks for a change by identifier through the store rather than writing to the data it was given. Routing is declared in one module, so "what URLs does this application answer?" has a short answer. And the two test kinds answer different questions: arithmetic and store transitions run in the ordinary test process in milliseconds, while routing, rendering, form validation, and whether a preference survives a reload need a real engine.`, "其中有四个决定值得照搬。状态放在它所回答的那个问题的尺度上：看板属于整个应用，所以它是模块级 state；一个只打了一半的清单标题只属于那个表单，所以它是组件内部的 state；只有面板在屏幕上时才有意义的服务端数据，是那个面板内部的 resource。prop 是一层只读视图，而且是穿透到底的，所以视图只能通过 store、按 id 请求改动，不能直接写它收到的数据。路由在一个模块里声明，于是「这个应用响应哪些 URL？」有一个简短的答案。两种测试回答不同的问题：算术与 store 状态迁移在普通测试进程里以毫秒计运行，而路由、渲染、表单验证，以及某项偏好是否能在重载后存活，都需要真正的引擎。")}
                     </Paragraph>
 
                     <SectionHeading id="run">{locale.text("Running them", "运行它们")}</SectionHeading>

@@ -1,23 +1,33 @@
 import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, GateNote, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
-const keyframesCode = `import {rgb} from "velar/look"\n\n// A stop is from:, to:, or an integer percentage from 1% through 99%.\nexport const spin = keyframes:\n    from:\n        rotate = 0deg\n    50%:\n        rotate = 0.5turn\n    to:\n        rotate = 1turn\n\n// Comma-separated stops share one body, and declaration groups progress in\n// ascending order.\nexport const pulse = keyframes:\n    from, to:\n        opacity = 1\n        scale = 1\n    40%, 60%:\n        opacity = 0.4\n        scale = 1.08\n\n// A keyframes body contains direct, statically lowerable Look properties only:\n// literals, unit values, arithmetic over them, and positional velar/look\n// builder calls. A stop cannot read reactive state — make animation presence\n// dynamic on the element instead.\nexport const slideIn = keyframes:\n    from:\n        translate = -12px\n        color = rgb(120, 150, 255)\n    to:\n        translate = 0px\n        color = rgb(24, 31, 46)`
-const keyframesErrorCode = `export const reveal = keyframes:\n    from:\n        display = "none"\n    to:\n        display = "block"`
-const keyframesErrorOutput = `main.vel:3:9 error VEL5060: Look property 'display' does not participate in animation interpolation\n        display = "none"\n        ^^^^^^^^^^^^^^^^\n\nmain.vel:5:9 error VEL5060: Look property 'display' does not participate in animation interpolation\n        display = "block"\n        ^^^^^^^^^^^^^^^^^`
-const animateCode = `import {animate} from "velar/look"\n\nconst pulse = keyframes:\n    from, to:\n        opacity = 1\n    50%:\n        opacity = 0.4\n\nconst slideIn = keyframes:\n    from:\n        translate = -12px\n    to:\n        translate = 0px\n\n// animate(frames, duration, easing?, delay?, count?, loop?, direction?, fill?)\n// answers an Animation. Duration must be positive, delay cannot be negative,\n// count is a positive integer, and count and loop=true are mutually exclusive —\n// so these two spellings are the whole repetition vocabulary.\nexport const spinForever = animate(pulse, 1s, easing="linear", loop=true)\nexport const spinThrice = animate(pulse, 900ms, easing="ease-in-out", count=3)\n\n// The seven easings.\nconst easings = [\n    animate(pulse, 400ms, easing="linear"),\n    animate(pulse, 400ms, easing="ease"),\n    animate(pulse, 400ms, easing="ease-in"),\n    animate(pulse, 400ms, easing="ease-out"),\n    animate(pulse, 400ms, easing="ease-in-out"),\n    animate(pulse, 400ms, easing="step-start"),\n    animate(pulse, 400ms, easing="step-end"),\n]\n\n// The four directions and the four fills.\nconst directions = [\n    animate(pulse, 400ms, direction="normal"),\n    animate(pulse, 400ms, direction="reverse"),\n    animate(pulse, 400ms, direction="alternate"),\n    animate(pulse, 400ms, direction="alternate-reverse"),\n]\n\nconst fills = [\n    animate(slideIn, 400ms, fill="none"),\n    animate(slideIn, 400ms, fill="forwards"),\n    animate(slideIn, 400ms, fill="backwards"),\n    animate(slideIn, 400ms, fill="both"),\n]\n\n// The positional spelling of the same call, with a delay, alongside the fully\n// named one. Both are ordinary VelarScript calls, so named arguments work\n// normally.\nconst positional = animate(slideIn, 300ms, "ease-out", 60ms)\nconst named = animate(slideIn, 300ms, easing="ease-out", delay=60ms, count=2, direction="alternate", fill="both")\n\nexport const closedSets = f"{easings.size} easings, {directions.size} directions, {fills.size} fills"\n\n// Look animation accepts one Animation, a List<Animation>, or null.\nexport const animatedLook = look:\n    animation = spinForever\n\nexport const layeredLook = look:\n    animation = [positional, named]`
+// The CSS blocks are third-party, so they are *CssCode and nothing here
+// compiles them. Every VelarScript block is compiled by this site's gate.
+const globalKeyframesCssCode = "/* vendor.css, from a package */\n@keyframes spin { to { transform: rotate(360deg); } }\n\n/* your own stylesheet, loaded after it */\n@keyframes spin { to { opacity: 0; } }\n\n/* Keyframe names are document-global. The second declaration replaces the\n   first, so the vendor's spinner now fades instead of turning, and neither\n   file mentions the other. */\n.spinner { animation: spin 1s linear infinite; }"
 const animationErrorCode = `export const spinnerLook = look:\n    animation = "spin 1s linear infinite"`
 const animationErrorOutput = `main.vel:2:5 error VEL5038: Look animation does not accept CSS shorthand text; declare a checked 'keyframes:' value and pass animate(frames, duration, ...) instead\n    animation = "spin 1s linear infinite"\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^`
+const displayCssCode = "/* The animation that does nothing */\n@keyframes reveal {\n    from { display: none; }\n    to   { display: block; }\n}\n/* display does not interpolate, so the browser drops both keyframes and the\n   element simply appears. No message, no rule, nothing to search for. */"
+const keyframesErrorCode = `export const reveal = keyframes:\n    from:\n        display = "none"\n    to:\n        display = "block"`
+const keyframesErrorOutput = `main.vel:3:9 error VEL5060: Look property 'display' does not participate in animation interpolation\n        display = "none"\n        ^^^^^^^^^^^^^^^^\n\nmain.vel:5:9 error VEL5060: Look property 'display' does not participate in animation interpolation\n        display = "block"\n        ^^^^^^^^^^^^^^^^^`
+const keyframesCode = `import {rgb} from "velar/look"\n\n// A stop is from:, to:, or an integer percentage from 1% through 99%.\nexport const spin = keyframes:\n    from:\n        rotate = 0deg\n    50%:\n        rotate = 0.5turn\n    to:\n        rotate = 1turn\n\n// Comma-separated stops share one body, and declaration groups progress in\n// ascending order.\nexport const pulse = keyframes:\n    from, to:\n        opacity = 1\n        scale = 1\n    40%, 60%:\n        opacity = 0.4\n        scale = 1.08\n\n// A keyframes body contains direct, statically lowerable Look properties only:\n// literals, unit values, arithmetic over them, and positional velar/look\n// builder calls. A stop cannot read reactive state.\nexport const slideIn = keyframes:\n    from:\n        translate = -12px\n        color = rgb(120, 150, 255)\n    to:\n        translate = 0px\n        color = rgb(24, 31, 46)`
+const easingTypoCssCode = "/* One letter wrong in an easing name */\n.card { animation: slide 300ms ease-in-out-back; }\n/* ease-in-out-back is not a CSS easing. The declaration is invalid, so the\n   whole animation shorthand is discarded — including the name and duration. */"
+const easingErrorCode = `import {animate} from "velar/look"\n\nconst pulse = keyframes:\n    from, to:\n        opacity = 1\n    50%:\n        opacity = 0.4\n\nexport const spin = animate(pulse, 400ms, easing="ease-in-out-back")`
+const easingErrorOutput = `main.vel:9:50 error VEL5060: Animation easing 'ease-in-out-back' is not supported; use one of linear, ease, ease-in, ease-out, ease-in-out, step-start, step-end\nexport const spin = animate(pulse, 400ms, easing="ease-in-out-back")\n                                                 ^^^^^^^^^^^^^^^^^^`
+const repeatErrorCode = `import {animate} from "velar/look"\n\nconst pulse = keyframes:\n    from, to:\n        opacity = 1\n    50%:\n        opacity = 0.4\n\nexport const spin = animate(pulse, 400ms, count=3, loop=true)`
+const repeatErrorOutput = "main.vel:9:21 error VEL5060: animate accepts either count or loop, not both; use loop=true for an infinite animation\nexport const spin = animate(pulse, 400ms, count=3, loop=true)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+const animateCode = `import {animate} from "velar/look"\n\nconst pulse = keyframes:\n    from, to:\n        opacity = 1\n    50%:\n        opacity = 0.4\n\nconst slideIn = keyframes:\n    from:\n        translate = -12px\n    to:\n        translate = 0px\n\n// animate(frames, duration, easing?, delay?, count?, loop?, direction?, fill?)\n// answers an Animation. Duration must be positive, delay cannot be negative,\n// count is a positive integer, and count and loop=true are mutually exclusive.\nexport const spinForever = animate(pulse, 1s, easing="linear", loop=true)\nexport const spinThrice = animate(pulse, 900ms, easing="ease-in-out", count=3)\n\n// The seven easings.\nconst easings = [\n    animate(pulse, 400ms, easing="linear"),\n    animate(pulse, 400ms, easing="ease"),\n    animate(pulse, 400ms, easing="ease-in"),\n    animate(pulse, 400ms, easing="ease-out"),\n    animate(pulse, 400ms, easing="ease-in-out"),\n    animate(pulse, 400ms, easing="step-start"),\n    animate(pulse, 400ms, easing="step-end"),\n]\n\n// The four directions and the four fills.\nconst directions = [\n    animate(pulse, 400ms, direction="normal"),\n    animate(pulse, 400ms, direction="reverse"),\n    animate(pulse, 400ms, direction="alternate"),\n    animate(pulse, 400ms, direction="alternate-reverse"),\n]\n\nconst fills = [\n    animate(slideIn, 400ms, fill="none"),\n    animate(slideIn, 400ms, fill="forwards"),\n    animate(slideIn, 400ms, fill="backwards"),\n    animate(slideIn, 400ms, fill="both"),\n]\n\n// The positional spelling of the same call, with a delay, alongside the fully\n// named one. Both are ordinary VelarScript calls.\nconst positional = animate(slideIn, 300ms, "ease-out", 60ms)\nconst named = animate(slideIn, 300ms, easing="ease-out", delay=60ms, count=2, direction="alternate", fill="both")\n\nexport const closedSets = f"{easings.size} easings, {directions.size} directions, {fills.size} fills"\n\n// Look animation accepts one Animation, a List<Animation>, or null.\nexport const animatedLook = look:\n    animation = spinForever\n\nexport const layeredLook = look:\n    animation = [positional, named]`
+const transitionAllCssCode = "/* The line that looks generous and is not */\n.panel { transition: all 200ms; }\n/* It transitions width, height and top too. Every layout change the panel\n   makes now animates, so a resize becomes a two-hundred-millisecond drift. */"
 const transitionCode = `import {transition} from "velar/look"\n\n// transition describes a state change rather than a timeline. The builder takes\n// a property name, a duration, and optionally an easing and a delay; the\n// transition property accepts what it returns and rejects a raw CSS string.\nconst fade = transition("opacity", 200ms)\nconst fadeEased = transition("opacity", 200ms, "ease-in-out", 50ms)\n\nexport const transitioningLook = look:\n    opacity = 1\n    transition = fade\n\n    if @hover:\n        opacity = 0.6\n\n// The transition property takes one Transition, and the two duration longhands\n// take Duration values.\nexport const transitionLonghandLook = look:\n    transition = fadeEased\n    transitionDuration = 200ms\n    transitionDelay = 50ms`
 const politeCode = `import {animate} from "velar/look"\n\nconst pulse = keyframes:\n    from, to:\n        opacity = 1\n    50%:\n        opacity = 0.4\n\n// A media condition still governs motion, which is the checked way to honour a\n// reduced-motion preference.\nexport const politeLook = look:\n    animation = null\n\n    if not motion.reduced:\n        animation = animate(pulse, 900ms, easing="ease-in-out", count=3)\n\n// Bind a changing animation on the element; null removes the native animation.\nexport component MotionPanel:\n    state active = false\n\n    def toggle():\n        active = not active\n\n    return <div data-motion>\n        <div data-polite look={politeLook}>reduced motion is honoured</div>\n        <div data-toggled look:animation={active ? animate(pulse, 600ms, loop=true) : null}>toggled animation</div>\n        <button type="button" data-toggle-animation on:click={toggle}>{active ? "Stop" : "Start"}</button>\n    </div>`
 
 const sections = [
-    {id: "two", label: "Two spellings and no third", labelZh: "两种拼写，没有第三种"},
-    {id: "keyframes", label: "The keyframes literal", labelZh: "keyframes 字面量"},
-    {id: "animate", label: "animate and its closed sets", labelZh: "animate 与它的封闭集合"},
-    {id: "transition", label: "transition is a state change", labelZh: "transition 是状态变化"},
-    {id: "reduced", label: "Reduced motion and toggling", labelZh: "降低动效与开关"},
+    {id: "two", label: "A keyframe name two files share", labelZh: "两个文件共用的一个关键帧名"},
+    {id: "keyframes", label: "The animation that did nothing", labelZh: "什么都没发生的那个动画"},
+    {id: "animate", label: "One letter in an easing name", labelZh: "easing 名字里的一个字母"},
+    {id: "transition", label: "The word all", labelZh: "all 这个词"},
+    {id: "reduced", label: "Motion somebody asked not to see", labelZh: "有人明确说不想看的动效"},
 ]
 
 export component WebMotion:
@@ -25,75 +35,129 @@ export component WebMotion:
     return <main>
         <Head
             title={headTitle("/guide/web/motion", locale.isChinese())}
-            description={locale.text("How a keyframes literal is written, what animate accepts, and when transition is the right spelling.", "keyframes 字面量如何书写、animate 接受什么，以及何时该用 transition。")}
+            description={locale.text("Why a keyframes value is a declaration rather than a global name, what animate refuses, and when transition is the honest spelling.", "keyframes 取值为什么是一条声明而不是一个全局名字、animate 拒绝什么，以及什么时候该老实写 transition。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Web extension / 08", "Web 扩展 / 08")}
                 title={locale.text("Motion", "动效")}
-                summary={locale.text("Two checked spellings and no third: keyframes with animate for timelines, transition for state changes.", "两种受检拼写，没有第三种：用于时间线的 keyframes 加 animate，用于状态变化的 transition。")}
+                summary={locale.text("Two checked spellings and no third: keyframes with animate for a timeline, transition for a state change. Most of this chapter is about what CSS answers with silence and what this answers with a diagnostic.", "两种受检写法，没有第三种：时间线用 keyframes 加 animate，状态变化用 transition。这一章多半在讲：CSS 用沉默回答的那些事，这里用一条诊断回答。")}
             />
             <SectionList items={sections} />
             <Prose>
-                <SectionHeading id="two">{locale.text("Two spellings and no third", "两种拼写，没有第三种")}</SectionHeading>
+                <SectionHeading id="two">
+                    {locale.text("A keyframe name two files share", "两个文件共用的一个关键帧名")}
+                </SectionHeading>
                 <Paragraph>
-                    {locale.text("Motion has exactly two checked spellings. transition, together with its four longhands, describes a state change — a hover colour, an opening panel, a fading toast. A module-level keyframes value passed to animate describes a timeline. The animation longhands stay outside Look because animate owns the checked contract, and a raw CSS animation string is rejected at the property.", "动效恰好有两种受检拼写。transition 与它的四个 longhand 描述一次状态变化——悬停的颜色、展开的面板、淡出的提示。传给 animate 的模块级 keyframes 值描述一条时间线。animation 的各个 longhand 留在 Look 之外，因为受检契约由 animate 拥有；原始 CSS animation 字符串会在属性处被拒绝。")}
+                    {locale.text("Somebody calls an animation spin. So did the package you installed.", "有人把一个动画叫作 spin。你装的那个包也是。")}
+                </Paragraph>
+                <CodeBlock code={globalKeyframesCssCode} />
+                <Paragraph>
+                    {locale.text("Keyframe names are document-global, so the later declaration replaces the earlier one and the vendor's spinner starts fading instead of turning. Neither file mentions the other, and the string in the animation shorthand is just a string — misspell it and nothing animates, with no message either.", "关键帧名是文档全局的，所以后声明的那份替换掉先声明的那份，供应商的转圈开始变成淡出。两个文件谁也没提到谁；而 animation 简写里那个名字只是一个字符串——拼错了就什么都不动，同样没有任何消息。")}
                 </Paragraph>
                 <CodeBlock code={animationErrorCode} />
                 <CodeBlock code={animationErrorOutput} />
-
-                <SectionHeading id="keyframes">{locale.text("The keyframes literal", "keyframes 字面量")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A stop is from, to, or an integer percentage from one through ninety-nine. Comma-separated stops share one body, and declaration groups progress in ascending order. A keyframes body contains direct, statically lowerable Look properties only: literals, unit values, arithmetic over them, and positional velar/look builder calls.", "一个停靠点是 from、to，或者从一到九十九的整数百分比。用逗号分隔的停靠点共享一个体，声明组按升序推进。keyframes 体只包含可静态下降的直接 Look 属性：字面量、单位值、对它们的算术，以及位置参数形式的 velar/look 构建器调用。")}
+                    {locale.text("Motion has exactly two checked spellings and no third. A module-level keyframes value passed to animate describes a timeline; transition, with its four longhands, describes a state change. The animation longhands stay outside Look because animate owns the checked contract, and a raw CSS animation string is refused at the property.", "动效恰好有两种受检写法，没有第三种。传给 animate 的模块级 keyframes 值描述一条时间线；transition 和它的四个 longhand 描述一次状态变化。animation 的各个 longhand 留在 Look 之外，因为受检的契约由 animate 拥有；原始 CSS animation 字符串会在属性处被拒。")}
                 </Paragraph>
-                <CodeBlock code={keyframesCode} />
                 <Paragraph>
-                    {locale.text("Non-interpolating properties are rejected here even though a Look accepts them, because a keyframe that cannot interpolate is a declaration the browser would drop.", "即使 Look 接受某些不参与插值的属性，它们在这里仍然会被拒绝，因为无法插值的关键帧只是浏览器会直接丢弃的声明。")}
+                    {locale.text("The cost is that a keyframes value is a binding, so it obeys module scope like any other value. A stylesheet that must own a specific keyframe name — one shipped by a design system, or a third-party class that depends on the name — cannot get it from here, and crosses the unsafe CSS boundary instead. The generated names belong to the compiler, and that is exactly why two of them cannot collide.", "代价是 keyframes 取值是一个绑定，所以它和别的值一样遵守模块作用域。必须拥有某个具体关键帧名字的样式表——设计系统提供的，或者依赖名字的第三方类——从这里拿不到，只能走 unsafe CSS 边界。生成的名字归编译器所有，而这恰恰是两个名字撞不上的原因。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: every VelarScript block on this page is compiled by scripts/check-code-samples.mjs, and each quoted VEL code is verified against the diagnostics its own sample really produces.", "门禁：本页每个 VelarScript 块都由 scripts/check-code-samples.mjs 编译；引用的每个 VEL 码都与它自己那个样本真正产生的诊断核对过。")}
+                </GateNote>
+
+                <SectionHeading id="keyframes">
+                    {locale.text("The animation that did nothing", "什么都没发生的那个动画")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("Fading a panel in is two keyframes, and the first attempt is always this one.", "让一个面板淡入是两个关键帧，而第一次尝试永远是这么写的。")}
+                </Paragraph>
+                <CodeBlock code={displayCssCode} />
+                <Paragraph>
+                    {locale.text("display does not interpolate, so the browser has nothing to compute between the two stops and the element simply appears. The rule was accepted, the animation ran, and nothing moved. There is no message and no failing state to search for — the only symptom is that it looks the same as before you wrote it.", "display 不参与插值，所以浏览器在两个停靠点之间没有东西可算，元素就那么出现了。规则被接受了，动画也跑了，可什么都没动。没有消息，也没有一个可以去搜的失败状态——唯一的症状是：它看起来和你没写之前一模一样。")}
                 </Paragraph>
                 <CodeBlock code={keyframesErrorCode} />
                 <CodeBlock code={keyframesErrorOutput} />
+                <Paragraph>
+                    {locale.text("A stop is from, to, or an integer percentage from one through ninety-nine. Comma-separated stops share one body, and declaration groups progress in ascending order. A keyframes body contains direct, statically lowerable Look properties only: literals, unit values, arithmetic over them, and positional velar/look builder calls.", "一个停靠点是 from、to，或者一到九十九的整数百分比。用逗号分隔的停靠点共享一个体，声明组按升序推进。keyframes 体只包含可静态下降的直接 Look 属性：字面量、单位值、对它们的算术，以及位置参数形式的 velar/look 构建器调用。")}
+                </Paragraph>
+                <CodeBlock code={keyframesCode} />
                 <BulletList>
                     <li>
-                        {locale.text("A stop cannot read reactive state; make the presence of an animation dynamic on the element instead.", "停靠点不能读取响应式状态；应当让动画的有无在元素上动态变化。")}
+                        {locale.text("A stop cannot read reactive state. Make the presence of an animation dynamic on the element instead.", "停靠点不能读响应式状态。要动态的话，让动画的有无在元素上变。")}
                     </li>
                     <li>
-                        {locale.text("Equal keyframe structures share one generated CSS name and one emitted rule, including across module boundaries.", "结构相同的关键帧共享一个生成的 CSS 名字与一条发出的规则，跨模块边界也是如此。")}
+                        {locale.text("Equal keyframe structures share one generated CSS name and one emitted rule, including across module boundaries.", "结构相同的关键帧共享一个生成的 CSS 名字和一条发出的规则，跨模块也一样。")}
                     </li>
                 </BulletList>
+                <Paragraph>
+                    {locale.text("The cost is that the interpolation table is a table, and the platform is adding to it. Discrete properties are becoming animatable in real browsers, and a keyframe that the platform would now honour is still refused here until the table learns it. That is the same lag the property table has, traded for the same thing: a keyframe that compiles is a keyframe that will move something.", "代价是插值表就是一张表，而平台还在往里加东西。离散属性正在真实浏览器里变得可动画，而平台如今会接受的某个关键帧，在这张表学会它之前，这里仍然会拒。这和属性表的滞后是同一种，换来的也是同一样东西：能编译的关键帧，是会真的让什么东西动起来的关键帧。")}
+                </Paragraph>
 
                 <SectionHeading id="animate">
-                    {locale.text("animate and its closed sets", "animate 与它的封闭集合")}
+                    {locale.text("One letter in an easing name", "easing 名字里的一个字母")}
                 </SectionHeading>
                 <Paragraph>
-                    {locale.text("animate takes the frames and a duration, then optional easing, delay, count, loop, direction, and fill. The duration must be positive, the delay cannot be negative, count is a positive integer, and count together with a looping animation is refused — so those two options are the whole repetition vocabulary. The easings, the directions, and the fills are closed sets.", "animate 接受帧与一个时长，然后是可选的 easing、delay、count、loop、direction 与 fill。时长必须为正，延迟不能为负，count 是正整数，且 count 与循环动画不能同时给出——因此这两个选项就是重复的全部词汇。easing、direction 与 fill 都是封闭集合。")}
+                    {locale.text("Easing names are not guessable, and the ones from animation libraries are not CSS.", "easing 的名字不是靠猜的，而动画库里那些名字并不是 CSS 的。")}
                 </Paragraph>
+                <CodeBlock code={easingTypoCssCode} />
+                <Paragraph>
+                    {locale.text("An invalid component makes the whole shorthand invalid, so the name and the duration go with it and the element does not animate at all. A reader looking at that line sees an animation declared. The browser saw a line it could not parse.", "简写里有一个部分无效，整条简写就无效，名字和时长跟着一起没了，元素根本不动。读到那一行的人看到的是「声明了一个动画」。浏览器看到的是一行它解析不了的东西。")}
+                </Paragraph>
+                <CodeBlock code={easingErrorCode} />
+                <CodeBlock code={easingErrorOutput} />
+                <Paragraph>
+                    {locale.text("animate takes the frames and a duration, then optional easing, delay, count, loop, direction and fill. The easings, the directions and the fills are closed sets, and a name outside one is a diagnostic that lists the whole set. Two options cannot be combined, because they say opposite things about the same question.", "animate 接受帧和一个时长，然后是可选的 easing、delay、count、loop、direction、fill。easing、direction、fill 都是封闭集合，集合之外的名字会得到一条把整个集合列出来的诊断。有两个选项不能同时给，因为它们对同一个问题给出的是相反的回答。")}
+                </Paragraph>
+                <CodeBlock code={repeatErrorCode} />
+                <CodeBlock code={repeatErrorOutput} />
                 <CodeBlock code={animateCode} />
                 <BulletList>
                     <li>
-                        {locale.text("The Look animation property accepts one Animation, a List of them, or null.", "Look 的 animation 属性接受一个 Animation、它们的 List，或 null。")}
+                        {locale.text("The Look animation property accepts one Animation, a List of them, or null.", "Look 的 animation 属性接受一个 Animation、它们的 List，或者 null。")}
                     </li>
                     <li>
-                        {locale.text("animate is an ordinary function call, so its arguments may be positional or named exactly as any other call's are.", "animate 是普通的函数调用，因此它的实参可以是位置形式或具名形式，与其他任何调用完全一样。")}
+                        {locale.text("animate is an ordinary function call, so its arguments may be positional or named exactly as any other call's are.", "animate 是普通的函数调用，所以它的实参可以是位置的也可以是具名的，和别的调用完全一样。")}
                     </li>
                 </BulletList>
-
-                <SectionHeading id="transition">
-                    {locale.text("transition is a state change", "transition 是状态变化")}
-                </SectionHeading>
                 <Paragraph>
-                    {locale.text("The transition builder takes a property name, a duration, and optionally an easing and a delay. Written next to a state condition, it says what should ease when that condition turns on, which is a different statement from a timeline that runs on its own.", "transition 构建器接受一个属性名、一个时长，以及可选的 easing 与 delay。写在状态条件旁边时，它说明的是该条件开启时什么应当过渡——这与一条自行播放的时间线是不同的陈述。")}
+                    {locale.text("The cost is seven easings and no eighth. A custom cubic-bezier curve, the thing a motion designer hands you, has no spelling here — the closed set covers the CSS keywords and stops. A design that depends on a specific curve reaches the unsafe CSS boundary for that rule, and pays the price this chapter has been charging CSS with: nothing checks it after that.", "代价是七种 easing，没有第八种。动效设计师递给你的那条自定义 cubic-bezier 曲线，在这里没有写法——封闭集合覆盖的是 CSS 关键字，到此为止。依赖某条具体曲线的设计，会为那条规则走 unsafe CSS 边界，并付出本章一直在向 CSS 收取的那笔费用：从那以后没有东西检查它。")}
+                </Paragraph>
+
+                <SectionHeading id="transition">{locale.text("The word all", "all 这个词")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("A hover colour needs a transition, and the shortest way to write one is the one that transitions everything.", "hover 的颜色需要一次过渡，而最短的写法，是把所有东西都过渡一遍的那种。")}
+                </Paragraph>
+                <CodeBlock code={transitionAllCssCode} />
+                <Paragraph>
+                    {locale.text("Now every layout change the panel makes animates too. Add a row to a list inside it and the panel drifts to its new height over two hundred milliseconds, while the browser recomputes layout on every frame of that drift. The line reads as one small decision about a colour and behaves as a standing decision about everything.", "现在这个面板的每次布局变化也会动起来。往里面的列表加一行，面板会用两百毫秒慢慢漂到新高度，而浏览器在这段漂移的每一帧都要重算布局。这一行读起来像是关于一个颜色的小决定，行为上却是关于一切的长期决定。")}
                 </Paragraph>
                 <CodeBlock code={transitionCode} />
-
-                <SectionHeading id="reduced">{locale.text("Reduced motion and toggling", "降低动效与开关")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A media condition governs motion like any other visual decision, so honouring a reduced-motion preference does not leave Look. Making an animation appear and disappear is the element's job: bind it with look:animation, where null removes the native animation.", "媒体条件像其他视觉决定一样管辖动效，因此尊重降低动效偏好无需离开 Look。让动画出现与消失是元素的工作：用 look:animation 绑定它，其中 null 会移除原生动画。")}
+                    {locale.text("The transition builder takes a property name, a duration, and optionally an easing and a delay. Written next to a state condition, it says what should ease when that condition turns on — a different statement from a timeline that runs on its own, which is why the two have different spellings.", "transition 构建器接受一个属性名、一个时长，以及可选的 easing 和 delay。写在状态条件旁边时，它说的是「这个条件开启时，什么应当过渡」——这和一条自己播放的时间线是不同的陈述，所以两者的写法也不同。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The cost is that this one is not caught. The builder checks the shape of the call, not the wisdom of it: a property name is a string, so transition(\"all\", 200ms) compiles here as readily as it parses in CSS. Naming the property is a convention this chapter recommends and the compiler does not enforce, and saying otherwise would be false.", "代价是这一条抓不住。构建器检查的是调用的形状，不是这么写明不明智：属性名是一个字符串，所以 transition(\"all\", 200ms) 在这里编译得和它在 CSS 里解析得一样顺利。「把属性名写出来」是本章建议的约定，不是编译器强制的规则；说成别的就是假话。")}
+                </Paragraph>
+
+                <SectionHeading id="reduced">
+                    {locale.text("Motion somebody asked not to see", "有人明确说不想看的动效")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("A reader turned motion down in their operating system, for a reason they did not have to explain. The preference is one media query away, and it is the one that gets added last, in a separate pass, after somebody files it.", "有个读者在操作系统里把动效调低了，理由他不需要向谁解释。这个偏好离一条媒体查询只有一步之遥，而它总是最后才被加上——单独一轮，等有人提了工单之后。")}
                 </Paragraph>
                 <CodeBlock code={politeCode} />
+                <Paragraph>
+                    {locale.text("A media condition governs motion the way it governs any other visual decision, so honouring the preference does not leave Look and does not need a second file. Making an animation appear and disappear is the element's job: bind it with look:animation, where null removes the native animation rather than emitting a name that does nothing.", "媒体条件管辖动效的方式，和它管辖别的视觉决定一样，所以尊重这个偏好不用离开 Look，也不需要第二个文件。让动画出现和消失是元素的活儿：用 look:animation 绑定它，其中 null 会移除原生动画，而不是发出一个什么也不做的名字。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The cost is that reduced motion is still a decision, not a default. Nothing here refuses an animation that ignores the preference, and nothing counts how many of your Looks respect it. What the language removes is the excuse that it was awkward: the condition sits in the same literal as the animation it governs, four lines away, and a reviewer can see both at once.", "代价是「降低动效」仍然是一个决定，不是默认值。这里没有谁会拒绝一个无视这个偏好的动画，也没有谁去数你的 Look 里有几个尊重了它。语言拿掉的是「那么写太别扭」这个借口：条件就在它所管辖的那个动画的同一个字面量里，隔着四行，评审的人一眼能同时看见两边。")}
+                </Paragraph>
                 <Callout title={locale.text("When a stylesheet must own its own keyframes", "当样式表必须拥有自己的关键帧")}>
                     <Paragraph>
-                        {locale.text("The CSS at-rule for keyframes is not a Look target. A stylesheet that must own its own keyframe names — one shipped by a design system, or a name-dependent third-party class — crosses the unsafe CSS boundary like any other native CSS, which the next chapter covers.", "CSS 的关键帧 at-rule 不是 Look 的目标。必须拥有自己关键帧名字的样式表——设计系统提供的，或依赖名字的第三方类——像其他原生 CSS 一样跨越 unsafe CSS 边界，这正是下一章的内容。")}
+                        {locale.text("The CSS at-rule for keyframes is not a Look target. A stylesheet that must own its own keyframe names crosses the unsafe CSS boundary like any other native CSS, which the next chapter covers.", "CSS 的关键帧 at-rule 不是 Look 的目标。必须拥有自己关键帧名字的样式表，和别的原生 CSS 一样跨越 unsafe CSS 边界，下一章讲的就是这个。")}
                     </Paragraph>
                 </Callout>
             </Prose>

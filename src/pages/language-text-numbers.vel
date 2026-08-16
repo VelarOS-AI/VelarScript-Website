@@ -1,17 +1,28 @@
-import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
-import {useLocale} from "@velarscript/site-ui"
+import {Head, Link} from "velar/web"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, GateNote, PageHeader, Paragraph, Prose, SectionHeading, SectionList, Subheading} from "@velarscript/docs-kit"
+import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
+const previewJsCode = `// JavaScript — a comment preview, cut to fit\nconst preview = comment.slice(0, 140) + "…";`
 const stringsCode = `const title = "  VelarScript advertisement  "\nconst trimmed = title.trim()\n\nconst size = trimmed.size\nconst upper = trimmed.upper()\nconst lower = trimmed.lower()\nconst blank = "   ".isBlank()\nconst notBlank = trimmed.isBlank()\n\nconst wholeSlice = trimmed.slice()\nconst fromStart = trimmed.slice(2)\nconst bothEnds = trimmed.slice(2, 6)\nconst namedSlice = trimmed.slice(end=6, start=2)\nconst negativeSlice = trimmed.slice(-4)\n\nconst firstCharacter = trimmed.char(0)\nconst lastCharacter = trimmed.char(-1)\n\nconst hasText = trimmed.has("Script")\nconst startsWith = trimmed.startsWith("Velar")\nconst endsWith = trimmed.endsWith("ment")\n\nconst firstIndex = trimmed.index("e")\nconst indexFromStart = trimmed.index("e", 5)\nconst occurrences = trimmed.count("e")\n\nconst words = trimmed.split(" ")\nconst characters = "a😀b".split("")\n\nconst replacedFirst = "a-b-a".replace("a", "z")\nconst replacedAll = "a-b-a".replaceAll("a", "z")\n\nconst paddedStart = "7".padStart(3, "0")\nconst paddedEnd = "7".padEnd(3, "0")\nconst repeated = "ab".repeat(3)\n\n// A method value keeps its checked receiver.\nconst boundUpper = trimmed.upper\nconst calledLater = boundUpper()`
-const lengthErrorCode = `const title = "VelarScript"\nconst width = title.length`
-const lengthErrorOutput = "main.vel:2:15 error VEL4001: Use '.size'; strings count Unicode code points like List.size\nconst width = title.length\n              ^^^^^^^^^^^^"
-const caseErrorCode = `const title = "VelarScript"\nconst shouted = title.toUpperCase()`
-const caseErrorOutput = "main.vel:2:17 error VEL4001: Use '.upper()'; VelarScript exposes one string uppercase spelling\nconst shouted = title.toUpperCase()\n                ^^^^^^^^^^^^^^^^^"
+const memberErrorCode = `const title = "VelarScript"\nconst width = title.length\nconst shouted = title.toUpperCase()`
+const memberErrorOutput = "main.vel:2:15 error VEL4001: Use '.size'; strings count Unicode code points like List.size\nconst width = title.length\n              ^^^^^^^^^^^^\n\nmain.vel:3:17 error VEL4001: Use '.upper()'; VelarScript exposes one string uppercase spelling\nconst shouted = title.toUpperCase()\n                ^^^^^^^^^^^^^^^^^"
+const isNanJsCode = `// JavaScript — three ways to ask, and they disagree\nisNaN("");        // false — the empty string is a number\nisNaN("abc");     // true\nNumber.isNaN("abc"); // false — a string is not the NaN value`
 const numbersCode = "const magnitude = (-3.7).abs()\nconst rounded = 3.5.round()\nconst floored = 3.7.floor()\nconst ceiled = 3.2.ceil()\nconst fixed = 3.14159.toFixed(2)\nconst namedFixed = 3.14159.toFixed(digits=2)\n\n// The three predicates are members on the value, not free functions.\nconst integral = 3.0.isInteger()\nconst notANumber = (0 / 0).isNaN()\nconst finite = (1 / 0).isFinite()\n\n// Number text is JavaScript's number text, kept rather than reinvented.\nconst negativeZero = str(-0)\nconst largeExponent = str(1e21)\nconst floatingPoint = str(0.1 + 0.2)\nconst infinite = str(1 / 0)\nconst undefinedQuotient = str(0 / 0)"
+const doublesNodeCode = "// A Node module, run with velar run.\nprint(str(0.1 + 0.2))\nprint(str(9007199254740993))\nprint(str(1 / 0))\nprint(str(0 / 0))\nprint(str((0 / 0) != (0 / 0)))"
+const doublesTextCode = "0.30000000000000004\n9007199254740992\nInfinity\nNaN\nfalse"
+const quantityJsCode = "// JavaScript — a quantity out of a form field\nconst quantity = parseInt(input.value);"
 const conversionsCode = `const fromNumber = str(42)\nconst fromBool = str(true)\nconst fromNull = str(null)\n\n// number(text) answers a number or null. It reads a complete decimal number\n// and refuses everything else.\nconst parsedNumber = number("42")\nconst parsedSigned = number("-4.5")\nconst parsedExponent = number("4.5e3")\nconst parsedPartialFraction = number("4.")\nconst parsedLeadingPoint = number(".5")\nconst parsedWithWhitespace = number("  42\\n")\nconst refusedPartial = number("12ab")\nconst refusedSeparator = number("1_000")\nconst refusedRadix = number("0x10")\nconst refusedInfinity = number("1e999")\nconst namedParse = number(text="42")`
+const parseIntErrorCode = `const quantity = parseInt("12ab")`
+const parseIntErrorOutput = `main.vel:1:18 error VEL3008: Use 'number(text)', then '.floor()' or '.round()' for an integer; VelarScript has one text-to-number conversion\nconst quantity = parseInt("12ab")\n                 ^^^^^^^^`
+const slugJsCode = `// JavaScript — two helpers in one repository\nexport const slugify = (text) => text.toLowerCase().replace(/\\s+/g, "-");\nexport const toSlug = (text) => text.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");`
 const namespaceCode = `const paragraph = "\n    First line\n\n    Second   line\n"\n\nconst startTrimmed = Text.trimStart("  a  ")\nconst endTrimmed = Text.trimEnd("  a  ")\nconst capitalized = Text.capitalize("velar script")\nconst titleCased = Text.title("velar script")\nconst documentLines = Text.lines(paragraph)\nconst lineOffsets = Text.lineStarts(paragraph)\nconst fixedChunks = Text.chunks("abcdef", 2)\nconst wordList = Text.words("velar   script")\nconst slugified = Text.slug("Velar Script 1.0")\nconst normalized = Text.normalize("café")\nconst normalizedForm = Text.normalize("café", "NFD")\nconst truncated = Text.truncate("a long sentence", 6)\nconst truncatedWithSuffix = Text.truncate("a long sentence", 6, "…")\nconst indented = Text.indent("a\\nb", "    ")\nconst dedented = Text.dedent("    a\\n    b")\nconst collapsedWhitespace = Text.normalizeWhitespace("a   b\\n c")\nconst byteSize = Text.utf8Size("a😀b")\nconst escaped = Text.escapeHtml(\`<a href="/">x</a>\`)\nconst codePoint = Text.codePoint("😀")\nconst fromCodePoint = Text.fromCodePoint(128512)\n\n// Named arguments work here exactly as they do for user-defined functions.\nconst namedTruncate = Text.truncate(value="a long sentence", length=6, suffix="…")\nconst namedNormalize = Text.normalize(value="café", form="NFKC")`
+const importTextErrorCode = `import {slug} from "velar/text"\n\nconst url = slug("Velar Script 1.0")`
+const importTextErrorOutput = `main.vel:1:9 error VEL3008: Use Text.slug directly; VelarScript's pure namespaces need no import\nimport {slug} from "velar/text"\n        ^^^^`
+const lastIndexJsCode = "// JavaScript — one pattern, reused\nconst TAG = /\\w+/g;\n\nexport function isTag(text) {\n  return TAG.test(text);\n}"
 const patternsCode = `// A pattern is ordinary text, so a raw string is the natural spelling for it.\nconst matched = Text.matches("2026-08-15", r"^\\d{4}-\\d{2}-\\d{2}$")\nconst matchedIgnoringCase = Text.matches("VELAR", "velar", {ignoreCase: true})\nconst matchedMultiline = Text.matches("a\\nb", "^b$", {multiline: true})\nconst matchedDotAll = Text.matches("a\\nb", "a.b", {dotAll: true})\n\nconst firstMatch = Text.findMatch("a1b2", r"\\d")\nconst everyMatch = Text.findMatches("a1b2", r"\\d")\nconst patternReplaced = Text.replaceMatches("a1b2", r"\\d", "#")\nconst patternSplit = Text.splitPattern("a1b2", r"\\d")\n\nexport def readMatch() -> string:\n    const found = Text.findMatch("owner: Ada", r"owner: (\\w+)")\n    if found == null:\n        return "no match"\n    const captured = found.groups.get(0) ?? "none"\n    return f"{found.value} at {found.index}: {captured}"`
+const brokenPatternNodeCode = `const wellFormed = Text.matches("v1.2", r"v(\\d+)")\nprint(str(wellFormed))\n\n// One parenthesis short. A pattern is ordinary text, so this is legal source.\nconst brokenPattern = Text.matches("v1.2", r"v(\\d+")\nprint(str(brokenPattern))`
+const brokenPatternTextCode = "true\nvelar run: uncaught error while running main.vel\nTypeError: Invalid text pattern\n    at <anonymous> (main.vel:5:23)"
 
 const sections = [
     {id: "members", label: "Checked string members", labelZh: "字符串的受检成员"},
@@ -21,80 +32,171 @@ const sections = [
     {id: "patterns", label: "Patterns", labelZh: "模式"},
 ]
 
+const inlineLinkLook = look:
+    color = sea
+
 export component LanguageTextNumbers:
     const locale = useLocale()
     return <main>
         <Head
             title={headTitle("/guide/language/text-numbers", locale.isChinese())}
-            description={locale.text("The checked members strings and numbers publish, the two written conversions, and what Text adds without an import.", "字符串与数字发布的受检成员、两种书面转换，以及 Text 无需导入就提供的能力。")}
+            description={locale.text("What a string counts and what it does not, why numbers are still IEEE doubles, the one text-to-number conversion, the resident Text namespace, and patterns without a literal.", "字符串数的是什么、不数的是什么，数字为什么仍然是 IEEE 双精度，文本转数字为什么只有一种，常驻的 Text 命名空间，以及没有字面量的模式。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Language / 06", "语言 / 06")}
                 title={locale.text("Text and numbers", "文本与数字")}
-                summary={locale.text("String and number members, the two conversions, and the resident Text namespace.", "字符串与数字的受检成员、两种转换，以及常驻的 Text 命名空间。")}
+                summary={locale.text("String and number members that are checked rather than looked up, one conversion in each direction, the resident Text namespace, and the arithmetic the language did not change.", "字符串与数字的成员是受检的，不是查出来的；两个方向各一种转换；常驻的 Text 命名空间；以及这门语言没有改动的那部分算术。")}
             />
             <SectionList items={sections} />
             <Prose>
                 <SectionHeading id="members">{locale.text("Checked string members", "字符串的受检成员")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Text operations are compiler-owned members on the value rather than JavaScript prototype calls: the receiver is checked and evaluated once, and the member set is closed, so a name outside it is a diagnostic instead of an absent value. size counts Unicode code points, and every position accepts a negative index counted from the end.", "文本操作是值上由编译器持有的成员，而不是 JavaScript 原型调用：接收者受检且只求值一次；成员集合是封闭的，因此集合之外的名字得到的是诊断，而不是一个缺失的值。size 计的是 Unicode 码点，所有位置参数都接受从末尾倒数的负索引。")}
+                    {locale.text("A comment preview, cut to fit the card.", "一段评论预览，裁到卡片装得下。")}
+                </Paragraph>
+                <CodeBlock code={previewJsCode} />
+                <Paragraph>
+                    {locale.text("It works for years, and then somebody puts an emoji at position 139. JavaScript counts UTF-16 code units, so slice cuts the character in half and the card renders a replacement glyph. Nothing threw, nothing logged, and the bug report is a screenshot.", "它好用了好几年，直到有人在第 139 位放了一个 emoji。JavaScript 数的是 UTF-16 码元，于是 slice 把这个字符从中间切开，卡片上渲染出一个替代字形。没有抛异常，没有日志，收到的 bug 报告是一张截图。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Positions here are counted in code points, so the same cut lands between characters.", "这里的位置按码点计数，所以同样的一刀切在字符之间。")}
                 </Paragraph>
                 <CodeBlock code={stringsCode} />
                 <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                    {locale.text("Text operations are compiler-owned members on the value rather than JavaScript prototype calls. The receiver is checked and evaluated once, size counts Unicode code points, and every position argument accepts a negative index counted from the end. The member set is closed, so a name outside it is a diagnostic at build time instead of an undefined that travels.", "文本操作是值上由编译器持有的成员，不是 JavaScript 的原型调用。接收者受检，且只求值一次；size 数的是 Unicode 码点；所有位置参数都接受从末尾倒数的负索引。成员集合是封闭的，所以集合之外的名字在构建期就是一条诊断，而不是一个会一路传下去的 undefined。")}
                 </Paragraph>
-                <CodeBlock code={lengthErrorCode} />
                 <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                    {locale.text("Two things this does not buy you. A code point is still not what a person sees: a flag is two of them and a family emoji is five, so size is the right count for slicing safely and the wrong count for a character limit shown to a user. And the closed member set has no back door — a String.prototype method that exists in JavaScript and not here has no spelling at all, so the answer is a Text member, or the declared JavaScript boundary, never a call that reaches through.", "有两件事它买不到。码点仍然不等于人眼看到的字符：一面旗是两个码点，一个全家福 emoji 是五个；所以用 size 来安全切分是对的，用它来做「给用户看的字数上限」是不对的。另外封闭的成员集合没有后门——JavaScript 里有、这里没有的 String.prototype 方法，是压根没有写法的；答案要么是某个 Text 成员，要么走声明过的 JavaScript 边界，绝不是伸手直接调过去。")}
                 </Paragraph>
-                <CodeBlock code={lengthErrorOutput} />
-                <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </Paragraph>
-                <CodeBlock code={caseErrorCode} />
-                <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </Paragraph>
-                <CodeBlock code={caseErrorOutput} />
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={memberErrorCode} />
+                <CodeBlock code={memberErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example carrying two reflexes at once. This site's build compiles the sample and fails if it ever stops producing a diagnostic, and it verifies that VEL4001 is a code the sample really produces. Neither line is refused with a bare no — each one names the spelling that works.", "门禁：一个受检的教学反例，一次装了两种手感。本站构建会编译这个样本，一旦它不再报错就让构建失败；并核对 VEL4001 确实由这个样本产生。两行都不是干巴巴一句「不行」——每一行都点出了能用的那种写法。")}
+                </GateNote>
 
                 <SectionHeading id="numbers">{locale.text("Number members", "数字的成员")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Rounding, magnitude, fixed-digit text, and the three predicates are members on the number. A number literal needs no ceremony before a member, and number text is JavaScript's number text: the language keeps the platform's rendering rather than inventing a second one that would disagree with the runtime it compiles to.", "取整、绝对值、定点位数文本以及三个判定都是数字上的成员。数字字面量在成员之前不需要额外形式；数字的文本形式就是 JavaScript 的数字文本形式：这门语言保留平台的渲染，而不是另造一套会与它所编译到的运行时不一致的渲染。")}
+                    {locale.text("Three ways to ask whether a value is not a number, and they disagree.", "问「这个值是不是不是数字」有三种问法，而它们给的答案不一样。")}
+                </Paragraph>
+                <CodeBlock code={isNanJsCode} />
+                <Paragraph>
+                    {locale.text("The short name coerces its argument first, so it answers a question about the text rather than about the value in front of it: an empty field converts to a number and passes, while abc does not and is stopped. The long name never coerces, so a string is simply not the NaN value and both of them pass. Neither one is the check you wanted, and they differ by seven characters.", "短的那个会先做强制转换，于是它回答的是关于那段文本的问题，不是关于眼前这个值的问题：空字段能转成数字，放行；abc 转不成，拦下。长的那个从不转换，于是字符串根本就不是 NaN 这个值，两个输入全放行。你想要的那道检查，两个都不是；而这两个名字只差七个字符。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("A predicate here is a member on the value, so there is nothing to pick between.", "在这里，判定是值上的一个成员，没有什么可挑的。")}
                 </Paragraph>
                 <CodeBlock code={numbersCode} />
+                <Paragraph>
+                    {locale.text("Rounding, magnitude, fixed-digit text, and the three predicates all live on the number, and a literal needs no ceremony before a member. Number text is JavaScript's number text, kept rather than reinvented: a language that printed 0.1 + 0.2 differently from the runtime it compiles to would be lying about the value it holds.", "取整、绝对值、定点位数文本，以及那三个判定，全都长在数字上；字面量在成员之前不需要任何额外形式。数字的文本形式就是 JavaScript 的那一套，保留而不重造：如果一门语言把 0.1 + 0.2 打印得和它所编译到的运行时不一样，那它就是在谎报自己手里的值。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Which is the part worth saying plainly. A number is an IEEE double and nothing on this page changes that. 0.1 + 0.2 is not 0.3, an integer past nine quadrillion is not the integer you typed, and money kept in a number is still wrong money. There is no decimal type, no separate integer type, and no BigInt literal in the source surface, so exact arithmetic is an integer count of the smallest unit you care about, or a library across the JavaScript boundary. One JavaScript idiom also stops working: equality is SameValueZero, so the undefined quotient equals itself and the value != value trick answers false. Use .isNaN() — that is what it is for.", "这一段值得直说。数字就是 IEEE 双精度，本页没有任何东西改变这一点。0.1 + 0.2 不等于 0.3；超过九千万亿的整数不是你敲进去的那个整数；用数字存钱，存的仍然是错的钱。源码这一面没有 decimal 类型，没有单独的整数类型，也没有 BigInt 字面量；要精确算，就用「你在意的最小单位」的整数计数，或者跨过 JavaScript 边界用一个库。还有一个 JavaScript 惯用法在这里失效：相等采用 SameValueZero，所以未定义商与自身相等，value != value 这个技巧答 false。要判断就用 .isNaN()，它就是干这个的。")}
+                </Paragraph>
+                <CodeBlock code={doublesNodeCode} />
+                <CodeBlock code={doublesTextCode} />
+                <GateNote>
+                    {locale.text("The source above is compiled by this site's build like every other sample here. The output below it is a transcript of one velar run on toolchain 0.10.0, not an artifact this site compares — run it yourself and you will get the same five lines, because they are the runtime's answers rather than the language's.", "上面那段源码，和本站其他样本一样由构建编译。下面那段输出是在 0.10.0 工具链上跑一次 velar run 的记录，不是本站会去比对的产物——你自己跑一遍，会得到同样的五行，因为这是运行时给的答案，不是语言给的。")}
+                </GateNote>
 
                 <SectionHeading id="conversions">{locale.text("The two conversions", "两种转换")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Conversion between text and numbers is written, never implicit. str renders strings, numbers, bools, enums, and null; number reads a complete decimal number and answers null for anything else, including a partial read, a digit separator, a radix prefix, and a magnitude that would overflow to infinity.", "文本与数字之间的转换是书面的，绝不隐式发生。str 渲染字符串、数字、bool、枚举与 null；number 读取一个完整的十进制数，对其余输入一律给出 null——包括读了一半、数位分隔符、进制前缀，以及会溢出到无穷的量级。")}
+                    {locale.text("A quantity, out of a form field.", "从表单字段里取一个数量。")}
+                </Paragraph>
+                <CodeBlock code={quantityJsCode} />
+                <Paragraph>
+                    {locale.text("Leave the field blank and parseInt answers NaN, which fails every comparison quietly. Switch to Number and a blank field answers 0, and the order ships nothing. Type 12ab by accident and parseInt answers 12, so the order ships twelve. Four spellings of the same conversion, four different wrong answers, and the one you picked was picked years ago by somebody else.", "字段留空，parseInt 给 NaN，而 NaN 会安静地让每一次比较都不成立。换成 Number，留空给 0，于是订单一件都不发。手滑输入 12ab，parseInt 给 12，于是订单发出十二件。同一件转换有四种写法，四个不同的错答案；而你用的那一种，是多年前别人替你挑的。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("There is one conversion in each direction, and the reading one answers null when it cannot read.", "两个方向各只有一种转换，而负责读的那一种，读不出来就给 null。")}
                 </Paragraph>
                 <CodeBlock code={conversionsCode} />
+                <Paragraph>
+                    {locale.text("Conversion is written and never implicit. str renders strings, numbers, bools, enums, and null. number reads a complete decimal number and answers null for everything else — a partial read, a digit separator, a radix prefix, and a magnitude that would overflow to infinity all come back null rather than as a value that looks usable.", "转换是写出来的，绝不隐式发生。str 渲染字符串、数字、bool、枚举与 null。number 读一个完整的十进制数，其余一律给 null——读了一半、带数位分隔符、带进制前缀、大到会溢出成无穷，全都回 null，而不是回一个看起来能用的值。")}
+                </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("Because the failed read is null rather than a not-a-number value, the caller decides what an unreadable input means at the point where it arrives.", "由于读取失败给出的是 null 而不是一个非数字值，调用方在输入到达的那个位置就决定了不可读的输入意味着什么。")}
+                        {locale.text("The failed read is null rather than a not-a-number value, so the decision about unreadable input is made at the point where it arrives.", "读取失败给出的是 null，不是一个「非数字」的值，所以「读不出来算什么」这个决定，就在输入到达的地方做。")}
                     </li>
                     <li>
-                        {locale.text("A digit separator is legal in source and not in data, which keeps a literal readable without making a parser accept a spelling no wire protocol produces.", "数位分隔符在源码中合法、在数据中不合法：这既让字面量保持可读，又不会让解析器去接受任何传输协议都不会产生的拼写。")}
+                        {locale.text("A digit separator is legal in source and not in data, so a literal stays readable without a parser accepting a spelling no wire protocol produces.", "数位分隔符在源码里合法、在数据里不合法：字面量因此保持可读，而解析器也不必去接受任何传输协议都不会产出的写法。")}
                     </li>
                 </BulletList>
+                <Paragraph>
+                    {locale.text("The bill is a null check at every boundary. Reading a query parameter, a form field, or a CSV column now ends with a written decision about what an unreadable value means, where a plus sign used to do it in one character. And number is strict about spellings that are perfectly legal elsewhere: 0x10, 1_000, and 1e999 all read as null, so data that genuinely arrives in hexadecimal or with thousands separators has to be cleaned before it is read rather than during.", "账单是每一道边界上的一次 null 检查。读一个查询参数、一个表单字段、一列 CSV，现在都要以一个写出来的决定收尾：读不出来算什么。而从前一个加号就干完了。number 对某些在别处完全合法的写法也很严：0x10、1_000、1e999 一律读成 null，所以真的以十六进制或带千分位到达的数据，要先清洗再读，而不是边读边清。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={parseIntErrorCode} />
+                <CodeBlock code={parseIntErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, compiled on every build and required to keep failing, with VEL3008 verified against the diagnostics the sample really produces. Read what the diagnostic does: it does not only remove parseInt, it says how to get the integer you came for.", "门禁：受检的教学反例，每次构建都编译，而且必须一直报错；VEL3008 会与样本真实产生的诊断核对。看这条诊断做了什么：它不只是把 parseInt 拿掉，还告诉你想要的那个整数该怎么拿到。")}
+                </GateNote>
 
                 <SectionHeading id="namespace">{locale.text("The Text namespace", "Text 命名空间")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Text is a resident namespace: it is vocabulary every program speaks, so it needs no import and cannot be shadowed by one. It carries the operations that are about text but not about one particular string value — line and word structure, indentation, slugs, Unicode normalization, HTML escaping, and code points.", "Text 是常驻命名空间：它是每个程序都会说的词汇，因此无需导入，也不会被导入遮蔽。它承载那些关于文本、但不属于某一个具体字符串值的操作——行与词的结构、缩进、slug、Unicode 归一化、HTML 转义与码点。")}
+                    {locale.text("Two helpers, one repository, doing the same job.", "同一个仓库里两个工具函数，干的是同一件事。")}
+                </Paragraph>
+                <CodeBlock code={slugJsCode} />
+                <Paragraph>
+                    {locale.text("One trims and drops punctuation, the other does not. So the same article title becomes two different URLs depending on which file the caller imported, and the redirect somebody wrote to catch the old form only ever knew about one of them. Neither helper is wrong. There are just two of them.", "一个会去空白、去标点，另一个不会。于是同一个文章标题会变成两个不同的 URL，取决于调用方 import 的是哪个文件；而后来有人写的那条旧地址跳转，从头到尾只知道其中一个。两个函数都不算错，问题只在于有两个。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("These operations are vocabulary every program speaks, so the language speaks them.", "这些操作是每个程序都会说的词汇，那就由语言来说。")}
                 </Paragraph>
                 <CodeBlock code={namespaceCode} />
-                <Callout title={locale.text("Resident, not imported", "常驻，而非导入")}>
-                    <Paragraph>
-                        {locale.text("Math, Text, Json, and Promise are the four resident namespaces. An import of a module by those names does not exist, which is why the reflex of importing a math module reports a diagnostic that names the resident spelling instead.", "Math、Text、Json、Promise 是四个常驻命名空间。不存在以这些名字导入的模块，因此「导入一个 math 模块」的手感会得到一条诊断，把常驻拼写点出来。")}
-                    </Paragraph>
-                </Callout>
+                <Paragraph>
+                    {locale.text("Text is a resident namespace: no import, and no import can shadow it. It carries the operations that are about text but not about one particular string value — line and word structure, indentation, slugs, Unicode normalization, HTML escaping, and code points. Math, Json, and Promise are resident on the same terms.", "Text 是常驻命名空间：不用导入，也没有哪个导入能遮住它。它管的是那些关于文本、但不属于某一个具体字符串值的操作——行与词的结构、缩进、slug、Unicode 归一化、HTML 转义、码点。Math、Json、Promise 也按同样的规矩常驻。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Four names are spent, and they are not small ones. Text, Math, Json, and Promise are reserved Core bindings, so a variable called Text is a diagnostic and a module of yours cannot take one of those names either. The member list is the compiler's, so an operation it does not have cannot be added beside the ones it does — your project's own text helper lives in your own module, and the reader has to learn which shelf a given name sits on.", "花掉的是四个名字，而且都不是小名字。Text、Math、Json、Promise 是保留的 Core 绑定，所以一个叫 Text 的变量是一条诊断，你自己的模块也不能占用这几个名字。成员清单归编译器所有，它没有的操作，你没法挨着它已有的那些补上去——你项目自己的文本工具住在你自己的模块里，读者得记住某个名字放在哪个架子上。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The reflex this replaces gets an answer rather than a package error.", "被它取代的那个手感，得到的是一个回答，不是一句「找不到包」。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={importTextErrorCode} />
+                <CodeBlock code={importTextErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, compiled on every build and required to keep failing, with VEL3008 verified against the diagnostics the sample really produces. The diagnostic names the member rather than the namespace, so the fix is the line you wanted in the first place.", "门禁：受检的教学反例，每次构建都编译，而且必须一直报错；VEL3008 会与样本真实产生的诊断核对。这条诊断点的是那个成员，不是那个命名空间——所以照着改出来的，正是你一开始想写的那一行。")}
+                </GateNote>
+                <Paragraph>
+                    {locale.text("Every member of all four namespaces is listed with its signature in the reference.", "四个命名空间的全部成员，参考页都列了签名。")} <Link
+                        to="/reference/namespaces"
+                        look={inlineLinkLook}
+                    >
+                        {locale.text("The namespaces reference", "命名空间参考页")}
+                    </Link>
+                </Paragraph>
 
                 <SectionHeading id="patterns">{locale.text("Patterns", "模式")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("There is no pattern literal. A pattern is ordinary text handed to one of five Text members, with options given as a record, so a raw string is its natural spelling and a pattern can be built, stored, and passed like any other value. Each call creates a fresh Unicode pattern, so no cursor state survives between calls.", "没有模式字面量。模式就是交给五个 Text 成员之一的普通文本，选项以记录给出；因此原始字符串是它的自然拼写，而模式可以像任何别的值一样被构造、保存与传递。每次调用都创建全新的 Unicode 模式，因此调用之间不残留游标状态。")}
+                    {locale.text("One pattern, declared once and reused, which is the advice.", "一个模式，声明一次、反复使用——这本来就是推荐做法。")}
+                </Paragraph>
+                <CodeBlock code={lastIndexJsCode} />
+                <Paragraph>
+                    {locale.text("The g flag makes test move lastIndex, so the same input answers true, then false, then true. The pattern is a shared mutable cursor, and the call site says nothing about it. Two callers in different files are enough to make the failure look random.", "g 标志让 test 会推进 lastIndex，于是同一个输入答 true、再答 false、再答 true。这个模式是一个共享的可变游标，而调用处对此只字未提。两个调用方分在两个文件里，就足以让这个故障看上去像随机的。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("There is no pattern literal here, and nothing that survives a call.", "这里没有模式字面量，也没有什么东西能活过一次调用。")}
                 </Paragraph>
                 <CodeBlock code={patternsCode} />
+                <Paragraph>
+                    {locale.text("A pattern is ordinary text handed to one of five Text members, with options given as a record, so a raw string is its natural spelling and a pattern can be built, stored, and passed like any other value. Each call creates a fresh Unicode pattern, which is why no cursor state carries from one call to the next.", "模式就是普通文本，交给五个 Text 成员之一，选项以记录给出；所以原始字符串是它的自然写法，而模式可以像别的值一样被构造、保存、传递。每次调用都新建一个 Unicode 模式——所以游标状态不会从这一次调用带到下一次。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The cost is that a pattern is text to the compiler as well as to you. It cannot look inside a string, so a missing parenthesis is not a diagnostic; it is legal source that fails when the line runs, and an editor has nothing to highlight. Capture groups are read by number, so a named group in the pattern buys nothing back on the reading side. And options belong to the call rather than to the pattern, so a pattern used in three places carries its record in all three.", "代价是：模式对编译器来说也只是文本，和对你一样。编译器看不进字符串里面，所以少一个括号不会得到诊断——那是合法的源码，跑到那一行才失败，编辑器也没有东西可以高亮。捕获组按编号读，所以在模式里给组起名字，读的这一侧一点好处也拿不回来。另外选项属于调用，不属于模式，所以一个模式用在三处，那份记录就要跟着写三遍。")}
+                </Paragraph>
+                <CodeBlock code={brokenPatternNodeCode} />
+                <CodeBlock code={brokenPatternTextCode} />
+                <GateNote>
+                    {locale.text("This site's build compiles the source above and it passes, which is the whole demonstration: the flaw is inside a string, so no gate anywhere can see it. The output below is a trimmed transcript of one velar run on toolchain 0.10.0 — two runtime frames naming a temporary directory are left out — and not an artifact this site compares.", "本站构建会编译上面这段源码，而且它通过了——这正是要演示的东西：毛病在字符串里面，任何门禁都看不见。下面那段输出是在 0.10.0 工具链上跑一次 velar run 的记录，删掉了两行指向临时目录的运行时栈帧；它不是本站会去比对的产物。")}
+                </GateNote>
+                <Callout title={locale.text("Where to look when a pattern misbehaves", "模式不对劲时先看哪里")}>
+                    <Paragraph>
+                        {locale.text("Two shapes are worth checking first: a pattern built by joining text, where the joined-in part carries a character the pattern language reads as syntax, and a match that answers correctly the first time and differently after. The second one cannot be state kept by the pattern here, so it is state kept by your own code.", "有两种形状值得先查。一是拼接出来的模式：拼进去的那一段里带了某个字符，而模式语言把它当语法读了。二是第一次匹配对、之后就不一样了。第二种在这里不可能是模式自己留下的状态，那就是你自己的代码留下的状态。")}
+                    </Paragraph>
+                </Callout>
             </Prose>
             <DocsPager
                 previous={guidePrevious("/guide/language/text-numbers")}

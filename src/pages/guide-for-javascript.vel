@@ -64,8 +64,8 @@ const habits = [
     {
         name: "switch (value)",
         signature: "match value:",
-        summary: "Arms are exhaustive over an enum or a closed union, there is no fall-through, and the only fallback is a wildcard arm written where a reader looks for it.",
-        summaryZh: "对枚举或封闭联合，分支是穷尽的；没有贯穿行为；唯一的兜底是通配分支，写在读者会去找它的位置。",
+        summary: "Arms are exhaustive over an enum, an optional enum, and a class subject; a union of record types is checked but not reported as incomplete. There is no fall-through, and the only fallback is a wildcard arm written where a reader looks for it.",
+        summaryZh: "主语是枚举、可选枚举或类时，分支是穷尽的；主语是若干记录类型的联合时，编译器不会告诉你漏了哪一个。没有贯穿行为；唯一的兜底是通配分支，写在读者会去找它的位置。",
     },
     {
         name: "count++",

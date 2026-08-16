@@ -1,36 +1,45 @@
 import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, GateNote, MemberRow, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
-const timersCode = `import {after, every, watchMedia, watchOnline, watchVisibility} from "velar/browser"\n\n// after(duration, callback) and every(duration, callback) take a Duration,\n// never a bare number, and each answers its own cancel function. The three\n// watch subscriptions follow the same shape, which is why one @cleanup loop\n// releases all five.\nexport component TimersAndSubscriptions:\n    state ticks = 0\n    state settled = "waiting"\n    state wide = false\n    state online = true\n    state visible = true\n    let stops: List<() -> null> = []\n\n    def countTick():\n        ticks += 1\n\n    def settle():\n        settled = "settled"\n\n    def setWide(next: bool):\n        wide = next\n\n    def setOnline(next: bool):\n        online = next\n\n    def setVisible(next: bool):\n        visible = next\n\n    @mounted:\n        stops = [\n            after(120ms, settle),\n            every(1s, countTick),\n            watchMedia("(min-width: 720px)", setWide),\n            watchOnline(setOnline),\n            watchVisibility(setVisible),\n        ]\n\n    @cleanup:\n        for stop in stops:\n            stop()\n\n    return <div data-timers>\n        <p data-ticks>{ticks}</p>\n        <p data-timer-settled>{settled}</p>\n        <p data-subscriptions>{f"{wide}:{online}:{visible}"}</p>\n    </div>`
+// The JavaScript blocks are third-party, so they are *JsCode and nothing here
+// compiles them. Every VelarScript block is compiled by this site's gate.
+const listenerJsCode = `// Two subscriptions, three different ways to release them\nconst id = setInterval(poll, 1000);       // release with a number\nwindow.addEventListener("resize", onResize);   // release with the same reference\nmedia.addEventListener("change", (event) => setWide(event.matches));\n\n// The third one can never be removed: removeEventListener needs the identical\n// function object, and that arrow was created inline and never named.`
+const timersCode = `import {after, every, watchMedia, watchOnline, watchVisibility} from "velar/browser"\n\n// after(duration, callback) and every(duration, callback) take a Duration,\n// never a bare number, and each answers its own cancel function. The three\n// watch subscriptions have the same shape, which is why one @cleanup loop\n// releases all five.\nexport component TimersAndSubscriptions:\n    state ticks = 0\n    state settled = "waiting"\n    state wide = false\n    state online = true\n    state visible = true\n    let stops: List<() -> null> = []\n\n    def countTick():\n        ticks += 1\n\n    def settle():\n        settled = "settled"\n\n    def setWide(next: bool):\n        wide = next\n\n    def setOnline(next: bool):\n        online = next\n\n    def setVisible(next: bool):\n        visible = next\n\n    @mounted:\n        stops = [\n            after(120ms, settle),\n            every(1s, countTick),\n            watchMedia("(min-width: 720px)", setWide),\n            watchOnline(setOnline),\n            watchVisibility(setVisible),\n        ]\n\n    @cleanup:\n        for stop in stops:\n            stop()\n\n    return <div data-timers>\n        <p data-ticks>{ticks}</p>\n        <p data-timer-settled>{settled}</p>\n        <p data-subscriptions>{f"{wide}:{online}:{visible}"}</p>\n    </div>`
+const navigatorJsCode = "// The host object you did not copy\nconst languages = navigator.languages;\nsettings.preferred = languages;   // stored a view of the browser, not a value\n\n// And the read that has no answer on the server\nconst wide = window.innerWidth > 720;   // ReferenceError during prerender"
 const environmentCode = `import {environment, location, media} from "velar/browser"\n\n// location(), environment(), and media(query) are synchronous reads of the\n// host, each returning a checked record rather than a live host object.\nexport component EnvironmentReadout:\n    state described = "not read"\n\n    def describe():\n        const here = location()\n        const env = environment()\n        const wideNow = media("(min-width: 720px)")\n        described = f"{here.path}|{here.origin != ""}|{here.query.size}|{here.hash == "" ? "no hash" : here.hash}"\n        print(f"{env.language} {env.languages.size} {env.online} {env.visible} {env.colorScheme} {env.reducedMotion} {env.touch} {wideNow}")\n\n    return <div data-environment>\n        <p data-described>{described}</p>\n        <button type="button" data-describe on:click={describe}>Read the environment</button>\n    </div>`
-const measurementCode = `import {frame, measure, scrollMetrics} from "velar/browser"\n\n// measure, scrollMetrics, and frame are the layout readouts. frame() answers a\n// Promise of the frame timestamp, which is the checked way to wait for the next\n// paint.\nexport component MeasurementReadout:\n    state box = "unmeasured"\n    state metrics = "unmeasured"\n    state stamped = "no frame"\n    let panel: Element? = null\n\n    def measurePanel():\n        if panel != null:\n            const rect = measure(panel)\n            const scroll = scrollMetrics(panel)\n            box = f"{rect.width}x{rect.height} at {rect.x},{rect.y}"\n            metrics = f"{scroll.x}:{scroll.y}:{scroll.viewportWidth}:{scroll.contentHeight}"\n\n    action awaitFrame() -> string:\n        const stamp = await frame()\n        stamped = f"frame {stamp >= 0}"\n        return stamped\n\n    return <div ref={panel} data-measurement>\n        <p data-box>{box}</p>\n        <p data-metrics>{metrics}</p>\n        <p data-stamped>{stamped}</p>\n        <button type="button" data-measure on:click={measurePanel}>Measure</button>\n        <button type="button" data-await-frame on:click={awaitFrame} disabled={awaitFrame.pending}>\n            Await a frame\n        </button>\n    </div>`
+const thrashJsCode = `// The loop that makes the browser recompute layout on every iteration\nfor (const row of rows) {\n  const height = row.offsetHeight;   // read: forces layout\n  row.style.height = height + 8 + "px";   // write: invalidates it again\n}\n// Neither line is wrong. The order is.`
+const measurementCode = `import {frame, measure, scrollMetrics} from "velar/browser"\n\n// measure, scrollMetrics, and frame are the layout readouts. frame() answers a\n// Promise of the frame timestamp, which is the checked way to wait for the\n// next paint.\nexport component MeasurementReadout:\n    state box = "unmeasured"\n    state metrics = "unmeasured"\n    state stamped = "no frame"\n    let panel: Element? = null\n\n    def measurePanel():\n        if panel != null:\n            const rect = measure(panel)\n            const scroll = scrollMetrics(panel)\n            box = f"{rect.width}x{rect.height} at {rect.x},{rect.y}"\n            metrics = f"{scroll.x}:{scroll.y}:{scroll.viewportWidth}:{scroll.contentHeight}"\n\n    action awaitFrame() -> string:\n        const stamp = await frame()\n        stamped = f"frame {stamp >= 0}"\n        return stamped\n\n    return <div ref={panel} data-measurement>\n        <p data-box>{box}</p>\n        <p data-metrics>{metrics}</p>\n        <p data-stamped>{stamped}</p>\n        <button type="button" data-measure on:click={measurePanel}>Measure</button>\n        <button type="button" data-await-frame on:click={awaitFrame} disabled={awaitFrame.pending}>\n            Await a frame\n        </button>\n    </div>`
+const surrogateJsCode = `// "a🙂b" is four UTF-16 code units, and the emoji is two of them\ninput.setSelectionRange(1, 2);\n// That selects half of the emoji. The API counts code units; a person counts\n// characters; nothing tells you which one this number is.`
 const elementsCode = `import {blur, capturePointer, focus, releasePointer, scrollElementTo, scrollIntoView, setTextSelection, textSelection} from "velar/browser"\n\n// Focus, scrolling, text selection, and pointer capture all take the element\n// itself rather than a selector, so a ref is the entry point.\nexport component ElementControls:\n    state selection = "no selection"\n    state captured = "released"\n    let target: Element? = null\n    let note: TextAreaElement? = null\n\n    def focusNote():\n        if note != null:\n            focus(note)\n            focus(note, true)\n\n    def blurNote():\n        if note != null:\n            blur(note)\n\n    def revealTarget():\n        if target != null:\n            scrollIntoView(target)\n            scrollIntoView(target, "smooth")\n\n    def scrollPanel():\n        if target != null:\n            scrollElementTo(target, 0, 24)\n            scrollElementTo(target, 0, 0, "smooth")\n\n    def readSelection():\n        if note != null:\n            const span = textSelection(note)\n            selection = f"{span.start}:{span.end}:{span.direction}"\n            setTextSelection(note, 0, 4)\n            setTextSelection(note, 0, 4, "forward")\n\n    def capture(event: PointerEvent):\n        if target != null:\n            capturePointer(target, event.pointerId)\n            captured = "captured"\n\n    def release(event: PointerEvent):\n        if target != null:\n            releasePointer(target, event.pointerId)\n            captured = "released"\n\n    return <div ref={target} data-element-controls on:pointerdown={capture} on:pointerup={release}>\n        <textarea ref={note} data-note aria-label="A note">Some text to select</textarea>\n        <p data-selection>{selection}</p>\n        <p data-captured>{captured}</p>\n        <button type="button" data-focus on:click={focusNote}>Focus</button>\n        <button type="button" data-blur on:click={blurNote}>Blur</button>\n        <button type="button" data-reveal on:click={revealTarget}>Reveal</button>\n        <button type="button" data-scroll-panel on:click={scrollPanel}>Scroll the panel</button>\n        <button type="button" data-read-selection on:click={readSelection}>Read the selection</button>\n    </div>`
-const clipboardCode = `import {clipboardText, closeDialog, copyText, dialogResult, open, readClipboardText, scrollTo, setClipboardText, showDialog} from "velar/browser"\n\n// clipboardText(event) and setClipboardText(event, value) work on a real\n// clipboard event, so they are reached from on:copy and on:paste rather than by\n// asking for permission. The handler still calls preventDefault when it\n// replaces the browser's own behaviour.\nexport component ClipboardEvents:\n    state pasted = "nothing pasted"\n\n    def onPaste(event: ClipboardEvent):\n        pasted = clipboardText(event)\n\n    def onCopy(event: ClipboardEvent):\n        setClipboardText(event, "copied from the chapter")\n\n    return <div data-clipboard-events>\n        <input data-paste-target type="text" aria-label="Paste target" on:paste={onPaste} on:copy={onCopy} />\n        <p data-pasted>{pasted}</p>\n    </div>\n\n// The asynchronous clipboard requires a secure context and may reject when\n// browser permission or user-gesture policy denies access.\nexport async def clipboardSpellings():\n    await copyText("copied by the chapter")\n    print(await readClipboardText())\n\n// Calls that reach outside the page, and the modal dialog helpers, written\n// where nothing calls them: the spelling is the point.\nexport def windowAndScrollSpellings():\n    open("https://velarscript.dev")\n    open("https://velarscript.dev", "_blank")\n    scrollTo(0, 240)\n    scrollTo(0, 240, "smooth")\n\nexport def dialogSpellings(sheet: DialogElement):\n    showDialog(sheet)\n    closeDialog(sheet)\n    closeDialog(sheet, "confirmed")\n    print(dialogResult(sheet))`
+const clipboardPermissionJsCode = "// Inside a paste handler, where the data has already arrived\nconst text = await navigator.clipboard.readText();\n// This asks for permission, needs a secure context, and may be denied — for\n// data the event object was holding all along."
+const clipboardCode = `import {clipboardText, closeDialog, copyText, dialogResult, open, readClipboardText, scrollTo, setClipboardText, showDialog} from "velar/browser"\n\n// clipboardText(event) and setClipboardText(event, value) work on a real\n// clipboard event, so they are reached from on:copy and on:paste rather than\n// by asking for permission. The handler still calls preventDefault when it\n// replaces the browser's own behaviour.\nexport component ClipboardEvents:\n    state pasted = "nothing pasted"\n\n    def onPaste(event: ClipboardEvent):\n        pasted = clipboardText(event)\n\n    def onCopy(event: ClipboardEvent):\n        setClipboardText(event, "copied from the chapter")\n\n    return <div data-clipboard-events>\n        <input data-paste-target type="text" aria-label="Paste target" on:paste={onPaste} on:copy={onCopy} />\n        <p data-pasted>{pasted}</p>\n    </div>\n\n// The asynchronous clipboard requires a secure context and may reject when\n// browser permission or user-gesture policy denies access.\nexport async def clipboardSpellings():\n    await copyText("copied by the chapter")\n    print(await readClipboardText())\n\n// Calls that reach outside the page, and the modal dialog helpers, written\n// where nothing calls them: the spelling is the point.\nexport def windowAndScrollSpellings():\n    open("https://velarscript.dev")\n    open("https://velarscript.dev", "_blank")\n    scrollTo(0, 240)\n    scrollTo(0, 240, "smooth")\n\nexport def dialogSpellings(sheet: DialogElement):\n    showDialog(sheet)\n    closeDialog(sheet)\n    closeDialog(sheet, "confirmed")\n    print(dialogResult(sheet))`
+const formDataJsCode = `// Every value is string | File, so every read starts with a cast\nconst data = new FormData(form);\nconst email = data.get("email") as string;\n\n// And the shortcut that loses data\nconst values = Object.fromEntries(data);\n// A form with three checkboxes named "tags" answers one tag: the last one.`
 const formsCode = `import {checkedValue, clearError, clearErrors, errors, fieldValue, fieldValues, focusFirstError, numberValue, read, reset, setError, setPending, textValue, values} from "velar/forms"\n\nexport type SignUp:\n    email: string\n    age: number\n\n// The whole velar/forms table, driven from one form element. read(form, Target)\n// validates the form into a record type; the six readers answer individual\n// fields; the error helpers own the accessible error surface.\nexport component FormReadout:\n    state summary = "not submitted"\n    state errorSummary = "no errors"\n    let form: Element? = null\n\n    def readAll():\n        if form != null:\n            const all = values(form)\n            const one = fieldValue(form, "email")\n            const text = textValue(form, "email")\n            const fallback = textValue(form, "email", "unknown")\n            const age = numberValue(form, "age")\n            const agreed = checkedValue(form, "terms")\n            const tags = fieldValues(form, "tags")\n            summary = f"{all.size}|{one != null}|{text}|{fallback}|{age ?? 0}|{agreed}|{tags.size}"\n\n    def validate():\n        if form != null:\n            const parsed: SignUp? = try read(form, SignUp)\n            if parsed == null:\n                setError(form, "email", "Enter an email address and an age")\n                const messages = errors(form)\n                const moved = focusFirstError(form)\n                errorSummary = f"{messages.size} error(s), focused: {moved}"\n            else:\n                clearError(form, "email")\n                clearErrors(form)\n                errorSummary = f"valid: {parsed.email} is {parsed.age}"\n\n    action submit():\n        if form != null:\n            setPending(form, true)\n            await Promise.sleep(20ms)\n            setPending(form, false)\n            reset(form)\n\n    return <form ref={form} data-form on:submit.prevent={submit}>\n        <input data-email type="email" name="email" aria-label="Email" />\n        <input data-age type="number" name="age" aria-label="Age" />\n        <input data-terms type="checkbox" name="terms" value="yes" aria-label="Terms" />\n        <input data-tag-a type="checkbox" name="tags" value="a" aria-label="Tag a" />\n        <input data-tag-b type="checkbox" name="tags" value="b" aria-label="Tag b" />\n        <p data-form-summary>{summary}</p>\n        <p data-form-errors>{errorSummary}</p>\n        <button type="button" data-read-form on:click={readAll}>Read every field</button>\n        <button type="button" data-validate-form on:click={validate}>Validate</button>\n        <button type="submit" data-submit-form disabled={submit.pending}>Submit</button>\n    </form>`
+const fakeFileJsCode = `// A structural object that looks exactly like a file\nconst pretend = { name: "report.pdf", size: 20, type: "application/pdf" };\nupload(pretend);\n// Nothing here knows the difference until something downstream tries to read\n// bytes out of it, which is usually the server.`
 const filesCode = `import {download, pick, readDataUrl, readText} from "velar/files"\n\n// pick opens the operating system's file chooser and download writes to the\n// reader's disk, so both live in a function nothing calls: the spelling is the\n// point, performing it while a reader browses a documentation page is not.\nexport async def fileSpellings(file: File):\n    const chosen = await pick()\n    const images = await pick({accept: "image/*", multiple: true})\n    const body = await readText(file)\n    const cappedBody = await readText(file, 65536)\n    const dataUrl = await readDataUrl(file)\n    const cappedDataUrl = await readDataUrl(file, 65536)\n    download("notes.txt", body)\n    download("notes.csv", body, "text/csv")\n    print(f"{chosen.size} {images.size} {cappedBody.size} {dataUrl.size} {cappedDataUrl.size}")\n\n// A File is an opaque record with read-only metadata. Only a value returned by\n// pick may be read or attached to a multipart body.\nexport def describeFile(file: File) -> string:\n    return f"{file.name} {file.size} {file.type} {file.modified}"`
 
 const sections = [
-    {id: "timers", label: "Timers and subscriptions", labelZh: "定时器与订阅"},
-    {id: "environment", label: "Reading the host", labelZh: "读取宿主"},
-    {id: "layout", label: "Layout readouts", labelZh: "布局读数"},
-    {id: "elements", label: "Element controls", labelZh: "元素控制"},
-    {id: "clipboard", label: "Clipboard, windows, and dialogs", labelZh: "剪贴板、窗口与对话框"},
-    {id: "forms", label: "Reading a form", labelZh: "读取表单"},
-    {id: "files", label: "Files", labelZh: "文件"},
+    {id: "timers", label: "The listener that cannot be removed", labelZh: "拿不掉的那个监听器"},
+    {id: "environment", label: "A view into the browser", labelZh: "一份指向浏览器内部的视图"},
+    {id: "layout", label: "Reading and writing in the wrong order", labelZh: "读和写的顺序反了"},
+    {id: "elements", label: "Half of an emoji", labelZh: "半个 emoji"},
+    {id: "clipboard", label: "Asking for data you already have", labelZh: "去要一份你已经拿着的数据"},
+    {id: "forms", label: "Three checkboxes, one answer", labelZh: "三个复选框，一个答案"},
+    {id: "files", label: "An object that looks like a file", labelZh: "长得像文件的一个对象"},
 ]
 
 const formRows: List<MemberRow> = [
-    {name: "read", signature: "read(form, Type) -> Type", summary: "Decodes a flat native form into a record type through the existing runtime validator.", summaryZh: "经由已有的运行时验证器，把扁平的原生表单解码为记录类型。"},
+    {name: "read", signature: "read(form, Type) -> Type", summary: "Decodes a flat native form into a record type through the existing runtime validator.", summaryZh: "用已有的运行时验证器，把扁平的原生表单解码成一个记录类型。"},
     {name: "values", signature: "values(form) -> Map<string, unknown>", summary: "Every submitted value; repeated names become a list.", summaryZh: "全部提交值；重复的名字变成列表。"},
-    {name: "textValue", signature: `textValue(form, name, fallback="")`, summary: "One text field with a declared fallback; native file values are refused rather than coerced.", summaryZh: "带声明回退值的单个文本字段；原生文件值会被拒绝而不是强制转换。"},
-    {name: "numberValue", signature: "numberValue(form, name) -> number?", summary: "One number field under the same decimal grammar the language uses; blank and malformed text answer null.", summaryZh: "在语言使用的同一套十进制文法下的单个数字字段；空白与畸形文本回答 null。"},
+    {name: "textValue", signature: `textValue(form, name, fallback="")`, summary: "One text field with a declared fallback; native file values are refused rather than coerced.", summaryZh: "带声明回退值的单个文本字段；原生文件值会被拒绝，而不是强制转换。"},
+    {name: "numberValue", signature: "numberValue(form, name) -> number?", summary: "One number field under the same decimal grammar the language uses; blank and malformed text answer null.", summaryZh: "在语言用的同一套十进制文法下的单个数字字段；空白与畸形文本回答 null。"},
     {name: "checkedValue", signature: "checkedValue(form, name) -> bool", summary: "One checkbox as a bool.", summaryZh: "以 bool 表示的单个复选框。"},
-    {name: "fieldValues", signature: "fieldValues(form, name) -> List<string>", summary: "Every value submitted under one repeated name.", summaryZh: "以同一个重复名字提交的全部取值。"},
-    {name: "setError clearError clearErrors", signature: "setError(form, name, message)", summary: "Owns field alerts while preserving unrelated accessibility metadata.", summaryZh: "在保留无关无障碍元数据的同时，拥有字段告警。"},
+    {name: "fieldValues", signature: "fieldValues(form, name) -> List<string>", summary: "Every value submitted under one repeated name.", summaryZh: "同一个重复名字下提交的全部取值。"},
+    {name: "setError clearError clearErrors", signature: "setError(form, name, message)", summary: "Owns field alerts while preserving unrelated accessibility metadata.", summaryZh: "拥有字段告警，同时保留无关的无障碍元数据。"},
     {name: "errors focusFirstError", signature: "focusFirstError(form) -> bool", summary: "Reads current messages and moves focus to the first invalid field.", summaryZh: "读取当前消息，并把焦点移到第一个无效字段。"},
-    {name: "setPending reset", signature: "setPending(form, true)", summary: "Owns the busy state and the temporary disabling, then restores what it changed.", summaryZh: "拥有忙碌状态与临时禁用，随后恢复它改动过的部分。"},
+    {name: "setPending reset", signature: "setPending(form, true)", summary: "Owns the busy state and the temporary disabling, then restores what it changed.", summaryZh: "拥有忙碌状态与临时禁用，随后把改动过的部分恢复回去。"},
 ]
 
 export component WebBrowser:
@@ -38,97 +47,174 @@ export component WebBrowser:
     return <main>
         <Head
             title={headTitle("/guide/web/browser", locale.isChinese())}
-            description={locale.text("The browser capabilities the extension publishes as modules, and the release contract each subscription carries.", "扩展以模块形式发布的浏览器能力，以及每个订阅携带的释放契约。")}
+            description={locale.text("The browser capabilities the extension publishes as modules, why every subscription answers its own stop, and what each module refuses to expose.", "扩展以模块形式发布的浏览器能力、每个订阅为什么都返回自己的 stop，以及每个模块拒绝暴露什么。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Web extension / 11", "Web 扩展 / 11")}
                 title={locale.text("Browser capabilities", "浏览器能力")}
-                summary={locale.text("Timers and subscriptions that return their own stop, host readouts, element controls, forms, and files.", "自带 stop 的定时器与订阅、宿主读数、元素控制、表单与文件。")}
+                summary={locale.text("Timers, host reads, layout readouts, element controls, forms and files — each one a module rather than a global, and each one narrower than the platform API underneath it.", "定时器、宿主读取、布局读数、元素控制、表单与文件——每一样都是模块而不是全局，而且每一样都比它底下那个平台 API 更窄。")}
             />
             <SectionList items={sections} />
             <Prose>
-                <SectionHeading id="timers">{locale.text("Timers and subscriptions", "定时器与订阅")}</SectionHeading>
+                <SectionHeading id="timers">
+                    {locale.text("The listener that cannot be removed", "拿不掉的那个监听器")}
+                </SectionHeading>
                 <Paragraph>
-                    {locale.text("after schedules one callback and every schedules repeated work. Each takes a Duration rather than a bare number, and each answers its own idempotent stop function — which is why the three environment subscriptions have the same shape and one cleanup loop releases all five. There is no setTimeout, no setInterval, and no effect API.", "after 安排一次回调，every 安排重复工作。两者都接受 Duration 而不是裸数字，并各自返回自己的幂等 stop 函数——这正是三个环境订阅具有相同形状、且一个清理循环就能释放全部五个的原因。这里没有 setTimeout、没有 setInterval，也没有 effect API。")}
+                    {locale.text("Three subscriptions, and three different objects to hang on to.", "三个订阅，三样不同的东西要留着。")}
+                </Paragraph>
+                <CodeBlock code={listenerJsCode} />
+                <Paragraph>
+                    {locale.text("The first releases with a number, the second with the same function reference, and the third with nothing at all — removeEventListener needs the identical function object, and that arrow was created inline and never named. It is not a rare mistake. It is the shape the API pushes you towards, because passing an inline arrow is the shorter thing to write.", "第一个靠一个数字释放，第二个靠同一个函数引用，第三个靠不了任何东西——removeEventListener 需要那个一模一样的函数对象，而那个箭头函数是就地创建的，从没起过名字。这不是什么罕见错误。这是 API 把你推过去的那个形状，因为写一个就地的箭头函数更短。")}
                 </Paragraph>
                 <CodeBlock code={timersCode} />
+                <Paragraph>
+                    {locale.text("after schedules one callback and every schedules repeated work. Each takes a Duration rather than a bare number, and each answers its own idempotent stop function — and so do the three environment subscriptions, which is why one cleanup loop releases all five. There is no setTimeout, no setInterval, and no effect API to hang the release from.", "after 安排一次回调，every 安排重复的工作。两者都接受 Duration 而不是裸数字，并各自返回自己的幂等 stop 函数——三个环境订阅也是同一个形状，所以一个清理循环就能把五个都释放掉。这里没有 setTimeout，没有 setInterval，也没有 effect API 可以把释放挂在上面。")}
+                </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("Repeating work schedules its next turn only after the current callback settles, so slow polling cannot overlap itself.", "重复的工作只在当前回调结束之后才安排下一轮，因此缓慢的轮询不会自我重叠。")}
+                        {locale.text("Repeating work schedules its next turn only after the current callback settles, so slow polling cannot overlap itself.", "重复的工作只在当前回调结束之后才安排下一轮，所以慢的轮询不会自己叠自己。")}
                     </li>
                     <li>
-                        {locale.text("Stopping cannot abort a callback that has already started, but it prevents every later turn.", "停止无法中止已经开始的回调，但会阻止之后的每一轮。")}
+                        {locale.text("Stopping cannot abort a callback that has already started, but it prevents every later turn.", "停止没法中止已经开始的那次回调，但之后每一轮都不会再来。")}
                     </li>
                     <li>
-                        {locale.text("Callback failures are normalized through velar/app with the timer phase, so a throwing timer is reported rather than lost.", "回调失败经由 velar/app 在 timer 阶段被规范化上报，因此抛错的定时器会被上报而不是丢失。")}
+                        {locale.text("Callback failures are normalized through velar/app with the timer phase, so a throwing timer is reported rather than lost.", "回调失败经由 velar/app 在 timer 阶段被规范化上报，所以抛错的定时器会被上报，而不是丢掉。")}
                     </li>
                 </BulletList>
-
-                <SectionHeading id="environment">{locale.text("Reading the host", "读取宿主")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("location, environment, and media are synchronous reads that each return a checked record rather than a live host object. Host strings and booleans must already have the declared type; a malformed value is rejected rather than implicitly converted, and the returned language list is an application-owned copy rather than a view into the browser.", "location、environment 与 media 是同步读取，各自返回一个受检的记录，而不是活的宿主对象。宿主提供的字符串与布尔值必须本来就是声明的类型；畸形取值会被拒绝而不是隐式转换，返回的语言列表是应用拥有的副本，而不是对浏览器内部的视图。")}
+                    {locale.text("The cost is that the stop function is a value you hold, so the holding is on you. A component with five subscriptions declares a list, fills it in @mounted and loops over it in @cleanup — the sample above is not shorter than the JavaScript it replaced. What it is instead is uniform: five different capabilities, one release contract, and no capability whose release is a different kind of thing.", "代价是 stop 函数是一个你自己拿着的值，所以「拿着」这件事归你。有五个订阅的组件要声明一个列表，在 @mounted 里填上，在 @cleanup 里遍历一遍——上面那个样本并不比它取代掉的 JavaScript 短。它换来的是统一：五种不同的能力，一种释放契约，没有哪个能力的释放是另一种东西。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: every VelarScript block on this page is compiled by scripts/check-code-samples.mjs. The JavaScript blocks are third-party and nothing here compiles them.", "门禁：本页每个 VelarScript 块都由 scripts/check-code-samples.mjs 编译。JavaScript 那些块是第三方的，这里没有东西会去编译它们。")}
+                </GateNote>
+
+                <SectionHeading id="environment">
+                    {locale.text("A view into the browser", "一份指向浏览器内部的视图")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("Reading the host looks like reading a value, and sometimes it is not.", "读取宿主看起来像在读一个值，但有时候不是。")}
+                </Paragraph>
+                <CodeBlock code={navigatorJsCode} />
+                <Paragraph>
+                    {locale.text("A host object handed straight into application state is a view rather than a value, and defending against that is a defensive copy somebody has to remember. The second line has a different problem: it does not exist during a prerender, so the same expression is a number in one environment and a crash in another.", "把宿主对象直接塞进应用状态，得到的是一份视图，不是一个值；要防这件事，得有人记得做一次防御性复制。第二行的问题不一样：预渲染的时候它根本不存在，所以同一个表达式在一个环境里是个数字，在另一个环境里是一次崩溃。")}
                 </Paragraph>
                 <CodeBlock code={environmentCode} />
-
-                <SectionHeading id="layout">{locale.text("Layout readouts", "布局读数")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("measure answers an element's rectangle, scrollMetrics answers its scroll position together with the viewport and content sizes, and frame answers a Promise of the next frame's timestamp — the checked way to wait for a paint. Rectangles must contain finite numbers, and the readouts call the validated platform operation rather than an instance override.", "measure 返回元素的矩形，scrollMetrics 返回它的滚动位置以及视口与内容尺寸，frame 返回下一帧时间戳的 Promise——这是等待一次绘制的受检方式。矩形必须包含有限数字，且这些读数调用经过验证的平台操作，而不是实例上的覆写。")}
+                    {locale.text("location, environment and media are synchronous reads that each answer a checked record rather than a live host object. Host strings and booleans must already have the declared type — a malformed value is rejected rather than implicitly converted — and the returned language list is an application-owned copy, not a window into the browser. The copy is not an optimisation; it is the difference between a value and a view.", "location、environment、media 是三次同步读取，各自返回一个受检的记录，而不是活的宿主对象。宿主给的字符串和布尔值必须本来就是声明的类型——畸形取值会被拒绝，而不是隐式转换——返回的语言列表是应用拥有的副本，不是一扇通向浏览器内部的窗。这份复制不是什么优化，它就是「值」和「视图」的区别。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The cost is that a read is a snapshot and nothing tells you when it went out of date. environment() answers what was true when you called it, so a component that wants to follow the colour scheme subscribes with watchMedia rather than reading once — and the two spellings look similar enough that reading once is the easy mistake. This is the same trap the state chapter opened with, in a different module.", "代价是一次读取就是一份快照，而没有谁告诉你它什么时候过期了。environment() 回答的是你调用它那一刻为真的东西，所以想跟着配色方案走的组件，要用 watchMedia 订阅，而不是读一次——而这两种写法长得够像，「只读一次」是那个容易犯的错。这和状态那一章开头讲的是同一个陷阱，换了个模块。")}
+                </Paragraph>
+
+                <SectionHeading id="layout">
+                    {locale.text("Reading and writing in the wrong order", "读和写的顺序反了")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("Two correct lines in a loop, and a frame budget spent on nothing.", "循环里两行都没写错的代码，一帧的预算就这么白花了。")}
+                </Paragraph>
+                <CodeBlock code={thrashJsCode} />
+                <Paragraph>
+                    {locale.text("Reading a geometric property forces the browser to compute layout; writing a style invalidates it again. Interleave them and every iteration pays for a full layout pass. Neither line looks expensive, and neither line is — the cost is entirely in the order, which is not visible in either statement.", "读一个几何属性会逼浏览器算一次布局；写一个样式又把它作废掉。两者交错，每一轮迭代都要付一次完整的布局代价。两行看起来都不贵，单看也确实不贵——代价全在顺序上，而顺序在任何一条语句里都看不见。")}
                 </Paragraph>
                 <CodeBlock code={measurementCode} />
-
-                <SectionHeading id="elements">{locale.text("Element controls", "元素控制")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Focus, scrolling, text selection, and pointer capture all take the element itself rather than a selector, so a ref is the entry point. A textarea ref narrows to a text-area element, whose selection is read and written in Unicode code-point offsets rather than the platform's own units — a native selection that splits a surrogate pair is rejected.", "焦点、滚动、文本选择与指针捕获都接受元素本身而不是选择器，因此 ref 是入口。textarea 的 ref 收窄为文本域元素，它的选择区按 Unicode 码点偏移读写，而不是按平台自己的单位——切开代理对的原生选择区会被拒绝。")}
+                    {locale.text("measure answers an element's rectangle, scrollMetrics answers its scroll position together with the viewport and content sizes, and frame answers a Promise of the next frame's timestamp — the checked way to wait for a paint. Each is a named readout rather than a property access, so a read is visibly a read and separating the reads from the writes is something a reader can see you doing.", "measure 返回元素的矩形，scrollMetrics 返回它的滚动位置以及视口与内容尺寸，frame 返回下一帧时间戳的 Promise——这是等待一次绘制的受检方式。每一个都是具名的读数，不是一次属性访问，所以一次读取看起来就是一次读取；把读和写分开这件事，读者看得见你在做。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The cost is that naming the read does not order it. Nothing here refuses the interleaved loop: measure inside a loop that also writes styles compiles and behaves exactly as it would in JavaScript, at exactly the same price. What the module changes is that the read is a call with a name you can search for, not a property that reads like a field.", "代价是「给读取起个名字」并不等于「替你排好顺序」。这里没有谁拒绝那个交错的循环：在一个同时写样式的循环里调用 measure，能编译，行为和 JavaScript 里完全一样，价钱也一模一样。模块改变的是：这次读取是一个你能搜到名字的调用，而不是一个读起来像字段的属性。")}
+                </Paragraph>
+
+                <SectionHeading id="elements">{locale.text("Half of an emoji", "半个 emoji")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("Selecting the first character of a text field is one call, and the number in it is not what you think.", "选中一个文本框里的第一个字符只要一次调用，而里面那个数字不是你以为的那个意思。")}
+                </Paragraph>
+                <CodeBlock code={surrogateJsCode} />
+                <Paragraph>
+                    {locale.text("The platform counts UTF-16 code units. A person counts characters. Most of the time the two agree, which is exactly why the bug survives until somebody types an emoji into the field and the selection lands in the middle of it.", "平台数的是 UTF-16 码元。人数的是字符。多数时候两者一致——这恰恰是这个 bug 能活到有人往框里打了一个 emoji、然后选区落在它中间的原因。")}
                 </Paragraph>
                 <CodeBlock code={elementsCode} />
+                <Paragraph>
+                    {locale.text("Focus, scrolling, text selection and pointer capture all take the element itself rather than a selector, so a ref is the entry point and there is no string to get wrong. A textarea ref narrows to a text-area element, whose selection is read and written in Unicode code-point offsets rather than the platform's own units — and a native selection that splits a surrogate pair is rejected instead of being reported as a number.", "焦点、滚动、文本选择和指针捕获都接受元素本身，而不是选择器，所以入口是 ref，也就没有一个会写错的字符串。textarea 的 ref 收窄成文本域元素，它的选区按 Unicode 码点偏移读写，而不是按平台自己的单位——切开代理对的原生选区会被拒绝，而不是当成一个数字报上来。")}
+                </Paragraph>
                 <BulletList>
                     <li>
                         {locale.text("Behaviour arguments are exactly auto, smooth, or instant, and scroll coordinates must be finite numbers; an invalid value fails before the browser capability is invoked.", "行为参数恰好是 auto、smooth 或 instant，滚动坐标必须是有限数字；无效取值在调用浏览器能力之前就失败。")}
                     </li>
                     <li>
-                        {locale.text("Pointer identifiers are bounded non-negative integers, and pointer-capture state is not duplicated in the language runtime.", "指针标识符是有界的非负整数，指针捕获状态不会在语言运行时中被复制一份。")}
-                    </li>
-                    <li>
-                        {locale.text("Components remain responsible for choosing when focus should move or return; the module supplies the operation, not the policy.", "何时移动或归还焦点仍由组件决定；模块提供的是操作，不是策略。")}
+                        {locale.text("Pointer identifiers are bounded non-negative integers, and pointer-capture state is not duplicated in the language runtime.", "指针标识符是有界的非负整数，指针捕获状态不会在语言运行时里再存一份。")}
                     </li>
                 </BulletList>
+                <Paragraph>
+                    {locale.text("The cost is that the module supplies the operation and not the policy. Components remain responsible for choosing when focus should move and when it should return, and getting that wrong is the most common accessibility failure in an interactive interface. Nothing in this module decides it for you, and nothing in it could: where focus belongs is a question about the interface, not about the element.", "代价是模块提供的是操作，不是策略。焦点什么时候该移走、什么时候该还回去，仍然由组件决定，而这件事做错，是交互界面里最常见的无障碍失败。这个模块里没有谁替你决定，也不可能有：焦点该在哪，是关于界面的问题，不是关于元素的问题。")}
+                </Paragraph>
 
                 <SectionHeading id="clipboard">
-                    {locale.text("Clipboard, windows, and dialogs", "剪贴板、窗口与对话框")}
+                    {locale.text("Asking for data you already have", "去要一份你已经拿着的数据")}
                 </SectionHeading>
                 <Paragraph>
-                    {locale.text("The synchronous clipboard boundary works on a real copy, cut, or paste event, so it is reached from an event directive rather than by asking for a permission. The asynchronous pair requires a secure context and may reject when browser policy denies access. A dialog ref narrows to a dialog element, and the three dialog helpers validate the browser object without exposing an untyped DOM.", "同步的剪贴板边界作用于真实的 copy、cut 或 paste 事件，因此它经由事件指令抵达，而不是通过申请权限。异步的一对需要安全上下文，并可能在浏览器策略拒绝访问时被拒绝。dialog 的 ref 收窄为对话框元素，三个对话框辅助函数在不暴露无类型 DOM 的前提下验证浏览器对象。")}
+                    {locale.text("There are two clipboards in a browser, and the one people reach for first is the wrong one for this job.", "浏览器里有两个剪贴板，而大家最先伸手去拿的那个，对这件事来说是错的。")}
+                </Paragraph>
+                <CodeBlock code={clipboardPermissionJsCode} />
+                <Paragraph>
+                    {locale.text("Inside a paste handler the data has already arrived, on the event. Going back to the asynchronous clipboard for it asks for a permission, requires a secure context, and can be refused — for a value that was already in the room.", "在一个 paste 处理器内部，数据已经到了，就在那个事件上。再回头去问异步剪贴板要一次，是在申请权限、要求安全上下文、还可能被拒——而这个值本来就在屋里。")}
                 </Paragraph>
                 <CodeBlock code={clipboardCode} />
-
-                <SectionHeading id="forms">{locale.text("Reading a form", "读取表单")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("velar/forms reads a native form without leaking the platform's own form-data object and without forcing application code through an unknown value. read decodes a flat form into an existing record type: it supports strings, finite numbers, checkbox booleans, enums, repeated string fields, and optional scalars, while invalid required numbers, enums, native files, nested records, and unsupported collections fail explicitly.", "velar/forms 读取原生表单，既不泄漏平台自己的表单数据对象，也不迫使应用代码经过 unknown。read 把扁平的表单解码成一个已有的记录类型：它支持字符串、有限数字、复选框布尔值、枚举、重复的字符串字段与可选标量；而无效的必需数字、枚举、原生文件、嵌套记录与不受支持的集合都会显式失败。")}
+                    {locale.text("The synchronous boundary works on a real copy, cut or paste event, so it is reached from an event directive rather than by asking for a permission. The asynchronous pair exists for the case that genuinely needs it — a copy button with no clipboard event behind it — and is honest that it requires a secure context and may reject. A dialog ref narrows to a dialog element, and the three dialog helpers validate the browser object without exposing an untyped DOM.", "同步的那条边界作用在真实的 copy、cut 或 paste 事件上，所以它经由事件指令抵达，而不是通过申请权限。异步的那一对是为真正需要它的场合留的——一个背后没有剪贴板事件的复制按钮——而且它对「需要安全上下文、可能被拒」这件事很坦白。dialog 的 ref 收窄成对话框元素，三个对话框辅助函数在不暴露无类型 DOM 的前提下验证浏览器对象。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The cost is that the narrow boundary is text only. Copying rich content — an image, a spreadsheet range, anything with more than one representation — has no spelling in this module, and raw clipboard formats are deliberately not source-level API. An application that genuinely needs them crosses to JavaScript with an extern module declaration, which is a checked boundary rather than a hole.", "代价是这条窄边界只处理文本。复制富内容——一张图、一段表格区域，任何有不止一种表示的东西——在这个模块里没有写法，原始剪贴板格式也是刻意不做成源码层 API 的。真正需要它们的应用，用一份 extern module 声明跨到 JavaScript 那边去，而那是一条受检的边界，不是一个洞。")}
+                </Paragraph>
+
+                <SectionHeading id="forms">
+                    {locale.text("Three checkboxes, one answer", "三个复选框，一个答案")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("Reading a form is two lines, and both of them lose something.", "读一个表单是两行，而这两行各丢了一样东西。")}
+                </Paragraph>
+                <CodeBlock code={formDataJsCode} />
+                <Paragraph>
+                    {locale.text("Every value from the platform's form-data object is a string or a file, so every read starts with a cast the compiler cannot verify. And the shortcut that turns the whole thing into an object keeps one value per name, so a form with three checkboxes called tags answers with the last one — silently, and correctly according to the API.", "平台的表单数据对象里，每个取值要么是字符串要么是文件，所以每次读取都从一个编译器验证不了的 cast 开始。而那个「把整个东西转成对象」的捷径，每个名字只留一个值，所以有三个叫 tags 的复选框的表单，回答的是最后一个——安静地，而且按 API 的说法是正确的。")}
                 </Paragraph>
                 <MemberTable rows={formRows} caption={locale.text("What velar/forms publishes", "velar/forms 发布了什么")} />
+                <Paragraph>
+                    {locale.text("velar/forms reads a native form without leaking the platform's form-data object and without pushing application code through an unknown value. read decodes a flat form into an existing record type: strings, finite numbers, checkbox booleans, enums, repeated string fields and optional scalars are supported, while invalid required numbers, enums, native files, nested records and unsupported collections fail explicitly. A repeated name is a list because it always was one.", "velar/forms 读取原生表单，既不把平台的表单数据对象漏出来，也不把应用代码推着经过 unknown。read 把扁平的表单解码成一个已有的记录类型：支持字符串、有限数字、复选框布尔值、枚举、重复的字符串字段和可选标量；而无效的必需数字、枚举、原生文件、嵌套记录和不支持的集合，都会显式失败。重复的名字是一个列表，因为它本来就是。")}
+                </Paragraph>
                 <CodeBlock code={formsCode} />
                 <BulletList>
                     <li>
-                        {locale.text("read does not create another schema language and does not infer business rules. Required text, trimming, minimums, custom messages, and submission behaviour remain application code and ordinary HTML attributes.", "read 不创建第二套 schema 语言，也不推断业务规则。必填文本、去空白、最小值、自定义消息与提交行为，仍然是应用代码与普通 HTML 属性的事。")}
+                        {locale.text("The error helpers own field alerts while preserving unrelated accessibility metadata, and duplicate owned nodes for one field are cleared together so a stale alert cannot survive recovery.", "错误辅助函数拥有字段告警，同时保留无关的无障碍元数据；同一字段下重复的受拥有节点会被一起清掉，所以陈旧告警不会在恢复之后残留。")}
                     </li>
                     <li>
-                        {locale.text("The error helpers own field alerts while preserving unrelated accessibility metadata, and duplicate owned nodes for one field are cleared together so a stale alert cannot survive recovery.", "错误辅助函数在保留无关无障碍元数据的同时拥有字段告警；同一字段的重复受拥有节点会被一起清除，因此陈旧告警不会在恢复后残留。")}
-                    </li>
-                    <li>
-                        {locale.text("Submission stays explicit through the ordinary event directives; the helpers require a real form element.", "提交仍然通过普通的事件指令显式进行；这些辅助函数要求一个真实的表单元素。")}
+                        {locale.text("Submission stays explicit through the ordinary event directives, and the helpers require a real form element.", "提交仍然通过普通的事件指令显式进行，而这些辅助函数要求一个真实的表单元素。")}
                     </li>
                 </BulletList>
-
-                <SectionHeading id="files">{locale.text("Files", "文件")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("pick uses the native file-input path and answers a list of opaque File values that expose read-only name, size, type, and modification metadata. Only a value returned by pick may be read as text or as a data URL, or attached to a multipart body, so a forged structural record fails even when it resembles the public metadata. download accepts actual text for its name, data, and media type.", "pick 走原生文件输入路径，返回一组不透明的 File 值，暴露只读的名称、大小、类型与修改时间元数据。只有 pick 返回的取值才可以被读为文本或 data URL，或附加到 multipart 请求体上，因此伪造的结构化记录即使看起来与公开元数据相同也会失败。download 的名称、数据与媒体类型都接受真实的文本。")}
+                    {locale.text("The cost is that read decodes a flat form and nothing more. It creates no second schema language and infers no business rules, so required text, trimming, minimums, custom messages and submission behaviour stay application code and ordinary HTML attributes — and a nested shape has to be assembled by hand after the read. A validation library would give you more in this box. What you get instead is that the type doing the decoding is the same type the rest of the program was already checked against.", "代价是 read 只解码扁平的表单，仅此而已。它不创造第二套 schema 语言，也不推断业务规则，所以必填文本、去空白、最小值、自定义消息和提交行为，仍然是应用代码和普通 HTML 属性的事；嵌套形状要在 read 之后手工拼起来。一个验证库在这一格会给得更多。你换来的是：做解码的那个类型，就是程序其余部分一直在被检查的那个类型。")}
+                </Paragraph>
+
+                <SectionHeading id="files">
+                    {locale.text("An object that looks like a file", "长得像文件的一个对象")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("A file has a name, a size and a type, so a plain object with those three fields satisfies every structural check on the way in.", "文件有名字、大小和类型，所以一个带这三个字段的普通对象，能通过一路上的每一次结构检查。")}
+                </Paragraph>
+                <CodeBlock code={fakeFileJsCode} />
+                <Paragraph>
+                    {locale.text("Nothing knows the difference until something downstream tries to read bytes out of it, and downstream is usually the server. The structural type described what a file looks like, which turns out not to be the same question as whether this is one.", "在下游有东西真的去读它的字节之前，没有谁分得出区别；而下游通常就是服务器。结构化类型描述的是「文件长什么样」，而这个问题，结果并不等于「这是不是一个文件」。")}
                 </Paragraph>
                 <CodeBlock code={filesCode} />
+                <Paragraph>
+                    {locale.text("pick uses the native file-input path and answers a list of opaque File values exposing read-only name, size, type and modification metadata. Only a value returned by pick may be read as text or as a data URL, or attached to a multipart body, so a forged structural record fails even when it matches the public metadata exactly. download accepts actual text for its name, data and media type.", "pick 走原生文件输入路径，返回一组不透明的 File 取值，暴露只读的名字、大小、类型和修改时间元数据。只有 pick 返回的取值，才可以被读成文本或 data URL，或者附到 multipart 请求体上；所以伪造的结构化记录即使和公开元数据一字不差，也会失败。download 的名字、数据和媒体类型都接受真实的文本。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The cost is that opacity cuts both ways. A File cannot be constructed in VelarScript, so a test that wants to exercise an upload path cannot make one up — it drives the real picker through a browser test, or it tests the code either side of the file instead. That is a real restriction on how a product is tested, and it is the same restriction that makes a forged file fail.", "代价是不透明是双向的。VelarScript 里造不出一个 File，所以想跑一遍上传路径的测试没法自己编一个——它要么用浏览器测试去驱动真正的选择器，要么改成测文件两边的代码。这是对「产品怎么测」的一条实打实的限制，而让伪造文件失败的，正是同一条限制。")}
+                </Paragraph>
                 <Callout title={locale.text("What these modules deliberately do not expose", "这些模块刻意不暴露什么")}>
                     <Paragraph>
-                        {locale.text("Directory access, persistent file handles, raw clipboard formats, mutable scroll fields, and the platform's own file and form-data constructors are not source-level APIs. Each module captures the host operations it needs when it initializes, so JavaScript loaded later cannot redirect an owned focus, scroll, reset, or read.", "目录访问、持久文件句柄、原始剪贴板格式、可变的滚动字段，以及平台自己的文件与表单数据构造器，都不是源码层面的 API。每个模块在初始化时捕获它需要的宿主操作，因此稍后加载的 JavaScript 无法改道一次受拥有的聚焦、滚动、重置或读取。")}
+                        {locale.text("Directory access, persistent file handles, raw clipboard formats, mutable scroll fields, and the platform's own file and form-data constructors are not source-level APIs. Each module captures the host operations it needs when it initializes, so JavaScript loaded later cannot redirect an owned focus, scroll, reset, or read.", "目录访问、持久文件句柄、原始剪贴板格式、可变的滚动字段，以及平台自己的文件与表单数据构造器，都不是源码层的 API。每个模块在初始化时就把它需要的宿主操作抓在手里，所以之后加载的 JavaScript 改不了一次受拥有的聚焦、滚动、重置或读取的去向。")}
                     </Paragraph>
                 </Callout>
             </Prose>

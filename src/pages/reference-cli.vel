@@ -113,7 +113,7 @@ export component ReferenceCli:
                 <MemberTable rows={skillMembers} caption={locale.text("The brief", "语言说明")} />
                 <CodeBlock code={skillShellCode} />
                 <Paragraph>
-                    {locale.text("The brief is version-locked to the compiler you have installed, which is what makes it safe to paste into whatever model is writing your code: it describes that toolchain, not a documented ideal. A created project also carries an AGENTS.md that points a model's tooling at it.", "这份说明与你安装的编译器版本锁定，这正是把它粘贴给任何正在写你代码的模型都安全的原因：它描述的是那套工具链，而不是某个文档里的理想。新建的项目还带有一份 AGENTS.md，把模型的工具指向它。")}
+                    {locale.text("The brief is version-locked to the compiler you have installed, which is what makes it safe to paste into whatever model is writing your code: it describes that toolchain, not a documented ideal. A created project also carries an AGENTS.md that points a model's tooling at it.", "这份说明与你安装的编译器版本锁在一起。所以把它粘贴给任何正在写你代码的模型都是安全的：它描述的是那套工具链，而不是某个文档里的理想。新建的项目还带有一份 AGENTS.md，把模型的工具指向它。")}
                 </Paragraph>
 
                 <SectionHeading id="sequences">{locale.text("The three sequences", "三条常用序列")}</SectionHeading>

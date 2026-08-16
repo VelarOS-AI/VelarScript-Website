@@ -1,18 +1,34 @@
 import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
+import {CodeBlock, DocsPager, DocsShell, GateNote, PageHeader, Paragraph, Prose, SectionHeading, SectionList, Subheading} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
+const countJsCode = "// JavaScript — count comes back from the driver as text\nif (!row.count) {\n  return renderEmptyState();\n}\nreturn renderTable(rows);"
 const conditionsCode = `type User:\n    name: string\n    active: bool\n\nexport def grade(score: number) -> string:\n    let result = ""\n    if score >= 90:\n        result = "A"\n    else if score >= 80:\n        result = "B"\n    else:\n        result = "C"\n    return result\n\nexport def conditionShapes(flag: bool, maybeFlag: bool?, values: List<string>, user: User?) -> string:\n    // bool and bool? are the only types a condition accepts; an absent bool?\n    // is false.\n    if flag:\n        print("true")\n    if maybeFlag:\n        print("present and true")\n    // A presence test is written != null; an emptiness test is .size == 0.\n    if user != null:\n        print(user.name)\n    if values.size == 0:\n        print("empty")\n    // Inline conditions use the JavaScript-shaped form.\n    return flag ? "yes" : "no"`
 const elifErrorCode = `export def grade(score: number) -> string:\n    if score >= 90:\n        return "A"\n    elif score >= 80:\n        return "B"\n    return "C"`
 const elifErrorOutput = "main.vel:4:5 error VEL1005: Use 'else if'; VelarScript keeps ordinary readable if chains\n    elif score >= 80:\n    ^^^^"
+const switchJsCode = `// JavaScript — the shipment badge, six months old\nswitch (shipment) {\n  case "ordered":\n  case "packed":\n    return "In the warehouse";\n  case "shipped":\n    return "On its way";\n}\n\n// The returns feature added a fourth status. This answers undefined, and the\n// badge renders the word undefined.`
 const matchValuesCode = `export enum Status:\n    pending\n    active\n    done\n\nconst limits = {max: 10}\n\n// Over an enum the arms are exhaustive, so a member added later reports at\n// every match that does not handle it.\nexport def matchEnum(status: Status) -> string:\n    match status:\n        case Status.pending, Status.active:\n            return "Open"\n        case Status.done:\n            return "Closed"\n\n// An optional enum subject demands every member plus a null arm.\nexport def matchOptionalEnum(status: Status?) -> string:\n    match status:\n        case Status.pending:\n            return "pending"\n        case Status.active:\n            return "active"\n        case Status.done:\n            return "done"\n        case null:\n            return "absent"\n\n// A dotted path is a value pattern at any depth; a bare local binding needs a\n// guard instead.\nexport def matchDottedPath(value: number, limit: number) -> string:\n    match value:\n        case limits.max:\n            return "at the ceiling"\n        case _ if value == limit:\n            return "at the caller's limit"\n        case _:\n            return "ordinary"`
+const exhaustiveErrorCode = `enum Shipment:\n    ordered\n    packed\n    shipped\n    // 'returned' arrived with the returns feature. Nothing else was touched.\n    returned\n\nexport def announce(shipment: Shipment):\n    match shipment:\n        case Shipment.ordered, Shipment.packed:\n            print("in the warehouse")\n        case Shipment.shipped:\n            print("on its way")`
+const exhaustiveErrorOutput = "main.vel:9:5 error VEL4015: Match on Shipment is missing: returned\n    match shipment:\n    ^^^^^^^^^^^^^^^"
 const switchErrorCode = `enum Status:\n    pending\n    done\n\nexport def label(status: Status) -> string:\n    switch status:\n        case Status.pending:\n            return "Open"\n        case Status.done:\n            return "Closed"`
 const switchErrorOutput = "main.vel:6:5 error VEL1005: Use 'match' for strict pattern dispatch\n    switch status:\n    ^^^^^^"
+const duckTypeJsCode = "// JavaScript — telling a failure from a success by looking for a field\nif (result.message) {\n  return renderError(result.message);\n}\nreturn renderUsers(result.users);"
 const matchTypesCode = `type User:\n    name: string\n    active: bool\n\ntype Failure:\n    message: string\n\nexport def matchTypes(result: User | Failure | Error | null) -> string:\n    match result:\n        case User as user if user.active:\n            return f"active {user.name}"\n        case User as user:\n            return f"archived {user.name}"\n        case Error as error:\n            throw error\n        case null:\n            pass\n        case _:\n            return "Unsupported"\n    return "absent"\n\n// A successful pattern narrows the matched identifier without an alias.\nexport def matchWithoutAlias(result: User | Failure) -> string:\n    match result:\n        case User:\n            return result.name\n        case _:\n            return "not a user"`
+const openClassErrorCode = `class Notification:\n    const at: string = "now"\n\n// A subclass someone adds next month is still a Notification.\nclass Mention extends Notification:\n    const who: string = "ada"\n\nexport def render(notification: Notification):\n    match notification:\n        case Mention as mention:\n            print(mention.who)`
+const openClassErrorOutput = "main.vel:9:5 error VEL4015: Match on Notification is missing a fallback; class hierarchies are open — end with 'case Notification:' or 'case _:'\n    match notification:\n    ^^^^^^^^^^^^^^^^^^^"
+const destructureJsCode = "// JavaScript — reaching into a response one step at a time\nconst [first] = response.users;\nrender(first.name);\n\n// An empty users array makes first undefined, and the throw lands on the\n// second line, naming name rather than the empty list."
 const matchShapesCode = `type User:\n    name: string\n    active: bool\n\ntype SuccessResponse:\n    kind: string\n    users: List<User>\n    requestId: string\n\ntype FailureResponse:\n    kind: string\n    message: string\n\ntype Response = SuccessResponse | FailureResponse\n\nexport def matchRecords(response: Response) -> string:\n    match response:\n        case {kind: "success", users: [first, ...rest], requestId} as whole:\n            return f"{first.name} {rest.size} {whole.kind} {requestId}"\n        case {kind: "failure", message}:\n            return message\n        case _:\n            return "Unsupported response"\n\nexport def matchLists(values: List<number>) -> string:\n    match values:\n        case []:\n            return "empty"\n        case [only]:\n            return f"one: {only}"\n        case [first, second]:\n            return f"two: {first} {second}"\n        case [first, ...rest]:\n            return f"many: {first} + {rest.size}"\n\n// A record pattern may capture the remaining fields.\nexport def matchRest(response: SuccessResponse) -> number:\n    match response:\n        case {kind, ...rest}:\n            return kind.size + rest.users.size\n\nexport def matchNestedPatterns(rows: List<SuccessResponse>) -> string:\n    match rows:\n        case [{kind: "success", users: [first]}]:\n            return first.name\n        case _:\n            return "no match"`
+const listArityErrorCode = `export def describe(values: List<number>) -> string:\n    match values:\n        case []:\n            return "empty"\n        case [only]:\n            return f"one: {only}"`
+const listArityErrorOutput = "main.vel:1:1 error VEL4006: Function 'describe' can finish without returning string\nexport def describe(values: List<number>) -> string:\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+const forEachJsCode = `// JavaScript — saving each row\nrows.forEach(async (row) => {\n  await save(row);\n});\nconsole.log("all saved");\n\n// forEach drops the promise it is handed, so the log prints first and every\n// save runs at once.`
 const loopsCode = `type User:\n    name: string\n    active: bool\n\nconst users: List<User> = [{name: "Ada", active: true}]\nconst usersById: Map<string, User> = Map([["u-1", {name: "Ada", active: true}]])\n\nexport def loopForms() -> string:\n    let joined = ""\n\n    for user in users:\n        joined += user.name\n\n    for user, index in users:\n        joined += f"{index}: {user.name}"\n\n    // Both slots accept the complete binding-pattern grammar.\n    for id, {name} in usersById:\n        joined += f"{id}: {name}"\n\n    // Brackets mean destructuring one item, not a two-slot loop.\n    for [left, right] in [[1, 2], [3, 4]]:\n        joined += f"{left}{right}"\n\n    let attempts = 0\n    while attempts < 3:\n        attempts += 1\n\n    return joined + str(attempts)\n\n// break and continue are available only inside loops.\nexport def breakAndContinue(values: List<number>) -> number:\n    let total = 0\n    for value in values:\n        if value < 0:\n            continue\n        if value > 100:\n            break\n        total += value\n    return total\n\n// A while body receives the successful condition's facts on every iteration.\nexport def whileFacts(pending: List<number>) -> number:\n    let total = 0\n    while pending.size > 0:\n        total += pending.pop(0)\n    return total`
+const breakErrorCode = "export def stop(flag: bool):\n    if flag:\n        break"
+const breakErrorOutput = "main.vel:3:9 error VEL3005: 'break' can only be used in a loop\n        break\n        ^^^^^"
+const iteratorJsCode = "// JavaScript — a hand-written async iterator\nasync next() {\n  const chunk = await read();\n  return {value: chunk, done: chunk === undefined};\n}\n\n// read() answers null when the stream ends, so done is never true and the\n// loop that consumes this never finishes."
 const pullCode = `// async for consumes one explicit pull contract: source.next() must have the\n// checked type of a function answering a promise of an optional.\nclass ChunkSource:\n    let remaining: List<string> = ["a", "b"]\n\n    async def next() -> string?:\n        if self.remaining.size == 0:\n            return null\n        return self.remaining.pop(0)\n\nexport async def asyncLoop(reply: ChunkSource) -> string:\n    let joined = ""\n    async for chunk in reply:\n        joined += chunk\n    return joined\n\nexport async def asyncLoopWithIndex(reply: ChunkSource) -> string:\n    let joined = ""\n    async for chunk, index in reply:\n        joined += f"{index}: {chunk}"\n    return joined\n\n// A while true pull loop, for a source whose exhaustion is genuinely reported\n// as an absent value.\nexport def pullLoop(chunks: List<string>) -> string:\n    let assembled = ""\n    let cursor = 0\n    while true:\n        const chunk = chunks.get(cursor)\n        if chunk == null:\n            break\n        assembled += chunk\n        cursor += 1\n    return assembled`
+const pullContractErrorCode = `class Reply:\n    let chunks: List<string> = ["a", "b"]\n\n    // A pull source has to answer a promise. This one answers the value.\n    def next() -> string?:\n        return self.chunks.pop(0)\n\nexport async def read(reply: Reply) -> number:\n    let seen = 0\n    async for _ in reply:\n        seen += 1\n    return seen`
+const pullContractErrorOutput = "main.vel:10:20 error VEL4001: async for requires next() -> Promise<T?>; next() returns string?\n    async for _ in reply:\n                   ^^^^^"
 
 const sections = [
     {id: "conditions", label: "A condition judges truth", labelZh: "条件只判断真假"},
@@ -28,86 +44,174 @@ export component LanguageControlFlow:
     return <main>
         <Head
             title={headTitle("/guide/language/control-flow", locale.isChinese())}
-            description={locale.text("How if, match, and the loop forms are written, and why a condition accepts only bool and bool?.", "if、match 与循环形式如何书写，以及条件为何只接受 bool 与 bool?。")}
+            description={locale.text("Why a condition accepts only bool, how match is checked for the case nobody handled, exactly where that checking stops, and the five loop forms.", "条件为什么只接受 bool，match 如何替你查出没人处理的那一种情况，这项检查到哪里为止，以及五种循环形式。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Language / 08", "语言 / 08")}
                 title={locale.text("Control flow", "控制流")}
-                summary={locale.text("Conditions that judge truth, match over values and types, and the five loop forms.", "只判断真假的条件、对值与类型的 match，以及五种循环形式。")}
+                summary={locale.text("Conditions that judge truth, a match that reports the member nobody handled, the edge where that report stops, and the five loop forms.", "只判断真假的条件、会报出「没人处理的那个成员」的 match、这项报告的边界，以及五种循环形式。")}
             />
             <SectionList items={sections} />
             <Prose>
                 <SectionHeading id="conditions">{locale.text("A condition judges truth", "条件只判断真假")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("bool and bool? are the only types a condition accepts, and an absent bool? is false. The three questions JavaScript folds into one stay three: truth is the condition itself, presence is a comparison against null, and emptiness is a size comparison. Each is a different question, and a reader of the line can tell which one is being asked.", "条件只接受 bool 与 bool?，缺失的 bool? 视为 false。JavaScript 折叠成一个的三个问题在这里仍然是三个：真假就是条件本身，存在性是与 null 的比较，空则是长度比较。三者是不同的问题，读到这一行的人能分辨此刻问的是哪一个。")}
+                    {locale.text("A table with no rows in it rendered as a table with no rows in it, and never as the empty state somebody spent a day designing.", "一个没有数据的表格，渲染出来就是一个没有数据的表格；那个花了一天设计的空状态，一次也没出现过。")}
+                </Paragraph>
+                <CodeBlock code={countJsCode} />
+                <Paragraph>
+                    {locale.text("The driver hands back counts as text, so count is the string \"0\", and a non-empty string is truthy. The guard is asking three questions in one character: is count missing, is it zero, is it empty. It got the wrong one, and nothing was there to notice, because in JavaScript all three are spelled the same way.", "驱动把计数当文本给回来，所以 count 是字符串 \"0\"，而非空字符串是真值。这个守卫用一个字符同时问了三件事：count 有没有、是不是零、是不是空。它问到的是错的那件，也没有任何东西发现——在 JavaScript 里，这三件事就是同一种写法。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Here they are three questions and each one is written as itself.", "在这里，它们是三个问题，各写各的。")}
                 </Paragraph>
                 <CodeBlock code={conditionsCode} />
                 <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                    {locale.text("bool and bool? are the only types a condition accepts. Truth is the condition itself, presence is a comparison against null, and emptiness is a comparison against size. A reader of any one line can tell which question it asks without knowing what the value upstream might be. That is the whole mechanism; there is nothing clever underneath it.", "条件只接受 bool 与 bool?。真假就是条件本身，存在写成与 null 比较，为空写成与 size 比较。读到任意一行的人，不必知道上游那个值可能是什么，就能看出这一行在问哪一件事。机制就是这么点东西，底下没有聪明的花样。")}
                 </Paragraph>
-                <CodeBlock code={elifErrorCode} />
                 <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                    {locale.text("One fold is kept, and it is the one you should know about before you meet it: an absent bool? behaves as false. So a flag with three states — on, off, never set — cannot be told apart by a condition alone; you compare against null first, and only then judge. Everything else is charged in keystrokes, every time. Three questions cost three spellings, the shortest is longer than a bang, and Python's elif is not among them.", "有一处折叠保留了下来，而且最好在遇到之前就知道：缺失的 bool? 表现为 false。所以一个有三种状态的开关——开、关、从没设过——光靠条件是分不出来的；得先跟 null 比一次，再判断。其余的都按打字量收费，每次都收。三个问题要三种拼写，最短的那种也比一个叹号长，而 Python 的 elif 不在其中。")}
                 </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={elifErrorCode} />
                 <CodeBlock code={elifErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example. This site's build compiles the sample on every build and fails if it ever stops producing a diagnostic, and it verifies that VEL1005 is a code the sample really produces. The refusal names the spelling instead of listing options, which is the shape every diagnostic on this page takes.", "门禁：受检的教学反例。本站每次构建都编译这个样本，一旦它不再报错就让构建失败；并且会核对 VEL1005 确实由这个样本产生。这条拒绝直接点名该写什么，而不是罗列选项——本页每一条诊断都是这个样子。")}
+                </GateNote>
 
                 <SectionHeading id="match-values">{locale.text("Match over values", "对值的 match")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("match dispatches on values. Over an enum or a closed union it is exhaustive, so adding a member reports at every match that does not handle it — which is the property that makes an enum worth declaring rather than a set of strings. Several patterns may share one arm, and a dotted path is a value pattern at any depth.", "match 对值进行分派。对枚举或封闭联合，它是穷尽的：新增一个成员会在每一处没有处理它的 match 上报告——正是这一点让枚举值得声明，而不是退化成一组字符串。多个模式可以共享一条分支，带点的路径在任何深度上都是值模式。")}
+                    {locale.text("The returns feature shipped on a Thursday. On Friday a shipment badge read undefined.", "退货功能是周四上线的。周五，一个物流状态标签上写着 undefined。")}
+                </Paragraph>
+                <CodeBlock code={switchJsCode} />
+                <Paragraph>
+                    {locale.text("Nobody forgot this switch. Nobody knew it was there. It sits in a rendering helper two directories away from the enum that grew, it compiled, it passed review, and the only thing that ever pointed at it was a screenshot from support. The language had no way to connect the new member to the code that dispatches on it, so the connection was made by a customer.", "没人忘了这个 switch，是没人知道它在那儿。它待在一个渲染帮手里，离那个长了新成员的枚举隔着两层目录；它能编译，也通过了评审，最后指出它的只有客服转来的一张截图。这门语言没办法把新成员和分派它的代码连起来，于是这条线是由一个客户连上的。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("A match over an enum is checked against the enum's members.", "对枚举做 match，会拿枚举的成员表来核对。")}
                 </Paragraph>
                 <CodeBlock code={matchValuesCode} />
                 <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                    {locale.text("Adding a member reports at every match that does not handle it, and an optional enum subject demands every member plus a null arm. Several patterns may share one arm, a dotted path is a value pattern at any depth, and there is no fall-through to reason about and no break to forget, because an arm ends where the next case begins. The only fallback is a wildcard, written where a reader looks for it rather than trailing a switch as a default.", "新增一个成员，会在每一处没有处理它的 match 上报出来；主体是可选枚举时，除了每个成员还要一条 null 分支。多个模式可以共用一条分支，带点的路径在任何深度上都是值模式。这里没有需要推敲的贯穿行为，也没有会漏写的 break——一条分支到下一个 case 开始处就结束了。唯一的兜底是通配分支，写在读者会去找它的位置，而不是吊在 switch 末尾当 default。")}
                 </Paragraph>
+                <Paragraph>
+                    {locale.text("Read that as a bill and it says: adding a member to an enum is never a one-file edit. The compiler will hand you the full list of places to visit, which is the point, but the list is as long as it is and you cannot ship half of it. A wildcard buys the old silence back, so an arm written as case _: is a decision to stop being told. And a guarded arm does not count toward coverage — case Status.done if urgent: leaves done uncovered, because a guard may be false — which is correct and still surprises people once.", "把这件事当账单读，它说的是：给枚举加一个成员，从来不是改一个文件的事。编译器会把该去的地方一次列全，这正是它的用处；但清单有多长就是多长，你没法只交一半。写通配分支等于把旧的沉默买回来，所以 case _: 是一个「不想再被告知」的决定。还有，带守卫的分支不算覆盖——case Status.done if urgent: 之后 done 仍然没被覆盖，因为守卫可能为假。这是对的，也还是会让人吃一次惊。")}
+                </Paragraph>
+                <Subheading>{locale.text("The member nobody handled", "没人处理的那个成员")}</Subheading>
+                <CodeBlock code={exhaustiveErrorCode} />
+                <CodeBlock code={exhaustiveErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, compiled on every build, required to keep failing, with VEL4015 checked against the diagnostics it really produces. The diagnostic names the missing member rather than saying the match is incomplete, so the fix is the message.", "门禁：受检的教学反例，每次构建都编译，必须持续报错，并核对 VEL4015 确实由它产生。诊断说的是缺了哪个成员，而不是「这个 match 不完整」——所以消息本身就是改法。")}
+                </GateNote>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
                 <CodeBlock code={switchErrorCode} />
-                <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </Paragraph>
                 <CodeBlock code={switchErrorOutput} />
-                <Paragraph>
-                    {locale.text("There is no fall-through to reason about and no break to forget, because an arm ends where the next case begins. The only fallback is a wildcard arm, written where a reader looks for it.", "这里没有需要推敲的贯穿行为，也没有会忘记写的 break，因为一条分支在下一个 case 开始处结束。唯一的兜底是通配分支，写在读者会去找它的位置。")}
-                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: the same checked pair, for the spelling rather than the coverage — compiled on every build, with VEL1005 checked against what the sample really produces. switch is not VelarScript syntax, and the refusal exists so the habit costs one round instead of surviving as a second dispatch form.", "门禁：同样的受检成对样本，管的是拼写而不是覆盖——每次构建都编译，并核对 VEL1005 确实由它产生。switch 不是 VelarScript 语法；这条拒绝存在，是为了让这个习惯只花一轮，而不是变成第二种分派写法活下来。")}
+                </GateNote>
 
                 <SectionHeading id="match-types">{locale.text("Match over types", "对类型的 match")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A type pattern narrows the subject on its arm, with or without an alias, and a guard adds a further condition to the same arm. Because the subject is narrowed rather than re-checked inside the body, the arm reads as the case it handles.", "类型模式在自己的分支上收窄主体，写不写别名都可以；守卫为同一条分支再加一个条件。由于主体是被收窄的，而不是在分支体内重新检查，这条分支读起来就是它所处理的那种情形。")}
+                    {locale.text("Every successful search started rendering as an error, and the response had not changed shape.", "所有搜索成功的结果都开始渲染成错误，而响应的形状一点没变。")}
+                </Paragraph>
+                <CodeBlock code={duckTypeJsCode} />
+                <Paragraph>
+                    {locale.text("The success case had picked up a message field that week — \"2 results hidden by your filters\" — and the branch that tells failures from successes was looking for exactly that name. Duck typing turns a field name into a discriminator without anybody declaring it one, so adding a field is a change to control flow somewhere else in the codebase.", "那一周，成功的那种响应多了一个 message 字段——「有 2 条结果被你的筛选条件隐藏」——而区分成败的那条分支，找的正是这个名字。鸭子类型让一个字段名成了判别标志，却没有任何人声明过它是；于是加一个字段，就是在代码库别处改了一次控制流。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("A type pattern asks the type, and narrows the subject on its own arm.", "类型模式问的是类型，并且在自己那条分支上把主体收窄。")}
                 </Paragraph>
                 <CodeBlock code={matchTypesCode} />
+                <Paragraph>
+                    {locale.text("An alias is optional: a successful pattern narrows the matched identifier in place, so case User: is enough to read result.name below it. A guard adds a further condition to the same arm, and a failed pattern carries its facts forward, so the path after case null: treats the subject as present. The arm reads as the case it handles instead of re-checking the subject inside its own body.", "别名可写可不写：模式匹配成功会就地收窄被匹配的那个名字，所以写 case User: 就足以在下面读 result.name。守卫为同一条分支再加一个条件；模式没匹配上，这个事实也会往后传，所以 case null: 之后的路径把主体当作存在。分支读起来就是它处理的那种情形，不必在自己体内再检查一遍主体。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Now the edge, because this is the one place on the page where the guarantee has a boundary and the boundary is worth naming. Exhaustiveness is checked when the subject is an enum, an optional enum, a class, or a union that contains a class. A union of plain record types is not checked. Leave an arm out of a match over User | Failure | Timeout and nothing reports it; the only thing that catches the gap is the required-return analysis, and only when the function has to return a value. As a statement, that match compiles in silence. So the enum is the shape that buys you the report, and reaching for a union of records instead is a choice to give it up.", "接下来是边界。全页只有这一处，保证是有头的；这个头在哪里，值得点出来。以下几种主体会被检查穷尽性：枚举、可选枚举、类，以及包含类的联合。普通记录类型组成的联合不检查。在 User | Failure | Timeout 上少写一条分支，没有任何东西会报告；唯一能抓住这个缺口的是必须返回值的分析，而且只在函数确实要返回值的时候管用。写成语句，这个 match 一声不吭就编过了。所以，能换来那份报告的形状是枚举；改用记录联合，就是选择放弃它。")}
+                </Paragraph>
+                <Subheading>{locale.text("Where the check still applies", "检查仍然生效的地方")}</Subheading>
+                <CodeBlock code={openClassErrorCode} />
+                <CodeBlock code={openClassErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, compiled on every build with VEL4015 checked against the diagnostics it really produces. A class hierarchy is open, so the compiler cannot enumerate its members and asks for a fallback instead of a list. That is the same rule as the enum one, applied to a subject whose members are not knowable — and it is the edge of what this page can promise.", "门禁：受检的教学反例，每次构建都编译，并核对 VEL4015 确实由它产生。类的继承体系是开放的，编译器数不完它的成员，所以它要的是一个兜底，而不是一份清单。这跟枚举那条是同一条规则，只是用在一个成员数不清的主体上——本页的承诺，到这里为止。")}
+                </GateNote>
 
                 <SectionHeading id="match-shapes">
                     {locale.text("Record and List patterns", "记录与 List 模式")}
                 </SectionHeading>
                 <Paragraph>
-                    {locale.text("A record pattern matches fields and binds them at once, and it may capture the remaining fields. A List pattern matches by arity and may end with a rest binding. Patterns nest, so one arm can state the whole shape a branch expects rather than reaching into it step by step.", "记录模式匹配字段并同时绑定它们，也可以捕获剩余字段。List 模式按元素个数匹配，并可以以剩余绑定收尾。模式可以嵌套，因此一条分支可以直接写出它所期待的整个形状，而不必一步步往里取。")}
+                    {locale.text("A stack trace pointed at name. The thing that was wrong was users.", "堆栈指向的是 name。真正出问题的是 users。")}
+                </Paragraph>
+                <CodeBlock code={destructureJsCode} />
+                <Paragraph>
+                    {locale.text("Destructuring an empty array succeeds and binds undefined, so the failure surfaces one line later, at whichever member happened to be read first. The line that made the wrong assumption and the line that paid for it are different lines, and only the second one is in the report.", "对空数组解构是成功的，绑定到的是 undefined，所以失败在下一行才冒出来，落在恰好第一个被读的成员上。作出错误假设的那一行，和为它付账的那一行，不是同一行；而报告里只有第二行。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("A pattern states the whole shape an arm expects, and binds it in the same breath.", "模式把一条分支期待的整个形状一次写出来，同时就把它绑好。")}
                 </Paragraph>
                 <CodeBlock code={matchShapesCode} />
+                <Paragraph>
+                    {locale.text("A record pattern matches fields and binds them at once, and may capture the rest. A List pattern matches by arity and may end with a rest binding. Patterns nest, so an arm can name a field three levels down without three guards on the way. The arm that assumes users has a first element is the arm that binds first, and an empty list simply does not take that arm.", "记录模式一边匹配字段一边把它们绑上，还可以把剩下的字段一并捕获。List 模式按元素个数匹配，末尾可以带一个剩余绑定。模式能嵌套，所以一条分支可以直接点名三层深处的字段，路上不必写三道守卫。假定 users 有第一个元素的，就是绑定 first 的那条分支；空列表根本走不到它。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("What that does not buy you is a coverage report. Record and List patterns are not checked for exhaustiveness the way an enum is: leave an arity uncovered and no diagnostic says so. The only thing that notices is the required-return analysis, and only when the function must return a value — as a statement, the same match compiles. The second charge is width. A pattern is one line the formatter will not break for you, so a shape with five fields is a long line, and the five names it binds arrive from the pattern rather than from a declaration a reader can jump to.", "它换不来的是一份覆盖报告。记录模式与 List 模式不像枚举那样受穷尽性检查：漏掉一种元素个数，没有诊断会说。唯一会察觉的是必须返回值的分析，而且只在函数确实要返回值的时候——写成语句，同样的 match 照样编过。第二笔账是宽度。模式是一行，格式化不会替你折行，所以五个字段的形状就是很长的一行；它绑出的五个名字来自这个模式，读者想查它们的出处，没有一处声明可以跳过去看。")}
+                </Paragraph>
+                <Subheading>{locale.text("What catches a missing arity, and how", "漏掉的元素个数由谁抓住，怎么抓")}</Subheading>
+                <CodeBlock code={listArityErrorCode} />
+                <CodeBlock code={listArityErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, compiled on every build with VEL4006 checked against the diagnostics it really produces. Read the message closely: it is about the function's return, not about the match. That is the safety net you actually have here, and it is worth knowing it by its real name.", "门禁：受检的教学反例，每次构建都编译，并核对 VEL4006 确实由它产生。请仔细读这条消息：它说的是函数的返回，不是这个 match。你在这里真正拥有的安全网就是它，值得按它本来的名字记住。")}
+                </GateNote>
 
                 <SectionHeading id="loops">{locale.text("The loop forms", "循环形式")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A one-slot for, a two-slot for, a for over a range, while, and async for are the five. Both slots of a for accept the complete binding-pattern grammar, and brackets in the first slot mean destructuring one item rather than a two-slot loop. break and continue exist only inside a loop.", "单槽位 for、双槽位 for、对 range 的 for、while，以及 async for，构成五种形式。for 的两个槽位都接受完整的绑定模式语法；第一个槽位中的方括号表示解构单个元素，而不是双槽位循环。break 与 continue 只在循环内部存在。")}
+                    {locale.text("The log said all rows were saved. Two hundred requests were still in flight.", "日志上写着所有行都保存好了。当时还有两百个请求在路上。")}
+                </Paragraph>
+                <CodeBlock code={forEachJsCode} />
+                <Paragraph>
+                    {locale.text("forEach takes a callback and throws away what the callback returns, and an async callback returns a promise. So the await inside is real and the waiting outside is not. The same file probably also contains a C-style for, a for-of, and a map used for its effects — four spellings of one idea, each with its own relationship to await, and the reader is expected to know all four.", "forEach 收一个回调，然后把回调的返回值扔掉；而 async 回调返回的是一个 promise。所以里面那个 await 是真的，外面的等待是假的。同一个文件里多半还有一个 C 风格的 for、一个 for-of，以及一个被当作副作用用的 map——一个意思四种写法，各自跟 await 的关系还不一样，读者被默认全都懂。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("There are five forms and no callback among them.", "一共五种形式，里面没有回调。")}
                 </Paragraph>
                 <CodeBlock code={loopsCode} />
-                <BulletList>
-                    <li>
-                        {locale.text("A for over a range covers the counting loop, and range needs no import.", "对 range 的 for 覆盖了计数循环，而 range 无需导入。")}
-                    </li>
-                    <li>
-                        {locale.text("A while body receives the successful condition's facts on every iteration, so draining a collection is a size guard rather than a presence dance.", "while 的循环体在每次迭代中都收到条件成立所建立的事实，因此耗尽一个集合是一次长度守卫，而不是围绕存在性的来回试探。")}
-                    </li>
-                </BulletList>
+                <Paragraph>
+                    {locale.text("A one-slot for, a two-slot for, a for over a range, while, and async for. Both slots of a for take the complete binding-pattern grammar, and brackets in the first slot destructure one item rather than opening a two-slot loop. Because a loop is a loop rather than a call, an await inside one is awaited by the loop, and a while body receives the successful condition's facts on every iteration — which is why draining a collection is a size guard rather than a dance around null.", "单槽位 for、双槽位 for、对 range 的 for、while，以及 async for。for 的两个槽位都接受完整的绑定模式语法；第一个槽位里的方括号是解构单个元素，不是开一个双槽位循环。因为循环就是循环、不是一次调用，里面的 await 由循环来等；while 的循环体每一轮都能用上「条件成立」带来的结论——所以耗尽一个集合是一次长度守卫，不是绕着 null 来回试探。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Two things you give up. There is no C-style for, so a loop with two cursors, or a step that changes as it goes, is a while with the bookkeeping written out in full — more lines than the one-liner it replaces, and the correctness is now yours rather than the form's. And break and continue exist only inside a loop, so a helper cannot stop its caller's loop for it. The helper answers a value and the loop decides, which is the right shape and is also a refactor you have to do the first time you want it.", "有两样东西要放弃。没有 C 风格的 for，所以带两个游标、或者步长中途会变的循环，就是一个把账全写出来的 while——比它取代的那一行长，而正确性从此归你，不再归这个形式。另外，break 与 continue 只在循环内部存在，所以一个帮手函数没法替调用方停掉它的循环。帮手给出一个值，由循环来决定——这个形状是对的，也是你第一次想这么干时必须做的一次重构。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={breakErrorCode} />
+                <CodeBlock code={breakErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, compiled on every build with VEL3005 checked against the diagnostics it really produces. The refusal is what makes the cost above bounded: you learn it at the point of writing, not from a control flow that ran somewhere you did not expect.", "门禁：受检的教学反例，每次构建都编译，并核对 VEL3005 确实由它产生。有这条拒绝，上面那笔代价才有个头：你在写下它的那一刻就知道了，而不是等某段控制流跑到你没料到的地方，再从那儿知道。")}
+                </GateNote>
 
                 <SectionHeading id="pull">{locale.text("Pull sources", "拉取式数据源")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("async for consumes one explicit contract: the source publishes next, whose checked type is a function answering a promise of an optional, and exhaustion is the absent value. When the source has no such method, the same loop is written with while true and a break on the absent answer.", "async for 消费一份显式契约：数据源发布 next，其受检类型是「返回可选值的 promise 的函数」，而耗尽就是缺失值。当数据源没有这样的方法时，同一个循环用 while true 加上对缺失答案的 break 来写。")}
+                    {locale.text("A streaming reply loaded forever and the server had finished sending it.", "一个流式回复一直在加载，而服务端早就发完了。")}
+                </Paragraph>
+                <CodeBlock code={iteratorJsCode} />
+                <Paragraph>
+                    {locale.text("The iterator protocol carries the answer and the end-of-stream flag in one object, so a source has to keep two things in step: what it read, and what it claims about what it read. Here the reader answers null at the end and the flag was written against undefined. Both are ordinary values, neither is wrong on its own, and the two only disagree at the last chunk — which is the one chunk nobody writes a test for.", "迭代器协议把答案和「流结束了」这个标志放在同一个对象里，于是数据源要同时管住两件事：它读到了什么，以及它对读到的东西作了什么声明。这里读取方在结尾给的是 null，而标志是照着 undefined 写的。两个都是普通的值，各自都不算错，只在最后一块上对不上——而最后一块，恰恰是没人写测试的那一块。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Here the contract is one method, and exhaustion is the absent value.", "在这里，契约就是一个方法，耗尽就是那个缺失的值。")}
                 </Paragraph>
                 <CodeBlock code={pullCode} />
-                <Callout title={locale.text("No generators", "没有生成器")}>
-                    <Paragraph>
-                        {locale.text("There is no yield and no iterator protocol to implement. An incremental source is either a checked pull contract or a producer callback, both of which a reader can follow without knowing how a suspended function resumes.", "没有 yield，也没有需要实现的迭代器协议。增量数据源要么是一份受检的拉取契约，要么是一个生产者回调；这两种读者都能跟下去，无需先了解一个被挂起的函数是如何恢复的。")}
-                    </Paragraph>
-                </Callout>
+                <Paragraph>
+                    {locale.text("The source publishes next, whose checked type is a function answering a promise of an optional. There is no second field to keep in step, because the answer is the flag: a value means another chunk, and null means the end. When a source has no such method, the same loop is written with while true and a break on the absent answer, and the reader can follow both without knowing anything about how a suspended function resumes.", "数据源发布一个 next，它的受检类型是「返回可选值的 promise 的函数」。这里没有第二个字段要跟着同步，因为答案本身就是标志：有值就还有下一块，null 就是到头了。数据源没有这样的方法时，同一个循环用 while true 加上对缺失答案的 break 来写。这两种读者都能跟下去，不必先弄懂一个被挂起的函数是怎么恢复的。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The price is that null is spoken for. A source whose values legitimately include null cannot use this contract at all — wrap the value in a record, or write the while true form and decide for yourself what the end looks like. Beyond that, there is no yield here, so a producer that wants to suspend halfway through a computation is a state machine or a callback that you write out. A generator is three lines in JavaScript. The rewrite is not three lines, and that is a real charge on the kind of code that streams.", "代价是 null 被占用了。一个数据源的值里如果合法地含有 null，它就完全用不了这份契约——要么把值包进一条记录，要么写 while true，自己决定「结束」长什么样。除此之外，这里没有 yield，所以一个想在计算中途挂起的生产者，就得由你写成状态机或者回调。生成器在 JavaScript 里是三行。改写不是三行——对于要做流式处理的那类代码，这是一笔实打实的账。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={pullContractErrorCode} />
+                <CodeBlock code={pullContractErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, compiled on every build with VEL4001 checked against the diagnostics it really produces. The message prints the contract and then what this source offers instead, so the whole comparison is in the diagnostic rather than in a page you have to find.", "门禁：受检的教学反例，每次构建都编译，并核对 VEL4001 确实由它产生。这条消息先写出契约，再写出这个数据源实际给的是什么——整个对照都在诊断里，不用去找哪一页文档。")}
+                </GateNote>
             </Prose>
             <DocsPager
                 previous={guidePrevious("/guide/language/control-flow")}

@@ -1,137 +1,241 @@
-import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
-import {useLocale} from "@velarscript/site-ui"
+import {Head, Link} from "velar/web"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, GateNote, PageHeader, Paragraph, Prose, SectionHeading, SectionList, Subheading} from "@velarscript/docs-kit"
+import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
+const arrowRecordJsCode = "// JavaScript\nconst makeUser = (name) => { id: name };\n\n// makeUser(\"Ada\") is undefined. The brace opened a block, and inside a block\n// `id:` is a label on a statement."
 const arrowsCode = `const price = 12.5\nconst quantity = 4\nconst enabled = true\n\n// Level 1 — the arrow. Its body extends as far as it can.\nconst double = (value: number) => value * 2\nconst noArguments = () => 0\nconst doesNothing = () => null\nconst twoParameters = (left: number, right: number) => left + right\n\n// After the arrow a brace opens a record, never a block.\nconst emptyRecordFactory = () => {}\nconst recordFactory = () => {id: "a"}\n\n// Level 2 — the conditional expression, right-nesting.\nconst total = price * quantity\nconst accepted = total >= 10 and enabled\nconst label = accepted ? "Accepted" : "Rejected"\nconst grade = total > 100 ? "high" : total > 10 ? "middle" : "low"\n\n// As an operand of any binary operator it must be parenthesized.\nconst scaled = (accepted ? 2 : 1) * total`
+const orFallbackJsCode = `// JavaScript\nconst pageSize = options.pageSize || 20;\nconst label = user.nickname || "anonymous";`
 const fallbackCode = "type User:\n    name: string\n    active: bool\n\nconst enabled = true\nconst accepted = true\nconst optionalValue: number? = null\nconst defaultValue = 7\n\n// Level 3 — the fallback, left to right. It answers the left value unless\n// that value is null.\nconst fallback = optionalValue ?? defaultValue\nconst chainedFallback = optionalValue ?? optionalValue ?? defaultValue\n\n// A direct fallback receives the expected result type, so these need no\n// further annotation.\nconst names: List<string>? = null\nconst scores: Map<string, number>? = null\nconst optionalCallback: ((number) -> number)? = null\nconst directList = names ?? []\nconst directMap = scores ?? Map()\nconst directCallback = optionalCallback ?? (value => value)\n\n// A mix of the fallback with and/or needs explicit parentheses.\nconst optionalTruth: bool? = null\nconst parenthesizedFallback = enabled or (optionalTruth ?? false)\n\n// Levels 4 and 5 — or and and, left to right, short-circuiting. An absent\n// bool? behaves as false.\nconst optionalFlag: bool? = null\nconst orChain = enabled or accepted or optionalFlag\nconst andChain = enabled and accepted and optionalFlag\n\nconst maybeUser: User? = null\n\nexport def logicalOperators() -> bool:\n    // The right side receives the facts the reaching path established.\n    if maybeUser != null and maybeUser.active:\n        return true\n    if maybeUser == null or not maybeUser.active:\n        return false\n    return enabled or accepted"
 const mixedErrorCode = "const enabled = true\nconst optionalTruth: bool? = null\nconst mixed = enabled or optionalTruth ?? false"
 const mixedErrorOutput = "main.vel:3:15 error VEL4001: Left side of '??' is not optional: bool\nconst mixed = enabled or optionalTruth ?? false\n              ^^^^^^^^^^^^^^^^^^^^^^^^\n\nmain.vel:3:40 error VEL2034: Parenthesize the mix of '??' and 'or'; the two groupings read differently\nconst mixed = enabled or optionalTruth ?? false\n                                       ^^"
+const chainJsCode = "// JavaScript\nif (0 < percentage <= 100) render(percentage);\n\n// True for 5000. `0 < percentage` answers a boolean, the boolean becomes 1,\n// and 1 <= 100 holds for every input above zero."
 const comparisonCode = `type User:\n    name: string\n    active: bool\n\nconst price = 12.5\nconst quantity = 4\nconst total = 50\nconst optionalValue: number? = null\n\nconst equal = total == 50\nconst notEqual = total != 50\nconst less = price < quantity\nconst greaterOrEqual = price >= quantity\n\n// null inhabits every optional, so this is the language's only null test.\nconst present = optionalValue != null\nconst absent = optionalValue == null\n\n// Equality is reflexive: the undefined quotient agrees with itself.\nconst notANumber = 0 / 0\nconst reflexive = notANumber == notANumber\n\n// Collection equality is identity; content comparison has its own spelling.\nconst structural = equals([1, 2], [1, 2])\nconst structuralMaps = equals(Map([["a", 1]]), Map([["a", 1]]))\n\n// Comparison chains evaluate each operand once and must point one way.\nconst percentage = 40\nconst high = 9\nconst middle = 5\nconst low = 1\n\nexport def chains():\n    assert 0 < percentage <= 100\n    assert high >= middle > low\n\n// in and is are not chain links; inside another comparison they need\n// parentheses.\nconst flags: List<bool> = [true, false]\nconst parenthesizedMembership = (price < quantity) in flags\n\nconst roles: Set<string> = Set(["admin", "viewer"])\nconst ignoredRoutes: List<string> = ["/health"]\nconst route = "/dashboard"\n\nexport def membershipAndTypeTests(input: User | Error) -> string:\n    if "admin" in roles:\n        print("Allowed")\n    if route not in ignoredRoutes:\n        print("Visible")\n    if input is User:\n        return input.name\n    if input is not Error:\n        return "Usable"\n    return input.message\n\n// Substring membership is the same operator.\nconst substring = "ad" in "advertisement"`
+const chainErrorCode = "const percentage = 5000\nconst wrongWay = 0 < percentage > 100"
+const chainErrorOutput = "main.vel:2:18 error VEL2031: Comparison chains must point one way; split the comparisons with 'and'\nconst wrongWay = 0 < percentage > 100\n                 ^^^^^^^^^^^^^^^^^^^^"
+const powerJsCode = "// JavaScript\nconst variance = -2 ** 2;\n\n// SyntaxError: Unary operator used immediately before exponentiation\n// expression. Parenthesis must be used to disambiguate operator precedence"
 const arithmeticCode = `const price = 12.5\nconst quantity = 4\nconst enabled = true\n\n// Level 7 — binary plus and minus, left to right.\nconst sum = price + quantity\nconst difference = price - quantity\nconst concatenated = "left" + "right"\n\n// Level 8 — multiply, divide, and remainder. The remainder keeps\n// JavaScript's sign.\nconst product = price * quantity\nconst quotient = price / quantity\nconst remainder = price % quantity\nconst negativeRemainder = -3 % 2\n\n// Level 9 — not and the unary signs, looser than the power operator.\nconst negated = not enabled\nconst negative = -price\nconst positive = +price\n\n// Unary minus is looser than the power operator, so this is the negation of\n// two squared.\nconst looseUnary = -2 ** 2\nconst tightUnary = (-2) ** 2\n\n// Member access is tighter than unary minus, so this negates the magnitude.\nconst looseAccess = -2.abs()\nconst tightAccess = (-2).abs()\n\n// Level 10 — the power operator, right to left.\nconst power = 2 ** 8\nconst rightAssociative = 2 ** 3 ** 2\n\n// A double slash is always a comment, in every position, so floor division is\n// a member rather than an operator.\nconst floorDivision = (7 / 2).floor()`
+const catchJsCode = `// JavaScript\ntry {\n  const user = await loadUser(id);\n  render(user);\n} catch {\n  return null;\n}\n\n// The catch was written for the network call. It also catches every bug in\n// render, so a typo in the profile template reads as "user not found".`
+const postfixCode = `type Address:\n    city: string\n\ntype Details:\n    address: Address?\n\ntype Account:\n    profile: Details?\n\nasync def load() -> number:\n    return 1\n\n// Level 11 — await and try, both prefix.\nexport async def prefixLevel() -> number:\n    const awaited = await load()\n    const attempted = try await load()\n    return awaited + (attempted ?? 0)\n\n// Level 12 — call, member, optional member, and index: the tightest level.\nconst account: Account? = null\nconst optionalValues: List<number>? = null\nconst callback: ((number) -> number)? = null\n\nconst city = account?.profile?.address?.city\nconst firstValue = optionalValues?.[0]\nconst result = callback?.(1)\n\nconst title = "advertisement"\nconst member = title.size\nconst flags: List<bool> = [true, false]\nconst index = flags[0]`
+const coercionJsCode = `// JavaScript — quantity came out of a form field, so it is text\nconst total = quantity + 1;   // "3" + 1 is "31"\nconst left = quantity - 1;    // "3" - 1 is 2`
+const removedCode = `let count = 0\nconst enabled = true\nconst accepted = false\n\n// The three symbol pairs became words.\nconst both = enabled and accepted\nconst either = enabled or accepted\nconst negated = not enabled\n\n// There is no increment, so the compound assignment states the amount it adds.\ncount += 1\n\n// Nothing converts on its own: a number joins text by being formatted.\nconst label = f"count: {count}"\n\n// One equality, and it wants the operand types to intersect.\nconst done = count == 1`
 const incrementErrorCode = "let count = 0\ncount++"
 const incrementErrorOutput = "main.vel:2:6 error VEL2031: VelarScript has no '++'; write 'count += 1'\ncount++\n     ^^"
-const postfixCode = `type Address:\n    city: string\n\ntype Details:\n    address: Address?\n\ntype Account:\n    profile: Details?\n\nasync def load() -> number:\n    return 1\n\n// Level 11 — await and try, both prefix.\nexport async def prefixLevel() -> number:\n    const awaited = await load()\n    const attempted = try await load()\n    return awaited + (attempted ?? 0)\n\n// Level 12 — call, member, optional member, and index: the tightest level.\nconst account: Account? = null\nconst optionalValues: List<number>? = null\nconst callback: ((number) -> number)? = null\n\nconst city = account?.profile?.address?.city\nconst firstValue = optionalValues?.[0]\nconst result = callback?.(1)\n\nconst title = "advertisement"\nconst member = title.size\nconst flags: List<bool> = [true, false]\nconst index = flags[0]`
 
 const sections = [
     {id: "levels", label: "Twelve levels", labelZh: "十二个层次"},
-    {id: "fallback", label: "The fallback and the boolean pair", labelZh: "回退与布尔对"},
-    {id: "comparison", label: "Comparison, chains, and membership", labelZh: "比较、链与成员判断"},
+    {id: "fallback", label: "The fallback and the boolean pair", labelZh: "回退，以及那对布尔运算符"},
+    {id: "comparison", label: "Comparison, chains, and membership", labelZh: "比较、链、成员判断"},
     {id: "arithmetic", label: "Arithmetic and the unary layer", labelZh: "算术与一元层"},
     {id: "postfix", label: "Prefix and postfix", labelZh: "前缀与后缀"},
-    {id: "removed", label: "What was removed", labelZh: "被移除的部分"},
+    {id: "removed", label: "What was removed", labelZh: "拿掉了什么"},
 ]
+
+const inlineLinkLook = look:
+    color = sea
 
 export component LanguageOperators:
     const locale = useLocale()
     return <main>
         <Head
             title={headTitle("/guide/language/operators", locale.isChinese())}
-            description={locale.text("The VelarScript operator surface: precedence, associativity, comparison chains, and the JavaScript coercions it drops.", "VelarScript 的运算符表面：优先级、结合性、比较链，以及它舍弃的 JavaScript 强制转换。")}
+            description={locale.text("The VelarScript operator surface: twelve precedence levels, comparison chains, the JavaScript coercions it drops, and what dropping them costs.", "VelarScript 的运算符表面：十二个优先级层次、比较链、它舍弃的那些 JavaScript 隐式转换，以及舍弃它们要付的代价。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Language / 02", "语言 / 02")}
                 title={locale.text("Operators", "运算符")}
-                summary={locale.text("Twelve precedence levels in declaration order, comparison chains, and the coercions that were removed.", "按声明顺序排列的十二个优先级层次、比较链，以及被移除的强制转换。")}
+                summary={locale.text("Twelve precedence levels in declaration order, comparison chains that mean what they look like, and the coercions that were taken out.", "按声明顺序排开的十二个优先级层次、看上去什么意思就是什么意思的比较链，以及被拿掉的那些隐式转换。")}
             />
             <SectionList items={sections} />
             <Prose>
                 <SectionHeading id="levels">{locale.text("Twelve levels", "十二个层次")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("The precedence table has twelve levels and runs from the arrow at level one to call, member, and index access at level twelve. An arrow body extends as far to the right as it can, which is why an arrow used as an operand needs parentheses; the conditional expression at level two nests to the right and needs parentheses for the same reason.", "优先级表共十二层，从第一层的箭头一路排到第十二层的调用、成员与索引访问。箭头体会尽可能向右延伸，因此把箭头当作操作数使用时需要括号；第二层的条件表达式向右嵌套，出于同样的理由也需要括号。")}
+                    {locale.text("A factory that answers nothing.", "一个什么也没造出来的工厂函数。")}
+                </Paragraph>
+                <CodeBlock code={arrowRecordJsCode} />
+                <Paragraph>
+                    {locale.text("The author wrote a record and JavaScript read a block, because a brace after an arrow can mean either and the language picked the other one. Nothing failed. You find out three frames later, where something reads .id on undefined, and the line you have to fix is not the line that threw.", "作者写的是一个记录，JavaScript 读到的是一个块——箭头后面的花括号两种都能解释，而语言挑了另一种。没有报错。你是在三层调用之外才发现的：某处对着 undefined 读 .id。而要改的那一行，不是抛错的那一行。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Here a brace after an arrow has only one reading.", "在这里，箭头后面的花括号只有一种读法。")}
                 </Paragraph>
                 <CodeBlock code={arrowsCode} />
+                <Paragraph>
+                    {locale.text("The precedence table has twelve levels and runs from the arrow at level one to call, member, and index access at level twelve. An arrow body extends as far to the right as it can, which is why an arrow used as an operand needs parentheses; the conditional expression at level two nests to the right and needs them for the same reason. There is no braced arrow body anywhere in the grammar, so a brace after an arrow can only be a record — the ambiguity was removed rather than resolved.", "优先级表一共十二层，从第一层的箭头，一路排到第十二层的调用、成员和索引访问。箭头体会尽量向右延伸，所以把箭头当操作数用时要加括号；第二层的条件表达式向右嵌套，也是同一个道理。语法里根本没有带花括号的箭头体，所以箭头后面的花括号只可能是记录——这处歧义是被拿掉的，不是被裁定的。")}
+                </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("After an arrow a brace opens a record, so a factory that answers an empty record is written directly.", "箭头之后的花括号打开的是记录而不是块，因此返回空记录的工厂函数可以直接写出来。")}
+                        {locale.text("After an arrow a brace opens a record, so a factory that answers an empty record is written directly.", "箭头之后的花括号打开的是记录，所以「返回一个空记录」的工厂函数可以直接写出来。")}
                     </li>
                     <li>
-                        {locale.text("A callback that needs two statements becomes a named def rather than a braced arrow body.", "需要两条语句的回调改写成具名 def，而不是带花括号的箭头体。")}
+                        {locale.text("A callback that needs two statements becomes a named def rather than a braced arrow body.", "需要写两条语句的回调，改成一个具名 def，而不是给箭头加花括号。")}
                     </li>
                 </BulletList>
+                <Paragraph>
+                    {locale.text("That second bullet is the bill. You cannot write a two-statement lambda inline, so a callback that needs one temporary has to be lifted out and given a name, and the code moves away from the call site that explains it. Parentheses are charged too, every time an arrow or a conditional stands as an operand.", "第二条就是账单。你没法在原地写一个两条语句的 lambda，所以一个只需要一个临时变量的回调，也得提出去、起个名字——代码于是离开了那个能解释它的调用点。括号也要付钱：箭头或条件表达式每当作一次操作数，就加一次括号。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: the sample above is compiled by this site's build on every publish, and it writes both () => {} and () => {id: \"a\"} as ordinary bindings. If a brace after an arrow ever went back to opening a block, those two lines would stop compiling and this page would stop building. The JavaScript block is a quotation, not a compared artifact — nothing here runs it.", "门禁：上面那个样本，本站每次发布都会编译，而它把 () => {} 和 () => {id: \"a\"} 都当普通绑定写了出来。箭头后面的花括号哪天要是又开回块，这两行就编不过，这一页也就构建不出来。那段 JavaScript 是引文，不是受比对的产物——这里没有任何东西会去跑它。")}
+                </GateNote>
 
                 <SectionHeading id="fallback">
-                    {locale.text("The fallback and the boolean pair", "回退与布尔对")}
+                    {locale.text("The fallback and the boolean pair", "回退，以及那对布尔运算符")}
                 </SectionHeading>
                 <Paragraph>
-                    {locale.text("The fallback operator at level three answers its left value unless that value is null, and it never shares an unparenthesized chain with and or or. Levels four and five carry or and and, both short-circuiting, and the right side of a chain receives the facts the reaching path established. An absent bool? behaves as false.", "第三层的回退运算符在左值不为 null 时返回左值，并且绝不与 and 或 or 共享一条未加括号的链。第四层与第五层承载 or 与 and，两者都短路，链的右侧会收到到达该处的路径已确立的事实。缺失的 bool? 表现为 false。")}
+                    {locale.text("Two defaults that overwrote two deliberate answers.", "两个默认值，盖掉了两个用户明确给出的答案。")}
+                </Paragraph>
+                <CodeBlock code={orFallbackJsCode} />
+                <Paragraph>
+                    {locale.text("Somebody set the page size to 0 meaning no limit and got twenty rows. Somebody cleared their nickname on purpose and got called anonymous. Both are correct JavaScript: || asks whether the left side is falsy, and 0 and the empty string are falsy. The language later added ?? for exactly this, which fixed the operator and left the codebase with two fallbacks, one per line, and no way to tell from a distance which line uses which.", "有人把每页条数设成 0，意思是不限，结果拿到二十行。有人特意把昵称清空，结果被叫成 anonymous。这两行都是正确的 JavaScript：|| 问的是左边是不是 falsy，而 0 和空字符串都是 falsy。后来语言为这件事加了 ??，运算符是修好了，代码库里却从此有两种回退，一行一种，隔远了根本看不出哪一行用的是哪一个。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("There is one fallback here, and it only ever asks about null.", "这里的回退只有一种，而且它只问一件事：是不是 null。")}
                 </Paragraph>
                 <CodeBlock code={fallbackCode} />
                 <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                    {locale.text("The fallback at level three answers its left value unless that value is null. There is no truthiness and no second kind of nothing, so that sentence is the whole rule. A direct fallback receives the expected result type, which is why names ?? [] needs no annotation. Levels four and five carry or and and, both short-circuiting, and the right side of a chain receives the facts the reaching path established. An absent bool? behaves as false.", "第三层的回退，在左值不是 null 时给出左值。这里没有 truthiness，也没有第二种「没有」，所以刚才那句话就是全部规则。直接回退会接到期望的结果类型，所以 names ?? [] 不用再写注解。第四层和第五层是 or 和 and，都短路；链走到右侧时，左侧已经判定过的结论，右侧直接用得上。缺失的 bool? 表现为 false。")}
                 </Paragraph>
-                <CodeBlock code={mixedErrorCode} />
                 <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                    {locale.text("Two things are charged for it. The fallback never shares an unparenthesized chain with and or or, so you write the parentheses every time and a slip is a diagnostic rather than a default. And the convenience || had is genuinely gone: when the empty string really was the thing you wanted replaced, you now spell the test out — label.size == 0 ? \"anonymous\" : label — which is longer, in exactly the case where JavaScript was right.", "为此要付两笔。回退绝不与 and 或 or 共享一条没加括号的链，所以括号每次都得写，写漏了得到的是诊断，不是一个默认值。另外，|| 那点方便是真的没了：当你确实想把空字符串换掉时，现在得把判断写全——label.size == 0 ? \"anonymous\" : label——更长，而且恰好长在 JavaScript 本来是对的那个场合。")}
                 </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={mixedErrorCode} />
                 <CodeBlock code={mixedErrorOutput} />
                 <Paragraph>
-                    {locale.text("The two diagnostics are one story read twice. The compiler grouped the expression the way the precedence table requires, so the left operand of the fallback became a plain bool, and the second diagnostic names the choice the author has to make in writing.", "这两条诊断是同一件事被读了两遍。编译器按优先级表要求的方式分了组，于是回退的左操作数成了一个普通 bool；第二条诊断则点名作者必须在书面上做出的那个选择。")}
+                    {locale.text("The two diagnostics are one story read twice. The compiler grouped the expression the way the precedence table requires, so the left operand of the fallback came out a plain bool; the second diagnostic then names the choice the author has to make in writing.", "这两条诊断是同一件事被读了两遍。编译器按优先级表要求的方式分了组，回退的左操作数于是成了一个普通 bool；第二条诊断接着点名作者必须在纸面上做出的那个选择。")}
                 </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example. This site's build compiles the sample and fails if it ever stops producing a diagnostic, and it verifies that VEL4001 and VEL2034 are both codes the sample really produces.", "门禁：受检的教学反例。本站构建会编译这个样本，一旦它不再报错就让构建失败；并且会核对 VEL4001 和 VEL2034 确实都由这个样本产生。")}
+                </GateNote>
 
                 <SectionHeading id="comparison">
-                    {locale.text("Comparison, chains, and membership", "比较、链与成员判断")}
+                    {locale.text("Comparison, chains, and membership", "比较、链、成员判断")}
                 </SectionHeading>
                 <Paragraph>
-                    {locale.text("Level six carries equality, the ordered comparisons, is, and in. Equality requires the operand types to intersect, so a comparison that could never be true is a diagnostic rather than a silent false; equality on a collection is identity, and content comparison is written with equals. An ordered chain evaluates each operand once and must point one direction; is and in are not chain links and need parentheses inside another comparison.", "第六层承载相等、有序比较、is 与 in。相等要求两侧类型有交集，因此一次永远不可能为真的比较会得到诊断，而不是静默的 false；集合上的相等是身份相等，内容比较写作 equals。有序链对每个操作数只求值一次，且必须指向同一方向；is 与 in 不是链的一环，出现在另一个比较内部时需要括号。")}
+                    {locale.text("A range check that lets everything through.", "一个什么都放行的范围检查。")}
+                </Paragraph>
+                <CodeBlock code={chainJsCode} />
+                <Paragraph>
+                    {locale.text("It reads like mathematics and it is not. JavaScript compares twice, left to right, and the first comparison hands a boolean to the second one, where it turns into 1. The guard passed every percentage anyone ever typed, and the shape of the line is what convinced three reviewers it was fine.", "它读起来像数学，其实不是。JavaScript 比了两次，从左往右；第一次比较把一个布尔值交给第二次，在那里它变成了 1。于是任何人输入的任何百分比，这道守卫都放过去了。三位审阅者都点了头——说服他们的，是这一行长得像数学。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Here a chain is a chain.", "在这里，链就是链。")}
                 </Paragraph>
                 <CodeBlock code={comparisonCode} />
+                <Paragraph>
+                    {locale.text("Level six carries equality, the ordered comparisons, is, and in. An ordered chain evaluates each operand once and has to point one direction, so 0 < percentage <= 100 means what it looks like. Equality requires the operand types to intersect, which turns a comparison that could never be true into a diagnostic instead of a silent false. Equality on a collection is identity, and content comparison is written equals. null inhabits every optional, so comparing against null is the only presence test the language has.", "第六层是相等、有序比较、is 和 in。有序链对每个操作数只求值一次，而且必须指向同一个方向，所以 0 < percentage <= 100 就是它看上去的那个意思。相等要求两边类型有交集，于是一次永远不可能为真的比较得到的是诊断，而不是静默的 false。集合上的相等是身份相等，比内容写作 equals。null 存在于每个可选类型里，所以跟 null 比较是这门语言唯一的存在性检查。")}
+                </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("Because null inhabits every optional, comparing against null is the language's only presence test.", "由于 null 存在于每个可选类型之中，与 null 比较就是这门语言唯一的存在性检查。")}
+                        {locale.text("Because null inhabits every optional, comparing against null is the one presence test, and there is no second spelling of it to learn.", "因为 null 存在于每个可选类型里，存在性检查就只有跟 null 比这一种，不用再学第二种写法。")}
                     </li>
                     <li>
-                        {locale.text("Equality is reflexive at the leaves: the undefined quotient agrees with itself, and a separate not-a-number predicate is a member on the value.", "相等在叶子处是自反的：未定义商与自身相等，而独立的非数字判定是值上的一个成员。")}
+                        {locale.text("Equality is reflexive at the leaves: the undefined quotient agrees with itself, and a separate not-a-number predicate is a member on the value.", "相等在叶子处是自反的：未定义商与自身相等，而单独的「是不是数」判定是值上的一个成员。")}
                     </li>
                     <li>
-                        {locale.text("Membership on text is the same operator as membership on a Set or a List.", "文本上的成员判断与 Set 或 List 上的成员判断是同一个运算符。")}
+                        {locale.text("Membership on text is the same operator as membership on a Set or a List.", "文本上的成员判断，和 Set 或 List 上的成员判断，是同一个运算符。")}
                     </li>
                 </BulletList>
+                <Paragraph>
+                    {locale.text("Collection identity is the hole this section cannot close for you. Comparing two List literals is refused, because the compiler can see that both sides are new objects; comparing two bindings that happen to hold equal contents compiles and answers false, and nothing says a word. equals is the content comparison and it is a name you have to carry. Parentheses cost a little too: is and in are not chain links, so each one inside another comparison takes a pair.", "集合的身份相等，是这一节替你堵不上的那个洞。比较两个 List 字面量会被拒绝，因为编译器看得出来两边都是新对象；而比较两个恰好装着相同内容的绑定，能编过，答案是 false，一句话都不会说。比内容的那个名字叫 equals，得你自己记着。括号也要花一点：is 和 in 不是链的一环，出现在另一个比较里面时，各要一对括号。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={chainErrorCode} />
+                <CodeBlock code={chainErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example — the sample is compiled on every build, it must keep failing, and VEL2031 is checked against the diagnostics it really produces. The chain that does point one way is in the compiled sample above it, so both halves of this rule are on the page and both are checked.", "门禁：受检的教学反例——每次构建都编译这个样本，它必须持续失败，而 VEL2031 会与它真实产生的诊断核对。方向一致的那种链在上面那个受编译的样本里，所以这条规则的两面都在页面上，也都受检。")}
+                </GateNote>
 
                 <SectionHeading id="arithmetic">
                     {locale.text("Arithmetic and the unary layer", "算术与一元层")}
                 </SectionHeading>
                 <Paragraph>
-                    {locale.text("Levels seven through ten are the numeric layer. The remainder keeps JavaScript's sign, unary minus is looser than the power operator, and member access is tighter than unary minus. Each of those three facts decides a real expression, so the sample writes both groupings side by side rather than describing them.", "第七到第十层是数值层。取余保留 JavaScript 的符号，一元负号比幂运算符更松，而成员访问比一元负号更紧。这三条事实各自决定着真实表达式的含义，因此样本把两种分组并排写出，而不是用文字描述它们。")}
+                    {locale.text("A formula that does not survive being typed in.", "一个照抄进来就活不下去的公式。")}
+                </Paragraph>
+                <CodeBlock code={powerJsCode} />
+                <Paragraph>
+                    {locale.text("JavaScript declines to pick, and it has a reason. Python reads that line as the negation of two squared and answers -4; a language that binds the minus tighter reads it as minus two, squared, and answers 4. Both are defensible. Refusing is the cheap version of this problem — you go and look it up. The expensive version is a language that picks silently and happens to disagree with the one your fingers came from.", "JavaScript 不肯选，而且它有理由。Python 把那一行读成「二的平方，取负」，给出 -4；而一门让负号结合得更紧的语言，把它读成「负二，平方」，给出 4。两种都说得通。拒绝是这个问题便宜的那个版本——你去查一下就是了。贵的那个版本是：一门语言悄悄替你选了，而且恰好跟你手指头习惯的那门不一样。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("This language picks, and then writes both groupings down.", "这门语言选了，并且把两种分组都写了出来。")}
                 </Paragraph>
                 <CodeBlock code={arithmeticCode} />
                 <Paragraph>
-                    {locale.text("A double slash is a comment in every position, which is why floor division is a member on the number rather than an operator. That is the one removal in this layer with no diagnostic behind it: the rest of the line disappears into the comment, and the binding takes the left operand.", "双斜杠在任何位置都是注释，因此向下取整的除法是数字上的一个成员，而不是运算符。这是本层唯一一处没有诊断兜底的移除：行的其余部分被注释吞掉，绑定拿到的是左操作数。")}
+                    {locale.text("Levels seven through ten are the numeric layer, in one table, in declaration order: plus and minus at seven; multiply, divide, and remainder at eight, with the remainder keeping JavaScript's sign; not and the unary signs at nine; the power operator at ten, right to left. Because unary sits at nine and the power at ten, -2 ** 2 is -4 here. Because member access is level twelve, -2.abs() is -2 while (-2).abs() is 2. The sample writes both groupings next to each other so the answer is on the page instead of in a table you have to go and find.", "第七到第十层是数值层，同一张表，按声明顺序排：第七层加减；第八层乘、除、取余，取余保留 JavaScript 的符号；第九层是 not 和一元正负号；第十层是幂，从右往左结合。一元在第九层、幂在第十层，所以这里 -2 ** 2 是 -4。成员访问在第十二层，所以 -2.abs() 是 -2，而 (-2).abs() 是 2。样本把两种分组并排写着，答案就在页面上，不必再去翻一张表。")}
                 </Paragraph>
+                <Paragraph>
+                    {locale.text("Three regroupings are silent, and no diagnostic can help with any of them, because both readings are legal code. -2 ** 2 is -4 here, so a habit brought from a language that binds the minus tighter writes a different number and nothing says so. -2.abs() and (-2).abs() are the same shape with two answers. And a double slash is a comment in every position, so total // perPage takes the left operand and loses the rest of the line — floor division is (total / perPage).floor(), a member rather than an operator. You do not get these back from the compiler. You get them back by reading the sample once.", "有三处重新分组是静默的，而且没有任何诊断帮得上忙，因为两种读法都是合法代码。这里 -2 ** 2 是 -4，所以从「负号结合更紧」的语言带过来的手感，写出的是另一个数，而且没人吭声。-2.abs() 和 (-2).abs() 形状一样，答案是两个。还有，双斜杠在任何位置都是注释，所以 total // perPage 拿到的是左操作数，这一行剩下的部分没了——向下取整的除法写作 (total / perPage).floor()，是成员，不是运算符。这几笔编译器不退给你，只能靠把样本读一遍拿回来。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: the sample is compiled on every build, so every grouping in it is a grouping the compiler accepts. That is the limit of what the gate can say — it cannot check that you meant the grouping you wrote. The four values quoted above were read off a run of this toolchain rather than off the precedence table, and velar run will answer them again for you.", "门禁：这个样本每次构建都会编译，所以里面每一种分组都是编译器接受的分组。门禁只能说到这里——它没法核对你写下的分组是不是你想要的。上面引的那四个值，是从这套工具链跑出来的结果里读的，不是从优先级表上推的；用 velar run 可以让它再答一遍。")}
+                </GateNote>
 
                 <SectionHeading id="postfix">{locale.text("Prefix and postfix", "前缀与后缀")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Level eleven holds await and try, both prefix. try reaches exactly as far as await does, over the whole postfix chain, so a failure anywhere along the chain produces one null. Level twelve is the tightest: call, member, optional member, optional call, and index.", "第十一层是 await 与 try，两者都是前缀。try 的作用范围与 await 完全相同——覆盖整条后缀链——因此链上任何位置的失败都只产生一个 null。第十二层最紧：调用、成员、可选成员、可选调用与索引。")}
+                    {locale.text("A catch block that caught more than it was written for.", "一个 catch 块，接住的东西比它当初写来接的多。")}
+                </Paragraph>
+                <CodeBlock code={catchJsCode} />
+                <Paragraph>
+                    {locale.text("The braces decide the reach, and the braces are where the statements were, not where the risk was. A template typo inside render comes back out of that function as null, which every caller reads as user not found. You spend the afternoon on the API.", "作用范围由那对花括号决定，而花括号是照着语句放的，不是照着风险放的。render 里的一个模板笔误，从这个函数出来时是 null，而每一个调用方都把它读成「没找到这个用户」。于是你花了一下午盯着 API。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Here try is a prefix on one expression, and its reach is written into the precedence table.", "在这里，try 是一个表达式的前缀，作用到哪为止写在优先级表里。")}
                 </Paragraph>
                 <CodeBlock code={postfixCode} />
+                <Paragraph>
+                    {locale.text("Level eleven holds await and try, both prefix. try reaches exactly as far as await does — across the whole postfix chain and no further — so a failure anywhere along that chain answers one null, and anything outside the chain is not covered by it. Level twelve is the tightest level: call, member, optional member, optional call, and index. When the reason matters rather than the absence, the statement form try: with catch error: is still there.", "第十一层是 await 和 try，都是前缀。try 的作用范围与 await 完全一样——覆盖整条后缀链，再远就不管了——所以链上任何一处失败，答案都是一个 null；链之外的东西，它一概不接。第十二层是最紧的一层：调用、成员、可选成员、可选调用、索引。当你要的是原因而不是「有没有」时，语句形式的 try: 配 catch error: 仍然在。")}
+                </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("Each optional link in a chain is written, so a reader can see where absence is expected instead of inferring it.", "链上的每一处可选环节都要写出来，读者因此可以直接看到哪里预期会缺失，而不必推测。")}
+                        {locale.text("Each optional link in a chain is written, so a reader can see where absence is expected instead of inferring it.", "链上每一处可选环节都写出来，读者可以直接看到哪里预期会缺，不用推。")}
                     </li>
                     <li>
-                        {locale.text("An index on a List throws when the position is out of range; get answers null when absence is the expected answer.", "List 上的索引在位置越界时抛出；当缺失本身就是预期答案时，改用 get 得到 null。")}
+                        {locale.text("An index on a List throws when the position is out of range; get answers null when absence is the expected answer.", "List 上的索引越界时抛出；如果「没有」本来就是预期的答案，就用 get，它给出 null。")}
                     </li>
                 </BulletList>
+                <Paragraph>
+                    {locale.text("The expression form throws the reason away. You get a null, and the null cannot tell you whether the network call failed or the last member in the chain did — that is the price of reaching exactly as far as await. It also hands the failure back as a value, so every use of try is followed by a ?? or a null test right there; an exception postpones itself up the stack for you, and this does not.", "表达式那种写法把原因扔了。你拿到一个 null，而这个 null 说不出到底是网络调用失败了，还是链上最后一个成员失败了——这就是「作用范围与 await 完全一样」的价钱。它还把失败当成一个值交回给你，所以每用一次 try，紧接着就得跟一个 ?? 或者一次 null 判断；异常会自己往调用栈上推，这个不会。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: the sample is compiled on every build, and it is where the claim above is visible — const attempted = try await load() is consumed as attempted ?? 0 on the next line, because the expression form answers an optional. The JavaScript block is a quotation with no gate behind it.", "门禁：这个样本每次构建都会编译；上面那句话的依据就摆在里面——const attempted = try await load() 在下一行是用 attempted ?? 0 消费掉的，因为表达式形式给出的是一个可选值。那段 JavaScript 是引文，背后没有门禁。")}
+                </GateNote>
 
-                <SectionHeading id="removed">{locale.text("What was removed", "被移除的部分")}</SectionHeading>
+                <SectionHeading id="removed">{locale.text("What was removed", "拿掉了什么")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("There is no loose equality, no implicit numeric or string coercion, no truthiness, no bitwise layer, and no increment or decrement. Each removal turns a silent conversion into either a diagnostic or a spelling that names what it does.", "没有宽松相等，没有隐式的数字或字符串转换，没有 truthiness，没有位运算层，也没有自增与自减。每一项移除都把一次静默转换变成一条诊断，或是一种自己说明了做什么的拼写。")}
+                    {locale.text("One operand, two rules, two answers.", "同一个操作数，两条规则，两个答案。")}
+                </Paragraph>
+                <CodeBlock code={coercionJsCode} />
+                <Paragraph>
+                    {locale.text("Plus concatenates when either side is text, and minus has no concatenation to fall back on, so it converts instead. Neither line is wrong by the rules. The invoice said 31.", "加号在任一边是文本时做拼接；减号没有拼接可退，于是改做转换。按规则说，两行都不算错。发票上写的是 31。")}
                 </Paragraph>
                 <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                    {locale.text("Nothing converts on its own here.", "在这里，没有什么东西会自己转换。")}
                 </Paragraph>
-                <CodeBlock code={incrementErrorCode} />
+                <CodeBlock code={removedCode} />
                 <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                    {locale.text("There is no loose equality, no implicit numeric or string conversion, no truthiness, no bitwise layer, and no increment or decrement. Each removal turns a silent conversion into either a diagnostic or a spelling that names what it does. With one equality left there is nothing to be strict against, so strict equality drops its extra sign and the three symbol pairs become words.", "没有宽松相等，没有隐式的数字或字符串转换，没有 truthiness，没有位运算层，也没有自增自减。每一项移除，都把一次静默转换换成一条诊断，或者换成一种自己说明了在做什么的写法。相等只剩一种，也就没有谁需要跟谁「严格」对比了，于是严格相等去掉了多余那个符号，三对符号也变成了词。")}
                 </Paragraph>
-                <CodeBlock code={incrementErrorOutput} />
-                <Callout title={locale.text("The removals that carry a spelling", "带有替代拼写的移除")}>
+                <Callout title={locale.text("The removals that carry a spelling", "带着替代写法的那些移除")}>
                     <Paragraph>
-                        {locale.text("Three symbol pairs became words: and, or, and not. Strict equality lost its extra sign because there is only one equality left to name. The bitwise operators are absent, and so are the compound assignments built on them; arithmetic compound assignment stays.", "三对符号变成了词：and、or、not。严格相等失去了多余的那个符号，因为剩下的相等只有一种，不需要区分。位运算符不存在，建立在其上的复合赋值同样不存在；算术复合赋值保留。")}
+                        {locale.text("and, or, and not replace the three symbol pairs. The bitwise operators are absent, and so are the compound assignments built on them; arithmetic compound assignment stays. A number joins text by being formatted, which is what the f prefix is for.", "and、or、not 顶替了那三对符号。位运算符不存在，建在它们之上的复合赋值同样不存在；算术复合赋值保留。数字要跟文本拼在一起，得先被格式化——f 前缀就是干这个的。")}
                     </Paragraph>
                 </Callout>
+                <Paragraph>
+                    {locale.text("The bitwise layer is the removal that actually takes something away. Masks, packed flags, hashes, checksums — anything that moves bits is not expressible in this language at all, and the answer is extern module or the emitted JavaScript rather than a clever workaround. If bit manipulation is genuinely your problem, this is the worse tool and the page should say so out loud. The rest of the list is charged in keystrokes: count += 1 is three characters longer than count++, every time, in every loop that has one.", "位运算层是真正拿走了东西的那一项移除。掩码、打包的标志位、哈希、校验和——凡是要动比特的，这门语言里根本写不出来；出路是 extern module 或者直接用产出的 JavaScript，不是某个聪明的绕法。如果你的问题真的是位操作，那这就是更差的工具，这一页应该把话说出口。清单上其余的，收的是打字量：count += 1 比 count++ 长三个字符，每一次都长，每一个有它的循环里都长。")} <Link
+                        to="/reference/escape-hatches"
+                        look={inlineLinkLook}
+                    >
+                        {locale.text("The escape-hatches reference documents each exit.", "逃生通道参考页记录了每一级出口。")}
+                    </Link>
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={incrementErrorCode} />
+                <CodeBlock code={incrementErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example. The sample is compiled on every build, it must keep failing, and VEL2031 is checked against the diagnostics it really produces — so this removal cannot quietly come back without the page failing to build. The coercion above it has no counter-example for the plain reason that the removal is total: there is no VelarScript spelling of \"3\" + 1 to refuse.", "门禁：受检的教学反例。样本每次构建都会编译，它必须持续失败，而 VEL2031 会与它真实产生的诊断核对——所以这项移除要是悄悄回来了，这一页就构建不过。上面那段隐式转换没有配反例，理由很简单：这项移除是彻底的，VelarScript 里根本没有 \"3\" + 1 这种写法可供拒绝。")}
+                </GateNote>
             </Prose>
             <DocsPager
                 previous={guidePrevious("/guide/language/operators")}

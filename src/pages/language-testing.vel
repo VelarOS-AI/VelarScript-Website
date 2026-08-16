@@ -1,92 +1,216 @@
-import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
-import {useLocale} from "@velarscript/site-ui"
+import {Head, Link} from "velar/web"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, GateNote, PageHeader, Paragraph, Prose, SectionHeading, SectionList, Subheading} from "@velarscript/docs-kit"
+import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
+const namedTestJsCode = `// JavaScript. What the CI log names, and what the file says.\ntest("handles edge case 3", async () => {\n  const result = await parse(fixtures[2]);\n  expect(result).toMatchSnapshot();\n});`
 const blocksCode = `import {expect} from "velar/test"\n\ndef scale(maximum: number) -> number:\n    assert maximum <= 1000000 else "The chart maximum is beyond the supported range"\n    return maximum\n\ntest "toBe compares by exact identity and value equality":\n    expect(scale(10)).toBe(10)\n    expect("Ada").toBe("Ada")\n    expect(null).toBe(null)\n\ntest "toEqual is the prelude equals, so it compares data structurally":\n    expect([1, 2, 3]).toEqual([1, 2, 3])\n    // equals uses SameValueZero at the leaves, so the undefined quotient\n    // agrees with itself exactly as equality does.\n    expect(0 / 0).toEqual(0 / 0)\n    expect(Set(["a", "b"])).toEqual(Set(["b", "a"]))\n    expect(Map([["a", 1]])).toEqual(Map([["a", 1]]))\n    expect({name: "Ada", tags: ["compiler", "web"]}).toEqual({name: "Ada", tags: ["compiler", "web"]})\n\ntest "a matcher may be named through its published parameter":\n    expect(scale(4)).toBe(expected=4)\n    expect([1]).toEqual(expected=[1])`
-const nestedErrorCode = `export def suite():\n    test "a declaration inside a function":\n        pass`
-const nestedErrorOutput = `main.vel:2:5 error VEL3019: A test is declared at module top level\n    test "a declaration inside a function":\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^`
+const nestedErrorCode = `import {expect} from "velar/test"\n\ntest "an empty basket has no lines":\n    expect(0).toBe(0)\n\n// Twenty cases over one function is twenty blocks, not a loop over fixtures.\nfor size in [1, 2, 3]:\n    test "a basket of the given size":\n        expect(size).toBe(size)`
+const nestedErrorOutput = `sample.test.vel:8:5 error VEL3019: A test is declared at module top level\n    test "a basket of the given size":\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^`
+
+const truthyJsCode = "// JavaScript. Green every night since it was written.\nexpect(response.ok).toBeTruthy();"
 const typedCode = `import {expect} from "velar/test"\n\ntest "toBeTruthy and toBeFalsy require an actual bool":\n    expect(1 < 2).toBeTruthy()\n    expect(2 < 1).toBeFalsy()\n\ntest "toContain accepts text or a List":\n    expect("advertisement").toContain("ad")\n    expect(["compiler", "web"]).toContain("web")\n\ntest "toHaveLength accepts text or a List":\n    expect("Ada").toHaveLength(3)\n    expect([1, 2, 3]).toHaveLength(3)\n    expect([1, 2, 3]).toHaveLength(length=3)\n\ntest "toMatch reads a Unicode string pattern":\n    expect("2026-08-15").toMatch(r"^\\d{4}-\\d{2}-\\d{2}$")\n    expect("owner: Ada").toMatch(expression=r"owner: \\w+")`
 const matcherErrorCode = `import {expect} from "velar/test"\n\ntest "a number does not publish the bool matchers":\n    expect(1).toBeTruthy()`
 const matcherErrorOutput = "sample.test.vel:4:5 error VEL4001: Object has no field 'toBeTruthy'\n    expect(1).toBeTruthy()\n    ^^^^^^^^^^^^^^^^^^^^"
+
+const unhandledJsCode = `// JavaScript. Every assertion passes, so the suite reports a pass.\ntest("saves the draft", async () => {\n  saveDraft(draft);            // returns a promise nobody awaits\n  expect(store.pending).toBe(1);\n});`
 const failureCode = `import {expect} from "velar/test"\n\ndef scale(maximum: number) -> number:\n    assert maximum <= 1000000 else "The chart maximum is beyond the supported range"\n    return maximum\n\nasync def loadLater(id: string) -> string:\n    return id\n\nasync def failLater():\n    throw Error("the task failed")\n\ntest "an oversized chart maximum is rejected":\n    expect(() => scale(1000001)).toThrow()\n\ntest "an out-of-range List position throws":\n    const values: List<number> = [1]\n    expect(() => values[9]).toThrow()\n\ntest "a rejected task is observed with toReject":\n    await expect(failLater()).toReject()\n\ntest "a test body is its own async frame and may await directly":\n    const loaded = await loadLater("r-1")\n    expect(loaded).toBe("r-1")`
+const detachedCode = `import {expect} from "velar/test"\n\nasync def refreshCache():\n    throw Error("the cache refresh failed")\n\ntest "the total is the sum of the line items":\n    async refreshCache()\n    expect(2 + 3).toBe(5)`
+const detachedRunTextCode = `Detached async task failed: Error: the cache refresh failed\n✗ "sample.test.vel" :: "the total is the sum of the line items"\nan unowned error was reported while this test ran\n\n0 passed, 1 failed`
+
+const waitForJsCode = `// JavaScript. A poll with a deadline, because nothing says when to look.\nawait waitFor(() => expect(screen.getByText("Saved")).toBeInTheDocument());\n// Warning: An update to SaveButton was not wrapped in act(...)`
+const seamsCode = `async def persist(title: string) -> string:\n    return title\n\nexport component SaveButton(title: string):\n    state saved = false\n\n    // pending belongs to the action, so nothing has to watch a spinner to\n    // know whether the work is still running.\n    action save(text: string):\n        await persist(text)\n        saved = true\n\n    return <button disabled={save.pending} on:click={() => save(title)}>\n        {saved ? "Saved" : "Save"}\n    </button>\n\n// tick() resolves after the pending reactive flush settles, and rejects if\n// that flush reported a failure no handler claimed.\nexport async def afterTheFlush() -> bool:\n    await tick()\n    return true`
+const seamsBrowserTestCode = `import {expect} from "velar/test"\nimport {browser} from "velar/web-test"\n\ntest "saving the draft leaves the button disabled until the work settles":\n    await browser.open("/drafts/1")\n    await browser.click("button")\n    await browser.waitForText("button", "Saved")\n    expect(await browser.attribute("button", "disabled")).toBe(null)`
+const webTestErrorCode = `import {expect} from "velar/test"\nimport {browser} from "velar/web-test"\n\ntest "the home page renders at the root route":\n    await browser.open("/")\n    expect(await browser.currentPath()).toBe("/")`
+const webTestErrorOutput = `sample.test.vel:2:23 error VEL5062: 'velar/web-test' drives the running page from the test process, so it only has a runtime under 'velar test --browser'; import it from a '*.browser.test.vel' module — rename this module, or move the browser test into one of its own — while application code reaches the page through velar/browser\nimport {browser} from "velar/web-test"\n                      ^^^^^^^^^^^^^^^^`
+
+const globJsCode = `// JavaScript. The suite still says 412 passing.\n{\n  "testMatch": ["<rootDir>/src/features/**/*.spec.js"]\n}`
 const runShellCode = "velar test\nvelar test features/chart.test.vel\nvelar test --browser chromium"
+const staleTestErrorCode = `import {expect} from "velar/test"\n\ntest "an empty basket has no lines":\n    const lines: List<string> = []\n    expect(lines.length == 0).toBeTruthy()`
+const staleTestErrorOutput = "sample.test.vel:5:12 error VEL4001: List has no member 'length'; Use 'size'\n    expect(lines.length == 0).toBeTruthy()\n           ^^^^^^^^^^^^"
 
 const sections = [
     {id: "blocks", label: "test blocks", labelZh: "test 块"},
-    {id: "matchers", label: "Which matchers a value publishes", labelZh: "一个值发布哪些匹配器"},
-    {id: "failure", label: "Failure and async", labelZh: "失败与异步"},
+    {id: "matchers", label: "Which matchers a value publishes", labelZh: "一个值给出哪些匹配器"},
+    {id: "failure", label: "Failure, async, and errors nobody owns", labelZh: "失败、异步，以及没人认领的错误"},
+    {id: "seams", label: "The seams a test needs", labelZh: "测试需要的那些接缝"},
     {id: "running", label: "Discovery and running", labelZh: "发现与运行"},
 ]
+
+const inlineLinkLook = look:
+    color = sea
 
 export component LanguageTesting:
     const locale = useLocale()
     return <main>
         <Head
             title={headTitle("/guide/language/testing", locale.isChinese())}
-            description={locale.text("How a test module is written and discovered, and which expect matchers exist for each kind of value.", "测试模块如何书写与被发现，以及每种值上存在哪些 expect 匹配器。")}
+            description={locale.text("How a test module is written and discovered, which expect matchers each kind of value publishes, what happens to an error nobody owns, and which test seams belong to the language core rather than the Web extension.", "测试模块怎么写、怎么被发现，每种值给出哪些 expect 匹配器，没人认领的错误会怎样，以及哪些测试接缝属于语言核心、哪些属于 Web 扩展。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Language / 13", "语言 / 13")}
                 title={locale.text("Testing", "测试")}
-                summary={locale.text("test blocks named as sentences, the nine matchers, and which matchers a value publishes.", "以句子命名的 test 块、九个匹配器，以及某个值发布哪些匹配器。")}
+                summary={locale.text("test blocks named as sentences, the nine matchers, the failure a passing test used to hide, and the seams the language hands you instead of making you build them.", "以句子命名的 test 块、九个匹配器、以前会被一个「通过」的测试盖住的那种失败，以及语言直接交给你、不用你自己搭的那些接缝。")}
             />
             <SectionList items={sections} />
             <Prose>
                 <SectionHeading id="blocks">{locale.text("test blocks", "test 块")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A test is a string literal and a block, declared at the top level of a test module. The string is a sentence rather than an identifier, because what a failing test needs to say is what stopped being true. Everywhere outside that shape, test is an ordinary name.", "一个测试就是一个字符串字面量加一个块，声明在测试模块的顶层。这个字符串是一句话而不是标识符，因为失败的测试需要说明的是「哪条曾经成立的事实不再成立」。在这个形状之外的任何位置，test 都是普通名字。")}
+                    {locale.text("The CI log says one test failed. Here is the test.", "CI 日志说有一个测试挂了。测试长这样。")}
+                </Paragraph>
+                <CodeBlock code={namedTestJsCode} />
+                <Paragraph>
+                    {locale.text("handles edge case 3 says nothing about what stopped being true, so the afternoon begins by reading the body to reconstruct what edge case 3 was, and continues in a snapshot file to find out what it used to produce. Both of those are archaeology. The one sentence that would have replaced them was free to write and nobody wrote it.", "handles edge case 3 什么都没说，你不知道哪条曾经成立的事实不再成立了。于是这个下午先从读函数体开始，去还原「第 3 个边界情况」到底是什么；接着再去翻快照文件，看它原本产出的是什么。这两件事都是考古。而本可以替代它们的那一句话，写下来不花什么钱，只是没人写。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("A test here is a sentence and a block.", "在这里，一个测试就是一句话加一个块。")}
                 </Paragraph>
                 <CodeBlock code={blocksCode} />
+                <Paragraph>
+                    {locale.text("The string is a sentence rather than an identifier, and the reporter quotes it verbatim, because what a failing test has to say is which fact stopped holding. Declaration is at the top level of a test module — nowhere else — and everywhere outside that shape, test is an ordinary name you can bind and pass around.", "那个字符串是一句话，不是标识符；报告器会原样引用它，因为一个失败的测试要说的，正是「哪条事实不再成立了」。声明只能在测试模块的顶层——别处不行；而在这个形状之外的任何地方，test 都是一个普通名字，可以绑定，也可以传来传去。")}
+                </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("toBe compares by exact identity and value equality; toEqual is the prelude equals, so it compares data structurally with SameValueZero at the leaves.", "toBe 按精确身份与值相等比较；toEqual 就是前奏中的 equals，按结构比较数据，并在叶子处使用 SameValueZero。")}
+                        {locale.text("toBe compares by exact identity and value equality; toEqual is the prelude equals, so it compares data structurally with SameValueZero at the leaves.", "toBe 按精确身份与值相等来比；toEqual 就是前奏里的 equals，按结构比数据，叶子处用 SameValueZero。")}
                     </li>
                     <li>
-                        {locale.text("A matcher takes named arguments like any other call, because it is an ordinary published signature rather than a macro.", "匹配器像其他调用一样接受具名实参，因为它就是一份普通的已发布签名，而不是宏。")}
+                        {locale.text("A matcher takes named arguments like any other call, because it is an ordinary published signature rather than a macro.", "匹配器和别的调用一样可以用具名实参，因为它就是一份普通的已发布签名，不是宏。")}
                     </li>
                 </BulletList>
                 <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                    {locale.text("Top level means top level, and that costs you table-driven tests. Twenty cases over one function is twenty blocks, each with its own sentence, rather than a loop over a list of fixtures. When the cases really are the same test with different data, you write the loop inside one block and lose the per-case name in the report — which is the same trade the sentence rule was protecting you from, made deliberately this time.", "顶层就是顶层，代价是没有表驱动测试。同一个函数的二十个用例，就是二十个块，每个块自己一句话，而不是在一份 fixture 列表上跑一圈。如果这些用例确实只是「同一个测试换数据」，那就把循环写进一个块里，代价是报告里没有逐个用例的名字了——这正是「一句话」那条规则原本在替你挡的那笔交换，只是这一次是你自己有意做的。")}
                 </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
                 <CodeBlock code={nestedErrorCode} />
-                <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </Paragraph>
                 <CodeBlock code={nestedErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example. This site's build compiles the sample as a test module and fails if it ever stops producing a diagnostic, and it verifies that VEL3019 is a code the sample really produces.", "门禁：受检的教学反例。本站构建会把这个样本当作测试模块编译，一旦它不再报错就让构建失败；并且会核对 VEL3019 确实由这个样本产生。")}
+                </GateNote>
 
                 <SectionHeading id="matchers">
-                    {locale.text("Which matchers a value publishes", "一个值发布哪些匹配器")}
+                    {locale.text("Which matchers a value publishes", "一个值给出哪些匹配器")}
                 </SectionHeading>
                 <Paragraph>
-                    {locale.text("There are nine matchers, and which ones exist depends on the type of the value handed to expect. Two are always there; the bool pair requires an actual bool, the containment pair takes text or a List, the pattern matcher takes text, and the two failure matchers take a callable and a promise. A matcher that does not apply is a diagnostic rather than a comparison that quietly passes.", "匹配器共有九个，哪些存在取决于交给 expect 的那个值的类型。有两个始终存在；bool 对要求真正的 bool，包含对接受文本或 List，模式匹配器接受文本，两个失败匹配器分别接受可调用值与 promise。不适用的匹配器得到的是一条诊断，而不是一次静默通过的比较。")}
+                    {locale.text("One assertion, from a suite that has been green every night for a year.", "一条断言，来自一个一年来夜夜是绿的测试套件。")}
+                </Paragraph>
+                <CodeBlock code={truthyJsCode} />
+                <Paragraph>
+                    {locale.text("response.ok is the four characters true, because that field arrives from the API as text. A non-empty string is truthy, so this line passes. It would also pass if the field were the five characters false. The assertion has never once checked the thing it is named after, and the way you find that out is a production incident that the suite said could not happen.", "response.ok 是四个字符 true——这个字段从接口过来的时候就是文本。非空字符串是 truthy，所以这一行通过了。就算那个字段是五个字符 false，它照样通过。这条断言从来没有检查过它名字里说的那件事；而你知道这一点的方式，是一次生产事故——套件曾说这种事不会发生。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Here the matchers a value publishes depend on its type.", "在这里，一个值给出哪些匹配器，取决于它的类型。")}
                 </Paragraph>
                 <CodeBlock code={typedCode} />
                 <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                    {locale.text("There are nine. Two are always there; the bool pair requires an actual bool, the containment pair takes text or a List, the pattern matcher takes text, and the two failure matchers take a callable and a promise. Handing a number to a bool matcher is not a comparison that quietly passes — it is a diagnostic, and it arrives from velar check rather than from a red run six months later.", "一共九个。有两个永远都在；bool 那一对要求真正的 bool，包含那一对接受文本或 List，模式匹配器接受文本，两个失败匹配器分别接受可调用值和 promise。把一个数字交给 bool 匹配器，不会变成一次静默通过的比较——它是一条诊断，而且来自 velar check，不是半年后某一次跑红。")}
                 </Paragraph>
+                <Paragraph>
+                    {locale.text("Nine is the whole vocabulary, and there is no tenth. No approximate-number matcher, no partial-object matcher, no snapshot matcher, and no way to register one of your own — a matcher the value does not publish is an unknown field, whether you invented it or expected it. So a comparison this list does not cover is written as ordinary code: compute the thing you mean, and assert on the result with toBe or toEqual. That is more words, and it is words a reader can follow without knowing your suite's private helpers.", "九个就是全部词汇，没有第十个。没有近似数值的匹配器，没有部分对象的匹配器，没有快照匹配器，也没有办法注册一个自己的——值没有给出的匹配器就是一个不存在的字段，不管那是你现造的还是你以为有的。所以这份清单覆盖不到的比较，就用普通代码写：把你真正想要的东西算出来，再用 toBe 或 toEqual 对结果断言。这样字更多，但读的人不必先认识你这套测试里的私有帮手。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
                 <CodeBlock code={matcherErrorCode} />
-                <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </Paragraph>
                 <CodeBlock code={matcherErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, held to the same rule — the sample is compiled as a test module on every build and VEL4001 is checked against the diagnostics it really produces.", "门禁：同样是受检的教学反例——每次构建都把这个样本当测试模块编译，并核对 VEL4001 确实出现在它真实产生的诊断里。")}
+                </GateNote>
 
-                <SectionHeading id="failure">{locale.text("Failure and async", "失败与异步")}</SectionHeading>
+                <SectionHeading id="failure">
+                    {locale.text("Failure, async, and errors nobody owns", "失败、异步，以及没人认领的错误")}
+                </SectionHeading>
                 <Paragraph>
-                    {locale.text("An expected throw is written by handing a callable to the throw matcher, and an expected rejection by handing over the promise. A test body is its own async frame, so it may await directly without a wrapper. An unhandled error anywhere in the test process fails the test.", "预期的抛出，通过把一个可调用值交给抛出匹配器来书写；预期的拒绝，则把 promise 交出去。测试体本身就是一个异步帧，因此可以直接 await，不需要包装。测试进程中任何位置未被处理的错误都会让该测试失败。")}
+                    {locale.text("A test with one line missing from it.", "一个测试，少了一行。")}
+                </Paragraph>
+                <CodeBlock code={unhandledJsCode} />
+                <Paragraph>
+                    {locale.text("saveDraft rejects two ticks later, after the assertion has already passed. Node writes an unhandled rejection warning into the same output as everything else, the runner reports one passing test, and the code path that is actually broken is the one this test was written to cover. The suite is not merely failing to catch the bug — it is reporting that the bug is not there.", "saveDraft 在两个 tick 之后被拒绝，那时断言早已通过。Node 把一条未处理拒绝的警告写进和其他东西同一份输出里，运行器报告一个测试通过，而真正坏掉的那条代码路径，正是这个测试当初要覆盖的那一条。这个套件不只是没抓到 bug——它在报告说 bug 不存在。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("An expected failure is written by handing it over, and an unexpected one has nowhere to hide.", "预期中的失败，靠把它交出去来书写；预期之外的失败，无处可藏。")}
                 </Paragraph>
                 <CodeBlock code={failureCode} />
+                <Paragraph>
+                    {locale.text("A throw you expect is a callable handed to the throw matcher; a rejection you expect is the promise itself. A test body is its own async frame, so it may await directly with no wrapper. And an error nobody owns — a detached task that failed while nothing was watching — fails the test that was running when it was reported, even if every assertion in that test passed.", "预期中的抛出，是把一个可调用值交给抛出匹配器；预期中的拒绝，交出去的就是那个 promise 本身。测试体本身就是一个异步帧，所以可以直接 await，不用包一层。而没人认领的错误——一个脱离流程去跑、失败时没人看着的任务——会让「它被报告时正在跑的那个测试」失败，哪怕那个测试里每一条断言都通过了。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Which is a rule with a sharp edge, and it will cut you at least once. A task you detached on purpose and genuinely do not care about — a metrics ping, a cache warm — fails your test when it fails, and there is no per-test opt-out to switch off. The way through is to own it: await it, or catch inside it, and say in the code that its failure is acceptable. That is more work than ignoring a warning, and it is the same work, moved to where somebody reads it.", "这条规则有锋利的边，你至少会被划一次。你有意让它脱离流程去跑、而且确实不在乎的任务——一次埋点上报、一次缓存预热——一旦失败，就会让你的测试失败，而且没有「这个测试单独关掉」的开关。出路是认领它：要么 await，要么在它内部 catch，并在代码里写明「它失败没关系」。这比忽略一条警告要费事，但费的是同一份事，只是挪到了有人会读的地方。")}
+                </Paragraph>
+                <CodeBlock code={detachedCode} />
+                <CodeBlock code={detachedRunTextCode} />
+                <GateNote>
+                    {locale.text("Gate: this site's build compiles the test module above on every build, so it is at least a real test. The output beside it is an excerpt of one velar test run on toolchain 0.10.0 rather than a compared artifact — the stack frames are trimmed for the page. Read the verdict line: every assertion in that test passed.", "门禁：本站每次构建都会编译上面这个测试模块，所以它至少是一个真的测试。旁边的输出是 0.10.0 工具链上一次 velar test 的摘录，不是逐字比对的产物——堆栈帧为了排版被截掉了。读一下那条判定行：这个测试里的每一条断言都通过了。")}
+                </GateNote>
+
+                <SectionHeading id="seams">{locale.text("The seams a test needs", "测试需要的那些接缝")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("Two lines that appear in every component test in every framework that leaves this problem to you.", "两行代码，凡是把这个问题留给你的框架，它们的组件测试里都有。")}
+                </Paragraph>
+                <CodeBlock code={waitForJsCode} />
+                <Paragraph>
+                    {locale.text("The first is a poll with a deadline, written because nothing tells the test when the render settled: too short and it flakes on a slow machine, too long and a genuine failure costs five seconds each time. The second is a warning that says the test did something the framework cannot account for. Everybody has read that warning. Almost nobody has fixed one.", "第一行是一个带截止时间的轮询，之所以要写，是因为没有任何东西告诉测试「渲染什么时候结束了」：等得短，慢机器上就飘；等得长，一次真正的失败每次都要多花五秒。第二行是一条警告，说这个测试做了框架算不清楚的事。这条警告谁都读过，几乎没人修过。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Those two problems have owners here, and the owner is not your test suite.", "这两个问题在这里都有主，而且这个主不是你的测试套件。")}
+                </Paragraph>
+                <CodeBlock code={seamsCode} />
+                <Paragraph>
+                    {locale.text("An action publishes pending itself, so nothing has to observe a spinner to learn whether the work is still running. tick() answers a promise that resolves after the pending reactive flush settles, and rejects if that flush reported a failure no handler claimed, so an awaited tick() cannot step over a broken update. And velar test --browser fails a test on any page error or any error or warning console message, so a warning is one failure rather than a habit.", "action 自己发布 pending，所以没人需要靠观察一个转圈图标来判断工作是否还在跑。tick() 给出一个 promise，它在待处理的响应式刷新结束后解决；如果那次刷新报告了没有处理者认领的失败，它就拒绝——所以 await 过的 tick() 不可能跨过一次坏掉的更新。而 velar test --browser 会因为任何页面错误、任何 error 或 warning 级别的控制台消息而判定测试失败，于是一条警告就是一次失败，不会变成一种习惯。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Say plainly where those three live. All of them are the Web extension's, not the language core's. In a Core project — a CLI, a library, a Node service — tick is an unknown name and action is not a declaration keyword, and there is no page for velar test to watch a console on. The chapter you are reading covers what a Core project gets: test, expect, discovery by file name, and the unowned-error rule from the section above.", "把这三样东西的归属说清楚。它们全都属于 Web 扩展，不属于语言核心。在一个 Core 项目里——一个 CLI、一个库、一个 Node 服务——tick 是一个不认识的名字，action 也不是声明关键字，而且没有页面可供 velar test 去盯一个控制台。你正在读的这一章讲的是 Core 项目能拿到的那些：test、expect、按文件名发现，以及上一节那条「没人认领的错误」的规则。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The browser side is a separate module kind with a separate command.", "浏览器那一侧，是另一种模块，配另一条命令。")}
+                </Paragraph>
+                <CodeBlock code={seamsBrowserTestCode} />
+                <Paragraph>
+                    {locale.text("Two costs come with the strictness. Warning-as-failure has no selective mute, so a third-party script that warns once on load takes the whole suite down until you remove it or stop loading it in tests. And a browser test body runs in the test process rather than in the page, so mount, JSX, document, and velar/storage are unavailable there — a test cannot reach in and call a component; it drives the page through the controller's own surface, which is deliberately compact rather than an escape hatch to the DOM.", "这份严格带来两个代价。其一，「警告即失败」没有选择性静音，所以一个第三方脚本只要在加载时警告一次，整个套件就得停摆，除非你把它去掉，或者不在测试里加载它。其二，浏览器测试体跑在测试进程里，不在页面里，所以那里没有 mount、没有 JSX、没有 document、也没有 velar/storage——测试不能伸进去调用一个组件，它是通过控制器自己的那套表面来驱动页面的；那套表面是刻意做小的，不是通往 DOM 的逃生口。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={webTestErrorCode} />
+                <CodeBlock code={webTestErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example — compiled as a plain test module on every build, with VEL5062 checked against the diagnostics it really produces. The boundary is enforced at the import line rather than left to fail at the first call.", "门禁：受检的教学反例——每次构建都把它当普通测试模块编译，并核对 VEL5062 确实出现在它真实产生的诊断里。这条边界在导入那一行就被拦住，不会留到第一次调用时才失败。")}
+                </GateNote>
+                <Paragraph>
+                    {locale.text("Everything the browser controller can do has a chapter of its own.", "浏览器控制器能做的每一件事，都有自己的一章。")} <Link
+                        to="/guide/web/testing"
+                        look={inlineLinkLook}
+                    >
+                        {locale.text("Testing web applications", "测试 Web 应用")}
+                    </Link>
+                </Paragraph>
 
                 <SectionHeading id="running">{locale.text("Discovery and running", "发现与运行")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A test module is discovered by its name and needs no export and no registration. velar test runs the Node modules; the browser flag runs the browser modules, which have their own suffix, their own controller, and their own chapter in the Web extension guide.", "测试模块由文件名被发现，不需要 export，也不需要注册。velar test 运行 Node 侧的模块；带上浏览器标志则运行浏览器侧的模块——它们有自己的后缀、自己的控制器，以及 Web 扩展指南中自己的一章。")}
+                    {locale.text("One line of configuration, and the reason a suite can be a lie.", "一行配置，以及一个测试套件为什么可以是假的。")}
+                </Paragraph>
+                <CodeBlock code={globJsCode} />
+                <Paragraph>
+                    {locale.text("Somebody moved three test files into a directory the glob does not reach. The run still says 412 passing, because 412 is what ran. Nothing failed. Nothing reported that anything was missing, either, and a number that only ever goes up is not a number anybody audits.", "有人把三个测试文件挪进了一个 glob 够不着的目录。运行结果照样是 412 通过，因为跑的确实是 412 个。没有东西失败。也没有东西报告说少了什么；而一个只会往上涨的数字，没人会去核。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Discovery is the file name, and there is no configuration to get out of step with the tree.", "发现的依据是文件名，也没有哪份配置会和目录树走散。")}
                 </Paragraph>
                 <CodeBlock code={runShellCode} />
-                <Callout title={locale.text("Checked twice, on purpose", "刻意地被检查两次")}>
+                <Paragraph>
+                    {locale.text("A test module is found by its name, needs no export and no registration, and velar test runs the Node modules. The browser flag runs the browser modules, which have their own suffix and their own controller. And velar check does not only walk the entry graph: test modules get a second pass of their own, so a test that no longer compiles is a failure of the check rather than a surprise on the day somebody finally runs it.", "测试模块靠名字被找到，不需要 export，也不需要注册；velar test 跑 Node 那一侧的模块。带上浏览器标志则跑浏览器那一侧的模块——它们有自己的后缀和自己的控制器。而 velar check 不只遍历入口图：测试模块另有属于自己的一趟检查，所以一个不再能编译的测试是 check 的失败，而不是「终于有人跑它的那天」才冒出来的意外。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("What you give up is the ability to park a test. There is no skip and no focus — no way to mark one as known-broken and move on, and no way to run only the one you are working on from inside the file. A test you cannot fix today is a test you fix, delete, or leave red. On a bad week that is the wrong tool, and it is a deliberate one: a suite with skips in it reports a number that means less every time somebody adds another.", "你放弃的是「把一个测试先搁着」的能力。没有 skip，也没有 focus——不能标一个「已知坏了」然后往下走，也不能在文件里指定只跑你正在改的那一个。今天修不好的测试，要么修，要么删，要么让它红着。倒霉的那一周里，这不是趁手的工具；而它就是有意做成这样的：一个带着 skip 的套件，报出来的数字每多一个 skip 就更没意义一分。")}
+                </Paragraph>
+                <Subheading>
+                    {locale.text("What velar check catches before anything runs", "什么在开跑之前就被 velar check 抓住")}
+                </Subheading>
+                <CodeBlock code={staleTestErrorCode} />
+                <CodeBlock code={staleTestErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example — the module is written as a test module beside a project that does not import it, and velar check reports it anyway. The build compiles it every time and verifies that VEL4001 is a code it really produces, so the second pass cannot quietly stop happening.", "门禁：受检的教学反例——这个模块作为测试模块，放在一个并不导入它的项目旁边，velar check 照样把它报了出来。构建每次都会编译它，并核对 VEL4001 确实由它产生，所以那趟额外的检查不可能悄悄消失。")}
+                </GateNote>
+                <Callout title={locale.text("Checked twice, on purpose", "刻意检查两次")}>
                     <Paragraph>
-                        {locale.text("velar check walks the entry graph, and test modules get their own second pass. A test that no longer compiles is therefore a failure of the check, not a surprise at run time — which matters most for the tests nobody has run in a while.", "velar check 遍历入口图，测试模块随后获得属于自己的第二趟检查。因此，不再能编译的测试是 check 的失败，而不是运行时的意外——这对那些许久没人跑过的测试尤其重要。")}
+                        {locale.text("The second pass matters most for the tests nobody has run in a while — the ones covering the module you have not touched since spring. Those are exactly the tests that rot without anybody noticing, and exactly the ones you want to be able to trust the day you finally change that module.", "第二趟检查最要紧的地方，是那些很久没人跑过的测试——覆盖着某个你从春天起就没碰过的模块的那些。恰恰是它们会在无人察觉中烂掉；也恰恰是它们，在你终于要改那个模块的那天，你希望自己信得过。")}
                     </Paragraph>
                 </Callout>
             </Prose>

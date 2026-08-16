@@ -208,7 +208,7 @@ export component ReferenceWeb:
 
                 <SectionHeading id="config">{locale.text("velar/config", "velar/config")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Only velar.json's web.publicConfig is read. It must be a JSON object, is limited to 64 KiB, rejects non-finite and non-JSON values and the reserved keys __proto__, prototype, and constructor, and is recursively frozen. It is baked into the content-hashed application entry at build time, so changing it changes the build identity. VelarScript never implicitly reads .env, process.env, server configuration, or secrets, and this boundary must contain public values only.", "只读取 velar.json 的 web.publicConfig。它必须是 JSON 对象，限制为 64 KiB，拒绝非有限值、非 JSON 值以及 __proto__、prototype、constructor 这三个保留键，并被递归冻结。它在构建时被编入内容哈希的应用入口，因此修改它就会改变构建标识。VelarScript 绝不隐式读取 .env、process.env、服务器配置或密钥，这条边界只能承载公开值。")}
+                    {locale.text("Only velar.json's web.publicConfig is read. It must be a JSON object, is limited to 64 KiB, rejects non-finite and non-JSON values and the reserved keys __proto__, prototype, and constructor, and is recursively frozen. It is baked into the content-hashed application entry at build time, so changing it changes the build identity. VelarScript never implicitly reads .env, process.env, server configuration, or secrets, and this boundary must contain public values only.", "只读取 velar.json 的 web.publicConfig。它必须是 JSON 对象，限制为 64 KiB，拒绝非有限值、非 JSON 值以及 __proto__、prototype、constructor 这三个保留键，并被递归冻结。它在构建时被编入内容哈希的应用入口，因此修改它就会改变构建标识。VelarScript 绝不隐式读取 .env、process.env、服务器配置或密钥，这条边界只放得下公开值。")}
                 </Paragraph>
                 <MemberTable
                     rows={configMembers}
@@ -327,7 +327,7 @@ export component ReferenceWeb:
                 />
                 <Callout title={locale.text("A green browser suite means no test printed an error anywhere", "浏览器套件全绿，意味着没有任何测试在任何地方打印过错误")}>
                     <Paragraph>
-                        {locale.text("Any unowned error during a test fails that test: a page error, an error or warning console message, an uncaught exception, an unhandled rejection, or a detached-task failure report. The runner itself keeps running — the failure belongs to the test, never to the process — and the exit code reports it.", "测试期间任何无主的错误都会让该测试失败：页面错误、error 或 warning 级别的控制台消息、未捕获的异常、未处理的拒绝，或分离任务的失败报告。运行器本身继续运行——失败属于测试，绝不属于进程——并由退出码报告出来。")}
+                        {locale.text("Any unowned error during a test fails that test: a page error, an error or warning console message, an uncaught exception, an unhandled rejection, or a detached-task failure report. The runner itself keeps running — the failure belongs to the test, never to the process — and the exit code reports it.", "测试期间任何没人管的错误都会让该测试失败：页面错误、error 或 warning 级别的控制台消息、未捕获的异常、未处理的拒绝，或分离任务的失败报告。运行器本身继续运行——失败属于测试，绝不属于进程——并由退出码报告出来。")}
                     </Paragraph>
                 </Callout>
                 <Paragraph>

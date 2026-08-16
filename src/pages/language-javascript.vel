@@ -1,102 +1,211 @@
-import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
-import {useLocale} from "@velarscript/site-ui"
+import {Head, Link} from "velar/web"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, GateNote, PageHeader, Paragraph, Prose, SectionHeading, SectionList, Subheading} from "@velarscript/docs-kit"
+import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
+const staleTypesTsCode = `// TypeScript, against a @types package three versions behind the package.\nimport { formatDistance } from "date-utils";\n\nexport function label(start: Date, end: Date): string {\n  return formatDistance(start, end);\n}`
 const externCode = `// A manual adapter describes only runtime exports and never executes\n// declarations. Extern functions and getters have no body to infer from, so\n// they always declare their result.\nextern module "node:crypto":\n    export const webcrypto: unknown\n\n    // A default-export-only package is declared with the export name default;\n    // default is not a VelarScript keyword, so it names the extern export\n    // directly.\n    export const default: unknown\n\n    export def randomUUID() -> string\n    export def randomInt(maximum: number) -> number\n    export def timingSafeEqual(left: unknown, right: unknown) -> bool\n\n    export class Hash:\n        def update(data: string) -> Hash\n        def digest(encoding: string) -> string\n        def copy() -> Hash\n\n    export def createHash(algorithm: string) -> Hash`
+const inheritErrorCode = `extern module "node:crypto":\n    export class Hash:\n        def digest(encoding: string) -> string\n\nimport js {Hash} from "node:crypto"\n\nclass TracedHash extends Hash:\n    def trace() -> string:\n        return "traced"`
+const inheritErrorOutput = "main.vel:7:26 error VEL4001: Extern class 'Hash' cannot be extended; wrap the instance by composition — hold it in a field and expose the behavior as methods or functions\nclass TracedHash extends Hash:\n                         ^^^^"
+
+const interopJsCode = `// JavaScript. This package's build publishes no named exports, so the\n// binding is undefined — and nothing on this line says so.\nimport { readConfig } from "legacy-config";\n\nexport function start(options) {\n  queueMicrotask(() => applyConfig(readConfig(options)));\n}`
 const bridgeCode = `extern module "node:crypto":\n    export const webcrypto: unknown\n    export const default: unknown\n\n    export def randomUUID() -> string\n    export def timingSafeEqual(left: unknown, right: unknown) -> bool\n\n    export class Hash:\n        def update(data: string) -> Hash\n        def digest(encoding: string) -> string\n\n    export def createHash(algorithm: string) -> Hash\n\n// import js brings a declared name across the checked bridge. The emitted\n// bridge verifies at module initialization that each imported name exists on\n// the JavaScript module.\nimport js {createHash, randomUUID, webcrypto} from "node:crypto"\nimport js {timingSafeEqual as constantTimeEqual} from "node:crypto"\nimport js * as crypto from "node:crypto"\n\n// The bare form is the canonical default import, and the explicit spelling\n// says the same thing. Both carry another local name, because JavaScript\n// reserves the word.\nimport js nodeCrypto from "node:crypto"\nimport js {default as explicitDefault} from "node:crypto"\n\nexport def digest(text: string) -> string:\n    return createHash("sha256").update(text).digest("hex")\n\nexport def identifier() -> string:\n    return randomUUID()\n\nexport def sameLength(left: unknown, right: unknown) -> bool:\n    return constantTimeEqual(left, right)\n\nexport def throughNamespace(text: string) -> string:\n    // A namespace import of an extern module reads the same declared contract.\n    return crypto.createHash("sha512").update(text).digest("hex")\n\n// A declared const export has no VelarScript initializer, and an unknown must\n// be validated before use.\ntype CryptoSubtle:\n    subtle: unknown\n\nexport def readDeclaredConstant() -> bool:\n    return webcrypto is CryptoSubtle\n\nexport def readDefaultExport() -> bool:\n    return nodeCrypto == null and explicitDefault == null`
 const undeclaredErrorCode = `extern module "node:crypto":\n    export def randomUUID() -> string\n\nimport js {randomUUID, createHash} from "node:crypto"\n\nexport def identifier() -> string:\n    return randomUUID()`
 const undeclaredErrorOutput = `main.vel:4:24 error VEL4001: Extern module 'node:crypto' does not declare 'createHash'; add it to the extern block, or fix the imported name\nimport js {randomUUID, createHash} from "node:crypto"\n                       ^^^^^^^^^^`
+const mismatchNodeCode = `// The package renamed this export two majors ago. The extern block still\n// declares the old name, and the call below still reads correct.\nextern module "node:crypto":\n    export def randomUuid() -> string\n\nimport js {randomUuid} from "node:crypto"\n\nprint("starting up")\nprint(randomUuid())`
+const mismatchRunTextCode = "TypeError: Extern module 'node:crypto' declares 'randomUuid', but the JavaScript module has no such export; prototype methods and instance members belong on a declared class or singleton const, not module exports"
+
+const anyTsCode = `// TypeScript. One any at the edge of the program.\nconst settings = JSON.parse(localStorage.getItem("settings") ?? "{}");\nsetTimeout(refresh, settings.refreshMs);`
 const unsafeCode = `// import js unsafe admits a value as any: no declaration, no promise.\nimport js unsafe {createHash as rawCreateHash} from "node:crypto"\nimport js unsafe {webcrypto as rawWebcrypto} from "node:crypto"\nimport js unsafe rawDefault from "node:crypto"\n\n// Operations on any are raw JavaScript: member reads and writes, calls,\n// arithmetic, indexing, match, and is all pass through with no adaptation, and\n// the undefined-to-null normalization does not happen.\nexport def rawOperations() -> string:\n    const hasher = rawCreateHash("sha256")\n    const updated = hasher.update("text")\n    const digested = updated.digest("hex")\n    const indexed = rawWebcrypto["subtle"]\n    const fromDefault = rawDefault.randomUUID()\n    return f"{digested is string} {indexed == null} {fromDefault is string}"\n\n// any is assignable to every type with no runtime check, so a leaked any is\n// laundered into a type that then behaves like a lie.\nexport def launderedValue() -> string:\n    const believed: string = rawCreateHash("sha256")\n    return believed\n\n// Assigning an any into a checked optional normalizes it, which is one more\n// reason the annotation belongs at the boundary.\nexport def normalizedAtTheBoundary() -> bool:\n    const value: string? = rawWebcrypto\n    return value == null`
+
+const rowJsCode = `// JavaScript. A row from the database driver, on its way to a template.\nconst row = await db.get("select id, name, plan from accounts where id = ?", id);\nrender(row.plan.toUpperCase());`
 const validateCode = `type Config:\n    retries: number\n\n// The import site is the only correctness boundary: validate at the edge and\n// let only checked values inward.\nexport def validatedAtTheEdge(candidate: unknown) -> number:\n    const config = Config.parse(candidate)\n    return config.retries\n\n// unknown is the ordinary spelling for unvalidated dynamic input; any is\n// reserved for explicit unsafe JavaScript declarations.\nexport def validatesUnknown(value: unknown) -> string:\n    if value is Config:\n        return str(value.retries)\n    if value is string:\n        return value\n    return "unusable"`
-const inheritErrorCode = `extern module "node:crypto":\n    export class Hash:\n        def digest(encoding: string) -> string\n\nimport js {Hash} from "node:crypto"\n\nclass TracedHash extends Hash:\n    def trace() -> string:\n        return "traced"`
-const inheritErrorOutput = "main.vel:7:26 error VEL4001: Extern class 'Hash' cannot be extended; wrap the instance by composition — hold it in a field and expose the behavior as methods or functions\nclass TracedHash extends Hash:\n                         ^^^^"
+const unknownErrorCode = "type Profile:\n    name: string\n\nexport def load(response: unknown) -> Profile:\n    const profile: Profile = response\n    return profile"
+const unknownErrorOutput = "main.vel:5:30 error VEL4001: Cannot assign unknown to Profile\n    const profile: Profile = response\n                             ^^^^^^^^"
+
 const semanticsCode = `class Session:\n    let active: bool = true\n\n    constructor(const id: string):\n        pass\n\n    def close():\n        self.active = false\n\nconst session = Session("s-1")\n\n// Objects and class instances are references, and reading a method as a value\n// evaluates the receiver once and binds it at the reference site.\nconst closeSession = session.close\n\n// A field read is a compiler-injected guarded read rather than a bare property\n// access, which is why a field read in a hot loop is worth binding once.\nexport def hotLoop(count: number) -> number:\n    const active = session.active\n    let seen = 0\n    for _ in range(count):\n        if active:\n            seen += 1\n    return seen\n\n// Every expression typed as optional, null, or unknown translates the host's\n// absent value to null by its checked type alone.\nexport async def normalizedResult() -> bool:\n    const value: string? = null\n    return value == null`
 
 const sections = [
     {id: "extern", label: "extern module", labelZh: "extern module"},
     {id: "bridge", label: "import js", labelZh: "import js"},
     {id: "unsafe", label: "import js unsafe", labelZh: "import js unsafe"},
-    {id: "boundary", label: "Validate at the edge", labelZh: "在边界处验证"},
-    {id: "semantics", label: "What the emitted module keeps", labelZh: "生成模块保留了什么"},
+    {id: "boundary", label: "Validate at the edge", labelZh: "在边界上验证"},
+    {id: "semantics", label: "The last exit", labelZh: "最后一级出口"},
 ]
+
+const inlineLinkLook = look:
+    color = sea
 
 export component LanguageJavaScript:
     const locale = useLocale()
     return <main>
         <Head
             title={headTitle("/guide/language/javascript", locale.isChinese())}
-            description={locale.text("The three spellings that reach JavaScript, the checks each one keeps, and the cost of the unchecked one.", "三种触达 JavaScript 的拼写、各自保留了哪些检查，以及不受检那一种的代价。")}
+            description={locale.text("The ladder out of VelarScript and into JavaScript — extern module, import js, import js unsafe, and the emitted output — with the check each rung keeps and the cost of the one that keeps none.", "从 VelarScript 走向 JavaScript 的那道阶梯——extern module、import js、import js unsafe，以及产出的代码——每一级保留了什么检查，以及什么都不保留的那一级要付什么代价。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Language / 12", "语言 / 12")}
                 title={locale.text("The JavaScript boundary", "JavaScript 边界")}
-                summary={locale.text("extern module, import js, import js unsafe, and what any actually means.", "extern module、import js、import js unsafe，以及 any 到底意味着什么。")}
+                summary={locale.text("Four rungs down to raw JavaScript, in order: a declared adapter, a checked bridge, an unchecked one, and the emitted output you can take and leave with.", "通往裸 JavaScript 的四级台阶，按顺序：一份声明出来的适配器、一道受检的桥、一道不受检的桥，以及那份你可以带走的产物。")}
             />
             <SectionList items={sections} />
             <Prose>
                 <SectionHeading id="extern">{locale.text("extern module", "extern module")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("An extern block is a manual adapter: it describes a JavaScript module's runtime exports and never executes a declaration. Functions and getters declared there have no body to infer from, so each writes its result. A package that exports only a default is declared under the export name default, which is not a VelarScript keyword and so names the extern export directly.", "extern 块是一份手工适配器：它描述某个 JavaScript 模块的运行时导出，绝不执行声明。在其中声明的函数与取值器没有函数体可供推断，因此各自写出结果。只导出默认值的包以导出名 default 声明——它不是 VelarScript 的关键字，因此可以直接命名这个 extern 导出。")}
+                    {locale.text("Five lines from a file that compiles.", "五行代码，来自一个编译得过的文件。")}
+                </Paragraph>
+                <CodeBlock code={staleTypesTsCode} />
+                <Paragraph>
+                    {locale.text("formatDistance was renamed in the package's version 4. The @types package has not caught up, so TypeScript is satisfied, and at run time the import binds undefined and the call throws inside a render. The type declaration was a promise made by a third party about somebody else's code, and nothing in the build ever compared the two.", "formatDistance 在包的第 4 个大版本里改名了。@types 还没跟上，所以 TypeScript 很满意；到了运行时，那个导入绑到了 undefined，调用在一次渲染里抛错。那份类型声明是第三方就别人的代码许下的承诺，而整个构建过程里，从没有人把两边对过。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("An extern block is that same declaration, except that it is yours and it sits in your source tree.", "extern 块就是同一份声明，区别在于它是你的，而且它就在你的代码树里。")}
                 </Paragraph>
                 <CodeBlock code={externCode} />
+                <Paragraph>
+                    {locale.text("It is a manual adapter: it describes a JavaScript module's runtime exports and never executes a declaration. Functions and getters declared there have no body to infer from, so each writes its result. A package that exports only a default is declared under the export name default, which is not a VelarScript keyword and so names the extern export directly.", "它是一份手工适配器：描述某个 JavaScript 模块的运行时导出，绝不执行任何声明。写在里面的函数和取值器没有函数体可供推断，所以各自写出结果。只导出默认值的包，用导出名 default 来声明——default 不是 VelarScript 的关键字，所以它直接就是那个 extern 导出的名字。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("You write it by hand, and it can be wrong. The next section is about what the toolchain does check; what it does not check is the part you probably wanted checked, because nothing here reads the package's source. A signature you got wrong is a signature the compiler will now enforce against your own code, confidently, all the way to the call. And an extern class is a description rather than a class you own: you can hold one and call its methods, and you cannot extend it.", "这份声明是你手写的，它可能是错的。下一节讲工具链确实会检查的东西；它不检查的那部分，恰恰是你最想被检查的那部分——因为这里没有任何环节会去读那个包的源码。签名要是写错了，编译器会拿着这个错的签名，理直气壮地检查你自己的代码，一路查到调用点。另外，extern 类是一份描述，不是你拥有的类：你可以持有它、调它的方法，但不能继承它。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={inheritErrorCode} />
+                <CodeBlock code={inheritErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example. This site's build compiles the sample and fails if it ever stops producing a diagnostic, and it verifies that VEL4001 is a code the sample really produces. The message names composition, so the refusal comes with the shape of the replacement.", "门禁：受检的教学反例。本站构建会编译这个样本，一旦它不再报错就让构建失败；并且会核对 VEL4001 确实由这个样本产生。这条消息点名了组合的写法，所以拒绝的同时也给出了替代方案的形状。")}
+                </GateNote>
 
                 <SectionHeading id="bridge">{locale.text("import js", "import js")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("import js brings a declared name across the checked bridge, and the emitted bridge verifies at module initialization that each imported name really exists on the JavaScript module. A package that renamed an export therefore fails at load with the name it could not find, rather than as an absent value somewhere later.", "import js 让一个已声明的名字跨过受检桥接，生成的桥接会在模块初始化时验证每个导入名确实存在于该 JavaScript 模块上。因此，改过导出名的包会在加载时以「找不到这个名字」失败，而不是稍后在别处表现为一个缺失的值。")}
+                    {locale.text("Here is the same class of failure with the timestamp moved.", "同一类失败，只是发生的时刻挪了位置。")}
+                </Paragraph>
+                <CodeBlock code={interopJsCode} />
+                <Paragraph>
+                    {locale.text("The import binds undefined and the module loads happily. What you get later is readConfig is not a function, on a microtask, in a stack that begins inside the queue. The line that was wrong is the import, and the import is not in the trace — so the afternoon goes to the callback, which is innocent.", "那个导入绑到了 undefined，模块照样开开心心加载完了。后来你拿到的是 readConfig is not a function，发生在一个微任务里，堆栈从队列内部开始。真正写错的是那行导入，而导入不在堆栈里——于是一下午都花在那个回调上，而它是无辜的。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("import js brings a declared name across a bridge that is checked twice: once by the compiler, and once by the program itself as it loads.", "import js 让一个已声明的名字跨过一道桥，这道桥被检查两次：一次由编译器，一次由程序自己在加载时完成。")}
                 </Paragraph>
                 <CodeBlock code={bridgeCode} />
                 <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                    {locale.text("The compiler's half is the extern block: importing a name it does not declare is refused before anything runs. The program's half is a bridge the compiler emits, which verifies at module initialization that each imported name really exists on the JavaScript module. So a package that renamed an export fails at load, naming the export it could not find, instead of surfacing as an absent value in some callback later.", "编译器负责的那一半是 extern 块：导入一个它没有声明的名字，在任何东西开跑之前就被拒绝。程序负责的那一半是编译器生成的桥，它在模块初始化时验证每个导入名确实存在于那个 JavaScript 模块上。所以改过导出名的包会在加载时失败，并点名它找不到的那个导出，而不是过一会儿在某个回调里表现为一个缺失的值。")}
                 </Paragraph>
-                <CodeBlock code={undeclaredErrorCode} />
                 <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                    {locale.text("Which is a trade, not a free win. The load-time check fails the whole module rather than the one call site, so a package that legitimately stopped exporting something optional takes your program down at boot instead of at the call you could have guarded. And every name you import has to be declared first, so reaching for one more function from a package you already use is two edits rather than one.", "这是一次交换，不是白捡的便宜。加载期的检查让整个模块失败，而不是让某一处调用失败；所以一个合理地不再导出某个可选项的包，会在启动时把你的程序放倒，而不是在那个你本可以加防护的调用处失败。另外，每个要导入的名字都得先声明，所以从一个你已经在用的包里再拿一个函数，是改两处而不是一处。")}
                 </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={undeclaredErrorCode} />
                 <CodeBlock code={undeclaredErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, held to the same rule — the sample is compiled on every build and VEL4001 is checked against the diagnostics it really produces.", "门禁：同样是受检的教学反例——每次构建都编译这个样本，并核对 VEL4001 确实出现在它真实产生的诊断里。")}
+                </GateNote>
+                <Paragraph>
+                    {locale.text("The load-time half is worth watching once. This module declares a name node:crypto does not have, and the compiler cannot know that.", "加载期的那一半，值得亲眼看一次。下面这个模块声明了一个 node:crypto 并没有的名字，而编译器无从知道这件事。")}
+                </Paragraph>
+                <CodeBlock code={mismatchNodeCode} />
+                <CodeBlock code={mismatchRunTextCode} />
+                <GateNote>
+                    {locale.text("Gate: this site's build compiles the sample above in a Node project on every build. The line beside it is an excerpt of one velar run on toolchain 0.10.0 rather than a compared artifact — the stack frames are trimmed for the page. Notice what is missing from the output: starting up was never printed, because the check runs while the module initializes.", "门禁：本站每次构建都会在 Node 项目里编译上面这个样本。旁边那一行是 0.10.0 工具链上一次 velar run 的摘录，不是逐字比对的产物——堆栈帧为了排版被截掉了。注意输出里少了什么：starting up 一次都没打出来，因为这项检查是在模块初始化时跑的。")}
+                </GateNote>
 
                 <SectionHeading id="unsafe">{locale.text("import js unsafe", "import js unsafe")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("The unsafe form admits a value with no declaration and no promise. Operations on it are raw JavaScript: member reads and writes, calls, arithmetic, indexing, match, and type tests all pass through with no adaptation, and the absent-value normalization does not happen. It is also assignable to every type with no runtime check, so a value that leaks inward is laundered into a type that then behaves like a lie.", "unsafe 形式接纳一个没有声明、也没有承诺的值。对它的操作就是裸 JavaScript：成员读写、调用、算术、索引、match 与类型检验都原样通过，不做任何适配，缺失值的归一化也不会发生。它还可以在没有运行时检查的情况下赋给任何类型，因此一旦向内泄漏，就会被洗成一个随后表现得像谎言的类型。")}
+                    {locale.text("Two lines that a type checker has nothing to say about.", "两行代码，类型检查器对它们无话可说。")}
+                </Paragraph>
+                <CodeBlock code={anyTsCode} />
+                <Paragraph>
+                    {locale.text("settings is any, so settings.refreshMs is any, so setTimeout(refresh, undefined) type-checks and fires immediately. The page reloads in a loop for exactly the users whose stored settings predate that field, and the file you end up reading is the timer, which is doing what it was told.", "settings 是 any，于是 settings.refreshMs 也是 any，于是 setTimeout(refresh, undefined) 类型检查通过，并且立刻触发。页面开始不停刷新，中招的正好是那些存的设置早于这个字段的用户；而你最后打开的文件是定时器那一段——它只是照吩咐办事。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("VelarScript has the same hole. The difference is that it has one spelling, it contains the word unsafe, and it is only ever on an import line.", "VelarScript 有同一个洞。区别在于它只有一种拼写，拼写里带着 unsafe 这个词，而且它只会出现在导入那一行上。")}
                 </Paragraph>
                 <CodeBlock code={unsafeCode} />
                 <BulletList>
                     <li>
-                        {locale.text("This is a written decision, not a default. Reading the word unsafe on the import line is how a reviewer finds every place the guarantees stop.", "这是写出来的决定，而不是默认状态。审阅者正是靠在导入行上读到 unsafe 这个词，来找到每一处保证终止的位置。")}
+                        {locale.text("Operations on such a value are raw JavaScript: member reads and writes, calls, arithmetic, indexing, match, and type tests all pass through with no adaptation, and the absent-value normalization does not happen.", "对这种值的操作就是裸 JavaScript：成员读写、调用、算术、索引、match、类型检验全都原样通过，不做任何适配，缺失值的归一化也不会发生。")}
                     </li>
                     <li>
-                        {locale.text("Assigning such a value into a checked optional normalizes it, which is one more reason the annotation belongs at the boundary rather than three calls later.", "把这样的值赋进一个受检的可选类型会对它进行归一化——这也是注解应当写在边界处、而不是三次调用之后的又一个理由。")}
+                        {locale.text("This is a written decision rather than a default. Reading the word unsafe on an import line is how a reviewer finds every place the guarantees stop, and searching for it is how you count them.", "这是写出来的决定，不是默认状态。审阅者靠在导入行上读到 unsafe 这个词，找到所有保证终止的位置；而数清楚它们有多少处，靠的是搜这个词。")}
+                    </li>
+                    <li>
+                        {locale.text("Assigning such a value into a checked optional normalizes it, which is one more reason the annotation belongs at the boundary rather than three calls later.", "把这样的值赋进一个受检的可选类型，会对它做归一化——这也是注解该写在边界上、而不是三次调用之后的又一个理由。")}
                     </li>
                 </BulletList>
-
-                <SectionHeading id="boundary">{locale.text("Validate at the edge", "在边界处验证")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Because the unchecked value is assignable everywhere, the import site is the only correctness boundary there is. Validate what arrives and let only checked values inward. unknown is the ordinary spelling for unvalidated dynamic input and must be narrowed before use; the unchecked type is reserved for explicit unsafe declarations.", "正因为不受检的值可以赋给任何位置，导入处就是仅有的正确性边界。验证到达的数据，只让受检的值向内传递。unknown 是未经验证的动态输入的常规拼写，使用前必须收窄；不受检的类型则保留给显式的 unsafe 声明。")}
+                    {locale.text("The cost is the whole point of the word, and it is worth saying without softening it: everything this language promises stops here, and it stops silently. Such a value is assignable to every type with no runtime check, so a string annotation on a line that receives one is not a check, it is a label. From there the value travels under a type it does not have, and the diagnostic you eventually get names the place it was finally used rather than the import that let it in.", "代价正是 unsafe 这个词的全部含义，不该被说得婉转：这门语言承诺的一切，在这里全部终止，而且是无声地终止。这种值可以在没有任何运行时检查的情况下赋给任何类型，所以给接收它的那一行加个 string 注解，不是一次检查，只是一张标签。从那里开始，这个值顶着一个它并不具备的类型往下走；你最后拿到的诊断，点的是它终于被用到的那个地方，而不是放它进来的那行导入。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: the sample above is not a counter-example — it is an ordinary excerpt, which this site's build compiles and fails on if it produces any diagnostic at all. So the laundering in it is the evidence: const believed: string = rawCreateHash(\"sha256\") is on this page, the build is green, and the compiler really does allow it.", "门禁：上面这个样本不是反例，而是一个普通摘录——本站构建会编译它，只要它产生任何一条诊断，构建就失败。所以里面那次「洗白」本身就是证据：const believed: string = rawCreateHash(\"sha256\") 就写在这一页上，构建是绿的，说明编译器确实放行。")}
+                </GateNote>
+
+                <SectionHeading id="boundary">{locale.text("Validate at the edge", "在边界上验证")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("Two lines between a database and a template.", "数据库和模板之间的两行代码。")}
+                </Paragraph>
+                <CodeBlock code={rowJsCode} />
+                <Paragraph>
+                    {locale.text("plan is null for accounts created before that column existed. The template throws on toUpperCase, the error report names the template, and the template is right — it was handed a row that does not have the shape the query implies. Every layer between the driver and the page trusted a description nobody produced.", "对于那些在这一列存在之前创建的账号，plan 是 null。模板在 toUpperCase 上抛错，错误报告点名模板；而模板没做错什么——递给它的那一行数据，根本不是查询语句暗示的那个形状。从驱动到页面之间的每一层，都在信任一份从来没人产出过的描述。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("So the import site is the only correctness boundary there is, and unknown is what a value wears until it crosses it.", "所以导入处就是仅有的那道正确性边界；在跨过它之前，一个值一直穿着 unknown。")}
                 </Paragraph>
                 <CodeBlock code={validateCode} />
                 <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                    {locale.text("unknown is the ordinary spelling for unvalidated dynamic input, and it must be narrowed before use — parse it into a declared type, or test it with is. The unchecked type from the previous section is reserved for explicit unsafe declarations and never arrives by accident. The rule that makes both work is that unknown is not assignable to anything: it has to be answered, and the compiler names the line where you did not answer it.", "unknown 是未经验证的动态输入的常规拼写，使用前必须收窄——要么 parse 成一个已声明的类型，要么用 is 检验。上一节那个不受检的类型只留给显式的 unsafe 声明，绝不会意外出现。让这两件事都成立的规则是：unknown 不能赋给任何东西。它必须被回答，而没回答的那一行，编译器会点名。")}
                 </Paragraph>
-                <CodeBlock code={inheritErrorCode} />
                 <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                    {locale.text("Two costs, and neither is small. Parsing is work at run time, paid on every crossing, on data you may only need one field of — and you write the type for the whole shape anyway, because parse checks a shape rather than the subset you happen to read. And the boundary is only where you put it: nothing forces a parse at the edge instead of three calls inward, so a program can still push the unknown down and validate too late. What the compiler guarantees is that the value is answered somewhere, not that the answer is in the right place.", "两个代价，都不小。第一，解析是运行时的活儿，每次跨越都要付一遍，哪怕你只需要其中一个字段——而且类型还是得把整个形状写出来，因为 parse 检查的是形状，不是你恰好会读的那一小部分。第二，边界只在你放它的地方：没有任何东西强制你在边缘就 parse，而不是往里传三层再说；所以程序照样可以把 unknown 一路往下推，验证得太晚。编译器保证的是这个值在某处被回答了，不保证回答的位置是对的。")}
                 </Paragraph>
-                <CodeBlock code={inheritErrorOutput} />
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={unknownErrorCode} />
+                <CodeBlock code={unknownErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example — compiled on every build, with VEL4001 checked against the diagnostics it really produces. There is no cast that makes this line compile; the only way through is to parse or to test.", "门禁：受检的教学反例——每次构建都编译，并核对 VEL4001 确实出现在它真实产生的诊断里。没有哪种强制转换能让这一行编译通过；过去的路只有两条：parse，或者检验。")}
+                </GateNote>
 
-                <SectionHeading id="semantics">
-                    {locale.text("What the emitted module keeps", "生成模块保留了什么")}
-                </SectionHeading>
+                <SectionHeading id="semantics">{locale.text("The last exit", "最后一级出口")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("The runtime is JavaScript and stays JavaScript. Objects and class instances are references, primitives behave as JavaScript values, classes lower to classes and prototypes, async functions use promises and the host event loop, and garbage collection belongs to the engine. The compiler adds checked boundaries, bounded collection helpers, runtime validators, optional normalization, and source maps; it does not pretend those additions create a different memory model.", "运行时是 JavaScript，并且始终是 JavaScript。对象与类实例是引用，基本值表现为 JavaScript 的值，类降级为类与原型，async 函数使用 promise 与宿主事件循环，垃圾回收属于引擎。编译器增加的是受检边界、有界的集合辅助、运行时验证器、可选值归一化与 source map；它不会假装这些增加造出了另一套内存模型。")}
+                    {locale.text("You are reading a production stack trace at eleven at night. The top frame is t.a, in vendor-4f2b.js, at line 1 column 88412. The source map is not deployed. This is where a language that compiles to something else usually stops being a language and starts being a dependency you cannot get out of.", "晚上十一点，你在读一份生产环境的堆栈。最顶上那一帧是 t.a，文件是 vendor-4f2b.js，第 1 行第 88412 列。source map 没有部署。走到这一步，一门「编译到别的东西」的语言，通常就不再是一门语言，而变成一个你出不来的依赖。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The three sections above are the rungs down: a declared adapter, a checked bridge, an unchecked one. This is the last rung, and it is the emitted output itself.", "上面三节是往下走的三级台阶：一份声明出来的适配器、一道受检的桥、一道不受检的桥。这是最后一级，而它就是产出的代码本身。")}
                 </Paragraph>
                 <CodeBlock code={semanticsCode} />
-                <Callout title={locale.text("One member read is a call", "有一种成员读取其实是一次调用")}>
+                <Paragraph>
+                    {locale.text("The runtime is JavaScript and stays JavaScript. Objects and class instances are references, primitives behave as JavaScript values, classes lower to classes and prototypes, async functions use promises and the host event loop, and garbage collection belongs to the engine. The compiler adds checked boundaries, bounded collection helpers, runtime validators, optional normalization, and source maps; it does not pretend those additions create a different memory model. A build produces modules with your own names in them, so the output is a thing a person can read.", "运行时是 JavaScript，而且始终是 JavaScript。对象与类实例是引用，基本值就是 JavaScript 的值，类降级成类与原型，async 函数用的是 promise 与宿主事件循环，垃圾回收归引擎。编译器加进去的是受检边界、有界的集合辅助、运行时验证器、可选值归一化和 source map；它不会假装这些东西造出了另一套内存模型。构建产出的模块里是你自己起的名字，所以那份产物是人能读的。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("One addition does cost you at run time, and it is the one people meet first. Reading a class instance field is a compiler-injected guarded read, not a bare property access: a field declared with a type promises a value of that type, and the host's absent value is not one, so the guard raises where the read happens and names the field. That is the right trade almost everywhere and the wrong one inside a hot loop, where the same read runs a million times. Bind the field once above the loop, as the sample does, and the guard runs once.", "有一处增加确实要在运行时付钱，而且它是大家最先撞上的那一处。读取类实例字段，是一次由编译器注入的守卫读取，不是裸属性访问：带类型声明的字段承诺给出该类型的值，而宿主的缺失值不在其中，所以守卫会在读取发生的地方抛出，并点名那个字段。这笔交换在几乎所有地方都是对的，唯独在热循环里不对——同一次读取要跑上百万遍。像样本里那样，在循环外把字段绑一次，守卫就只跑一次。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("And the exit itself has a cost that only goes one way. Take the output and you have taken the whole thing: from then on you maintain that JavaScript, without the diagnostics, the validators, or the one-spelling rule that made it worth reading. That is exactly what makes it a real exit rather than a promise — a door you can walk through is a door you can also walk through by mistake.", "而这道出口本身的代价是单向的。带走产物，就是把整摊都带走了：从那以后，那份 JavaScript 归你维护，而诊断、验证器、以及让它值得一读的那条「一种拼写」规则，都不跟着走。这恰恰是它之所以是一个真出口、而不是一句承诺的原因——一扇你走得出去的门，也是一扇你可能走错的门。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("None of that is left to your trust.", "这些都不指望你信。")} <Link
+                        to="/evidence"
+                        look={inlineLinkLook}
+                    >
+                        {locale.text("The evidence page puts a module's source beside its emitted JavaScript byte for byte, and then copies only the output into an empty directory and runs it with Node alone.", "证据页把一个模块的源码与它产出的 JavaScript 逐字节并排放着；然后只把产物复制进一个空目录，仅用 Node 把它跑起来。")}
+                    </Link>
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: the run on that page is a permanent acceptance gate in the language repository — tests/package.acceptance.ts, the block commented \"Anti-lock-in eject gate\". It asserts more than a successful run: the emitted output must import nothing from @velarscript, the bare directory's node_modules may contain only the generated runtime, and the ejected program's output must match the original build's exactly.", "门禁：那一页上的运行，在语言仓里是一道常设的验收门禁——tests/package.acceptance.ts 中注释为「Anti-lock-in eject gate」的那一段。它断言的比「跑通了」更多：产物不许 import 任何 @velarscript；空目录的 node_modules 里只许有那份生成的运行时；带走产物之后跑出来的输出，必须与原构建完全一致。")}
+                </GateNote>
+                <Callout title={locale.text("Take the rungs in order", "台阶要按顺序走")}>
                     <Paragraph>
-                        {locale.text("Reading a class instance field is a compiler-injected guarded read. A field declared with a type promises a value of that type, and the host's absent value is not one, so the guard raises where the read happens and names the field rather than letting an absent value travel under the declared type and fail somewhere unrelated. That is also why a field read inside a hot loop is worth binding once.", "读取类实例字段是一次由编译器注入的守卫读取。带类型声明的字段承诺给出该类型的值，而宿主的缺失值不是其中之一，因此守卫在读取发生处就抛出并点名该字段，而不是让一个缺失值顶着声明的类型跑到别处才失败。这也是热循环内的字段读取值得先绑定一次的原因。")}
+                        {locale.text("Most walls end at the diagnostic, in one round. When they do not, extern module and import js keep the checks and cost you a declaration; import js unsafe keeps none and costs you the guarantees; the output is for the day VelarScript itself is the obstacle. Each rung down buys you reach and spends something you were relying on, so the order is the whole discipline.", "大多数墙在诊断这一步就到头了，一轮就过。过不去的时候：extern module 与 import js 保留检查，代价是多写一份声明；import js unsafe 什么都不保留，代价是那些保证；而产物那一级，留给「VelarScript 本身成了障碍」的那一天。每往下一级，换来的是够得着，花掉的是你本来依赖着的东西——所以顺序本身就是全部纪律。")}
                     </Paragraph>
                 </Callout>
+                <Paragraph>
+                    {locale.text("Each exit is written down rather than passed along as folklore.", "每一级出口都写在文档里，不靠口口相传。")} <Link
+                        to="/reference/escape-hatches"
+                        look={inlineLinkLook}
+                    >
+                        {locale.text("The escape-hatches reference documents them in order, each with its honest limit.", "逃生通道参考页按顺序记录了它们，每一条都写明了它到哪为止。")}
+                    </Link>
+                </Paragraph>
             </Prose>
             <DocsPager
                 previous={guidePrevious("/guide/language/javascript")}

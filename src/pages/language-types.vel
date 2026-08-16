@@ -1,118 +1,238 @@
-import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
-import {useLocale} from "@velarscript/site-ui"
+import {Head, Link} from "velar/web"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, GateNote, PageHeader, Paragraph, Prose, SectionHeading, SectionList, Subheading} from "@velarscript/docs-kit"
+import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
+const conditionalTypeTsCode = "// TypeScript\ntype Handler<T> = T extends readonly (infer U)[]\n  ? (item: U, index: number) => void\n  : (value: T) => void;"
 const annotationsCode = `type Tag:\n    label: string\n\ntype User:\n    id: string\n    name: string\n    avatar: string?\n\n// Every built-in Core type in a written annotation.\nconst text: string = "a"\nconst quantity: number = 1\nconst flag: bool = true\nconst nothing: null = null\nconst listOfText: List<string> = ["a"]\nconst setOfNumbers: Set<number> = Set([1])\nconst mapOfUsers: Map<string, User> = Map()\nconst recordOfTags: Record<Tag> = {}\nconst optionalText: string? = null\nconst smallUnion: string | number = 1\nconst threeArmUnion: string | number | bool = true\nconst dynamic: unknown = 1\n\n// A function type always writes its result, a null result included.\nconst handler: (User) -> null = user => print(user.name)\nconst twoParameters: (string, number) -> bool = (left, right) => left.size == right\nconst noParameters: () -> string = () => "a"\nconst namedParameters: (user: User, prefix: string) -> string = (user, prefix) => prefix + user.name\n\n// An omittable parameter and a required parameter whose value may be null are\n// two different contracts.\nconst omittableParameter: (user: User, prefix?: string) -> string = (user: User, prefix: string = "@") => prefix + user.name\nconst optionalTypedParameter: (user: User, prefix: string?) -> string = (user, prefix) => (prefix ?? "@") + user.name\n\n// A rest parameter states its element type even when the annotation supplies\n// one: contextual typing covers the fixed parameters only.\nconst restParameter: (...values: number) -> number = (...values: number) => values.size`
-const shorthandCode = `async def resolvesNull():\n    pass\n\nasync def resolvesText() -> string:\n    return "a"\n\nconst barePromise: Promise = resolvesNull()\nconst explicitPromise: Promise<null> = resolvesNull()\nconst promiseOfText: Promise<string> = resolvesText()\n\nconst bareFunction: Function = () => null\nconst functionResult: Function<string> = () => "a"\nconst functionOneInput: Function<number, string> = value => str(value)\nconst functionTwoInputs: Function<number, number, string> = (left, right) => str(left + right)`
+const voidCallbackTsCode = "// TypeScript\nfunction onSave(handler: () => void) { handler(); }\n\nonSave(async () => { await save(); });"
+const shorthandCode = `async def resolvesNull():\n    pass\n\nasync def resolvesText() -> string:\n    return "a"\n\nconst barePromise: Promise = resolvesNull()\nconst explicitPromise: Promise<null> = resolvesNull()\nconst promiseOfText: Promise<string> = resolvesText()\n\nconst bareFunction: Function = () => null\nconst functionResult: Function<string> = () => "a"\nconst functionOneInput: Function<number, string> = value => str(value)\nconst functionTwoInputs: Function<number, number, string> = (left, right) => str(left + right)\n\n// The two written forms describe the same type, so either annotation accepts\n// a value written for the other.\nconst arrowForm: (number) -> string = value => str(value)\nconst shorthandForm: Function<number, string> = arrowForm\nconst backToArrow: (number) -> string = shorthandForm`
+const asyncCallbackErrorCode = `async def save():\n    print("saved")\n\ndef onSave(handler: () -> null):\n    handler()\n\nexport def wire():\n    onSave(() => save())`
+const asyncCallbackErrorOutput = "main.vel:8:12 error VEL4001: Cannot assign () -> Promise<null> to () -> null; an async function's type describes the value the call produces, so its result is a Promise — write '-> Promise<null>' here, and '-> null' on the 'async def' declaration itself\n    onSave(() => save())\n           ^^^^^^^^^^^^"
+const shallowReadonlyTsCode = `// TypeScript\nfunction summarize(profile: Readonly<Profile>) {\n  profile.details.label = "counted";\n}`
 const readonlyCode = `type Details:\n    label: string\n\ntype Tag:\n    label: string\n\ntype Profile:\n    readonly id: string\n    details: Details\n    tags: List<Tag>\n\ndef loadProfile() -> Profile:\n    return {id: "p", details: {label: "d"}, tags: []}\n\nexport def display(profile: readonly Profile) -> string:\n    // A read-only view is transitive through reads.\n    const nestedLabel = profile.details.label\n    const firstTag = profile.tags.get(0)\n    return profile.id + nestedLabel + (firstTag?.label ?? "")\n\n// The same value reached through an owning type is still writable.\nexport def update(profile: Profile):\n    profile.details.label = "Updated"\n\nconst owned: Profile = loadProfile()\nlet selected: readonly Profile = owned\nselected = loadProfile()\n\n// A new collection returned by copy or slice owns its outer container.\nexport def copiedContainer(profile: readonly Profile) -> number:\n    const copied = profile.tags.copy()\n    return copied.size`
+const readonlyErrorCode = `type Details:\n    label: string\n\ntype Profile:\n    readonly id: string\n    details: Details\n\nexport def rename(profile: readonly Profile):\n    profile.details.label = "Updated"`
+const readonlyErrorOutput = `main.vel:9:5 error VEL3002: Cannot assign through readonly Details; it is a read-only view\n    profile.details.label = "Updated"\n    ^^^^^^^^^^^^^^^^^^^^^`
+const undefinedJsCode = "// JavaScript, in production, at two in the morning\nrender(user.profile.avatar);\n\n// TypeError: Cannot read properties of undefined (reading 'avatar')"
 const optionalsCode = `type User:\n    id: string\n    name: string\n    avatar: string?\n\ndef findUser(id: string) -> User?:\n    return id == "" ? null : {id, name: "Ada", avatar: null}\n\nexport def presenceTests(id: string) -> string:\n    const user: User? = findUser(id)\n\n    if user != null:\n        print(user.name)\n\n    if user == null:\n        return "Missing"\n    else:\n        return user.name\n\n// A guard whose arm terminates keeps the negated fact on the fall-through path.\nexport def terminatingGuard(user: User?) -> string:\n    if user == null:\n        return "Missing"\n    return user.name\n\n// An assignment establishes a fact of its own.\nexport def assignmentFacts() -> string:\n    const pinned: string? = "a"\n    let open: string? = "a"\n    open = null\n    return pinned + (open ?? "b")\n\n// Optional access is explicit at each optional continuation.\ntype Address:\n    city: string\n\ntype AccountDetails:\n    address: Address?\n\ntype Account:\n    profile: AccountDetails?\n\nconst account: Account? = null\nconst optionalValues: List<number>? = null\nconst optionalCallback: ((number) -> number)? = null\n\nconst city = account?.profile?.address?.city\nconst firstValue = optionalValues?.[0]\nconst called = optionalCallback?.(1)`
 const presenceErrorCode = "type User:\n    id: string\n    name: string\n\nexport def label(user: User?) -> string:\n    return user.name"
 const presenceErrorOutput = "main.vel:6:12 error VEL4001: Use optional access '?.' for User?\n    return user.name\n           ^^^^^^^^^"
+const assertionTsCode = "// TypeScript\nif (user !== null) {\n  setTimeout(() => render(user!.name));\n}"
 const narrowingCode = `type Contact:\n    email: string\n\ntype Owner:\n    profile: Contact?\n\ntype User:\n    id: string\n    name: string\n\n// Equality against a literal carries a fact back to its subject.\nexport def equalityFacts(flagOrNothing: bool?) -> string:\n    if flagOrNothing == true:\n        return "true"\n    if flagOrNothing == false:\n        return "false"\n    return "absent"\n\n// A membership probe narrows the same way.\nexport def membershipFacts(candidate: string?, names: List<string>) -> string:\n    if candidate in names:\n        return candidate\n    return "missing"\n\n// An optional chain that produced a value proves every link along it.\nexport def chainFacts(owner: Owner) -> string:\n    if owner.profile?.email != null:\n        return owner.profile.email\n    return "missing"\n\n// A fact survives calls, but a hot loop should bind the narrowed value once.\nexport def boundOnce(user: User?) -> number:\n    if user == null:\n        return 0\n    const present = user\n    let total = 0\n    for _ in range(3):\n        total += present.name.size\n    return total\n\n// Narrowing does not flow into a nested function body.\nexport def nestedFunction(user: User?) -> (() -> string):\n    if user == null:\n        return () => "missing"\n    const present = user\n    return () => present.name\n\n// A getter is a computed value, not a stable location: read it into a const.\nclass Session:\n    let stored: string? = null\n\n    get current() -> string?:\n        return self.stored\n\nexport def getterNarrowing(session: Session) -> string:\n    const current = session.current\n    if current == null:\n        return "missing"\n    return current\n\n// An index and a Map read are reads, not locations.\nexport def indexNarrowing(values: List<string>, lookup: Map<string, string>) -> string:\n    const firstValue = values.get(0)\n    const looked = lookup.get("a")\n    if firstValue == null or looked == null:\n        return "missing"\n    return firstValue + looked`
+const closureErrorCode = `type User:\n    id: string\n    name: string\n\nexport def greeter(user: User?) -> (() -> string):\n    if user == null:\n        return () => "missing"\n    return () => user.name`
+const closureErrorOutput = "main.vel:8:18 error VEL4001: Use optional access '?.' for User?\n    return () => user.name\n                 ^^^^^^^^^"
+const objectTextJsCode = "// JavaScript\nconst subject = `Assigned to ${user}`;\n\n// \"Assigned to [object Object]\", sent to four hundred people."
 const conversionCode = `enum Status:\n    pending\n    done\n\nconst text: string = "a"\nconst quantity: number = 1\nconst flag: bool = true\nconst nothing: null = null\nconst smallUnion: string | number = 1\n\nexport def textConversion(status: Status, maybe: string?) -> string:\n    const fromString = f"{text}"\n    const fromNumber = f"{quantity}"\n    const fromBool = f"{flag}"\n    const fromNull = f"{nothing}"\n    const fromEnum = f"{status}"\n    const fromOptional = f"{maybe}"\n    const fromUnion = f"{smallUnion}"\n    return fromString + fromNumber + fromBool + fromNull + fromEnum + fromOptional + fromUnion`
 const recordErrorCode = `type User:\n    id: string\n    name: string\n\nconst user: User = {id: "u-1", name: "Ada"}\nconst label = f"{user}"`
 const recordErrorOutput = `main.vel:6:18 error VEL4026: An f-string renders strings, numbers, bools, enums, null, and extension values with a declared text form; format User explicitly — print(value) to inspect it, or Json.stringify(value) for data text\nconst label = f"{user}"\n                 ^^^^`
 
 const sections = [
-    {id: "annotations", label: "The annotation vocabulary", labelZh: "注解词汇表"},
+    {id: "annotations", label: "The annotation vocabulary", labelZh: "注解里能写的词"},
     {id: "shorthand", label: "Promise and Function", labelZh: "Promise 与 Function"},
     {id: "readonly", label: "Read-only views", labelZh: "只读视图"},
     {id: "optionals", label: "Optionals are unions", labelZh: "可选值就是联合"},
-    {id: "narrowing", label: "What establishes a fact", labelZh: "什么建立事实"},
-    {id: "conversion", label: "The text-conversion contract", labelZh: "文本转换契约"},
+    {id: "narrowing", label: "What establishes a fact", labelZh: "什么算确立了一个事实"},
+    {id: "conversion", label: "The text-conversion contract", labelZh: "转成文本的契约"},
 ]
+
+const inlineLinkLook = look:
+    color = sea
 
 export component LanguageTypes:
     const locale = useLocale()
     return <main>
         <Head
             title={headTitle("/guide/language/types", locale.isChinese())}
-            description={locale.text("Every built-in type in a written annotation, what readonly promises, and how an optional is narrowed.", "每个内置类型在书面注解中的写法、readonly 承诺了什么，以及可选值如何被收窄。")}
+            description={locale.text("Every built-in type in a written annotation, what readonly promises and what it does not, how an optional is narrowed, and what each of those decisions costs.", "每个内置类型在注解里怎么写，readonly 承诺了什么、又没承诺什么，可选值怎么收窄，以及这些决定各自要付的代价。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Language / 03", "语言 / 03")}
                 title={locale.text("Types and optionals", "类型与可选值")}
-                summary={locale.text("The annotation vocabulary, read-only views, optionals, and the narrowing checks that consume them.", "注解词汇表、只读视图、可选值，以及消费它们的收窄检查。")}
+                summary={locale.text("The annotation vocabulary, read-only views, optionals, the checks that narrow them, and the price of a type language you read instead of run.", "注解里能写的词、只读视图、可选值、收窄它们的那些检查，以及「类型只用读、不用跑」这件事的价钱。")}
             />
             <SectionList items={sections} />
             <Prose>
-                <SectionHeading id="annotations">{locale.text("The annotation vocabulary", "注解词汇表")}</SectionHeading>
+                <SectionHeading id="annotations">{locale.text("The annotation vocabulary", "注解里能写的词")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("The written surface is a closed list: string, number, bool, null, List, Set, Map, Record, unknown, small unions, and function types. A function type always writes its result, including a null result, so a reader of the annotation alone knows whether a call answers anything.", "书面表面是一份封闭清单：string、number、bool、null、List、Set、Map、Record、unknown、小型联合，以及函数类型。函数类型总是写出结果，包括 null 结果，因此仅凭注解就能知道一次调用是否给出值。")}
+                    {locale.text("A type you cannot read by reading it.", "一个读了也读不懂的类型。")}
+                </Paragraph>
+                <CodeBlock code={conditionalTypeTsCode} />
+                <Paragraph>
+                    {locale.text("To find out what to pass, you evaluate a second program in your head. The editor will help by expanding it, and what it prints is forty lines that still do not answer the question. The declaration is right there and reading it is not enough — which is a strange thing to be true of a declaration.", "要知道该传什么，你得在脑子里跑第二个程序。编辑器会好心把它展开，展开出来是四十行，还是没回答你的问题。声明就在眼前，读它却不够——对一份声明来说，这件事本身就很奇怪。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Here the written surface is a list, and the list is short.", "这里能写进注解的是一份清单，而且清单不长。")}
                 </Paragraph>
                 <CodeBlock code={annotationsCode} />
+                <Paragraph>
+                    {locale.text("string, number, bool, null, List, Set, Map, Record, unknown, small unions, and function types: that is the whole vocabulary. A function type always writes its result, including a null result, so a reader of the annotation alone knows whether a call answers anything. Type parameters can be bounded, but a bound is one of the compiler's own names — Comparable, Text, Data — and never a type you declared.", "string、number、bool、null、List、Set、Map、Record、unknown、小型联合、函数类型：能写的就这些。函数类型总要写出结果，null 结果也要写，所以光看注解就知道一次调用给不给东西。类型参数可以加界，但界只能是编译器自己的那几个名字——Comparable、Text、Data——不能是你声明的类型。")}
+                </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("An omittable parameter and a required parameter whose value may be null are two different contracts, and the annotation spells the difference.", "可省略参数与「必须传入但值可能为 null」的参数是两种不同的契约，注解把这个区别写了出来。")}
+                        {locale.text("An omittable parameter and a required parameter whose value may be null are two different contracts, and the annotation spells the difference.", "「可以不传」和「必须传，但值可能是 null」是两份不同的契约，注解把这个区别写了出来。")}
                     </li>
                     <li>
-                        {locale.text("unknown is the ordinary spelling for unvalidated dynamic input. It must be validated before use, which is what separates it from the JavaScript boundary's any.", "unknown 是未经验证的动态输入的常规拼写。使用前必须验证，这正是它与 JavaScript 边界处的 any 的区别所在。")}
+                        {locale.text("unknown is the ordinary spelling for unvalidated dynamic input. It has to be validated before use, which is what separates it from the any at the JavaScript boundary.", "unknown 是未经验证的动态输入的常规写法。用之前必须先验证——这就是它跟 JavaScript 边界上那个 any 的区别。")}
                     </li>
                 </BulletList>
+                <Paragraph>
+                    {locale.text("You give up the type-level toolbox and it is a real loss. There is no Partial, no Pick, no Omit, and no way to write one, so the same record with everything optional is a second declaration you write out and keep in step by hand — and nothing tells you the day the two drift apart. You also cannot say any type with a size field: the bounds are three names the compiler owns, so a helper that should accept only certain shapes either widens to unknown and validates, or is written once per shape.", "你交出去的是那套类型层工具箱，这是实打实的损失。没有 Partial，没有 Pick，没有 Omit，也没法自己造一个；所以「同一个记录，字段全变可选」是你另写一份声明、再手工保持一致——而两份哪天对不上了，没人会告诉你。你也没法说「任何带 size 字段的类型」：界就是编译器自己的那三个名字，于是一个只该接受某几种形状的帮手函数，要么放宽成 unknown 再验证，要么每种形状写一遍。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: the sample above writes every built-in Core type in an annotation, and this site's build compiles it on every publish, so each of those annotations is one the compiler accepts today. That is what the gate proves. It cannot prove the list is complete — that claim comes from the charter, which keeps the vocabulary.", "门禁：上面这个样本把每个内置的 Core 类型都写进了注解，本站每次发布都会编译它，所以这些注解都是编译器今天认的写法。门禁能证明的就是这个。它证明不了这份清单是完整的——完整性的说法出自章程，词汇表由章程保管。")}
+                </GateNote>
 
                 <SectionHeading id="shorthand">
                     {locale.text("Promise and Function", "Promise 与 Function")}
                 </SectionHeading>
                 <Paragraph>
-                    {locale.text("Two names have a shorthand table so a common annotation stays short. A bare Promise resolves to null, and Function takes its inputs first and its result last. An async declaration annotates the resolved value, never the Promise around it.", "有两个名字带有简写表，让常见注解保持简短。裸 Promise 解析为 null，Function 先写输入、最后写结果。async 声明注解的是解析后的值，而不是包在外面的 Promise。")}
+                    {locale.text("A callback that finished before it started.", "一个还没开始就已经「结束」的回调。")}
+                </Paragraph>
+                <CodeBlock code={voidCallbackTsCode} />
+                <Paragraph>
+                    {locale.text("Everything is assignable to void, so an async function goes into that parameter without complaint. The promise is dropped at the moment it is created, and a failure inside save turns up much later as an unhandled rejection whose stack points nowhere near this line. A dedicated lint rule exists to catch exactly this, which is the clearest sign that the type alone does not.", "任何东西都能赋给 void，所以一个 async 函数塞进这个参数，没人有意见。promise 在产生的那一刻就被丢掉了；save 里面的失败要很久以后才冒出来，变成一次没人接的 rejection，调用栈指向的地方离这一行十万八千里。为这件事专门有一条 lint 规则；这本身就说明了问题——光靠类型抓不住它。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("A function type here always writes its result, and a Promise is written where it is.", "这里的函数类型总要写出结果，Promise 在哪就写在哪。")}
                 </Paragraph>
                 <CodeBlock code={shorthandCode} />
+                <Paragraph>
+                    {locale.text("Two names carry a shorthand table so a common annotation stays short. A bare Promise resolves to null, and Function takes its inputs first and its result last. An async declaration annotates the resolved value, never the Promise around it — while a function type describing that same declaration writes the Promise, because a type describes the value a call produces rather than the work the body does.", "有两个名字带简写表，好让常见的注解短一些。裸 Promise 解析为 null；Function 先写输入，最后写结果。async 声明上注解的是解析之后的值，不是外面那层 Promise；而描述同一个声明的函数类型要把 Promise 写出来——因为类型描述的是一次调用产出的值，不是函数体干的活。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The shorthand is a second way to write a type you can already write. Function<number, string> and (number) -> string are one type, each annotation accepts a value written for the other, and a codebase can end up holding both — so a reader has to know they are the same thing before the two forms stop looking like a distinction. The async rule has two sides to hold at once as well: -> string on the declaration, -> Promise<string> in a type that describes it.", "简写是同一个类型的第二种写法。Function<number, string> 和 (number) -> string 是一个类型，两种注解各自都接受为对方写的值，而一份代码库里两种可能都有——读的人得先知道它们是一回事，这两种形状才不再像是在区分什么。async 那条规则也要同时记住两面：声明上写 -> string，描述它的类型里写 -> Promise<string>。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={asyncCallbackErrorCode} />
+                <CodeBlock code={asyncCallbackErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example. This site's build compiles the sample and fails if it ever stops producing a diagnostic, and it verifies that VEL4001 is a code the sample really produces. This is the TypeScript case above, refused at the call site rather than left to a lint rule.", "门禁：受检的教学反例。本站构建会编译这个样本，一旦它不再报错就让构建失败；并且会核对 VEL4001 确实由这个样本产生。这就是上面那个 TypeScript 的情形，在调用点当场被拒，而不是留给一条 lint 规则。")}
+                </GateNote>
 
                 <SectionHeading id="readonly">{locale.text("Read-only views", "只读视图")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A read-only type is a view over the same value: it promises that this reference will not write, not that the value is frozen. The view is transitive through reads, so a nested field reached through it is read-only too, while the same value reached through an owning type stays writable.", "只读类型是同一个值上的视图：它承诺这个引用不会写入，而不是承诺该值被冻结。视图在读取上是传递的，因此通过它取到的嵌套字段同样只读，而通过拥有型类型取到的同一个值仍然可写。")}
+                    {locale.text("A signature that promised not to write, and wrote.", "一个承诺了不写的签名，写了。")}
+                </Paragraph>
+                <CodeBlock code={shallowReadonlyTsCode} />
+                <Paragraph>
+                    {locale.text("Readonly is one level deep. The nested record is an ordinary record, so the assignment is allowed and the object the caller still holds has changed. The caller read the signature, believed it, and kept a reference — which is the whole reason the annotation was written in the first place.", "Readonly 只有一层深。里面那个嵌套记录是普通记录，所以这次赋值是允许的，而调用方手里那个对象已经变了。调用方读了签名，信了，就留着那个引用继续用——而当初写这个注解，图的正是这个。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Here the view carries through the reads.", "在这里，视图会顺着读取一路带下去。")}
                 </Paragraph>
                 <CodeBlock code={readonlyCode} />
+                <Paragraph>
+                    {locale.text("A read-only type is a view over the same value: it promises that this reference will not write, not that the value is frozen. The view is transitive through reads, so a nested field reached through it is read-only too, while the same value reached through an owning type stays writable. The two spellings of that one assignment are both in the sample above, three lines apart.", "只读类型是同一个值上的一个视图：它承诺的是这个引用不会写，不是这个值被冻住了。视图顺着读取传递下去，所以通过它取到的嵌套字段同样只读；而通过拥有型类型取到的同一个值，仍然可写。同一次赋值的两种写法，都在上面那个样本里，相隔三行。")}
+                </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("A read-only binding may be reassigned; what it refuses is a write through the reference.", "只读绑定本身可以被重新赋值；它拒绝的是通过该引用进行的写入。")}
+                        {locale.text("A read-only binding may be reassigned; what it refuses is a write through the reference.", "只读绑定本身可以重新赋值；它拒绝的是通过这个引用去写。")}
                     </li>
                     <li>
-                        {locale.text("A new collection returned by copy or slice owns its outer container, so the caller may mutate it.", "copy 或 slice 返回的新集合拥有自己的外层容器，因此调用方可以修改它。")}
+                        {locale.text("A new collection returned by copy or slice owns its outer container, so the caller may mutate it.", "copy 或 slice 返回的新集合拥有自己的外层容器，所以调用方可以改它。")}
                     </li>
                 </BulletList>
+                <Paragraph>
+                    {locale.text("It is a compile-time view and nothing more. Hand the same object across the JavaScript boundary and nothing stops a write — the value is not frozen, and readonly buys you exactly zero at run time. It is also viral: annotate one parameter and every helper it passes the value to has to take readonly too, so adding it late to a function with forty callers is a forty-file afternoon rather than a one-line edit.", "它只是一个编译期的视图，仅此而已。把同一个对象递过 JavaScript 边界，谁也拦不住那次写入——值没有被冻结，readonly 在运行时一分钱都不值。它还会传染：给一个参数加上它，这个值往下传给的每一个帮手函数都得跟着写 readonly；所以给一个有四十个调用方的函数补上它，是四十个文件的一下午，不是改一行。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={readonlyErrorCode} />
+                <CodeBlock code={readonlyErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, and it is the minimal pair for the sample above — the same assignment, reached through a readonly parameter instead of an owning one. The build compiles it, requires it to keep failing, and checks VEL3002 against the diagnostics it really produces. Note which type the message names: Details, the nested one, which is the transitivity claim rather than a restatement of it.", "门禁：受检的教学反例，也是上面那个样本的最小对照——同一次赋值，只是这次经过的是 readonly 参数，而不是拥有型参数。构建会编译它、要求它持续失败，并核对 VEL3002 确实由它产生。注意诊断点的是哪个类型：Details，那个嵌套的类型——传递性这件事，是它自己说出来的，不是这一段复述的。")}
+                </GateNote>
+                <Paragraph>
+                    {locale.text("The same refusal shows up on a component's props, where every prop is a read-only view by default.", "同一种拒绝也出现在组件的 prop 上——那里每一个 prop 默认就是只读视图。")} <Link
+                        to="/evidence"
+                        look={inlineLinkLook}
+                    >
+                        {locale.text("The evidence page shows that one with the compiler's answer beside it.", "证据页把那一个连同编译器的回答一起摆了出来。")}
+                    </Link>
+                </Paragraph>
 
                 <SectionHeading id="optionals">{locale.text("Optionals are unions", "可选值就是联合")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("An optional type is the union of a type with null. Absence is a value the type states, so it is not something a reader has to infer from context, and every continuation over an optional is written: an optional member, an optional index, an optional call.", "可选类型就是某个类型与 null 的联合。缺失是类型明说的一个值，读者不必从上下文里推测；对可选值的每一次延续都要写出来：可选成员、可选索引、可选调用。")}
+                    {locale.text("The line was correct for every account anyone tested with.", "对所有人测过的账号来说，这一行都是对的。")}
+                </Paragraph>
+                <CodeBlock code={undefinedJsCode} />
+                <Paragraph>
+                    {locale.text("One user never filled in a profile. The type, if there was one, said Profile, because a cast said so or because the field was declared the way the happy path uses it. Absence was a fact about the data that no declaration was carrying, so it arrived as a stack trace instead.", "有一个用户从来没填过 profile。类型——如果有类型的话——写的是 Profile，因为某个 cast 这么说，或者因为这个字段是照着顺利路径的用法声明的。「这里可能什么都没有」，本该由某份声明记着，可没有哪份声明记了它；于是它换了个形式送到——一段调用栈。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Here absence is written into the type, so it arrives at compile time or not at all.", "在这里，「可能没有」写在类型里，所以它要么在编译期到，要么根本不到。")}
                 </Paragraph>
                 <CodeBlock code={optionalsCode} />
                 <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                    {locale.text("An optional type is the union of a type with null. Absence is a value the type states rather than something a reader infers from context, and every continuation over an optional is written out: an optional member, an optional index, an optional call. There is one null and no second absent value, so there is one question to ask and one way to ask it.", "可选类型就是某个类型和 null 的联合。「没有」是类型明说的一个值，不用读者从上下文里猜；而对可选值的每一次延续都要写出来：可选成员、可选索引、可选调用。null 只有一个，没有第二个表示缺失的值，所以要问的问题只有一个，问法也只有一种。")}
                 </Paragraph>
+                <Paragraph>
+                    {locale.text("Absence propagates, and that is the bill. Make one field optional and every caller that reads it becomes a diagnostic, so widening a field is a change across files rather than a change in one — which is the point, and is still a day of work you did not plan. The chain has a limit too: a?.b?.c answers null for the whole chain, so a null coming back does not say which link was the absent one.", "「没有」会往外传，账单就在这里。把一个字段改成可选，每一个读它的调用方都变成一条诊断；于是放宽一个字段是跨文件的改动，不是一处的改动——这正是它想要的效果，但也确实是你没排进计划的一天工作。链也有它的极限：a?.b?.c 给出的是整条链的一个 null，所以拿回一个 null，并不知道缺的是哪一环。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
                 <CodeBlock code={presenceErrorCode} />
-                <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </Paragraph>
                 <CodeBlock code={presenceErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example. The sample is compiled on every build, it has to keep failing, and VEL4001 is checked against the diagnostics it really produces — so this refusal cannot quietly relax without the page failing to build.", "门禁：受检的教学反例。样本每次构建都会编译，它必须持续失败，而 VEL4001 会与它真实产生的诊断核对——所以这条拒绝要是悄悄放松了，这一页就构建不过。")}
+                </GateNote>
 
-                <SectionHeading id="narrowing">{locale.text("What establishes a fact", "什么建立事实")}</SectionHeading>
+                <SectionHeading id="narrowing">{locale.text("What establishes a fact", "什么算确立了一个事实")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Narrowing is bounded and it is worth knowing where the boundary is. A comparison, a membership probe, an assignment, a terminating guard, and an optional chain that produced a value all establish facts. A getter, an index read, and a Map read are computed values rather than stable locations, so each is read into a binding first; a fact also does not flow into a nested function body.", "收窄是有界的，值得知道界在哪里。比较、成员探测、赋值、以终止分支收尾的守卫，以及产出了值的可选链，都会建立事实。取值器、索引读取与 Map 读取都是计算出来的值而不是稳定位置，因此要先读入一个绑定；事实也不会流入嵌套函数体。")}
+                    {locale.text("The check is three lines up and the compiler asks again anyway.", "判断就在三行之上，编译器还是又问了一遍。")}
+                </Paragraph>
+                <CodeBlock code={assertionTsCode} />
+                <Paragraph>
+                    {locale.text("The callback runs later, so the compiler will not carry the fact into it, and it is right not to. The repair on offer is one character. It compiles, it checks nothing, and it is how a careful person writes the TypeError that shows up at two in the morning — the exclamation mark is a promise, and promises are what this whole apparatus was meant to replace.", "那个回调是稍后才跑的，所以编译器不肯把事实带进去——它不带是对的。而摆在面前的补救办法是一个字符。它编得过，什么也没检查；一个谨慎的人就是这样写出那个凌晨两点冒头的 TypeError 的——那个感叹号是一句承诺，而这一整套东西，本来就是用来替换承诺的。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Here the boundary is the same, and the repair is a binding.", "这里的界画在同一个地方，但补救办法是一个绑定。")}
                 </Paragraph>
                 <CodeBlock code={narrowingCode} />
-                <Callout title={locale.text("Bounded on purpose", "刻意有界")}>
+                <Paragraph>
+                    {locale.text("A comparison, a membership probe, an assignment, a terminating guard, and an optional chain that produced a value all establish facts. A getter, an index read, and a Map read are computed values rather than stable locations, so each is read into a binding first, and a fact does not flow into a nested function body. There is no non-null assertion to reach for, so the repair everywhere is const present = user — a value the compiler can go on checking, rather than a claim it has to accept.", "比较、成员探测、赋值、以终止分支收尾的守卫，以及产出了值的可选链，都会确立事实。取值器、索引读取和 Map 读取都是算出来的值，不是稳定位置，所以要先读进一个绑定；事实也不会流进嵌套的函数体。这里没有非空断言可用，所以到处的补救办法都是 const present = user——一个编译器可以继续检查下去的值，而不是一句它只能接受的断言。")}
+                </Paragraph>
+                <Callout title={locale.text("Bounded on purpose", "刻意画了界")}>
                     <Paragraph>
-                        {locale.text("There are no conditional, mapped, or programmable types. A type is read by looking at its declaration rather than by evaluating a second program, which is the property that keeps a type readable to someone who did not write it.", "没有条件类型、映射类型或可编程类型。读懂一个类型靠看它的声明，而不是靠再执行一段程序；正是这一点让类型对没写过它的人仍然可读。")}
+                        {locale.text("There are no conditional, mapped, or programmable types. You read a type by looking at its declaration, not by running a second program in your head — and that is what keeps a type readable to someone who did not write it.", "没有条件类型、映射类型、可编程类型。读一个类型，靠看它的声明，不靠在脑子里跑第二个程序。类型之所以对没写过它的人也读得懂，靠的就是这件事。")}
                     </Paragraph>
                 </Callout>
-
-                <SectionHeading id="conversion">{locale.text("The text-conversion contract", "文本转换契约")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Text conversion accepts strings, numbers, bools, enums, null, and extension values with a declared text form. A record is not on that list, because there is no single rendering of a record that every caller would have wanted. Inspection is print, and data text is Json.stringify, which is resident and needs no import.", "文本转换接受字符串、数字、bool、枚举、null，以及带有已声明文本形式的扩展值。记录不在这份清单上，因为记录没有哪一种渲染是所有调用方都想要的。检查用 print，数据文本用 Json.stringify——它是常驻的，无需导入。")}
+                    {locale.text("You pay an extra binding and an extra name, every time: before a closure, after a getter, after a Map read. And when you know a value is present and the compiler does not, there is no short way to say so — you restructure, or you write a branch that will never run. On a hot path the same rule pushes a performance decision into your code, because binding the narrowed value once is faster than reading through the optional again.", "你付的是一个多余的绑定和一个多余的名字，每次都付：闭包之前、取值器之后、Map 读取之后。而当你知道某个值一定在、编译器不知道的时候，没有短写法可以告诉它——只能改结构，或者写一个永远不会走到的分支。在热路径上，同一条规则还把一个性能决定推进了你的代码里：把收窄后的值绑一次，比再穿过可选值读一遍快。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={closureErrorCode} />
+                <CodeBlock code={closureErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, and the sample above it holds the accepted spelling of the same function, four lines long, with the binding in it. The build compiles both, requires this one to keep failing, and checks VEL4001 against the diagnostics it really produces.", "门禁：受检的教学反例；它上面那个样本里就有同一个函数被接受的写法，四行，带着那个绑定。构建会把两者都编译，要求这一个持续失败，并核对 VEL4001 确实由它产生。")}
+                </GateNote>
+
+                <SectionHeading id="conversion">
+                    {locale.text("The text-conversion contract", "转成文本的契约")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("An email subject line that went out to four hundred people.", "一行邮件主题，发给了四百个人。")}
+                </Paragraph>
+                <CodeBlock code={objectTextJsCode} />
+                <Paragraph>
+                    {locale.text("Nothing failed. Interpolation asks the value for its text, the default text of an object is that string, and every layer between the template and the mail server was working exactly as designed. The one thing nobody wanted was the only thing anybody saw.", "什么都没出错。插值向那个值要它的文本形式，而一个对象默认的文本形式就是那串字符；从模板到邮件服务器，中间每一层都完全按设计工作。唯一没人想要的东西，成了唯一所有人看到的东西。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Here the contract is a list, and a record is not on it.", "这里的契约是一份清单，记录不在上面。")}
                 </Paragraph>
                 <CodeBlock code={conversionCode} />
                 <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                    {locale.text("Text conversion accepts strings, numbers, bools, enums, null, and extension values with a declared text form. A record is left off because no single rendering of a record is the one every caller would have wanted, and picking one would mean picking it for everybody. Inspection is print, and data text is Json.stringify, which is resident and needs no import.", "文本转换接受字符串、数字、bool、枚举、null，以及带有已声明文本形式的扩展值。记录不在上面，因为记录没有哪一种渲染是所有调用方都想要的；选一种，就等于替所有人选了。要看一眼用 print，要数据文本用 Json.stringify——它是常驻的，不用导入。")}
                 </Paragraph>
-                <CodeBlock code={recordErrorCode} />
                 <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                    {locale.text("The fastest debugging reflex is the one it refuses. Dropping f\"{task}\" into a line while you are chasing something is a diagnostic, so you stop and spell out print(task) or Json.stringify(task) — charged exactly when you are in a hurry. And a type you declare cannot declare its own text form; only extension values have one. A Money type cannot teach the language how to render itself, so a formatting helper is a function whose name every call site has to carry.", "最快的那个调试反射，恰好是它拒绝的那个。追问题的时候顺手往行里塞一个 f\"{task}\"，得到的是一条诊断；于是你停下来，把 print(task) 或者 Json.stringify(task) 写全——这笔钱恰好收在你最赶的时候。另外，你自己声明的类型没法声明它的文本形式，只有扩展值才有。一个 Money 类型没办法教会语言怎么渲染自己，所以格式化只能是一个帮手函数，而每一个调用点都得记着它的名字。")}
                 </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={recordErrorCode} />
                 <CodeBlock code={recordErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example. The sample is compiled on every build, it must keep producing a diagnostic, and VEL4026 is checked against the diagnostics it really produces. Read the message rather than the rule: it names both replacements at the point of refusal, which is the shape every diagnostic on this site is held to.", "门禁：受检的教学反例。样本每次构建都会编译，它必须持续报错，而 VEL4026 会与它真实产生的诊断核对。这里该读的是诊断本身，不是规则：它在拒绝的当场就把两种替代写法都点了名——本站每一条诊断都按这个形状要求。")}
+                </GateNote>
             </Prose>
             <DocsPager previous={guidePrevious("/guide/language/types")} next={guideNext("/guide/language/types")} />
         </DocsShell>

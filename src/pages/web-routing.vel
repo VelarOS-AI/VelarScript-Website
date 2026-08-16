@@ -1,160 +1,232 @@
 import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, GateNote, MemberRow, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
+// The React and JSON blocks are third-party, so they are *JsCode, *TsCode and
+// *JsonCode and nothing here compiles them. Every VelarScript block is compiled
+// by this site's gate.
 const routesCode = `import {RouteContext, Router, route} from "velar/web"\n\ncomponent ArticlePage(route: RouteContext):\n    return <article data-route="article">\n        <h2>{route.params.get("slug") ?? "untitled"}</h2>\n    </article>\n\ncomponent ArchivePage(route: RouteContext):\n    return <section data-route="archive">\n        <h2>Archive</h2>\n        <p data-rest>{route.params.get("wildcard") ?? "the whole archive"}</p>\n    </section>\n\ncomponent IndexPage:\n    return <section data-route="index"><h2>Index</h2></section>\n\n// A route component may accept route: RouteContext and nothing else that is\n// required, so a fallback is a checked route component too.\ncomponent NotFound(route: RouteContext):\n    return <section data-route="not-found" role="alert">\n        <h2>Page not found</h2>\n        <p data-missing>{f"No page matches {route.path}"}</p>\n    </section>\n\n// A pattern is a pure pathname beginning with a slash. It may contain :name\n// parameters, or one whole terminal wildcard segment whose value is read as the\n// "wildcard" parameter.\nexport const routes = [\n    route("/", IndexPage),\n    route("/articles/:slug", ArticlePage),\n    route("/archive/*", ArchivePage),\n]\n\nexport component Application:\n    return <main data-application>\n        <Router routes={routes} fallback={NotFound} />\n    </main>`
+const paramsTsCode = "// React Router 7 with TypeScript\nconst { slug } = useParams();\n// slug is string | undefined, on every route, including the one whose pattern\n// contains :slug. The type cannot know which pattern matched, so every read\n// starts with a check nobody can fail to write and everybody writes the same."
+const decodeCrashJsCode = `// A crawler asks for /articles/%E0%A4%A\ndecodeURIComponent("%E0%A4%A");\n// URIError: URI malformed\n// Thrown while resolving the route, above every error boundary the application\n// installed, so a malformed URL is a blank page rather than a 404.`
 const contextCode = `import {RouteContext, currentRoute, domId} from "velar/web"\n\n// RouteContext is an importable named data type: an application-relative path,\n// decoded params, a parsed query, and the hash. A percent-encoded parameter\n// that cannot be decoded is treated as a non-match and reaches the fallback.\ncomponent SearchResults(route: RouteContext):\n    const headingId = domId("search")\n\n    return <section data-route="search" aria-labelledby={headingId}>\n        <h2 id={headingId}>Results</h2>\n        <p data-path>{route.path}</p>\n        <p data-term>{route.query.get("q") ?? "no term"}</p>\n        <p data-page>{route.query.get("page") ?? "1"}</p>\n        <p data-section>{route.hash == "" ? "no anchor" : route.hash}</p>\n    </section>\n\n// currentRoute() answers a typed snapshot of the route the application is on,\n// for code that is not itself a route component.\nexport component Breadcrumbs:\n    const here = currentRoute()\n\n    return <nav data-breadcrumbs aria-label="Breadcrumbs">\n        <p data-current>{here.path}</p>\n        <SearchResults route={here} />\n    </nav>`
+const lazyJsCode = `// React 19.2 — the split route, and the two boundaries it needs\nconst Reports = lazy(() => import("./pages/Reports"));\n\n<Suspense fallback={<Spinner />}>\n  <Reports />\n</Suspense>\n// Leave out the error boundary and a chunk that fails to load — the ordinary\n// consequence of deploying while somebody has the old page open — takes the\n// whole application down instead of that one route.`
+const lazyRouteChunkCode = `import {rgb} from "velar/look"\n\nconst pageLook = look:\n    padding = 8px\n    color = rgb(24, 31, 46)\n\nexport component ReportsPage:\n    return <article data-reports look={pageLook}>\n        <h3>Reports</h3>\n        <p>This module arrives in its own chunk when the route is first visited.</p>\n    </article>`
+const lazyRouteCode = `import {Router, lazy, route} from "velar/web"\n\ncomponent RouteLoading:\n    return <p role="status">Loading the reports module.</p>\n\n// A failure fallback accepts error: Error and requires no other props.\ncomponent RouteFailed(error: Error):\n    return <p role="alert">The reports module failed to load: {error.message}</p>\n\n// The loader is a checked dynamic import, so the chunk is part of the graph.\nconst Reports = lazy(() => import("./chunk.vel"), "ReportsPage", RouteLoading, RouteFailed)\n\ncomponent Home:\n    return <p>Start here.</p>\n\nexport component App:\n    return <Router routes={[route("/", Home), route("/reports", Reports)]} />`
+const anchorJsCode = `// The link that reloads the whole application\n<a href="/articles/route-patterns">Route patterns</a>\n\n// And the one that does not — but says nothing to a screen reader, because a\n// client-side navigation changes no document the assistive layer is watching.\n<Link to="/articles/route-patterns">Route patterns</Link>`
 const navigationCode = `import {Link, NavLink, announce, back, forward, navigate, redirect, reload} from "velar/web"\n\n// The four history operations that leave the current page, written together.\nexport def historySpellings():\n    redirect("/")\n    back()\n    forward()\n    reload()\n\n// announce(message, priority?) writes to the application's live region, which\n// is how a single-page navigation stays audible to a screen reader.\nexport def announceRouteChange(path: string):\n    announce(f"Navigated to {path}")\n    announce("Navigation failed", "assertive")\n\nexport component SiteNavigation:\n    def openArticle():\n        navigate("/articles/route-patterns")\n\n    def replaceWithArchive():\n        navigate("/archive/2026", {replace: true, scroll: false})\n\n    return <nav data-site-navigation aria-label="Site">\n        <Link to="/" replace={false}>Home</Link>\n        <NavLink to="/articles" exact={false}>Articles</NavLink>\n        <NavLink to="/archive/2026" exact={true}>Archive</NavLink>\n        <button type="button" data-open-article on:click={openArticle}>Open an article</button>\n        <button type="button" data-replace on:click={replaceWithArchive}>Replace with the archive</button>\n    </nav>`
+const titleLeakJsCode = "// Set on the article route\nuseEffect(() => { document.title = `${title} — Field Notes`; }, [title]);\n// Nothing restores it. Navigate to a route that does not set a title and the\n// tab still says the article's name, which is also what gets bookmarked."
 const headCode = `import {Head} from "velar/web"\n\n// Head owns its seven fields for its component's lifetime and restores the\n// previous values on cleanup, so a route that mounts a Head does not have to\n// undo it on the way out. Every prop except title is optional.\nexport component ArticleHead(title: string, summary: string, slug: string):\n    return <Head\n        title={f"{title} — Field Notes"}\n        description={summary}\n        canonical={f"/articles/{slug}"}\n        robots="index,follow"\n        image="/social-card.png"\n        themeColor="#1d2b57"\n        language="en"\n    />`
+const boundaryGapJsCode = "// What an error boundary does not catch, from React's own documentation:\n//   - event handlers\n//   - asynchronous code, including setTimeout and promise callbacks\n//   - errors thrown in the boundary itself\n// So the failure a user is most likely to cause — pressing a button — is the\n// one the boundary was never watching."
 const errorsCode = `import {onError, reportError} from "velar/app"\n\n// velar/app owns the error chain. onError registers a handler and answers its\n// own cleanup function; reportError puts an application failure onto the same\n// chain the runtime already uses.\nexport type AppErrorReport:\n    error: Error\n    phase: string\n    detail: string\n    component: string\n    timestamp: number\n\nexport component ErrorChain:\n    state lastReport = "no report"\n    let stop: (() -> null)? = null\n\n    def record(report: AppErrorReport):\n        lastReport = f"{report.phase}:{report.detail}:{report.component}:{report.error.message}"\n\n    @mounted:\n        stop = onError(record)\n\n    @cleanup:\n        if stop != null:\n            stop()\n\n    def raise():\n        reportError(Error("A reported failure"), "event", "the routing chapter")\n\n    def raiseBare():\n        reportError(Error("A failure with no phase"))\n\n    return <div data-error-chain>\n        <p data-last-report>{lastReport}</p>\n        <button type="button" data-report-error on:click={raise}>Report an error</button>\n        <button type="button" data-report-bare on:click={raiseBare}>Report without a phase</button>\n    </div>`
+const envJsCode = "// The value that is a string until it is not\nconst base = process.env.REACT_APP_API_BASE;\nfetch(`${base}/users`);\n// Misspell the variable in the deployment and base is undefined. The request\n// goes to \"undefined/users\", the server answers 404, and the report says the\n// users endpoint is missing."
 const configJsonCode = `{\n  "web": {\n    "base": "/",\n    "publicConfig": {\n      "apiBase": "/api",\n      "channel": "preview",\n      "features": {"realtime": true}\n    }\n  }\n}`
 const configCode = `import {has, keys, publicConfig} from "velar/config"\n\n// publicConfig(Target) validates the manifest's web.publicConfig block against\n// an ordinary record type at startup, so a missing or mistyped key fails once\n// rather than somewhere in the page. has and keys answer the same block\n// untyped, which is what optional capability discovery needs.\nexport type SiteFeatures:\n    realtime: bool\n\nexport type SiteConfig:\n    apiBase: string\n    channel: string\n    features: SiteFeatures\n\nexport const config = publicConfig(SiteConfig)\nexport const hasApiBase = has("apiBase")\nexport const configKeys = keys()\n\nexport component ConfigReadout:\n    return <p data-config>{f"{config.apiBase}:{config.channel}:{config.features.realtime}:{hasApiBase}:{configKeys.size}"}</p>`
 
 const sections = [
     {id: "routes", label: "Declaring routes", labelZh: "声明路由"},
-    {id: "context", label: "What a route receives", labelZh: "路由收到什么"},
-    {id: "lazy", label: "Splitting a route", labelZh: "拆分一条路由"},
-    {id: "navigation", label: "Navigation and links", labelZh: "导航与链接"},
-    {id: "head", label: "Document metadata", labelZh: "文档元数据"},
-    {id: "errors", label: "The application error chain", labelZh: "应用错误链"},
-    {id: "config", label: "Validated public configuration", labelZh: "经过验证的公开配置"},
+    {id: "context", label: "A parameter that might be undefined", labelZh: "可能是 undefined 的那个参数"},
+    {id: "lazy", label: "The chunk that failed to load", labelZh: "加载失败的那个 chunk"},
+    {id: "navigation", label: "A navigation nobody heard", labelZh: "没人听见的那次导航"},
+    {id: "head", label: "The title that stayed behind", labelZh: "没跟上的那个标题"},
+    {id: "errors", label: "What the boundary was not watching", labelZh: "边界没在看的那一半"},
+    {id: "config", label: "A value that was undefined", labelZh: "取到 undefined 的那个值"},
 ]
 
 const lazyRows: List<MemberRow> = [
-    {name: "lazy", signature: "lazy(loader, exportName, loading=null, failed=null)", summary: "Returns the exported component with its original prop contract, loaded from its own chunk.", summaryZh: "返回带原有 prop 契约的导出组件，从它自己的 chunk 中加载。"},
-    {name: "loader", signature: `() => import("./pages/reports.vel")`, summary: "A zero-argument checked dynamic VelarScript import, so the target stays inside the checked module graph.", summaryZh: "一个零参数的受检动态 VelarScript 导入，因此目标仍留在受检模块图中。"},
-    {name: "exportName", signature: `"Reports"`, summary: "A literal component export name; a dynamic string is refused.", summaryZh: "一个字面量的组件导出名；动态字符串会被拒绝。"},
-    {name: "loading, failed", signature: "PageLoading, PageFailed", summary: "Components rendered while the chunk loads and when it fails; both must actually return components.", summaryZh: "chunk 加载期间与加载失败时渲染的组件；两者都必须真的返回组件。"},
+    {name: "lazy", signature: "lazy(loader, exportName, loading=null, failed=null)", summary: "Returns the exported component with its original prop contract, loaded from its own chunk.", summaryZh: "返回带原有 prop 契约的导出组件，从它自己的 chunk 里加载。"},
+    {name: "loader", signature: `() => import("./pages/reports.vel")`, summary: "A zero-argument checked dynamic VelarScript import, so the target stays inside the checked module graph.", summaryZh: "一个零参数的受检动态 VelarScript 导入，所以目标仍留在受检模块图里。"},
+    {name: "exportName", signature: `"Reports"`, summary: "A literal component export name; a dynamic string is refused.", summaryZh: "一个字面量的组件导出名；动态字符串会被拒。"},
+    {name: "loading, failed", signature: "PageLoading, PageFailed", summary: "Components rendered while the chunk loads and when it fails; both must actually return components.", summaryZh: "chunk 加载期间和加载失败时渲染的组件；两者都必须真的返回组件。"},
 ]
-
-const lazyRouteChunkCode = `import {rgb} from "velar/look"\n\nconst pageLook = look:\n    padding = 8px\n    color = rgb(24, 31, 46)\n\nexport component ReportsPage:\n    return <article data-reports look={pageLook}>\n        <h3>Reports</h3>\n        <p>This module arrives in its own chunk when the route is first visited.</p>\n    </article>`
-
-const lazyRouteCode = `import {Router, lazy, route} from "velar/web"\n\ncomponent RouteLoading:\n    return <p role="status">Loading the reports module.</p>\n\n// A failure fallback accepts error: Error and requires no other props.\ncomponent RouteFailed(error: Error):\n    return <p role="alert">The reports module failed to load: {error.message}</p>\n\n// The loader is a checked dynamic import, so the chunk is part of the graph.\nconst Reports = lazy(() => import("./chunk.vel"), "ReportsPage", RouteLoading, RouteFailed)\n\ncomponent Home:\n    return <p>Start here.</p>\n\nexport component App:\n    return <Router routes={[route("/", Home), route("/reports", Reports)]} />`
 
 export component WebRouting:
     const locale = useLocale()
     return <main>
         <Head
             title={headTitle("/guide/web/routing", locale.isChinese())}
-            description={locale.text("How routes are declared, what RouteContext carries, and how velar/config validates the manifest at startup.", "路由如何声明、RouteContext 携带什么，以及 velar/config 如何在启动时验证清单。")}
+            description={locale.text("How routes are declared, why a malformed URL reaches the fallback instead of crashing, and how the manifest's public configuration is validated at startup.", "路由怎么声明、畸形 URL 为什么会走到 fallback 而不是让页面挂掉，以及清单里的公开配置如何在启动时被验证。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Web extension / 10", "Web 扩展 / 10")}
                 title={locale.text("Routing and configuration", "路由与配置")}
-                summary={locale.text("Routes and route context, split routes, navigation, document metadata, the application error chain, and validated public configuration.", "路由与路由上下文、被拆分的路由、导航、文档元数据、应用错误链，以及经过验证的公开配置。")}
+                summary={locale.text("Routes, the context a route receives, split routes, navigation, document metadata, the one error chain, and configuration that fails at startup rather than in a URL.", "路由、路由收到的上下文、被拆分的路由、导航、文档元数据、唯一那条错误链，以及在启动时失败、而不是在某个 URL 里失败的配置。")}
             />
             <SectionList items={sections} />
             <Prose>
                 <SectionHeading id="routes">{locale.text("Declaring routes", "声明路由")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("route(path, component) declares one entry and Router renders the first matching component. A pattern is a pure pathname beginning with a slash; query text, hash text, backslashes, empty segments, and a redundant trailing slash are all rejected. It may contain :name parameters, or one whole terminal wildcard segment whose value is read as the wildcard parameter — so a named wildcard parameter cannot be combined with the wildcard segment.", "route(path, component) 声明一个条目，Router 渲染第一个匹配的组件。模式是以斜杠开头的纯路径名；查询文本、hash 文本、反斜杠、空段与多余的尾部斜杠都会被拒绝。它可以包含 :name 参数，或者一个整段的终端通配符，其取值以 wildcard 参数读取——因此具名的 wildcard 参数不能与通配符段并用。")}
+                    {locale.text("A route table is a list of patterns and the components that answer them.", "一张路由表就是一串模式，加上回答它们的组件。")}
                 </Paragraph>
                 <CodeBlock code={routesCode} />
+                <Paragraph>
+                    {locale.text("route(path, component) declares one entry and Router renders the first matching component. A pattern is a pure pathname beginning with a slash, so query text, hash text, backslashes, empty segments and a redundant trailing slash are all rejected at the declaration rather than quietly never matching. It may contain :name parameters, or one whole terminal wildcard segment read as the wildcard parameter.", "route(path, component) 声明一个条目，Router 渲染第一个匹配的组件。模式是以斜杠开头的纯路径名，所以查询文本、hash 文本、反斜杠、空段和多余的尾部斜杠，都会在声明处被拒，而不是安静地永远匹配不上。它可以包含 :name 参数，或者一整段的终端通配符，其取值以 wildcard 参数读取。")}
+                </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("When no route matches, an omitted fallback renders a small accessible not-found view instead of an empty router.", "当没有路由匹配时，省略 fallback 会渲染一个小而可访问的未找到视图，而不是一个空的 router。")}
+                        {locale.text("When no route matches, an omitted fallback renders a small accessible not-found view instead of an empty router.", "没有路由匹配时，省略 fallback 会渲染一个小而可访问的未找到视图，而不是一个空 router。")}
                     </li>
                     <li>
-                        {locale.text("A mounted Router constructs the target component before destroying the active page. If construction fails, the prior page remains mounted and velar/app receives the report, and another navigation may recover normally.", "已挂载的 Router 会先构造目标组件，再销毁当前页面。若构造失败，先前的页面保持挂载、velar/app 收到报告，之后的导航可以正常恢复。")}
+                        {locale.text("A mounted Router constructs the target component before destroying the active page. If construction fails the prior page stays mounted, velar/app receives the report, and another navigation may recover normally.", "已挂载的 Router 会先构造目标组件，再销毁当前页面。构造失败时，先前那页保持挂载，velar/app 收到报告，之后的导航可以正常恢复。")}
                     </li>
                     <li>
-                        {locale.text("Invalid path parameters, repeated parameters, non-terminal wildcards, non-components, and wrong route props all fail checking before browser execution.", "无效的路径参数、重复的参数、非终端通配符、非组件，以及错误的路由 prop，都会在浏览器执行之前无法通过检查。")}
+                        {locale.text("Invalid path parameters, repeated parameters, non-terminal wildcards, non-components, and wrong route props all fail checking before the browser runs anything.", "无效的路径参数、重复的参数、非终端通配符、非组件，以及错误的路由 prop，都会在浏览器跑起来之前无法通过检查。")}
                     </li>
                 </BulletList>
-
-                <SectionHeading id="context">{locale.text("What a route receives", "路由收到什么")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("RouteContext is an importable named data type with an application-relative path, string params and query Maps, and the hash. A route component may require only its route prop, and currentRoute() answers the same typed snapshot to code that is not itself a route component.", "RouteContext 是可导入的具名数据类型，包含应用相对的 path、字符串 params 与 query 两个 Map，以及 hash。路由组件唯一可以要求的就是它的 route prop；currentRoute() 为本身不是路由组件的代码返回同样的带类型快照。")}
+                    {locale.text("The cost is that the table is a value in a module, so there is no file-based convention doing it for you. Adding a page means adding a line, and a large application's route table is a long list somebody maintains. The return is that the list exists: every path the application answers is in one place, readable in order, and checked.", "代价是这张表是模块里的一个值，所以没有一套基于文件的约定替你做这件事。加一个页面就是加一行，而大应用的路由表是一份要人维护的长清单。换回来的是：这份清单确实存在——应用回答的每一个路径都在同一个地方，按顺序读得下来，而且受检。")}
+                </Paragraph>
+
+                <SectionHeading id="context">
+                    {locale.text("A parameter that might be undefined", "可能是 undefined 的那个参数")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("Reading a path parameter is the first thing a route component does, and this is what the type says about it.", "读一个路径参数是路由组件做的第一件事，而类型对它的说法是这样的。")}
+                </Paragraph>
+                <CodeBlock code={paramsTsCode} />
+                <Paragraph>
+                    {locale.text("There is a second, harder case underneath. A parameter has to be percent-decoded, and not every byte sequence decodes.", "底下还有第二个、更难缠的情况。参数需要百分号解码，而不是每一串字节都解得开。")}
+                </Paragraph>
+                <CodeBlock code={decodeCrashJsCode} />
+                <Paragraph>
+                    {locale.text("A crawler asking for a truncated escape throws while the route is being resolved, above the boundaries the application installed, so the answer to a bad URL is a blank page rather than a not-found view.", "一个爬虫请求了一个被截断的转义串，在路由解析过程中就抛了异常，位置在应用装的那些边界之上，于是「一个坏 URL」的答案是一片白，而不是一个未找到视图。")}
                 </Paragraph>
                 <CodeBlock code={contextCode} />
+                <Paragraph>
+                    {locale.text("RouteContext is an importable named data type with an application-relative path, string params and query Maps, and the hash. A percent-encoded parameter that cannot be decoded is treated as a non-match and reaches the ordinary fallback, so a malformed direct URL cannot turn a recoverable unknown route into a fatal render.", "RouteContext 是可导入的具名数据类型，带着应用相对的 path、两个字符串 Map（params 和 query），以及 hash。解不开的百分号编码参数会被当作不匹配，走进普通的 fallback，所以一个畸形的直达 URL，没办法把一条可恢复的未知路由变成致命渲染。")}
+                </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("Browser path, query, and hash values must already be strings; routing never calls conversion hooks on malformed host values.", "浏览器提供的 path、query 与 hash 取值必须本来就是字符串；路由不会对畸形的宿主取值调用转换钩子。")}
+                        {locale.text("Browser path, query, and hash values must already be strings; routing never calls conversion hooks on malformed host values.", "浏览器给的 path、query、hash 取值必须本来就是字符串；路由不会对畸形的宿主取值调用转换钩子。")}
                     </li>
                     <li>
-                        {locale.text("A percent-encoded parameter that cannot be decoded is treated as a non-match and reaches the ordinary fallback, so a malformed direct URL cannot turn a recoverable unknown route into a fatal render.", "无法解码的百分号编码参数会被当作不匹配，进入普通的 fallback，因此畸形的直达 URL 无法把一个可恢复的未知路由变成致命渲染。")}
-                    </li>
-                    <li>
-                        {locale.text("domId(prefix) answers an application-local unique DOM id for accessible label and description relationships, without requiring a cryptographic identifier.", "domId(prefix) 返回一个应用内唯一的 DOM id，用于可访问的标签与描述关系，而不需要密码学标识符。")}
+                        {locale.text("domId(prefix) answers an application-local unique DOM id for accessible label and description relationships, without needing a cryptographic identifier.", "domId(prefix) 返回一个应用内唯一的 DOM id，用于可访问的标签与描述关系，不需要密码学标识符。")}
                     </li>
                 </BulletList>
-
-                <SectionHeading id="lazy">{locale.text("Splitting a route", "拆分一条路由")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("lazy puts one route in its own chunk while keeping the target inside the checked module graph, because the loader is an ordinary checked dynamic import rather than a string the bundler interprets. It owns one cached successful load, retries after a failed one, mounts only the active child, and destroys loading or resolved children when the route leaves.", "lazy 把一条路由放进它自己的 chunk，同时让目标留在受检模块图中——因为加载器是一个普通的受检动态导入，而不是打包器去解释的字符串。它拥有一次被缓存的成功加载，失败后会重试，只挂载处于活动状态的子项，并在路由离开时销毁加载中或已解析的子项。")}
+                    {locale.text("The cost is that params is a Map of strings, so a read is still a lookup that can miss and a number is still text you convert. The type does not know which pattern matched — no type does — so the null check the TypeScript version made you write is still here, spelled with ?? rather than with a non-null assertion. What changed is the failure above it: the decode cannot take the page down.", "代价是 params 是一个字符串 Map，所以一次读取仍然是可能落空的查找，而一个数字仍然是要你转换的文本。类型不知道匹配上的是哪个模式——没有哪种类型知道——所以 TypeScript 那版逼你写的 null 检查在这里照样要写，只是写成 ?? 而不是非空断言。变的是它上面那层失败：解码没法把页面搞挂。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: every VelarScript block on this page is compiled by scripts/check-code-samples.mjs, and the two split-route blocks are compiled together as two modules of one project.", "门禁：本页每个 VelarScript 块都由 scripts/check-code-samples.mjs 编译；拆分路由那两个块是作为同一个项目里的两个模块一起编译的。")}
+                </GateNote>
+
+                <SectionHeading id="lazy">
+                    {locale.text("The chunk that failed to load", "加载失败的那个 chunk")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("A route that nobody visits on the first screen belongs in its own chunk, and splitting it is one line.", "首屏没人访问的路由，应该放进它自己的 chunk，而拆分它只要一行。")}
+                </Paragraph>
+                <CodeBlock code={lazyJsCode} />
+                <Paragraph>
+                    {locale.text("The split needs two boundaries around it, and only one of them is obvious. A chunk that fails to load is not an exotic case — it is what happens to anyone holding an old page open when you deploy, because the file their bundle asks for is no longer on the server. Without the second boundary, one route's missing file takes down every route.", "这次拆分需要两层边界包着它，而其中只有一层是显而易见的。chunk 加载失败不是什么罕见情况——你发布新版本时，任何还开着旧页面的人都会碰上，因为他们那份 bundle 要的文件已经不在服务器上了。少了第二层边界，一条路由缺个文件，全部路由一起完蛋。")}
                 </Paragraph>
                 <MemberTable rows={lazyRows} caption={locale.text("What lazy takes", "lazy 接受什么")} />
                 <Paragraph>
-                    {locale.text("The two blocks below are two modules of one project. The neighbour module, chunk.vel, exports the page; the entry declares the lazy route against it. Both compile together in the site's gate.", "下面两个代码块是同一个项目里的两个模块。邻居模块 chunk.vel 导出页面组件；入口模块对它声明惰性路由。两者在本站门禁中一起编译。")}
+                    {locale.text("lazy takes both fallbacks as arguments, so the failure case is on the same line as the split rather than in a wrapper somebody has to remember. The loader is an ordinary checked dynamic import rather than a string the bundler interprets, which keeps the target inside the checked module graph. The two blocks below are two modules of one project: the neighbour exports the page, and the entry declares the lazy route against it.", "lazy 把两个 fallback 都作为实参收下，所以失败那一档和拆分写在同一行上，而不是躲在一个得有人记得加的包装器里。加载器是一个普通的受检动态导入，不是打包器去解释的字符串，所以目标仍留在受检模块图里。下面两个块是同一个项目的两个模块：邻居导出那个页面，入口对它声明惰性路由。")}
                 </Paragraph>
                 <CodeBlock code={lazyRouteChunkCode} />
                 <CodeBlock code={lazyRouteCode} />
                 <BulletList>
                     <li>
-                        {locale.text("Failures report through velar/app with the resource phase and render either the supplied failure component or an accessible default alert.", "失败经由 velar/app 在 resource 阶段上报，并渲染所提供的失败组件，或一个可访问的默认警告。")}
+                        {locale.text("Failures report through velar/app with the resource phase and render either the supplied failure component or an accessible default alert.", "失败经由 velar/app 在 resource 阶段上报，并渲染你提供的失败组件，或者一个可访问的默认警告。")}
                     </li>
                     <li>
-                        {locale.text("The boundary also owns failures after the module has loaded: if the selected component throws while it is constructed, its transactional cleanup finishes before the same failure view is rendered.", "该边界也拥有模块加载之后的失败：若被选中的组件在构造时抛出，它的事务性清理会先完成，然后才渲染同一个失败视图。")}
+                        {locale.text("The boundary also owns failures after the module has loaded: if the selected component throws while it is constructed, its transactional cleanup finishes before the same failure view is rendered.", "模块加载之后的失败也归这条边界管：被选中的组件在构造时抛出，它的事务性清理会先做完，然后才渲染同一个失败视图。")}
                     </li>
                     <li>
-                        {locale.text("A failing custom failure component is itself reported and replaced by a built-in accessible alert rather than becoming an unhandled rejection.", "自定义失败组件自身失败时会被上报，并由内置的可访问警告替代，而不是变成未处理的拒绝。")}
+                        {locale.text("A failing custom failure component is itself reported and replaced by a built-in accessible alert rather than becoming an unhandled rejection.", "自定义失败组件自己失败时也会被上报，并由内置的可访问警告顶上，而不是变成一次未处理的拒绝。")}
                     </li>
                 </BulletList>
-
-                <SectionHeading id="navigation">{locale.text("Navigation and links", "导航与链接")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Link and NavLink preserve native anchor behaviour and intercept only an unmodified primary click on an internal application path. NavLink additionally owns the current-page marker while its target is active, which is the attribute the current Look hook reads. navigate, redirect, back, forward, and reload are the intentional history operations.", "Link 与 NavLink 保留原生锚点行为，只拦截对内部应用路径的、未加修饰键的主键点击。NavLink 还在其目标处于活动状态时拥有当前页标记，这正是 current 这个 Look 钩子读取的属性。navigate、redirect、back、forward 与 reload 是有意为之的历史操作。")}
+                    {locale.text("The cost is that both fallbacks default to nothing, and defaulting to nothing means the built-in views. Omit them and a loading route renders the framework's own status text and a failed one renders the framework's own alert — correct and accessible, but in the framework's words, not yours. A product that cares what those two moments look like writes two more components, per split.", "代价是两个 fallback 的默认值都是「什么都不给」，而什么都不给就用内置视图。省掉它们，加载中的路由会渲染框架自己的状态文本，失败的会渲染框架自己的警告——正确、可访问，但用的是框架的措辞，不是你的。在意这两个时刻长什么样的产品，每拆一次就得多写两个组件。")}
+                </Paragraph>
+
+                <SectionHeading id="navigation">
+                    {locale.text("A navigation nobody heard", "没人听见的那次导航")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("Two links to the same page, and neither one is fully right.", "两个指向同一页的链接，哪个都不完全对。")}
+                </Paragraph>
+                <CodeBlock code={anchorJsCode} />
+                <Paragraph>
+                    {locale.text("The plain anchor reloads the whole application and throws away everything in memory. The framework link does not, and that is the problem for anybody using a screen reader: a client-side navigation changes no document that the assistive layer was watching, so the page silently becomes a different page. Every serious single-page application ends up hand-building an announcement for this.", "普通锚点会重新加载整个应用，把内存里的一切扔掉。框架的链接不会——而这正是屏幕阅读器用户遇到的问题：客户端导航没有改变辅助技术在盯着的任何文档，所以这一页安静地变成了另一页。每个认真的单页应用最后都得自己手搭一套播报。")}
                 </Paragraph>
                 <CodeBlock code={navigationCode} />
+                <Paragraph>
+                    {locale.text("Link and NavLink preserve native anchor behaviour and intercept only an unmodified primary click on an internal application path, so a middle click, a modified click and an external link all behave the way the platform says. announce writes to a compiler-owned live region with a polite or assertive priority, which is how a single-page navigation stays audible without every application inventing the same region.", "Link 与 NavLink 保留原生锚点行为，只拦截「对内部应用路径的、未加修饰键的主键点击」，所以中键点击、带修饰键的点击和外部链接，行为都和平台规定的一样。announce 以 polite 或 assertive 优先级写入一个由编译器拥有的 live region——单页导航之所以还听得见，靠的是它，而不是每个应用各自发明一遍同一个区域。")}
+                </Paragraph>
                 <BulletList>
+                    <li>
+                        {locale.text("NavLink owns the current-page marker while its target is active, which is the attribute the current Look hook reads.", "NavLink 在它的目标处于活动状态时拥有当前页标记，而这正是 current 这个 Look 钩子读的属性。")}
+                    </li>
                     <li>
                         {locale.text("Navigation options are a data-only record with boolean replace and scroll fields, fully validated before history or scrolling changes.", "导航选项是一个只含数据的记录，带布尔的 replace 与 scroll 字段，在历史或滚动改变之前被完整验证。")}
                     </li>
                     <li>
-                        {locale.text("Non-exact links match descendant paths, except that the application root matches only itself. Matching stays application-relative under a configured base and normalizes trailing slashes.", "非精确链接匹配后代路径，唯独应用根只匹配它自己。匹配在配置了 base 时仍是应用相对的，并会规范化尾部斜杠。")}
-                    </li>
-                    <li>
-                        {locale.text("announce writes to a compiler-owned live region with a polite or assertive priority, which is how a single-page navigation stays audible.", "announce 以 polite 或 assertive 优先级写入由编译器拥有的 live region，这就是单页导航保持可被朗读的方式。")}
+                        {locale.text("Non-exact links match descendant paths, except that the application root matches only itself. Matching stays application-relative under a configured base and normalizes trailing slashes.", "非精确链接匹配后代路径，唯独应用根只匹配它自己。配置了 base 时匹配仍是应用相对的，并会规范化尾部斜杠。")}
                     </li>
                 </BulletList>
-
-                <SectionHeading id="head">{locale.text("Document metadata", "文档元数据")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Head owns the title, description, canonical link, robots directive, social image, theme colour, and document language for its component's lifetime, and restores the previous values on cleanup. Only the title is required, so a route sets what it knows and leaves the rest alone.", "Head 在其组件的生命周期内拥有 title、description、canonical 链接、robots 指令、社交图片、主题色与文档语言，并在清理时恢复之前的取值。只有 title 是必需的，因此路由设置它知道的部分，其余保持不动。")}
+                    {locale.text("The cost is that the region exists and the sentence does not. announce is available, correct and owned; what to say and when to say it is an application decision, and a route that never calls it is as silent as it ever was. The language removed the plumbing, not the responsibility.", "代价是那个区域是现成的，那句话不是。announce 可用、正确、有人拥有；说什么、什么时候说，是应用的决定，而一条从不调用它的路由，和以前一样安静。语言拿掉的是管道，不是责任。")}
+                </Paragraph>
+
+                <SectionHeading id="head">{locale.text("The title that stayed behind", "没跟上的那个标题")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("Setting the document title from a route is two lines, and the second one is the one nobody writes.", "在路由里设置文档标题是两行，而第二行是没人会写的那一行。")}
+                </Paragraph>
+                <CodeBlock code={titleLeakJsCode} />
+                <Paragraph>
+                    {locale.text("Nothing restores it. Navigate to a route that sets no title and the tab still says the article's name — which is also what gets bookmarked, and what the browser's history shows. The title is a document-level slot with no owner, so whoever wrote to it last holds it.", "没有谁把它恢复回去。走到一个不设标题的路由，标签页还写着那篇文章的名字——而这也正是被加进书签的名字，和浏览器历史里显示的名字。标题是一个没有拥有者的文档级槽位，所以谁最后写的就归谁。")}
                 </Paragraph>
                 <CodeBlock code={headCode} />
-
-                <SectionHeading id="errors">{locale.text("The application error chain", "应用错误链")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("onError observes application failures and returns an explicit cleanup function; reportError submits an application error without throwing it again. Reports carry the error, the phase, a detail, the component, and a timestamp, and foreign JavaScript values are normalized to an Error before they arrive.", "onError 观察应用失败并返回一个显式的清理函数；reportError 提交一个应用错误而不再次抛出它。报告携带 error、phase、detail、component 与时间戳；外来的 JavaScript 取值在抵达之前会被规范化为 Error。")}
+                    {locale.text("Head owns seven document fields for its component's lifetime and restores the previous values on cleanup, so a route that mounts a Head does not have to undo it on the way out. Only the title is required, so a route sets what it knows and leaves the rest alone.", "Head 在它所属组件的生命周期内拥有七个文档字段，并在清理时把之前的取值恢复回去，所以挂了 Head 的路由不必在离开时再去撤销一遍。只有 title 是必需的，所以路由设它知道的部分，其余的不动。")}
                 </Paragraph>
-                <CodeBlock code={errorsCode} />
-                <BulletList>
-                    <li>
-                        {locale.text("The compiler reports failures from the initial mount, reactive render and synchronous watch blocks, events, @mounted, and @cleanup through this one chain.", "编译器把首次 mount、响应式渲染与同步 watch 块、事件、@mounted 与 @cleanup 的失败，全部经由这一条链上报。")}
-                    </li>
-                    <li>
-                        {locale.text("A detached async statement reports its rejection here too, under the distinct detached phase.", "分离的 async 语句也在这里上报它的拒绝，使用独立的 detached 阶段。")}
-                    </li>
-                    <li>
-                        {locale.text("An automatic failure with no installed handler is surfaced through the host runtime rather than silently discarded, so handlers own their lifetime and are removed during cleanup.", "没有安装处理器的自动失败会经由宿主运行时浮现，而不是被静默丢弃；因此处理器拥有自己的生命周期，并在清理时被移除。")}
-                    </li>
-                </BulletList>
+                <Paragraph>
+                    {locale.text("The cost is seven fields and no eighth. The set is closed, so a meta tag outside it — an author name, a product-specific card field, a verification token — has no Head spelling and belongs in the document shell instead. The reason for the closed set is the same as everywhere else on this site: an open one could not restore what it did not know it had changed.", "代价是七个字段，没有第八个。这个集合是封闭的，所以集合之外的 meta 标签——作者名、某个产品专有的卡片字段、一个验证令牌——在 Head 里没有写法，该写进文档外壳。封闭的理由和本站别处一样：一个开放的集合，没法把它自己都不知道改过的东西恢复回去。")}
+                </Paragraph>
 
-                <SectionHeading id="config">
-                    {locale.text("Validated public configuration", "经过验证的公开配置")}
+                <SectionHeading id="errors">
+                    {locale.text("What the boundary was not watching", "边界没在看的那一半")}
                 </SectionHeading>
                 <Paragraph>
-                    {locale.text("publicConfig(Type) validates the manifest's public configuration block through the same type declaration used everywhere else and returns the named type, so a missing or mistyped key fails once at startup rather than somewhere in the page. has and keys answer the same block untyped for optional capability discovery.", "publicConfig(Type) 用与别处相同的类型声明验证清单的公开配置块，并返回该具名类型，因此缺失或写错的键在启动时一次性失败，而不是在页面某处失败。has 与 keys 以不带类型的方式回答同一个块，用于可选的能力发现。")}
+                    {locale.text("An error boundary catches render failures. Here is the list of what it does not catch, from the documentation.", "错误边界捕获渲染失败。下面这份「它不捕获什么」的清单，来自文档本身。")}
+                </Paragraph>
+                <CodeBlock code={boundaryGapJsCode} />
+                <Paragraph>
+                    {locale.text("The failure a user is most likely to cause — pressing a button — is the one the boundary was never watching. So a real application ends up with a boundary, a global unhandled-rejection listener, a try in every handler, and no single place that saw all three.", "用户最可能引发的那种失败——按一下按钮——恰恰是边界从来没在看的那一种。于是真实的应用最后会有一个边界、一个全局的未处理拒绝监听器、每个处理器里一个 try，而没有任何一个地方同时看到过这三样。")}
+                </Paragraph>
+                <CodeBlock code={errorsCode} />
+                <Paragraph>
+                    {locale.text("There is one chain and everything reports through it. The compiler routes failures from the initial mount, reactive render and synchronous watch blocks, events, @mounted and @cleanup into it; a detached async statement reports its rejection there too, under its own phase. onError observes and returns an explicit cleanup function; reportError submits an application error without throwing it again. Reports carry the error, the phase, a detail, the component and a timestamp, and foreign JavaScript values are normalized to an Error before they arrive.", "只有一条链，一切都从这条链上报。编译器把首次 mount、响应式渲染与同步 watch 块、事件、@mounted 与 @cleanup 的失败都送进来；分离的 async 语句也在这里上报它的拒绝，用自己的 phase。onError 负责观察，并返回一个显式的清理函数；reportError 提交一个应用错误而不再次抛出它。报告带着 error、phase、detail、component 和时间戳；外来的 JavaScript 取值在抵达之前会被规范化成 Error。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The cost is that a chain is not a boundary. onError observes a failure and hands you a report; it does not stop a subtree from rendering and put a fallback in its place, and there is no component that says \"if anything below me breaks, show this instead\". The router and lazy own their own recovery, and elsewhere the recovery is ordinary code: a try where it belongs, a state field, a branch in the view. That is more work than a wrapper, and it is work that happens where a reader can see it.", "代价是一条链不是一道边界。onError 观察到一次失败，递给你一份报告；它不会阻止某棵子树渲染、也不会拿一个 fallback 顶上去，而且这里没有一个「我下面的东西一坏就显示这个」的组件。router 和 lazy 各自拥有自己的恢复；别的地方，恢复就是普通代码：该写 try 的地方写 try，一个 state 字段，视图里一个分支。这比一个包装器费事，而这份事发生在读者看得见的地方。")}
+                </Paragraph>
+
+                <SectionHeading id="config">
+                    {locale.text("A value that was undefined", "取到 undefined 的那个值")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("Configuration reaches a browser bundle as text substituted at build time, and this is what a wrong name looks like.", "配置以「构建期替换进去的文本」的形式抵达浏览器 bundle，而名字写错了是这个样子。")}
+                </Paragraph>
+                <CodeBlock code={envJsCode} />
+                <Paragraph>
+                    {locale.text("The request goes to a URL that starts with the word undefined, the server answers not-found, and the report that reaches you says the users endpoint is missing. Everything downstream is describing a symptom two layers from the cause, and nothing failed at the moment the value was wrong.", "请求发往一个以 undefined 开头的 URL，服务器回一个 not found，而到你手上的报告说的是 users 这个接口不存在。下游的一切描述的都是离病因两层远的症状，而在取值出错的那一刻，什么都没有失败。")}
                 </Paragraph>
                 <CodeBlock code={configJsonCode} />
                 <CodeBlock code={configCode} />
-                <Callout title={locale.text("This boundary is public values only", "这条边界只承载公开取值")}>
+                <Paragraph>
+                    {locale.text("publicConfig(Type) validates the manifest's public configuration block through the same type declaration the rest of the program already uses, and answers the named type. A missing or mistyped key fails once, at startup, with the name of the key — rather than becoming a string that reads fine and travels. has and keys answer the same block untyped, for optional capability discovery.", "publicConfig(Type) 用程序其余部分已经在用的同一份类型声明来验证清单里的公开配置块，并返回那个具名类型。缺失或写错的键在启动时一次性失败，并报出键名——而不是变成一个看着没问题、还能继续往下走的字符串。has 与 keys 以不带类型的方式回答同一个块，用于可选的能力发现。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The cost is that this boundary carries public values only, and it means it. The block must be a JSON object, is size limited, rejects non-JSON values and the reserved keys, and is recursively frozen; it is baked into the content-hashed application entry at build time, so changing it is a rebuild rather than a restart. The language never implicitly reads environment files, process environment, server configuration, or secrets — which is the right default and does mean that anything genuinely per-deployment has to arrive some other way.", "代价是这条边界只放公开取值，而且它是当真的。这个块必须是 JSON 对象、有大小上限、拒绝非 JSON 取值与保留键，并被递归冻结；它在构建期被烘焙进内容哈希的应用入口，所以改它是一次重新构建，不是一次重启。语言从不隐式读取环境文件、进程环境、服务器配置或密钥——这个默认是对的，同时也确实意味着：真正按部署而异的东西，得走别的路进来。")}
+                </Paragraph>
+                <Callout title={locale.text("This boundary is public values only", "这条边界只放公开取值")}>
                     <Paragraph>
-                        {locale.text("Only the manifest's public configuration block is read. It must be a JSON object, is size limited, rejects non-JSON values and the reserved keys, and is recursively frozen. Public configuration is baked into the content-hashed application entry at build time, and the language never implicitly reads environment files, process environment, server configuration, or secrets.", "只有清单的公开配置块会被读取。它必须是 JSON 对象、有大小上限、拒绝非 JSON 取值与保留键，并被递归冻结。公开配置在构建期被烘焙进内容哈希的应用入口；语言从不隐式读取环境文件、进程环境、服务器配置或密钥。")}
+                        {locale.text("Only the manifest's public configuration block is read, and it ships to the browser. Nothing in it is secret, so nothing secret belongs in it.", "被读取的只有清单里的公开配置块，而它会随构建交付到浏览器。里面没有任何东西是保密的，所以任何保密的东西也不该放进去。")}
                     </Paragraph>
                 </Callout>
             </Prose>

@@ -1,18 +1,32 @@
-import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
-import {useLocale} from "@velarscript/site-ui"
+import {Head, Link} from "velar/web"
+import {Callout, CodeBlock, DocsPager, DocsShell, GateNote, PageHeader, Paragraph, Prose, SectionHeading, SectionList, Subheading} from "@velarscript/docs-kit"
+import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
-const declaringCode = `type User:\n    id: string\n    name: string\n    avatar: string?\n\nexport def formatUser(user: User, prefix: string = "@") -> string:\n    return f"{prefix}{user.name}"\n\n// A body-backed function may omit its result annotation. Where the inferred\n// result is null, omitting it is required.\nexport def inferredNull():\n    print("nothing a caller can use")\n\nexport def inferredText(flag: bool):\n    if flag:\n        return "yes"\n    return "no"\n\n// A partial return infers an optional result.\nexport def inferredOptional(flag: bool):\n    if flag:\n        return "yes"\n\n// An explicit result stays a checked contract: every reachable path returns.\nexport def explicitResult(flag: bool) -> string:\n    if flag:\n        return "yes"\n    return "no"\n\n// Recursive result dependencies solve to a fixed point.\ndef countDown(value: number):\n    if value <= 0:\n        return 0\n    return countDown(value - 1)`
+const fallsOffJsCode = "// JavaScript — from a cache helper\nfunction findUser(id) {\n  if (cache.has(id)) {\n    return cache.get(id);\n  }\n}"
+const declaringCode = `type User:\n    id: string\n    name: string\n    avatar: string?\n\nexport def formatUser(user: User, prefix: string = "@") -> string:\n    return f"{prefix}{user.name}"\n\n// A body-backed function may omit its result annotation. Where the inferred\n// result is null, omitting it is required.\nexport def inferredNull():\n    print("nothing a caller can use")\n\nexport def inferredText(flag: bool):\n    if flag:\n        return "yes"\n    return "no"\n\n// A function that returns on some paths and falls off the end on others\n// infers an optional result, so the caller is told.\nexport def inferredOptional(flag: bool):\n    if flag:\n        return "yes"\n\n// An explicit result stays a checked contract: every reachable path returns.\nexport def explicitResult(flag: bool) -> string:\n    if flag:\n        return "yes"\n    return "no"\n\n// Recursive result dependencies solve to a fixed point.\ndef countDown(value: number):\n    if value <= 0:\n        return 0\n    return countDown(value - 1)`
+const nullResultErrorCode = `export def logStart(name: string) -> null:\n    print(f"starting {name}")`
+const nullResultErrorOutput = "main.vel:1:38 error VEL4037: Function 'logStart' infers '-> null' from its body; delete the annotation, and write it only where 'extern', 'abstract', or a function type leaves no body to infer\nexport def logStart(name: string) -> null:\n                                     ^^^^"
+const booleanArgsJsCode = `// JavaScript — a call you cannot read without opening the definition\nsetCookie("session", token, true, false, true);`
 const callsCode = `type User:\n    id: string\n    name: string\n\ndef formatUser(user: User, prefix: string = "@") -> string:\n    return f"{prefix}{user.name}"\n\nconst user: User = {id: "u-1", name: "Ada"}\n\nconst first = formatUser(user)\nconst second = formatUser(user, prefix="#")\nconst third = formatUser(user, "!")\nconst named = formatUser(user=user, prefix="?")\n\n// Named arguments may be reordered; source expressions still evaluate left to\n// right.\nconst reordered = formatUser(prefix="~", user=user)\n\n// Once a fixed parameter has a default, every following fixed parameter does\n// too, so positional and named calls stay identical.\ndef label(text: string, prefix: string = "[", suffix: string = "]") -> string:\n    return prefix + text + suffix\n\nconst defaulted = label("a")\nconst oneDefaultGiven = label("a", "<")\nconst bothDefaultsGiven = label("a", "<", ">")\nconst suffixOnly = label("a", suffix=">")`
 const colonErrorCode = `def label(text: string, prefix: string = "[") -> string:\n    return prefix + text\n\nconst labelled = label("a", prefix: "<")`
 const colonErrorOutput = `main.vel:4:29 error VEL2024: Write '=' between the name and value for named argument 'prefix': prefix = value\nconst labelled = label("a", prefix: "<")\n                            ^^^^^^`
+const arrowBraceJsCode = "// JavaScript — a mapper that answers a list of undefined\nconst toRow = (user) => { id: user.id };\nconst rows = users.map(toRow);"
 const arrowsCode = `const values: List<number> = [1, 2, 3]\nconst doubled = values.map(value => value * 2)\nconst annotatedArrow = values.map((value: number) => value * 3)\nconst parenthesizedParameter = values.map((value) => value + 1)\nconst twoParameters = (left: number, right: number) => left + right\nconst noParameters = () => "a"\n\n// After the arrow a brace opens a record, never a block.\nconst recordFactory = () => {id: "a"}\nconst emptyRecordFactory = () => {}\n\n// A function that should do nothing answers null.\nconst doesNothing = () => null\n\n// A callback that needs two statements becomes a named def.\ndef describeValue(value: number) -> string:\n    const scaled = value * 10\n    return f"{value} -> {scaled}"\n\nconst described = values.map(describeValue)\n\n// A callback may use a local parameter name while satisfying a named contract.\nconst localName: (request: string) -> string = _request => _request.upper()\n\n// An unannotated arrow parameter takes its type from the annotation it is\n// assigned to; with no annotation on either side it is unknown.\nconst contextuallyTypedArrow: (number) -> number = value => value * 2`
+const arrowBlockErrorCode = `const values: List<number> = [1, 2, 3]\n\nconst described = values.map(value => {\n    const scaled = value * 10\n    return f"{value} -> {scaled}"\n})`
+const arrowBlockErrorOutput = "main.vel:3:39 error VEL2030: An arrow body is a single expression; write the expression directly or move multi-statement logic into a named 'def'\nconst described = values.map(value => {\n                                      ^"
+const argumentsJsCode = `// JavaScript — the parameters that are not in the parameter list\nfunction log() {\n  const parts = Array.prototype.slice.call(arguments);\n  console.log(parts.join(" "));\n}`
 const restCode = "const values: List<number> = [1, 2, 3]\n\nexport def total(...amounts: number) -> number:\n    return amounts.sum()\n\nexport def totalWithBase(base: number, ...amounts: number) -> number:\n    return base + amounts.sum()\n\nexport def totalWithDefault(base: number = 0, ...amounts: number) -> number:\n    return base + amounts.sum()\n\nconst summed = total(1, 2, 3)\nconst spreadInto = total(...values)\nconst fixedThenSpread = totalWithBase(10, ...values)"
+const restOrderErrorCode = "export def total(...amounts: number, base: number) -> number:\n    return base + amounts.sum()"
+const restOrderErrorOutput = "main.vel:1:38 error VEL2016: A rest parameter must be the final parameter\nexport def total(...amounts: number, base: number) -> number:\n                                     ^^^^^^^^^^^^"
+const unawaitedJsCode = `// JavaScript — inside a submit handler\ntry {\n  saveDraft(document);\n  showToast("Saved");\n} catch (error) {\n  showToast("Could not save");\n}`
 const asyncCode = `type User:\n    id: string\n    name: string\n\ndef apiUser(id: string) -> User:\n    return {id, name: "Ada"}\n\nexport async def loadUser(id: string) -> User:\n    return apiUser(id)\n\n// The call type is a Promise of the annotated value; the declaration annotates\n// the resolved value, never the Promise around it.\nconst pending: Promise<User> = loadUser("u-1")\n\nexport async def inferredAsyncResult():\n    print("an async declaration with no value result infers a null result")\n\nexport async def awaitsAndDetaches():\n    // await waits; the async statement runs the task detached and requires a\n    // checked promise of null.\n    await loadUser("u-1")\n    async inferredAsyncResult()\n\nconst asyncArrow = async (id: string) => await loadUser(id)\nconst contextuallyTypedAsyncArrow: (string) -> Promise<User> = async id => await loadUser(id)`
-const droppedErrorCode = `async def save() -> string:\n    return "saved"\n\nexport def run():\n    save()`
-const droppedErrorOutput = "main.vel:5:5 error VEL4027: This call returns Promise<string>; 'await save()' to wait for it, or 'async save()' to run it detached\n    save()\n    ^^^^^^"
+const droppedErrorCode = `type Draft:\n    id: string\n\nasync def saveDraft(draft: Draft) -> Draft:\n    return draft\n\nasync def flush() -> string:\n    return "flushed"\n\nexport async def submit(draft: Draft):\n    flush()\n    async saveDraft(draft)`
+const droppedErrorOutput = "main.vel:11:5 error VEL4027: This call returns Promise<string>; 'await flush()' to wait for it, or 'async flush()' to run it detached\n    flush()\n    ^^^^^^^\n\nmain.vel:12:11 error VEL4028: The result would be lost; await it, or discard it explicitly in an async def\n    async saveDraft(draft)\n          ^^^^^^^^^^^^^^^^"
+const pickTsCode = "// TypeScript — a signature you decode before you can call it\nexport function pick<T extends Record<string, unknown>, K extends keyof T>(\n  source: T,\n  keys: readonly K[],\n): Pick<T, K> {\n  return Object.fromEntries(keys.map((key) => [key, source[key]])) as Pick<T, K>;\n}"
 const genericsCode = `export def mapValues<T, U>(items: List<T>, transform: (T) -> U) -> List<U>:\n    return items.map(transform)\n\nconst flags: List<bool> = mapValues(["a", ""], value => value != "")\n\n// Type arguments are inferred at each call site; there is no explicit\n// instantiation syntax, and a parameter the call leaves unsolved is unknown.\nexport def identity<T>(value: T) -> T:\n    return value\n\nconst identicalText = identity("a")\nconst identicalNumber = identity(1)\n\n// The three closed bounds.\nexport def label<T: Text>(value: T) -> string:\n    return f"{value}"\n\nexport def ranked<T: Comparable>(values: List<T>) -> List<T>:\n    return values.sorted()\n\nexport def smallest<T: Comparable>(values: List<T>) -> T?:\n    return values.min()\n\nexport def encoded<T: Data>(value: T) -> string:\n    return Json.stringify(value)\n\nexport def cloned<T: Data>(value: T) -> T:\n    return Json.clone(value)\n\nconst labelled = label(5)\nconst rankedText = ranked(["b", "a"])\nconst encodedRecord = encoded({id: "u-1"})\n\n// A class method takes type parameters too.\nclass Registry:\n    let stored: List<unknown> = []\n\n    def keep<T>(value: T) -> T:\n        self.stored.append(value)\n        return value`
+const boundErrorCode = "type Shape:\n    area: number\n\nexport def biggest<T: Shape>(shapes: List<T>) -> T:\n    return shapes[0]"
+const boundErrorOutput = "main.vel:4:23 error VEL4021: 'Shape' cannot bound a type parameter; a bound is one of the compiler's own names — Comparable, Text, Data — never an arbitrary type\nexport def biggest<T: Shape>(shapes: List<T>) -> T:\n                      ^^^^^"
 
 const sections = [
     {id: "declaring", label: "Parameters and results", labelZh: "参数与结果"},
@@ -23,84 +37,179 @@ const sections = [
     {id: "generics", label: "Type parameters and bounds", labelZh: "类型参数与界"},
 ]
 
+const inlineLinkLook = look:
+    color = sea
+
 export component LanguageFunctions:
     const locale = useLocale()
     return <main>
         <Head
             title={headTitle("/guide/language/functions", locale.isChinese())}
-            description={locale.text("How functions declare parameters and results, how calls order positional and named arguments, and what async adds.", "函数如何声明参数与结果、调用如何排列位置实参与具名实参，以及 async 增加了什么。")}
+            description={locale.text("What a function declaration promises about its result, how named arguments change a call site, what the compiler owns around dropped promises, and what each of those costs.", "函数声明对它的结果承诺了什么、具名实参如何改变调用处的读法、被丢掉的 promise 由编译器管到哪一步，以及这些各要付什么代价。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Language / 05", "语言 / 05")}
                 title={locale.text("Functions and calls", "函数与调用")}
-                summary={locale.text("Parameters and defaults, result inference, named arguments, arrows, async, and the three closed bounds.", "参数与默认值、结果推断、具名实参、箭头函数、async，以及三个封闭的界。")}
+                summary={locale.text("Parameters and defaults, a result the caller can rely on, named arguments, arrows, async without dropped promises, and the three closed bounds.", "参数与默认值、调用方靠得住的结果、具名实参、箭头函数、不会丢掉 promise 的 async，以及三个封闭的界。")}
             />
             <SectionList items={sections} />
             <Prose>
                 <SectionHeading id="declaring">{locale.text("Parameters and results", "参数与结果")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A parameter states its type, and a default is written at the declaration rather than reconstructed in the body. A body-backed function may omit its result annotation; where the inferred result is null, omitting it is required, so a declaration that writes an arrow always promises something a caller can use. An explicit result stays a checked contract on every reachable path.", "参数写出自己的类型，默认值写在声明处，而不是在函数体里重建。有函数体的函数可以省略结果注解；当推断结果为 null 时必须省略，因此写出了箭头的声明总是承诺了调用方能用的东西。显式结果在每条可达路径上都保持为受检契约。")}
+                    {locale.text("Six lines from a cache helper, and every one of them is fine.", "缓存工具里的六行，每一行都没毛病。")}
+                </Paragraph>
+                <CodeBlock code={fallsOffJsCode} />
+                <Paragraph>
+                    {locale.text("On a hit it answers the user. On a miss it falls off the end and answers undefined, and the caller writing findUser(id).name finds out on the day the cache is cold. Nothing in the declaration mentions a result at all, so there was nowhere for the second answer to be written down.", "命中时它给出用户。没命中时它落到函数末尾，给出 undefined；而写着 findUser(id).name 的调用方，会在缓存是冷的那天知道这件事。声明里压根没提结果，所以第二种答案没有地方可写。")}
                 </Paragraph>
                 <CodeBlock code={declaringCode} />
-                <BulletList>
-                    <li>
-                        {locale.text("A function that returns on some paths and falls off the end on others infers an optional result.", "在部分路径返回、其余路径落到末尾的函数，推断出的是可选结果。")}
-                    </li>
-                    <li>
-                        {locale.text("Recursive result dependencies solve to a fixed point, so a recursive helper needs no annotation to break a cycle.", "递归的结果依赖会解到不动点，因此递归辅助函数不需要靠注解来打断循环。")}
-                    </li>
-                </BulletList>
+                <Paragraph>
+                    {locale.text("A parameter states its type, and a default is written at the declaration rather than reconstructed in the body. A function with a body may leave the result annotation off, and the inference is checked rather than guessed: a function that returns on some paths and falls off the end on others infers an optional result, so the caller is told about the second answer. An explicit result stays a contract on every reachable path, and recursive result dependencies solve to a fixed point, so a recursive helper needs no annotation to break a cycle.", "参数写出自己的类型；默认值写在声明处，不在函数体里重新拼出来。有函数体的函数可以不写结果注解，而这个推断是核过的，不是猜的：部分路径 return、其余路径落到末尾的函数，推断出来的是可选结果，于是调用方知道还有第二种答案。写出来的结果注解在每条可达路径上都是契约；递归的结果依赖会解到不动点，所以递归辅助函数不必靠注解去打断循环。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Inference has a price, and it is paid by whoever reads the diff. An inferred result is a public signature nobody edited: add an early return deep inside a body and the function's result type changes for every caller, while the declaration line the reviewer looks at stays exactly as it was. Where a function is exported and other people depend on it, writing the result out is the cheaper habit. The second price is small and sharp — where the result really is null the annotation is not optional but forbidden, so absence is the spelling, and you have to know that rather than read it.", "推断是要付钱的，付钱的是读 diff 的那个人。推断出来的结果是一份没人编辑过的公开签名：在函数体深处加一个提前 return，函数的结果类型对所有调用方都变了，而评审者盯着的那行声明，一个字都没动。函数如果是导出的、别人靠着它写代码，把结果写出来是更省事的习惯。第二笔钱小而尖利：结果确实是 null 的时候，那个注解不是可省，而是不许写——缺席本身就是拼写，这件事你只能记住，读不出来。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={nullResultErrorCode} />
+                <CodeBlock code={nullResultErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example. This site's build compiles the sample and fails if it ever stops producing a diagnostic, and it verifies that VEL4037 is a code the sample really produces. The diagnostic also names the three places the annotation is required: extern, abstract, and a function type, where there is no body to infer from.", "门禁：受检的教学反例。本站构建会编译这个样本，一旦它不再报错就让构建失败；并核对 VEL4037 确实由这个样本产生。这条诊断顺带点了名：extern、abstract 与函数类型这三处必须写注解，因为它们没有函数体可推。")}
+                </GateNote>
 
                 <SectionHeading id="calls">{locale.text("Positional, then named", "先位置，后具名")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A call writes positional arguments first and named arguments after, and named arguments may be reordered while source expressions still evaluate left to right. Once a fixed parameter has a default every following fixed parameter does too, which is what keeps the positional and the named reading of one call identical.", "调用先写位置实参，再写具名实参；具名实参可以重排，而源表达式仍按从左到右求值。一旦某个固定参数带上默认值，其后的每个固定参数也必须带，正是这一点让同一次调用的位置读法与具名读法完全一致。")}
+                    {locale.text("One line, and you cannot read it without opening something else.", "一行代码，不打开别的文件你就读不了它。")}
+                </Paragraph>
+                <CodeBlock code={booleanArgsJsCode} />
+                <Paragraph>
+                    {locale.text("Three booleans in a row. One of them is httpOnly and one of them is secure, and getting the pair the wrong way round is a security bug that looks exactly like working code. The usual fix is an options object, which trades the guessing for a record allocated at every call and a shape declared somewhere else.", "三个 bool 排在一起。其中一个是 httpOnly，一个是 secure；把这两个调换位置就是一个安全漏洞，而它看起来和正常代码一模一样。惯常的补救是传一个 options 对象：不用猜了，代价是每次调用多分配一个记录，还得在别处再声明一遍它的形状。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Names at the call site are part of the grammar here, so no record is involved.", "在这里，调用处的名字是语法的一部分，不牵涉任何记录。")}
                 </Paragraph>
                 <CodeBlock code={callsCode} />
                 <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                    {locale.text("A call writes positional arguments first and named arguments after, and named arguments may be reordered while source expressions still evaluate left to right. Once a fixed parameter has a default every following fixed parameter does too, which keeps the positional and the named reading of one call identical — there is no arrangement of defaults that makes the two disagree.", "调用先写位置实参，再写具名实参；具名实参可以重排，而源表达式仍按从左到右求值。一旦某个固定参数带上默认值，其后每个固定参数也要带——这让同一次调用的位置读法和具名读法保持一致，没有哪种默认值排法能让两种读法对不上。")}
                 </Paragraph>
-                <CodeBlock code={colonErrorCode} />
                 <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                    {locale.text("What you spend is the freedom to rename. A parameter name is public the moment the function is exported: rename prefix to marker and every named call site stops compiling, so an edit that is private in JavaScript is a breaking change here. There is no way to mark a parameter positional-only, so you cannot keep one out of the contract, and a name you chose in a hurry is a name you own until the next release that is allowed to break.", "你花掉的是改名的自由。函数一旦导出，参数名就是公开的：把 prefix 改成 marker，所有具名调用处立刻编不过——在 JavaScript 里属于私事的一次改动，在这里是破坏性变更。也没有办法把某个参数标成「只能按位置传」，所以你没法让某个名字留在契约之外；随手起的名字，你得一直担着，直到下一个允许破坏的版本。")}
                 </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={colonErrorCode} />
                 <CodeBlock code={colonErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, compiled on every build and required to keep failing, with VEL2024 verified against the diagnostics the sample really produces. The colon is the record-literal reflex arriving at a call site, and the diagnostic names the one separator that belongs there.", "门禁：受检的教学反例，每次构建都编译，而且必须一直报错；VEL2024 会与样本真实产生的诊断核对。那个冒号是记录字面量的手感跑到了调用处，而这条诊断会点名此处该用的那一个分隔符。")}
+                </GateNote>
 
                 <SectionHeading id="arrows">{locale.text("Arrows", "箭头函数")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("An arrow carries one expression. A parameter may be bare, parenthesized, or annotated; an unannotated parameter takes its type from the annotation the arrow is assigned to. A callback that needs two statements becomes a named def, which is why an arrow body never opens a block and a brace after the arrow opens a record.", "箭头承载一个表达式。参数可以是裸的、加括号的或带注解的；未注解的参数从箭头被赋值到的那个注解取得类型。需要两条语句的回调改写成具名 def——这正是箭头体从不开启块、而箭头之后的花括号打开的是记录的原因。")}
+                    {locale.text("A mapper that answers a list of undefined, and compiles without a word.", "一个映射函数，给出的是一串 undefined，而且编译时一声不吭。")}
+                </Paragraph>
+                <CodeBlock code={arrowBraceJsCode} />
+                <Paragraph>
+                    {locale.text("The braces after the arrow are a block, not a record. Inside it, id: is a label and user.id is a statement that computes a value and throws it away, so the block returns nothing. The fix in JavaScript is a pair of parentheses that nobody can see the need for until they have been bitten once.", "箭头后面那对花括号是块，不是记录。块里的 id: 是一个标签，user.id 是一条算出值又扔掉的语句，于是这个块什么都没返回。JavaScript 里的修法是加一对小括号——而在被坑过一次之前，没有人看得出为什么要加。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Here the brace means the thing it looks like.", "在这里，花括号就是它看上去的那个意思。")}
                 </Paragraph>
                 <CodeBlock code={arrowsCode} />
+                <Paragraph>
+                    {locale.text("An arrow carries one expression, so after the arrow a brace opens a record and never a block. A parameter may be bare, parenthesized, or annotated, and an unannotated one takes its type from the annotation the arrow is assigned to. A callback that needs two statements becomes a named def instead.", "箭头后面只有一个表达式，所以箭头之后的花括号打开的是记录，永远不是块。参数可以是裸的、加括号的或带注解的；没写注解的那种，从箭头被赋值到的注解上取类型。需要两条语句的回调，改写成一个具名 def。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("So the two-line lambda is gone, and that is charged every time you wanted one. A callback that needs one local binding has to be lifted out, given a name it will be called by exactly once, and read three screens away from the map that uses it. The trade is deliberate — a brace after an arrow now has one meaning instead of two — but the inline version really was shorter, and on a first read the named def really is further away.", "所以两行的 lambda 没有了，而这笔钱在你每次想写它的时候都要付。只需要一个局部绑定的回调，也得抽出去、起一个只会被叫一次的名字，然后在离用它的那个 map 三屏远的地方被读到。这个取舍是有意的——箭头后面的花括号从此只有一种含义，不是两种——但内联的写法确实更短，而第一遍读的时候，那个具名 def 确实更远。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={arrowBlockErrorCode} />
+                <CodeBlock code={arrowBlockErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, compiled on every build and required to keep failing, with VEL2030 verified against the diagnostics the sample really produces. Note where the refusal lands — at the brace, before the body is read, so this can never become a block that quietly returns nothing.", "门禁：受检的教学反例，每次构建都编译，而且必须一直报错；VEL2030 会与样本真实产生的诊断核对。注意拒绝发生的位置：在那个花括号上，还没读函数体就拒了——所以这里不可能变成一个悄悄什么都不返回的块。")}
+                </GateNote>
 
                 <SectionHeading id="rest">{locale.text("Rest parameters and spread", "剩余参数与展开")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A rest parameter collects the remaining positional arguments into a List of one element type, and the same three dots spread a List back into a call. Fixed parameters may precede a rest parameter, with or without defaults.", "剩余参数把余下的位置实参收进一个单一元素类型的 List，同样的三个点也把 List 展开回一次调用。固定参数可以出现在剩余参数之前，带默认值与否都可以。")}
+                    {locale.text("The parameters that are not in the parameter list.", "不在参数表里的那些参数。")}
+                </Paragraph>
+                <CodeBlock code={argumentsJsCode} />
+                <Paragraph>
+                    {locale.text("The signature says the function takes nothing. It takes everything. arguments is not an array, so it needs a conversion before it can be used like one, and it does not exist at all inside an arrow — which means rewriting that function as an arrow, a change that looks like formatting, silently empties it.", "签名说这个函数不收参数，实际上它什么都收。arguments 不是数组，要当数组用得先转一道；而在箭头函数里它根本不存在——所以把这个函数改写成箭头，一次看起来只是排版的改动，会悄悄把它掏空。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("A variadic parameter is written in the parameter list, where a reader is already looking.", "可变参数写在参数表里，那正是读者已经在看的地方。")}
                 </Paragraph>
                 <CodeBlock code={restCode} />
+                <Paragraph>
+                    {locale.text("A rest parameter collects the remaining positional arguments into a List of one element type, and the same three dots spread a List back into a call. Fixed parameters may come before it, with or without defaults. Inside the body it is an ordinary List, so it has size, filter, and sum like any other.", "剩余参数把余下的位置实参收进一个单一元素类型的 List，同样的三个点也能把一个 List 展开回一次调用。它前面可以有固定参数，带不带默认值都行。在函数体里它就是一个普通 List，size、filter、sum 一样能用。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("One element type is the limit, and it rules out a shape JavaScript uses constantly. A printf-style call that takes a string, then a number, then a date cannot keep its types through a rest parameter; it collects them as unknown and checks each one, or takes a record instead. And the rest parameter has to be last, which is exactly where JavaScript APIs habitually put the callback — a port of one of those moves the callback to the front or wraps it.", "限制在于元素类型只有一个，而这挡掉了一种 JavaScript 天天在用的形状。一个 printf 那样的调用，先来个字符串、再来个数字、再来个日期，穿过剩余参数是保不住类型的；只能按 unknown 收进来逐个检查，或者干脆改成传一个记录。另外剩余参数必须在最后，而那正是 JavaScript 的 API 习惯放回调的位置——移植这类接口，回调要么挪到前面，要么包一层。")}
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={restOrderErrorCode} />
+                <CodeBlock code={restOrderErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, compiled on every build and required to keep failing, with VEL2016 verified against the diagnostics the sample really produces.", "门禁：受检的教学反例，每次构建都编译，而且必须一直报错；VEL2016 会与样本真实产生的诊断核对。")}
+                </GateNote>
 
                 <SectionHeading id="async">{locale.text("Async functions", "async 函数")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("An async declaration annotates the resolved value, and the call type is the Promise around it. There are two ways to consume a call that answers a Promise: await waits for it, and the async statement runs it detached. A call whose Promise is dropped is a diagnostic, so a task that nobody is waiting for is a written decision rather than an omission.", "async 声明注解的是解析后的值，而调用类型是包在外面的 Promise。消费返回 Promise 的调用有两种写法：await 等待它，async 语句让它脱离当前流程运行。直接丢弃 Promise 的调用会得到诊断，因此「没有人等待这个任务」是一个写出来的决定，而不是一次遗漏。")}
+                    {locale.text("A submit handler that reports success before the request has left the building.", "一个提交处理函数，请求还没出门就先报了成功。")}
+                </Paragraph>
+                <CodeBlock code={unawaitedJsCode} />
+                <Paragraph>
+                    {locale.text("saveDraft is async and nobody awaited it. The toast says Saved immediately, and when the save fails the rejection surfaces long after the try block has finished, so the catch never runs and the user is told the opposite of what happened. One missing word.", "saveDraft 是 async，而没有人 await 它。提示立刻说「已保存」；等到保存真的失败，那次 rejection 冒出来的时候 try 块早就结束了，于是 catch 一次也没跑，用户看到的和实际发生的正好相反。就差一个词。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("That word is not optional here. A call that answers a Promise has to say what happens to it.", "在这里，这个词不是可选的。给出 Promise 的调用，必须说清楚这个 Promise 怎么办。")}
                 </Paragraph>
                 <CodeBlock code={asyncCode} />
                 <Paragraph>
-                    <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
+                    {locale.text("An async declaration annotates the resolved value, and the call type is the Promise around it. There are two ways to consume such a call: await waits for it, and the async statement runs it detached. A dropped Promise is a diagnostic, so a task nobody is waiting for is a decision somebody wrote down rather than a word somebody forgot.", "async 声明注解的是解析后的值，调用类型则是包在外面的 Promise。消费这种调用有两种写法：await 等它，async 语句让它脱离当前流程去跑。丢掉 Promise 会得到诊断，所以「这个任务没人等」是有人写下来的决定，而不是有人漏掉的一个词。")}
                 </Paragraph>
-                <CodeBlock code={droppedErrorCode} />
                 <Paragraph>
-                    <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
+                    {locale.text("You pay in ceremony, and you pay twice. Detaching is not the free option it looks like: the async statement wants a call whose Promise resolves to null, so letting go of a task that answers a value means writing something that discards the value on purpose. And async colours the callers — the function that waits has to be async, and so does the one that waits for it, all the way up to the handler. In JavaScript you could stop propagating it by dropping the Promise, which is the habit this rule exists to remove.", "你付的是仪式，而且付两回。脱离流程并不是看上去那个免费选项：async 语句要的是「Promise 解析为 null」的调用，所以想放走一个有返回值的任务，就得写点什么来明确地把这个值丢掉。另外 async 会往上染色——等它的那个函数得是 async，等那个函数的也得是，一路染到最外面的处理函数。JavaScript 里你可以靠丢掉 Promise 来止住这种传播，而这条规则存在的意义，正是要去掉那个习惯。")}
                 </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={droppedErrorCode} />
                 <CodeBlock code={droppedErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example with two refusals in one sample, compiled on every build and required to keep failing; VEL4027 and VEL4028 are both verified against the diagnostics it really produces. The first is the forgotten word from the JavaScript above. The second is detaching a call whose result would then have nowhere to go.", "门禁：一个样本里两条拒绝的受检教学反例，每次构建都编译，而且必须一直报错；VEL4027 与 VEL4028 都会与它真实产生的诊断核对。第一条就是上面那段 JavaScript 里漏掉的词。第二条是把一个有返回值的调用放走，而那个结果之后无处可去。")}
+                </GateNote>
 
                 <SectionHeading id="generics">{locale.text("Type parameters and bounds", "类型参数与界")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Type parameters exist on functions and on class methods. Type arguments are inferred at each call site and there is no explicit instantiation syntax. Three bounds are published — Comparable for ordering, Text for conversion to text, and Data for structured encoding — and the list is closed: there is no constraint language a library could extend.", "类型参数存在于函数与类方法上。类型实参在每个调用处推断，且没有显式实例化语法。已发布的界有三个——用于排序的 Comparable、用于转为文本的 Text、用于结构化编码的 Data——这份清单是封闭的：不存在可供库扩展的约束语言。")}
+                    {locale.text("Here is a signature you decode before you can call it.", "看一个你得先解码、才敢去调用的签名。")}
+                </Paragraph>
+                <CodeBlock code={pickTsCode} />
+                <Paragraph>
+                    {locale.text("To know what you may pass, you evaluate keyof and Pick in your head, and when the call does not fit you get a paragraph about a type nobody in your repository wrote. The signature is a small program, and reading the function means running it first.", "想知道能传什么，你得在脑子里把 keyof 和 Pick 算一遍；调用对不上的时候，你收获的是一整段关于某个类型的解释，而那个类型你的仓库里谁都没写过。签名本身是一小段程序，读这个函数之前得先把它跑一遍。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("A signature here is a signature. Reading it is reading it.", "在这里，签名就是签名。读它就只是读它。")}
                 </Paragraph>
                 <CodeBlock code={genericsCode} />
+                <Paragraph>
+                    {locale.text("Type parameters exist on functions and on class methods, and type arguments are inferred at each call site. Three bounds are published — Comparable for ordering, Text for conversion to text, Data for structured encoding — and the list is closed, so there is no constraint language a library could extend and no second program to evaluate before you know what fits.", "类型参数存在于函数和类方法上，类型实参在每个调用处推断。已发布的界有三个：排序用 Comparable，转文本用 Text，结构化编码用 Data。这份清单是封闭的，所以没有可供库去扩展的约束语言，也就不必先跑一遍别的程序才知道什么能传。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Two things are given up for that. There is no explicit instantiation, so when inference cannot solve a parameter the answer is unknown and you cannot force it — you add an argument that carries the type, or annotate the binding you assign to. And three bounds is three: a library that wants to accept any type carrying its own comparison cannot say so, and takes a comparison function or publishes concrete versions instead. Where that is genuinely the shape of your problem, the boundary is the honest answer rather than a clever arrangement of the three.", "为此放弃了两样。其一，没有显式实例化：推断解不出某个参数时，答案就是 unknown，你没法强行指定——只能多传一个带着类型的实参，或者给被赋值的绑定加上注解。其二，三个界就是三个：一个想接受「任何自带比较逻辑的类型」的库，说不出这句话，只能改成收一个比较函数，或者直接发布几个具体版本。如果你的问题形状真的是这样，诚实的答案是走边界，而不是把这三个界摆出个巧妙的花样。")} <Link
+                        to="/reference/escape-hatches"
+                        look={inlineLinkLook}
+                    >
+                        {locale.text("The escape-hatches reference documents each exit.", "逃生通道参考页记录了每一级出口。")}
+                    </Link>
+                </Paragraph>
+                <Subheading>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</Subheading>
+                <CodeBlock code={boundErrorCode} />
+                <CodeBlock code={boundErrorOutput} />
+                <GateNote>
+                    {locale.text("Gate: a checked counter-example, compiled on every build and required to keep failing, with VEL4021 verified against the diagnostics the sample really produces. The diagnostic prints the whole list, which is the point — three names, and a reader who has met them once has met all of them.", "门禁：受检的教学反例，每次构建都编译，而且必须一直报错；VEL4021 会与样本真实产生的诊断核对。这条诊断把整份清单都印出来了，而这正是关键——一共三个名字，读者见过一次，就等于全见过了。")}
+                </GateNote>
                 <Callout title={locale.text("Why the bound list is closed", "界的清单为何封闭")}>
                     <Paragraph>
-                        {locale.text("A user-defined bound would put the reader back to reading a library before reading the code in front of them. The same reason keeps decorators out: the modifier keywords are a closed vocabulary the compiler owns, and a new marking arrives as a new keyword rather than as an extension point.", "用户自定义的界会让读者在读眼前这段代码之前，先得去读一个库。装饰器被排除在外是同样的理由：修饰关键字是一份由编译器持有的封闭词汇，新的标记以新关键字的形式到来，而不是作为扩展点。")}
+                        {locale.text("A user-defined bound sends the reader off to read a library before reading the code in front of them, which is the thing the pick signature above does. Decorators are absent for the same reason: the modifier keywords are a closed vocabulary the compiler owns, and a new marking arrives as a new keyword rather than as an extension point somebody's package fills in.", "用户自定义的界会把读者支去读一个库，然后才轮到眼前这段代码——上面那个 pick 签名干的就是这件事。装饰器缺席也是同一个理由：修饰关键字是一份由编译器持有的封闭词汇，新的标记以新关键字的形式出现，而不是留一个扩展点等着某个包来填。")}
                     </Paragraph>
                 </Callout>
             </Prose>

@@ -1,131 +1,215 @@
-import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
-import {useLocale} from "@velarscript/site-ui"
+import {Head, Link} from "velar/web"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, GateNote, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
+import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
-const declaringCode = `export type Task:\n    id: string\n    title: string\n    done: bool\n\n// A prop with no default is required; a prop with one is optional.\nexport component TaskRow(task: Task, compact: bool = false):\n    return <li data-task={task.id} data-compact={compact}>{task.title}</li>\n\n// The same contract, spelled with one more optional prop. A constructor may\n// accept more than the contract permits its caller to pass.\ncomponent DetailedTaskRow(task: Task, compact: bool = false, tracking: string = "row"):\n    return <li data-task={task.id} data-tracking={tracking}>{task.title}{compact ? "" : " (detailed)"}</li>\n\n// A component that takes children renders them wherever it likes. children is\n// an ordinary prop with an ordinary type.\ncomponent Framed(title: string, children: WebNode):\n    return <section data-framed><h3>{title}</h3>{children}</section>\n\nexport component ComponentsPanel:\n    const tasks: List<Task> = [{id: "parse", title: "Parse the module", done: true}]\n\n    return <section data-components>\n        <ul>{tasks.map(task => <TaskRow key={task.id} task={task} compact />)}</ul>\n        <ul>{tasks.map(task => <DetailedTaskRow key={task.id} task={task} />)}</ul>\n        <Framed title="Framed"><p data-framed-child>a child node</p></Framed>\n    </section>`
-const contractsCode = `export type Task:\n    id: string\n    title: string\n    done: bool\n\nexport type PanelHandle:\n    focus: () -> null\n    label: () -> string\n\n// Component<Props> is the zero-Handle contract: the signature describes JSX\n// props and its result must be WebNode. compact?: bool means the prop may be\n// omitted; compact: bool? would stay required and accept null.\ntype TaskView = Component<(task: Task, compact?: bool) -> WebNode>\n\n// The two-argument form adds the Handle a ref on the invocation may claim.\ntype PanelView = Component<(title: string) -> WebNode, PanelHandle>\n\nexport component TaskRow(task: Task, compact: bool = false):\n    return <li data-task={task.id} data-compact={compact}>{task.title}</li>\n\nconst tourTasks: List<Task> = [\n    {id: "parse", title: "Parse the module", done: true},\n    {id: "check", title: "Check the module", done: false},\n]\n\n// A component value renders only as a PascalCase tag. Calling View(...) would\n// bypass JSX ownership and is rejected.\ncomponent TaskList(View: TaskView, variant: string):\n    return <ul data-task-list={variant}>{tourTasks.map(task => <View key={task.id} task={task} compact />)}</ul>\n\n// Bare Component and one-argument Component<Props> do not authorize a ref.\ncomponent Slot(View: Component):\n    return <div data-slot><View /></div>\n\nexport component ContractsPanel:\n    return <div data-contracts>\n        <TaskList View={TaskRow} variant="plain" />\n        <Slot View={EmptyView} />\n    </div>\n\ncomponent EmptyView:\n    return <span data-empty>empty</span>`
-const readonlyCode = `export type Task:\n    id: string\n    title: string\n    done: bool\n\n// Record and collection props enter as transitive readonly views, so a helper\n// that only reads them declares readonly. A bare class prop is a behavioral\n// value and passes through as-is.\nexport class TaskClock:\n    constructor(private const started: number):\n        pass\n\n    def elapsed(now: number) -> number:\n        return now - self.started\n\ncomponent TaskSummary(tasks: readonly List<Task>, index: Map<string, Task>, clock: TaskClock):\n    return <p data-summary>{f"{tasks.size} tasks, {index.size} indexed, {clock.elapsed(10)} elapsed"}</p>\n\nconst tourTasks: List<Task> = [\n    {id: "parse", title: "Parse the module", done: true},\n    {id: "check", title: "Check the module", done: false},\n]\n\nconst taskIndex: Map<string, Task> = Map([["parse", tourTasks[0]], ["check", tourTasks[1]]])\n\nexport component SummaryPanel:\n    return <TaskSummary tasks={tourTasks} index={taskIndex} clock={TaskClock(0)} />`
-const hostCode = `// A multi-root component returns a fragment and marks exactly one native\n// element with the valueless host directive; host receives what the invocation\n// attaches — class, class:*, look, look:*, and style:*.\ncomponent Field(label: string, value: string):\n    return <>\n        <label data-field-label for="tour-field">{label}</label>\n        <input host id="tour-field" type="text" value={value} readonly />\n    </>\n\n// A component whose root is a single element needs no marker: that root is the\n// host, and a component root forwards to its own host in turn.\ncomponent FieldRow(label: string, value: string):\n    return <Field label={label} value={value} />\n\nexport component HostPanel:\n    return <div data-host-panel>\n        <FieldRow label="Name" value="Ada" />\n        <Field label="Team" value="Compiler" class="field" look:marginBlock={8px} />\n    </div>`
-const handleCode = `// A component Handle is a concrete record type. Its members are written in a\n// type expression, which is one of the positions where -> null is required\n// rather than inferred.\nexport type PanelHandle:\n    focus: () -> null\n    label: () -> string\n\ntype PanelView = Component<(title: string) -> WebNode, PanelHandle>\n\n// exposes names the Handle; exactly one expose provides it. The conventional\n// order puts expose immediately before the single return.\nexport component LabelledPanel(title: string) exposes PanelHandle:\n    let heading: Element? = null\n\n    def focus():\n        if heading != null:\n            heading.focus()\n\n    def label() -> string:\n        return title\n\n    expose {focus, label}\n    return <article data-panel><h3 ref={heading} tabindex="-1">{title}</h3></article>\n\n// A contract that carries a Handle authorizes a ref on the invocation; a\n// constructor may expose more than the contract requires, but one with no\n// compatible Handle cannot satisfy it.\ncomponent PanelSlot(View: PanelView, title: string):\n    let handle: PanelHandle? = null\n\n    def focusPanel():\n        if handle != null:\n            handle.focus()\n\n    return <div data-panel-slot>\n        <View ref={handle} title={title} />\n        <button type="button" data-focus-slot on:click={focusPanel}>Focus the slotted panel</button>\n    </div>\n\nexport component HandlePanel:\n    return <PanelSlot View={LabelledPanel} title="Panel through a contract" />`
+// The React and Vue blocks are third-party JavaScript, so they are *JsCode and
+// nothing here compiles them. Every VelarScript block is compiled by this site's
+// gate, and each quoted diagnostic is paired with the sample that produces it.
+const optionalPropTsCode = "// React 19.2 with TypeScript\ninterface TaskRowProps {\n  task: Task;\n  compact?: boolean; // said here\n}\n\n// and said again here, with the value this time\nexport function TaskRow({ task, compact = false }: TaskRowProps) {\n  return <li>{task.title}</li>;\n}"
+const declaringCode = `export type Task:\n    id: string\n    title: string\n    done: bool\n\n// The parameter list is the props. No default means required; a default means\n// optional and gives the value. One place, one reading.\nexport component TaskRow(task: Task, compact: bool = false):\n    return <li data-task={task.id} data-compact={compact}>{task.title}</li>\n\n// A constructor may accept more than its callers pass.\ncomponent DetailedTaskRow(task: Task, compact: bool = false, tracking: string = "row"):\n    return <li data-task={task.id} data-tracking={tracking}>{task.title}{compact ? "" : " (detailed)"}</li>\n\n// children is an ordinary prop with an ordinary type, so the component decides\n// where it goes.\ncomponent Framed(title: string, children: WebNode):\n    return <section data-framed><h3>{title}</h3>{children}</section>\n\nexport component ComponentsPanel:\n    const tasks: List<Task> = [{id: "parse", title: "Parse the module", done: true}]\n\n    return <section data-components>\n        <ul>{tasks.map(task => <TaskRow key={task.id} task={task} compact />)}</ul>\n        <ul>{tasks.map(task => <DetailedTaskRow key={task.id} task={task} />)}</ul>\n        <Framed title="Framed"><p data-framed-child>a child node</p></Framed>\n    </section>`
+const mutateChildJsCode = `// React 19.2 — the row is handed a task and wants to tag it\nfunction TaskRow({ task }) {\n  function markUrgent() {\n    task.tags.push("urgent"); // the parent's array, changed from in here\n  }\n  return <li onDoubleClick={markUrgent}>{task.title}</li>;\n}`
+const readonlyErrorCode = `type Task:\n    id: string\n    title: string\n    tags: List<string>\n\n// The row wants to mark this task urgent. The list belongs to the parent.\ncomponent TaskRow(task: Task):\n    def markUrgent():\n        task.tags.append("urgent")\n\n    return <li on:dblclick={markUrgent}>{task.title}</li>`
+const readonlyErrorOutput = "main.vel:9:9 error VEL4001: Cannot call mutating method 'append' through readonly List<string>; it is a read-only view\n        task.tags.append(\"urgent\")\n        ^^^^^^^^^^^^^^^^"
+const readonlyCode = `export type Task:\n    id: string\n    title: string\n    done: bool\n\n// A helper that only reads says so, and the signature is where it says it.\n// A class instance is a behavioural value and passes through as it is: its\n// methods are the interface, not its fields.\nexport class TaskClock:\n    constructor(private const started: number):\n        pass\n\n    def elapsed(now: number) -> number:\n        return now - self.started\n\ncomponent TaskSummary(tasks: readonly List<Task>, index: Map<string, Task>, clock: TaskClock):\n    return <p data-summary>{f"{tasks.size} tasks, {index.size} indexed, {clock.elapsed(10)} elapsed"}</p>\n\nconst tourTasks: List<Task> = [\n    {id: "parse", title: "Parse the module", done: true},\n    {id: "check", title: "Check the module", done: false},\n]\n\nconst taskIndex: Map<string, Task> = Map([["parse", tourTasks[0]], ["check", tourTasks[1]]])\n\nexport component SummaryPanel:\n    return <TaskSummary tasks={tourTasks} index={taskIndex} clock={TaskClock(0)} />`
+const contractsCode = `export type Task:\n    id: string\n    title: string\n    done: bool\n\nexport type PanelHandle:\n    focus: () -> null\n    label: () -> string\n\n// Component<Props> is the zero-Handle contract: the signature describes JSX\n// props and its result must be WebNode. compact?: bool means the prop may be\n// omitted; compact: bool? would stay required and accept null.\ntype TaskView = Component<(task: Task, compact?: bool) -> WebNode>\n\n// The two-argument form adds the Handle a ref on the invocation may claim.\ntype PanelView = Component<(title: string) -> WebNode, PanelHandle>\n\nexport component TaskRow(task: Task, compact: bool = false):\n    return <li data-task={task.id} data-compact={compact}>{task.title}</li>\n\nconst tourTasks: List<Task> = [\n    {id: "parse", title: "Parse the module", done: true},\n    {id: "check", title: "Check the module", done: false},\n]\n\n// A component value renders only as a PascalCase tag.\ncomponent TaskList(View: TaskView, variant: string):\n    return <ul data-task-list={variant}>{tourTasks.map(task => <View key={task.id} task={task} compact />)}</ul>\n\n// Bare Component and one-argument Component<Props> do not authorize a ref.\ncomponent Slot(View: Component):\n    return <div data-slot><View /></div>\n\nexport component ContractsPanel:\n    return <div data-contracts>\n        <TaskList View={TaskRow} variant="plain" />\n        <Slot View={EmptyView} />\n    </div>\n\ncomponent EmptyView:\n    return <span data-empty>empty</span>`
+const callErrorCode = `type Row = Component<(label: string) -> WebNode>\n\ncomponent Wrapper(View: Row):\n    return <div>{View("inline")}</div>`
+const callErrorOutput = `main.vel:4:18 error VEL4001: Render a Component value with JSX\n    return <div>{View("inline")}</div>\n                 ^^^^^^^^^^^^^^`
+const forwardingJsCode = `// The library component you are trying to restyle\nexport function Button({ label, onClick }) {\n  // No ...rest, no className. Your class name never arrives, and the type\n  // signature gave you no way to know that before you tried.\n  return <button className="ui-button" onClick={onClick}>{label}</button>;\n}`
+const hostCode = `// A multi-root component returns a fragment, so exactly one native element in\n// it carries the valueless host marker. host receives what the invocation\n// attaches: class, class:*, look, look:*, and style:*.\ncomponent Field(label: string, value: string):\n    return <>\n        <label data-field-label for="tour-field">{label}</label>\n        <input host id="tour-field" type="text" value={value} readonly />\n    </>\n\n// A single native root needs no marker: that root is the host. A component\n// root forwards to its own host in turn.\ncomponent FieldRow(label: string, value: string):\n    return <Field label={label} value={value} />\n\nexport component HostPanel:\n    return <div data-host-panel>\n        <FieldRow label="Name" value="Ada" />\n        <Field label="Team" value="Compiler" class="field" look:marginBlock={8px} />\n    </div>`
+const hostErrorCode = `component Field(label: string):\n    return <>\n        <label host>{label}</label>\n        <input host type="text" />\n    </>`
+const hostErrorOutput = `main.vel:4:16 error VEL5043: Component 'Field' declares more than one host element\n        <input host type="text" />\n               ^^^^^`
+const handleCode = `// A component Handle is a concrete record type. Its members are written in a\n// type expression, which is one of the positions where -> null is required\n// rather than inferred.\nexport type PanelHandle:\n    focus: () -> null\n    label: () -> string\n\ntype PanelView = Component<(title: string) -> WebNode, PanelHandle>\n\n// exposes names the Handle; exactly one expose provides it. The conventional\n// order puts expose immediately before the single return.\nexport component LabelledPanel(title: string) exposes PanelHandle:\n    let heading: Element? = null\n\n    def focus():\n        if heading != null:\n            heading.focus()\n\n    def label() -> string:\n        return title\n\n    expose {focus, label}\n    return <article data-panel><h3 ref={heading} tabindex="-1">{title}</h3></article>\n\n// A contract that carries a Handle authorizes a ref on the invocation.\ncomponent PanelSlot(View: PanelView, title: string):\n    let handle: PanelHandle? = null\n\n    def focusPanel():\n        if handle != null:\n            handle.focus()\n\n    return <div data-panel-slot>\n        <View ref={handle} title={title} />\n        <button type="button" data-focus-slot on:click={focusPanel}>Focus the slotted panel</button>\n    </div>\n\nexport component HandlePanel:\n    return <PanelSlot View={LabelledPanel} title="Panel through a contract" />`
 const refErrorCode = `type PanelHandle:\n    focus: () -> null\n\n// Plain has no exposes clause, so it publishes no Handle.\ncomponent Plain(title: string):\n    return <p>{title}</p>\n\ncomponent Page:\n    let handle: PanelHandle? = null\n\n    return <Plain ref={handle} title="No handle here" />`
 const refErrorOutput = `main.vel:11:19 error VEL5057: Component 'Plain' does not expose a Handle\n    return <Plain ref={handle} title="No handle here" />\n                  ^^^^^^^^^^^^`
-const nativeCode = `// Native element vocabulary: ordinary elements, void elements, a custom element\n// under the platform convention (lowercase, one hyphen), SVG, and MathML. An\n// unknown native spelling is a compile error with a suggestion.\nexport component NativeVocabulary:\n    return <div data-native>\n        <p>ordinary</p>\n        <br />\n        <hr />\n        <img src="/tour-mark.svg" alt="VelarScript tour mark" width="24" height="24" />\n        <tour-badge data-label="custom element"></tour-badge>\n        <svg data-svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">\n            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"></circle>\n        </svg>\n        <math data-math aria-label="x plus one"><mi>x</mi><mo>+</mo><mn>1</mn></math>\n    </div>`
+const nativeErrorCode = `component Panel:\n    return <sectoin data-panel>a panel</sectoin>`
+const nativeErrorOutput = `main.vel:2:13 error VEL5061: Unknown native element '<sectoin>'; did you mean '<section>'?\n    return <sectoin data-panel>a panel</sectoin>\n            ^^^^^^^`
+const nativeCode = `// Ordinary elements, void elements, a custom element under the platform\n// convention (lowercase, one hyphen), SVG, and MathML.\nexport component NativeVocabulary:\n    return <div data-native>\n        <p>ordinary</p>\n        <br />\n        <hr />\n        <img src="/tour-mark.svg" alt="VelarScript tour mark" width="24" height="24" />\n        <tour-badge data-label="custom element"></tour-badge>\n        <svg data-svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">\n            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"></circle>\n        </svg>\n        <math data-math aria-label="x plus one"><mi>x</mi><mo>+</mo><mn>1</mn></math>\n    </div>`
 
 const sections = [
-    {id: "declaring", label: "Declaring a component", labelZh: "声明组件"},
-    {id: "contracts", label: "Component as a written contract", labelZh: "作为书面契约的 Component"},
-    {id: "readonly", label: "What a prop carries", labelZh: "prop 携带什么"},
-    {id: "host", label: "Hosts and fragments", labelZh: "host 与 fragment"},
-    {id: "handles", label: "One exposed handle", labelZh: "唯一暴露的句柄"},
-    {id: "native", label: "The native element vocabulary", labelZh: "原生元素词汇表"},
+    {id: "declaring", label: "Where a prop's contract lives", labelZh: "prop 的契约写在哪"},
+    {id: "readonly", label: "A child cannot change what it was handed", labelZh: "子组件改不了它收到的东西"},
+    {id: "contracts", label: "A component you accept as a prop", labelZh: "作为 prop 收下的组件"},
+    {id: "host", label: "Styling a component from outside", labelZh: "从外面给组件设样式"},
+    {id: "handles", label: "One narrow way in", labelZh: "唯一一条窄入口"},
+    {id: "native", label: "A misspelled element", labelZh: "拼错的元素"},
 ]
+
+const linkLook = look:
+    color = sea
+    textDecoration = "none"
+
+    if @hover:
+        textDecoration = "underline"
 
 export component WebComponents:
     const locale = useLocale()
     return <main>
         <Head
             title={headTitle("/guide/web/components", locale.isChinese())}
-            description={locale.text("How a component declares props and children, what Component<Props> describes, and how exposes names a handle.", "组件如何声明 props 与 children、Component<Props> 描述了什么，以及 exposes 如何命名一个句柄。")}
+            description={locale.text("Where a prop's contract lives, why a child cannot change what it was handed, and the one narrow handle a component may expose.", "prop 的契约写在哪、子组件为什么改不了收到的东西，以及组件可以暴露的那唯一一条窄入口。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Web extension / 02", "Web 扩展 / 02")}
                 title={locale.text("Components", "组件")}
-                summary={locale.text("Declaring a component, typing its props, and the one handle a component may expose.", "声明组件、为 props 标注类型，以及组件可以暴露的唯一句柄。")}
+                summary={locale.text("A component is an ordinary function whose parameter list is its props. This chapter is about what follows from that, and what it costs.", "组件就是一个普通函数，参数列表就是它的 props。这一章讲由此带来的后果，以及代价。")}
             />
             <SectionList items={sections} />
             <Prose>
-                <SectionHeading id="declaring">{locale.text("Declaring a component", "声明组件")}</SectionHeading>
-                <Paragraph>
-                    {locale.text("component names the unit and its parameter list is its props. A prop with no default is required and a prop with a default is optional, which is the ordinary function rule rather than a second convention. A component has exactly one top-level return, and component names are PascalCase while native elements keep their lowercase HTML and SVG spellings.", "component 命名这个单元，它的参数列表就是 props。没有默认值的 prop 是必需的，有默认值的是可选的——这就是普通函数的规则，不是第二套约定。组件有且只有一个顶层 return；组件名用 PascalCase，原生元素保留小写的 HTML 与 SVG 拼写。")}
-                </Paragraph>
-                <CodeBlock code={declaringCode} />
-                <BulletList>
-                    <li>
-                        {locale.text("children: WebNode receives the nodes written between the tags. It is an ordinary prop with an ordinary type, so a component may name it anything a WebNode prop can be named.", "children: WebNode 接收写在标签之间的节点。它是普通 prop，带普通类型，因此组件可以用任何 WebNode prop 能用的名字命名它。")}
-                    </li>
-                    <li>
-                        {locale.text("Props evaluate from left to right, then JSX children, then the component function — the same order JavaScript already has.", "props 从左到右求值，然后是 JSX children，最后是组件函数——与 JavaScript 已有的顺序一致。")}
-                    </li>
-                    <li>
-                        {locale.text("A boolean prop written with no value, as compact above, passes true.", "写成无值形式的布尔 prop（如上面的 compact）传入 true。")}
-                    </li>
-                </BulletList>
-
-                <SectionHeading id="contracts">
-                    {locale.text("Component as a written contract", "作为书面契约的 Component")}
+                <SectionHeading id="declaring">
+                    {locale.text("Where a prop's contract lives", "prop 的契约写在哪")}
                 </SectionHeading>
                 <Paragraph>
-                    {locale.text("Component is the structural type of a component constructor. Bare Component says a host will pass no application props; Component<Props> writes the prop signature; the optional second argument names the Handle a ref may claim. Optional markers govern omission: compact?: bool may be absent, whereas compact: bool? is required and may contain null.", "Component 是组件构造器的结构化类型。裸 Component 表示宿主不会传入应用 prop；Component<Props> 写出 prop 签名；可选的第二个实参命名 ref 可以索取的 Handle。可选标记决定能否省略：compact?: bool 可以缺席，而 compact: bool? 是必需的、可以为 null。")}
+                    {locale.text("Here is a row component with one optional prop, written the ordinary way.", "下面是一个带一个可选 prop 的行组件，按最常见的写法写的。")}
                 </Paragraph>
-                <CodeBlock code={contractsCode} />
+                <CodeBlock code={optionalPropTsCode} />
+                <Paragraph>
+                    {locale.text("Two lines say overlapping things. The interface says compact may be absent; the destructuring says what it is when it is. Delete either one and the component still compiles, meaning something slightly different — and React 19 removed a third spelling, defaultProps for function components, so codebases that used it had to move the value into the destructuring anyway. None of this is hard. It is just that the answer to a one-word question lives in two places.", "两行说的是彼此重叠的事。interface 说 compact 可以不给；解构那行说不给的时候它是什么。删掉任何一行组件都还能编译，只是意思稍微变了——而 React 19 还移除了第三种写法，函数组件的 defaultProps，用过它的代码库只能把默认值挪进解构里。这些都不难。难的地方在于：一个一句话就能问完的问题，答案分在两处。")}
+                </Paragraph>
+                <CodeBlock code={declaringCode} />
+                <Paragraph>
+                    {locale.text("component names the unit and its parameter list is its props. No default means required; a default means optional and supplies the value. That is the ordinary function rule rather than a second convention, which is the whole mechanism: there is nowhere else for a prop's contract to be, so nowhere else to check.", "component 给这个单元命名，它的参数列表就是 props。没有默认值就是必需，有默认值就是可选，并且顺带给出取值。这就是普通函数的规则，不是第二套约定——机制全在这里：prop 的契约没有别的地方可待，也就没有别的地方要查。")}
+                </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("A compatible constructor accepts every prop the contract permits and adds no new required prop; additional optional props are allowed.", "兼容的构造器接受契约允许的每个 prop，且不新增必需 prop；额外的可选 prop 是允许的。")}
+                        {locale.text("children: WebNode receives the nodes written between the tags. It is an ordinary prop with an ordinary type, so it can be named anything a WebNode prop can be named.", "children: WebNode 接收写在标签之间的节点。它是普通 prop、普通类型，所以能叫任何 WebNode prop 能叫的名字。")}
                     </li>
                     <li>
-                        {locale.text("A received constructor renders as a PascalCase tag. It is not an ordinary callable, and it is distinct from an already-rendered WebNode.", "接收到的构造器以 PascalCase 标签的形式渲染。它不是普通可调用值，也与已经渲染出的 WebNode 不同。")}
+                        {locale.text("Props evaluate left to right, then JSX children, then the component function — the order JavaScript already has.", "props 从左到右求值，然后是 JSX children，最后是组件函数——就是 JavaScript 本来的顺序。")}
                     </li>
                     <li>
-                        {locale.text("The selected constructor keeps its instance while its identity is unchanged, including across live prop updates. Replacing it with a different constructor runs cleanup for the old instance and mounts the new one.", "只要构造器的标识不变，被选中的构造器就保持它的实例，包括在 prop 实时更新期间。换成另一个构造器会为旧实例运行清理并挂载新实例。")}
+                        {locale.text("A boolean prop written with no value, as compact is above, passes true.", "写成无值形式的布尔 prop，比如上面的 compact，传的是 true。")}
                     </li>
                 </BulletList>
-
-                <SectionHeading id="readonly">{locale.text("What a prop carries", "prop 携带什么")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Record and collection props enter as transitive readonly views, so a component that only reads them says so in its signature. A class instance is a behavioral value and passes through as it is, because its methods are the interface rather than its fields.", "记录与集合 prop 以传递性只读视图的形式进入，因此只读取它们的组件在签名里如实写明。类实例是行为值，原样传入，因为它的接口是方法而不是字段。")}
+                    {locale.text("The cost is rigidity in two places. A component has exactly one top-level return, so a body that wants to leave early writes a conditional expression instead of a second return statement. And props are positional parameters underneath, so a component with a dozen of them reads like a function with a dozen of them; there is no prop-spreading spelling to hide the width behind.", "代价是两处的僵硬。组件只有一个顶层 return，所以想提前返回的函数体要写条件表达式，而不是第二条 return 语句。另外 props 底下就是位置参数，所以有十几个 prop 的组件读起来就像有十几个参数的函数；这里没有 prop 展开的写法可以把这份宽度藏起来。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: every VelarScript block on this page is compiled by scripts/check-code-samples.mjs, and every counter-example is compiled too — it fails the build if it ever stops producing a diagnostic.", "门禁：本页每个 VelarScript 块都由 scripts/check-code-samples.mjs 编译；每个教学反例也一样编译——一旦它不再报错，构建就失败。")}
+                </GateNote>
+
+                <SectionHeading id="readonly">
+                    {locale.text("A child cannot change what it was handed", "子组件改不了它收到的东西")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("The row is handed a task and wants to tag it urgent. One line does it.", "行组件拿到一个 task，想给它打上 urgent 的标签。一行就够。")}
+                </Paragraph>
+                <CodeBlock code={mutateChildJsCode} />
+                <Paragraph>
+                    {locale.text("That array belongs to the parent. The push lands, the data is now right, and the screen is now wrong — the reference did not change, so nothing re-rendered. The bug reads as a rendering bug, and it is not; it is a write into somebody else's state, three files from where anybody will look for it.", "那个数组属于父组件。push 生效了，数据现在是对的，画面现在是错的——引用没变，所以什么都没重新渲染。这个 bug 看起来像渲染 bug，其实不是：它是一次写进别人状态的操作，而且离所有人会去找的地方隔着三个文件。")}
+                </Paragraph>
+                <CodeBlock code={readonlyErrorCode} />
+                <Paragraph>{locale.text("velar check answers:", "velar check 的回答：")}</Paragraph>
+                <CodeBlock code={readonlyErrorOutput} />
+                <Paragraph>
+                    {locale.text("Record and collection props enter a component as transitive readonly views. Transitive is the word doing the work: the view reaches all the way down, so the nested write is refused exactly like a top-level one. A helper that only reads therefore says readonly in its signature, and a class instance passes through as it is, because a class's methods are its interface rather than its fields.", "记录与集合 prop 进入组件时，是一层传递性只读视图。关键在「传递性」：这层视图一路穿到底，所以嵌套的写入和顶层的写入一样被拒。因此只做读取的辅助函数在签名里写上 readonly；而类实例原样传入，因为类的接口是它的方法，不是它的字段。")}
                 </Paragraph>
                 <CodeBlock code={readonlyCode} />
-
-                <SectionHeading id="host">{locale.text("Hosts and fragments", "host 与 fragment")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A component invocation may attach class, class:*, look, look:*, and style:* without knowing the component's internals. Those land on the component's host element. A single native root is the host by default, a component root forwards to its own host in turn, and a fragment has nothing to infer from — so exactly one native element in it carries the valueless host marker.", "组件调用处可以在不了解组件内部的情况下附加 class、class:*、look、look:* 与 style:*。它们落在组件的 host 元素上。单个原生根默认就是 host，组件根则继续转发到它自己的 host，而 fragment 没有可推断的对象——因此其中恰好一个原生元素带上无值的 host 标记。")}
+                    {locale.text("The cost is a round trip. A child that has to change something says which one, and the owner performs the change — so a small interaction grows a callback prop it would not otherwise need. readonly is also contagious: a utility shared between the owner and a reader takes the readonly signature, and widening an existing helper to accept both is work you do once per helper.", "代价是多一次往返。要改动的子组件只说「是哪一个」，真正的改动由拥有者来做——于是一个小交互会多出一个本来不需要的回调 prop。readonly 也会传染：拥有者和读取者共用的工具函数得写成 readonly 签名，把已有的辅助函数放宽到两边都收，每个函数都要做一次。")}
+                </Paragraph>
+
+                <SectionHeading id="contracts">
+                    {locale.text("A component you accept as a prop", "作为 prop 收下的组件")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("A list component that lets its caller choose the row renderer needs a type for that prop. React has had several — ComponentType, ElementType, FC — that differ in ways most people learn by hitting them, and FC changed under the ecosystem once already when the types stopped implying children. The spelling is not hard to write. It is hard to be sure you wrote the right one.", "一个把行渲染器交给调用方决定的列表组件，需要给那个 prop 一个类型。React 有好几个——ComponentType、ElementType、FC——它们的差别多数人是撞上去才学会的；而且 FC 在类型不再隐含 children 那次，已经在整个生态脚下变过一回。写出来不难，难的是确信自己写对了那一个。")}
+                </Paragraph>
+                <CodeBlock code={contractsCode} />
+                <Paragraph>
+                    {locale.text("Component is the structural type of a component constructor and it has three positions. Bare Component says a host will pass no application props. Component<Props> writes the prop signature. The optional second argument names the Handle a ref may claim. Optional markers govern omission the same way they do everywhere else: compact?: bool may be absent, while compact: bool? is required and may hold null.", "Component 是组件构造器的结构化类型，它有三种位置。裸 Component 表示宿主不会传应用 prop。Component<Props> 写出 prop 签名。可选的第二个实参命名 ref 可以索取的 Handle。可选标记的规则和别处一样：compact?: bool 可以缺席，而 compact: bool? 是必需的、可以装 null。")}
+                </Paragraph>
+                <BulletList>
+                    <li>
+                        {locale.text("A compatible constructor accepts every prop the contract permits and adds no new required prop. Extra optional props are fine.", "兼容的构造器要接受契约允许的每个 prop，并且不新增必需 prop。多几个可选 prop 没关系。")}
+                    </li>
+                    <li>
+                        {locale.text("The selected constructor keeps its instance while its identity is unchanged, including across live prop updates. Swapping in a different constructor runs cleanup for the old instance and mounts the new one.", "只要构造器的标识不变，被选中的构造器就保住它的实例，prop 实时更新期间也一样。换成另一个构造器，旧实例走清理，新实例挂载。")}
+                    </li>
+                </BulletList>
+                <Paragraph>
+                    {locale.text("A received constructor is not an ordinary callable, and that is where the cost lands. Calling it is refused.", "收下来的构造器不是普通可调用值，代价就落在这里。调用它会被拒绝。")}
+                </Paragraph>
+                <CodeBlock code={callErrorCode} />
+                <CodeBlock code={callErrorOutput} />
+                <Paragraph>
+                    {locale.text("So the higher-order patterns that work by calling a component and wrapping what comes back are not available here; you compose by rendering. The diagnostic names the spelling that works rather than only refusing, which is the shape every rejection on this site takes, but the restriction underneath is real and it is not configurable.", "所以那些「调用组件、再把结果包一层」的高阶写法在这里用不了；组合靠渲染来做。诊断不是只说不行，而是说出行得通的拼写——本站每一次拒绝都是这个形状——但底下这条限制是实的，而且没有开关。")}
+                </Paragraph>
+
+                <SectionHeading id="host">
+                    {locale.text("Styling a component from outside", "从外面给组件设样式")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("You need eight more pixels of margin on a library button, so you pass a class name. Nothing happens.", "你想给一个库里的按钮多加八个像素的外边距，于是传了一个类名。什么都没发生。")}
+                </Paragraph>
+                <CodeBlock code={forwardingJsCode} />
+                <Paragraph>
+                    {locale.text("The component never spread the rest of its props onto its root, and its type signature did not have to tell you that. Whether a component forwards a class name is a per-component habit, discovered by trying. That is the reason CSS-in-JS libraries grew wrappers whose whole job is to force the class through.", "这个组件没有把剩下的 props 展开到它的根上，而它的类型签名不必告诉你这件事。组件会不会转发类名，是每个组件各自的习惯，靠试出来。CSS-in-JS 的库之所以长出一堆包装器，整个活儿就是把类名硬塞进去，原因就在这。")}
                 </Paragraph>
                 <CodeBlock code={hostCode} />
-                <BulletList>
-                    <li>
-                        {locale.text("Two markers in one component, a marker with a value, and a multi-root component with no marker are each a compile error.", "一个组件里有两个标记、带值的标记，以及没有标记的多根组件，都是编译错误。")}
-                    </li>
-                    <li>
-                        {locale.text("host also belongs on a single-root component whose root is not the element that should receive host styling; marking the intended element stops the root from being the default.", "当单根组件的根并不是应该接收 host 样式的那个元素时，也要写 host；标出目标元素后，根就不再是默认值。")}
-                    </li>
-                    <li>
-                        {locale.text("Across a component boundary the caller wins: a look written on the invocation is composed after the look the component put on its host, so a property both of them set takes the caller's value.", "跨组件边界时调用方胜出：写在调用处的 look 在组件放到自己 host 上的 look 之后合成，因此两边都设置的属性取调用方的值。")}
-                    </li>
-                </BulletList>
-
-                <SectionHeading id="handles">{locale.text("One exposed handle", "唯一暴露的句柄")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("A component may publish a narrow imperative Handle without publishing its internal scope, its state cells, or its runtime object. exposes names one concrete record contract and exactly one expose provides a matching value, so a parent has one documented way in. Use Handle functions for imperative commands such as focus, reset, open, and close, and prefer getter functions over publishing mutable state.", "组件可以发布一个窄的命令式 Handle，而不发布它的内部作用域、state 单元或运行时对象。exposes 命名一个具体的记录契约，恰好一个 expose 提供匹配的值，因此父组件只有一条有文档的入口。Handle 函数用于 focus、reset、open、close 这类命令式操作，并且优先提供读取函数，而不是发布可变状态。")}
+                    {locale.text("Every component accepts class, class:*, look, look:*, and style:* on its invocation, without the caller knowing anything about the internals — they are implicit host props on every component's contract. Where they land is the component's decision: a single native root is the host by default, a component root forwards to its own host in turn, and a fragment has nothing to infer from, so exactly one native element in it carries the valueless host marker.", "每个组件的调用处都接受 class、class:*、look、look:* 与 style:*，调用方不需要知道内部任何事——它们是每个组件契约上的隐式 host prop。落在哪里由组件决定：单个原生根默认就是 host；组件根继续转发到它自己的 host；而 fragment 没有可推断的对象，所以其中恰好一个原生元素带上无值的 host 标记。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Two markers, a marker with a value, or a multi-root component with none are each refused at the element.", "两个标记、带值的标记，或者多根组件一个标记都没有，都会在元素处被拒。")}
+                </Paragraph>
+                <CodeBlock code={hostErrorCode} />
+                <CodeBlock code={hostErrorOutput} />
+                <Paragraph>
+                    {locale.text("The cost is that a component has exactly one styling surface, and that the caller wins. A look written on the invocation composes after the look the component put on its host, so a property both of them set takes the caller's value — a component cannot defend a visual invariant against the code using it. A component with two internal parts worth restyling has to publish named Look props for them, which is more work than leaking the DOM and is the point.", "代价有两条：一个组件只有一个可设样式的表面，而且调用方胜出。写在调用处的 look 在组件自己 host 上的 look 之后合成，所以两边都设的属性取调用方的值——组件守不住一条视觉不变量来对抗使用它的代码。内部有两个部件值得单独设样式的组件，只能为它们发布具名的 Look prop，这比泄漏 DOM 麻烦，而这正是重点。")}
+                </Paragraph>
+
+                <SectionHeading id="handles">{locale.text("One narrow way in", "唯一一条窄入口")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("A parent needs to move focus into a panel after a save. There is no method for that, so it takes a ref to the panel's DOM node and reaches in — querySelector for the heading, then focus. It works. It also means the parent now depends on the panel's markup, and the day somebody wraps that heading in a div, the focus call silently stops finding anything.", "保存之后，父组件需要把焦点移进一个面板。没有对应的方法，于是它拿到面板的 DOM 节点，伸手进去——querySelector 找标题，然后 focus。能用。它同时也意味着父组件从此依赖面板的标记结构；哪天有人给那个标题套上一层 div，这次 focus 调用就悄悄什么也找不到了。")}
                 </Paragraph>
                 <CodeBlock code={handleCode} />
+                <Paragraph>
+                    {locale.text("exposes names one concrete record contract, and exactly one expose provides a matching value. What the parent gets is that record and nothing else: not the internal scope, not the state cells, not the runtime object, not the DOM. The runtime creates one shallow-frozen Handle per instance and guards its callable fields, so a Handle saved past the instance's destruction throws instead of reaching destroyed state.", "exposes 命名一个具体的记录契约，恰好一个 expose 提供匹配的值。父组件拿到的就是那个记录，别的什么都没有：内部作用域没有，state 单元没有，运行时对象没有，DOM 也没有。运行时为每个实例创建一个浅冻结的 Handle，并给它的可调用字段加守卫，所以实例销毁后还留着的旧 Handle 会抛错，而不是摸到已经销毁的状态。")}
+                </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("ref is a compiler-owned directive rather than a prop. It requires a mutable optional let binding because cleanup restores null, and a component prop cannot be named ref.", "ref 是编译器拥有的指令，而不是 prop。它要求一个可变的可选 let 绑定，因为清理会把它恢复为 null；组件 prop 也不能命名为 ref。")}
+                        {locale.text("ref is a compiler-owned directive, not a prop. It needs a mutable optional let binding because cleanup restores null, and a component prop cannot be named ref.", "ref 是编译器拥有的指令，不是 prop。它要一个可变的可选 let 绑定，因为清理会把它恢复成 null；组件的 prop 也不能叫 ref。")}
                     </li>
                     <li>
-                        {locale.text("expose may be written before or after the single return but not inside a branch, a function, or a lifecycle block. The root is constructed before the Handle value is evaluated, so exposed element refs already refer to their constructed elements.", "expose 可以写在唯一的 return 之前或之后，但不能写在分支、函数或生命周期块内部。根先于 Handle 值构造，因此被暴露的元素 ref 已经指向它们构造好的元素。")}
-                    </li>
-                    <li>
-                        {locale.text("The runtime creates one shallow-frozen Handle per instance, and its callable fields are guarded: after the instance is destroyed, a saved old Handle throws instead of reaching destroyed state or DOM.", "运行时为每个实例创建一个浅冻结的 Handle，其可调用字段带守卫：实例销毁后，保存下来的旧 Handle 会抛错，而不是触及已销毁的状态或 DOM。")}
+                        {locale.text("expose may sit before or after the single return, but not inside a branch, a function, or a lifecycle block. The root is constructed before the Handle value is evaluated, so exposed element refs already point at real elements.", "expose 可以写在唯一的 return 前面或后面，但不能写进分支、函数或生命周期块。根先于 Handle 取值构造，所以被暴露的元素 ref 已经指向真实元素了。")}
                     </li>
                 </BulletList>
                 <Paragraph>
-                    {locale.text("A component with no exposes clause publishes no Handle, and asking for one on the invocation is refused at the ref rather than at the call that would have used it.", "没有 exposes 子句的组件不发布 Handle；在调用处索取 Handle 会在 ref 处被拒绝，而不是留到之后使用它的调用才失败。")}
+                    {locale.text("A component with no exposes clause publishes no Handle, and asking for one is refused at the ref rather than at the call that would have used it.", "没有 exposes 子句的组件不发布 Handle；索取它会在 ref 处被拒，而不是留到之后要用它的那次调用才失败。")}
                 </Paragraph>
                 <CodeBlock code={refErrorCode} />
                 <CodeBlock code={refErrorOutput} />
-
-                <SectionHeading id="native">{locale.text("The native element vocabulary", "原生元素词汇表")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Ordinary elements, void elements, a custom element under the platform convention, SVG, and MathML are all native spellings the compiler knows. An unknown one is a diagnostic with a suggestion rather than an element quietly rendered as-is. Inline SVG is part of native JSX: namespace ownership crosses nested elements, reactive branches, keyed lists, fragments, and user components.", "普通元素、void 元素、符合平台约定的自定义元素、SVG 与 MathML，都是编译器认识的原生拼写。未知拼写会得到一条带建议的诊断，而不是被静默地原样渲染。内联 SVG 属于原生 JSX：命名空间的归属会跨越嵌套元素、响应式分支、带 key 的列表、fragment 与用户组件。")}
+                    {locale.text("The cost is one handle and no more. A component that wants to publish two unrelated capabilities publishes one record with both in it, and a component that wants to publish live state publishes a getter function rather than the cell — so a parent that wanted to observe a child's value ends up reading it through a call, or the child reports it upward and the owner keeps it. That is more ceremony than a ref into the DOM, and it is the ceremony that keeps the markup private.", "代价是句柄只有一个，没有第二个。想发布两种不相干能力的组件，就发布一个把两者都装进去的记录；想发布实时状态的组件，发布的是读取函数，不是那个单元——于是本想观察子组件取值的父组件，最后是通过一次调用去读，或者子组件把它报上去、由拥有者保管。这比一个指向 DOM 的 ref 麻烦，而正是这份麻烦让标记结构保持私有。")}
+                </Paragraph>
+
+                <SectionHeading id="native">{locale.text("A misspelled element", "拼错的元素")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("Type sectoin instead of section in JSX and the page renders. Lowercase tags are handed to the DOM as written, so the browser creates an unknown element, your section styles do not match it, and nothing anywhere says the word was wrong. You find it by looking at the page and wondering why the padding is missing.", "在 JSX 里把 section 打成 sectoin，页面照样渲染。小写标签是原样交给 DOM 的，于是浏览器造出一个不认识的元素，你给 section 写的样式匹配不上，而且哪里都不会说这个词错了。你是靠盯着页面、纳闷内边距怎么没了才找到它的。")}
+                </Paragraph>
+                <CodeBlock code={nativeErrorCode} />
+                <CodeBlock code={nativeErrorOutput} />
+                <Paragraph>
+                    {locale.text("The native element vocabulary is a closed table the compiler knows, so a name outside it is a diagnostic with a suggestion. Ordinary elements, void elements, SVG, MathML, and a custom element under the platform convention — lowercase with one hyphen — are all in it. Inline SVG is part of native JSX rather than a special mode: namespace ownership crosses nested elements, reactive branches, keyed lists, fragments, and user components.", "原生元素词汇表是编译器认识的一张封闭表格，所以表外的名字会得到一条带建议的诊断。普通元素、void 元素、SVG、MathML，以及符合平台约定的自定义元素——小写、带一个连字符——都在表里。内联 SVG 属于原生 JSX，不是什么特殊模式：命名空间的归属会跨越嵌套元素、响应式分支、带 key 的列表、fragment 与用户组件。")}
                 </Paragraph>
                 <CodeBlock code={nativeCode} />
+                <Paragraph>
+                    {locale.text("The cost of a closed table is that it can be behind the platform. An element the browser shipped last month and this compiler has not learned yet cannot be written as itself; the custom-element convention is the pressure valve, and it only covers names with a hyphen in them, which standard HTML elements never have. That is a real gap, and the honest answer is that the table is updated rather than opened.", "封闭表格的代价是它可能落后于平台。浏览器上个月刚发布、而这个编译器还没学会的元素，没法照原样写出来；自定义元素的约定是泄压阀，但它只覆盖名字里带连字符的那些，而标准 HTML 元素从来不带连字符。这是一个实打实的缺口，诚实的答案是：表格会更新，但不会打开。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: VEL5061, VEL5043, VEL5057 and the readonly VEL4001 above are each verified against the sample that produces them, so a code cannot be quoted on this page without the compiler agreeing.", "门禁：上面的 VEL5061、VEL5043、VEL5057 与那条只读 VEL4001，都各自与产生它的样本核对过；所以本页引用的诊断码，编译器不点头就写不上去。")}
+                </GateNote>
                 <Callout title={locale.text("Styling stays declarative", "样式保持声明式")}>
                     <Paragraph>
-                        {locale.text("A Handle is for commands, not for styling. Every component already accepts class, look, and look:* on its stable host, and a component that wants its internal parts styled exposes named Look props instead of leaking DOM through its Handle.", "Handle 用于命令，不用于样式。每个组件的稳定 host 本来就接受 class、look 与 look:*；需要让内部部件可被设定样式的组件，应当暴露具名的 Look prop，而不是通过 Handle 泄漏 DOM。")}
+                        {locale.text("A Handle is for commands, not for styling. Every component already accepts class, look, and look:* on its stable host, and a component that wants its internal parts styled publishes named Look props instead of leaking DOM through its Handle.", "Handle 用来下命令，不用来设样式。每个组件的稳定 host 本来就接受 class、look 与 look:*；想让内部部件可被设样式的组件，发布具名的 Look prop，而不是通过 Handle 把 DOM 漏出去。")} <Link
+                            to="/guide/web/look"
+                            look={linkLook}
+                        >
+                            {locale.text("The Look chapter is where those values come from.", "那些取值来自 Look 那一章。")}
+                        </Link>
                     </Paragraph>
                 </Callout>
             </Prose>

@@ -79,7 +79,7 @@ export component ReferenceProject:
                     signatureLabel={locale.text("Example", "示例")}
                 />
                 <Paragraph>
-                    {locale.text("A Core library declares no extension at all, which is what keeps the compiler independently usable without the Web package installed.", "Core 库完全不声明扩展，这正是让编译器在未安装 Web 包时仍可独立使用的原因。")}
+                    {locale.text("A Core library declares no extension at all, which is what keeps the compiler independently usable without the Web package installed.", "Core 库完全不声明扩展，所以没装 Web 包时，编译器照样能单独用。")}
                 </Paragraph>
                 <CodeBlock code={coreManifestJsonCode} />
 

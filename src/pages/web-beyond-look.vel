@@ -1,109 +1,149 @@
-import {Head} from "velar/web"
-import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
-import {useLocale} from "@velarscript/site-ui"
+import {Head, Link} from "velar/web"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, GateNote, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
+import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
-const cascadeCode = `import css unsafe "./before.css" before look\nimport css unsafe "./after.css" after look\nimport {rgb} from "velar/look"\n\nconst ink = rgb(24, 31, 46)\nconst accent = rgb(45, 79, 190)\n\n// A base Look selector and a simple class selector both have the same\n// specificity, so source order decides. before.css sets color and loses it to\n// this Look; the property it alone sets survives.\nexport const cascadeLook = look:\n    color = ink\n    padding = 8px\n\n    if @hover:\n        color = accent\n\n// A stateful Look selector usually adds a second attribute selector, so it is\n// more specific than one simple class — which is why the hover colour above\n// beats an equally simple class rule in either import position.\nexport const statefulCascadeLook = look:\n    background = rgb(255, 255, 255)\n\n    if @focusVisible:\n        background = rgb(238, 241, 255)\n\n// Look emits readable tokens on data-velar-look and readable custom properties\n// rather than random generated class names, and an author's own stable class\n// and data attributes remain public hooks. That is what lets the two\n// stylesheets above target this markup at all.\nexport component CascadePanel:\n    return <section data-cascade-panel>\n        <p class="tour-cascade" data-cascade look={cascadeLook}>\n            Look wins the colour; the stylesheet keeps what Look never sets\n        </p>\n        <p class="tour-cascade-override" data-cascade-override look={statefulCascadeLook}>\n            after look wins an equal-specificity conflict\n        </p>\n        <div class="tour-cascade-columns" data-cascade-columns>\n            <p>Multi-column layout is one of the properties outside checked Look, so it is written in native CSS.</p>\n        </div>\n        <ol class="tour-cascade-counter" data-cascade-counter>\n            <li>Generated-content counters have no Look spelling.</li>\n            <li>They reach the page through the same unsafe import.</li>\n        </ol>\n    </section>`
+// The CSS, JavaScript and JSON blocks are third-party, so they are *CssCode,
+// *JsCode and *JsonCode and nothing here compiles them. Every VelarScript block
+// is compiled by this site's gate.
+const unmarkedEscapeJsCode = `// The component says the text is dark\nconst style = { color: "#1a1f2e" };\n\n// Somewhere else, a stylesheet nobody imported from this file\n.note { color: #b00020; }\n\n// Which one applies depends on where the styling library injected its tag,\n// which depends on import order, which is a build detail. Nothing in either\n// file records that the other one exists.`
+const cascadeCode = `import css unsafe "./before.css" before look\nimport css unsafe "./after.css" after look\nimport {rgb} from "velar/look"\n\nconst ink = rgb(24, 31, 46)\nconst accent = rgb(45, 79, 190)\n\n// A base Look selector and a simple class selector have the same specificity,\n// so source order decides. before.css sets color and loses it to this Look;\n// the property it alone sets survives.\nexport const cascadeLook = look:\n    color = ink\n    padding = 8px\n\n    if @hover:\n        color = accent\n\n// A stateful Look selector usually adds a second attribute selector, so it is\n// more specific than one simple class — which is why the hover colour above\n// beats an equally simple class rule in either import position.\nexport const statefulCascadeLook = look:\n    background = rgb(255, 255, 255)\n\n    if @focusVisible:\n        background = rgb(238, 241, 255)\n\n// Look emits readable tokens on data-velar-look and readable custom properties\n// rather than random generated class names, and an author's own stable class\n// and data attributes remain public hooks. So the two stylesheets above can\n// target this markup at all.\nexport component CascadePanel:\n    return <section data-cascade-panel>\n        <p class="tour-cascade" data-cascade look={cascadeLook}>\n            Look wins the colour; the stylesheet keeps what Look never sets\n        </p>\n        <p class="tour-cascade-override" data-cascade-override look={statefulCascadeLook}>\n            after look wins an equal-specificity conflict\n        </p>\n        <div class="tour-cascade-columns" data-cascade-columns>\n            <p>Multi-column layout is one of the properties outside checked Look, so it is written in native CSS.</p>\n        </div>\n        <ol class="tour-cascade-counter" data-cascade-counter>\n            <li>Generated-content counters have no Look spelling.</li>\n            <li>They reach the page through the same unsafe import.</li>\n        </ol>\n    </section>`
+const orderCssCode = "/* Two rules, equal specificity. The winner is whichever the bundle emits\n   second, and nothing in either file says which that will be. */\n.note  { color: #1a1f2e; }   /* components.css */\n.note  { color: #b00020; }   /* theme.css */\n\n/* Reorder two import lines in an unrelated file and the colour changes. This\n   is the mechanism behind most uses of !important. */"
 const beforeCssCode = "/* Imported `before look`, so it loses an equal-specificity conflict to Look.\n   `before look` and `after look` specify source order only; specificity and\n   `!important` remain this file's responsibility. */\n\n.tour-cascade {\n    /* Look sets this too, and Look wins because it comes later. */\n    color: #b00020;\n    /* Look never sets this, so it survives. */\n    text-underline-offset: 3px;\n}\n\n/* Multi-column layout is one of the real CSS properties deliberately outside\n   checked Look, so it lives here. */\n.tour-cascade-columns {\n    column-count: 2;\n    column-gap: 24px;\n}"
 const afterCssCode = "/* Imported `after look`, so it wins an equal-specificity conflict with a base\n   Look selector: both are one simple selector and source order decides. */\n\n.tour-cascade-override {\n    letter-spacing: 0.06em;\n    background-color: #eef1ff;\n}\n\n/* Generated-content counters have no Look spelling at all — `content` in Look\n   is text, and `counter(...)`, `attr(...)`, `url(...)`, and `open-quote` are\n   outside the checked domain. */\n.tour-cascade-counter {\n    counter-reset: tour-step;\n}\n\n.tour-cascade-counter li::before {\n    counter-increment: tour-step;\n    content: counter(tour-step) \". \";\n}"
+const packageCssJsCode = `// The import that is not JavaScript\nimport "some-ui/dist/style.css";\n\n// What it resolves to depends on the bundler and the package's exports map.\n// Which version landed is not visible in review, and a patch release can\n// restyle your application without a line of your code changing.`
 const syncJsonCode = `{\n  "scripts": {\n    "sync:vendor-css": "cp node_modules/some-ui/dist/style.css src/some-ui.css",\n    "prebuild": "npm run sync:vendor-css"\n  }\n}`
 const vendorCode = `// The copy is imported before look, so the application's own Look wins an\n// equal-specificity conflict with the package's classes. Local corrections\n// belong in a second stylesheet imported after look, or in Look itself, so the\n// next sync does not silently discard them.\nimport css unsafe "./some-ui.css" before look\nimport css unsafe "./overrides.css" after look\n\nexport component VendorButton(label: string):\n    return <button type="button" class="some-ui-button">{label}</button>`
+const dangerousJsCode = "// React 19.2 — the property whose name is the warning\n<article dangerouslySetInnerHTML={{ __html: trustedMarkup }} />"
 const htmlCode = "// Trusted HTML renders through the string-only unsafe:html boundary. It is a\n// wholesale innerHTML assignment on every reactive update: it does not morph\n// DOM or preserve descendant identity.\nexport component Preview(trustedMarkup: string):\n    return <article data-preview unsafe:html={trustedMarkup} />"
 const htmlErrorCode = "component Preview(trustedMarkup: string):\n    return <article unsafe:html={trustedMarkup}><p>a child</p></article>"
 const htmlErrorOutput = "main.vel:2:12 error VEL5015: unsafe:html cannot be combined with JSX children\n    return <article unsafe:html={trustedMarkup}><p>a child</p></article>\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
 
 const sections = [
-    {id: "import", label: "import css unsafe", labelZh: "import css unsafe"},
-    {id: "cascade", label: "Position in the cascade", labelZh: "在层叠中的位置"},
-    {id: "package", label: "A stylesheet from a package", labelZh: "来自包的样式表"},
-    {id: "html", label: "unsafe:html", labelZh: "unsafe:html"},
-    {id: "cost", label: "What the boundary costs", labelZh: "这条边界的代价"},
+    {id: "import", label: "The stylesheet nobody declared", labelZh: "没人声明过的那份样式表"},
+    {id: "cascade", label: "Which file wins", labelZh: "哪个文件赢"},
+    {id: "package", label: "A stylesheet that lives in node_modules", labelZh: "住在 node_modules 里的样式表"},
+    {id: "html", label: "Markup that arrived as a string", labelZh: "以字符串到达的标记"},
 ]
+
+const linkLook = look:
+    color = sea
+    textDecoration = "none"
+
+    if @hover:
+        textDecoration = "underline"
 
 export component WebBeyondLook:
     const locale = useLocale()
     return <main>
         <Head
             title={headTitle("/guide/web/beyond-look", locale.isChinese())}
-            description={locale.text("How a stylesheet is imported when Look cannot express something, and what the unsafe markers promise.", "当 Look 无法表达某种效果时如何导入样式表，以及 unsafe 标记承诺了什么。")}
+            description={locale.text("How a stylesheet crosses into a VelarScript project with a declared position in the cascade, and what the unsafe markers give up.", "样式表如何带着一个声明好的层叠位置进入 VelarScript 项目，以及 unsafe 标记放弃了什么。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Web extension / 09", "Web 扩展 / 09")}
                 title={locale.text("Beyond Look", "Look 之外")}
-                summary={locale.text("The CSS escape hatch, its declared position in the cascade, and the unsafe HTML boundary.", "CSS 逃生通道、它在层叠中的声明位置，以及 unsafe HTML 边界。")}
+                summary={locale.text("Look is a closed set, so some real CSS is outside it on purpose. This chapter is the declared way out, and an honest account of what is no longer checked once you take it.", "Look 是一个封闭集合，所以有一部分真实 CSS 是被刻意留在外面的。这一章讲那条声明出来的出口，以及走出去之后有什么不再受检——如实说。")}
             />
             <SectionList items={sections} />
             <Prose>
-                <SectionHeading id="import">{locale.text("import css unsafe", "import css unsafe")}</SectionHeading>
+                <SectionHeading id="import">
+                    {locale.text("The stylesheet nobody declared", "没人声明过的那份样式表")}
+                </SectionHeading>
                 <Paragraph>
-                    {locale.text("Look is a controlled visual vocabulary, so some real CSS is deliberately outside it: multi-column layout, generated-content counters, container queries, and the print and orientation media types among them. When a design needs one of those, native CSS is an explicit boundary with a declared position relative to Look's output.", "Look 是一套受控的视觉词汇，因此有一部分真实 CSS 被刻意留在它之外：多栏布局、生成内容计数器、容器查询，以及 print 与 orientation 媒体类型等。当设计需要其中之一时，原生 CSS 是一条显式边界，并带有相对于 Look 输出的声明位置。")}
+                    {locale.text("A component sets its own colour, and a stylesheet somewhere else sets the same colour for the same element.", "一个组件设了自己的颜色，另一处的样式表又给同一个元素设了同一个颜色。")}
+                </Paragraph>
+                <CodeBlock code={unmarkedEscapeJsCode} />
+                <Paragraph>
+                    {locale.text("Which one applies depends on where the styling library injected its tag, which depends on import order, which is a build detail. Neither file records that the other exists. This is the shape of most styling escapes: they work, and they leave no trace of the relationship they created.", "哪一个生效，取决于样式库把自己的标签插到了哪里，而那取决于导入顺序，而那是构建细节。两个文件谁也没记下对方的存在。多数样式逃逸都是这个形状：它们是管用的，只是没有留下任何关于「它们建立了什么关系」的痕迹。")}
                 </Paragraph>
                 <CodeBlock code={cascadeCode} />
+                <Paragraph>
+                    {locale.text("Look is a controlled vocabulary, so some real CSS is deliberately outside it: multi-column layout, generated-content counters, container queries, and the print and orientation media types among them. When a design needs one of those, the stylesheet is an import in the module graph with a declared position relative to Look's output. The word unsafe is part of the spelling rather than a lint suppression, and the import takes a relative project path and nothing else.", "Look 是一套受控词汇，所以有一部分真实 CSS 被刻意留在外面：多栏布局、生成内容计数器、容器查询，以及 print 和 orientation 媒体类型等等。设计需要其中之一时，那份样式表是模块图里的一次导入，并带着一个相对于 Look 输出的声明位置。unsafe 这个词属于写法本身，不是一条 lint 抑制注释；这个导入只接受相对的项目路径，别的都不接受。")}
+                </Paragraph>
                 <BulletList>
                     <li>
-                        {locale.text("The import takes a relative project path and nothing else, and the word unsafe is part of the spelling rather than a lint suppression.", "该导入只接受相对的项目路径，别的都不接受；unsafe 这个词属于拼写本身，而不是一条 lint 抑制注释。")}
+                        {locale.text("The stylesheet is unchecked native CSS by design: its class names, keyframe names, and cascade are the stylesheet author's responsibility.", "这份样式表按设计就是未受检的原生 CSS：它的类名、关键帧名和层叠，都是样式表作者的责任。")}
                     </li>
                     <li>
-                        {locale.text("The stylesheet is unchecked native CSS by design: its class names, keyframe names, and cascade are the stylesheet author's responsibility.", "该样式表按设计就是未受检的原生 CSS：它的类名、关键帧名与层叠都是样式表作者的责任。")}
-                    </li>
-                    <li>
-                        {locale.text("Look emits readable tokens on a data attribute and readable custom properties rather than random generated class names, and an author's own stable class and data attributes remain public hooks — which is what lets an external stylesheet target the markup at all.", "Look 在 data 属性上发出可读的记号，并发出可读的自定义属性，而不是随机生成的类名；作者自己稳定的 class 与 data 属性仍然是公开的挂钩点——这正是外部样式表能够选中这些标记的原因。")}
+                        {locale.text("Look emits readable tokens on a data attribute and readable custom properties rather than random generated class names, and an author's own stable class and data attributes remain public hooks — so an external stylesheet can target the markup at all.", "Look 在一个 data 属性上发出可读的记号，并发出可读的自定义属性，而不是随机生成的类名；作者自己稳定的 class 与 data 属性仍然是公开的挂钩点——所以外部样式表才选得中这些标记。")}
                     </li>
                 </BulletList>
-
-                <SectionHeading id="cascade">{locale.text("Position in the cascade", "在层叠中的位置")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("before look and after look set source order only. They do not assign a separate Velar priority, so specificity and important remain the stylesheet author's responsibility. A base Look selector and a simple class selector have equal specificity, which is exactly why source order is the thing worth declaring; a stateful Look selector adds a second attribute selector and is therefore more specific than one simple class in either position.", "before look 与 after look 只设定源码顺序。它们不赋予单独的 Velar 优先级，因此特异性与 important 仍然是样式表作者的责任。基础 Look 选择器与简单类选择器特异性相等，这正是源码顺序值得被声明出来的原因；带状态的 Look 选择器会多出一个属性选择器，因此在任一位置都比单个简单类更特异。")}
+                    {locale.text("The cost is everything the checked domain was giving you, and it starts at the first line of that file. There are no property diagnostics inside it, no unit checking, and no dead-declaration detection, so a class renamed in the application silently stops matching and the rule sits there doing nothing. The boundary is honest about this rather than gradual: you are either inside the checked vocabulary or you are writing CSS.", "代价是受检域给你的一切，而且从那个文件的第一行就开始了。里面没有属性诊断，没有单位检查，也没有失效声明的检测，所以应用里改名的类会静默地不再匹配，那条规则就杵在那儿什么也不做。这条边界对此是坦白的，不是渐进的：你要么在受检词汇之内，要么就是在写 CSS。")}
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: every VelarScript block on this page is compiled by scripts/check-code-samples.mjs, which writes the named stylesheets beside the sample so the imports really resolve. The CSS blocks themselves are quoted native CSS and nothing compiles them — that is the point of this chapter.", "门禁：本页每个 VelarScript 块都由 scripts/check-code-samples.mjs 编译，它会在样本旁边写出被点名的样式表，好让那些导入真的解析得到。CSS 块本身是引用的原生 CSS，没有东西编译它们——这正是本章要说的事。")}
+                </GateNote>
+
+                <SectionHeading id="cascade">{locale.text("Which file wins", "哪个文件赢")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("Two rules, the same selector, the same specificity.", "两条规则，同一个选择器，同样的特异性。")}
+                </Paragraph>
+                <CodeBlock code={orderCssCode} />
+                <Paragraph>
+                    {locale.text("The winner is whichever the bundle emits second, and nothing in either file says which that will be. Reorder two import lines in a third file and the colour changes. This is the mechanism behind most uses of the important keyword: it is not that anybody wanted a priority override, it is that source order was not something they could state.", "赢的是打包时排在后面的那一条，而两个文件里都没写清那会是哪一条。在第三个文件里调换两行 import，颜色就变了。important 关键字的多数用法背后就是这个机制：不是谁想要一个优先级覆盖，而是「源码顺序」这件事他们没法说出来。")}
                 </Paragraph>
                 <CodeBlock code={beforeCssCode} />
                 <CodeBlock code={afterCssCode} />
-
-                <SectionHeading id="package">{locale.text("A stylesheet from a package", "来自包的样式表")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("The import takes a project path, so a component library whose CSS lives in the package directory is brought in by copying it into the project. That is a deliberate two-line build step: the file becomes a reviewable artifact whose version is visible in the repository instead of a silent dependency of the visual layer.", "该导入接受的是项目路径，因此 CSS 位于包目录中的组件库要通过复制到项目里来引入。这是刻意为之的两行构建步骤：该文件成为可评审的产物，版本在仓库中可见，而不是视觉层的一个隐形依赖。")}
+                    {locale.text("before look and after look state source order at the import, in the module that depends on the answer. A base Look selector and a simple class selector have equal specificity, which is exactly why order is the thing worth declaring; a stateful Look selector adds a second attribute selector and is therefore more specific than one simple class in either position.", "before look 与 after look 在导入处说出源码顺序，而那行导入就写在依赖这个答案的模块里。基础 Look 选择器和简单类选择器特异性相等，正因如此，值得被声明出来的就是顺序；带状态的 Look 选择器多出一个属性选择器，所以在任一位置都比单个简单类更特异。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The cost is that these two words are smaller than they sound. They set source order and nothing else: they do not assign a separate priority, they do not create a layer, and they do not neutralise the important keyword. A stylesheet that writes important still wins from either position, and a selector that carries two class names still outranks a base Look rule. What is declared is the one thing CSS gave you no way to declare, and the rest of the cascade is unchanged and still yours to reason about.", "代价是这两个词比听起来要小。它们只设定源码顺序，别的什么都不做：不赋予单独的优先级，不创建层，也不抵消 important 关键字。写了 important 的样式表在哪个位置都还是赢；带两个类名的选择器仍然压过基础 Look 规则。被声明出来的，是 CSS 唯一没给你办法声明的那一件事；层叠的其余部分原样不动，仍然要你自己去推。")}
+                </Paragraph>
+
+                <SectionHeading id="package">
+                    {locale.text("A stylesheet that lives in node_modules", "住在 node_modules 里的样式表")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("A component library ships its CSS in the package, and one line brings it in.", "一个组件库把 CSS 放在包里发布，一行就能引进来。")}
+                </Paragraph>
+                <CodeBlock code={packageCssJsCode} />
+                <Paragraph>
+                    {locale.text("What that resolves to depends on the bundler and the package's exports map. Which version landed is not visible in a review, and a patch release can restyle the application without a line of your own code changing. The file is a dependency of your visual layer that nobody on the team has read.", "这一行解析到什么，取决于打包器和包的 exports 映射。哪个版本落地了，在评审里看不见；一次补丁版本发布就能给应用换个样子，而你自己一行代码都没改。这个文件是你视觉层的一项依赖，而团队里没人读过它。")}
                 </Paragraph>
                 <CodeBlock code={syncJsonCode} />
                 <CodeBlock code={vendorCode} />
-                <BulletList>
-                    <li>
-                        {locale.text("Import the copy before look so the application's own Look wins equal-specificity conflicts.", "把这份副本以 before look 导入，让应用自己的 Look 在特异性相等的冲突中胜出。")}
-                    </li>
-                    <li>
-                        {locale.text("Commit the copied file and re-run the copy when the package updates; a prebuild script keeps that mechanical.", "把复制来的文件提交进仓库，并在包更新时重新执行复制；一个 prebuild 脚本让这件事保持机械化。")}
-                    </li>
-                    <li>
-                        {locale.text("Treat the copy as read-only: local edits belong in a second stylesheet imported after look, or in Look itself, so the next sync does not silently discard them.", "把副本视为只读：本地修改应放在以 after look 导入的第二份样式表里，或放进 Look 本身，这样下次同步不会静默地丢弃它们。")}
-                    </li>
-                </BulletList>
-
-                <SectionHeading id="html">{locale.text("unsafe:html", "unsafe:html")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Trusted markup renders through the string-only unsafe:html boundary. It is an explicit wholesale assignment of the element's inner HTML on every reactive update: it does not morph DOM and does not preserve descendant identity, so anything inside it is replaced rather than updated in place.", "受信任的标记经由只接受字符串的 unsafe:html 边界渲染。它在每次响应式更新时对元素的内部 HTML 做一次显式的整体赋值：它不做 DOM 变形，也不保留后代身份，因此其中的一切是被替换而不是就地更新。")}
+                    {locale.text("The import takes a project path, so the package's CSS is brought in by copying it into the project. That is a deliberate two-line build step, and what it buys is that the file becomes a reviewable artifact whose contents and version are visible in the repository rather than a silent dependency of the visual layer. Import the copy before look so the application's own Look wins equal-specificity conflicts, and keep local corrections in a second stylesheet imported after look.", "这个导入接受的是项目路径，所以包里的 CSS 要复制到项目里才能引进来。这是刻意为之的两行构建步骤，换来的是：那个文件成为可评审的产物，内容和版本都在仓库里看得见，而不是视觉层的一个隐形依赖。把副本以 before look 导入，让应用自己的 Look 在特异性相等的冲突里胜出；本地的修正放进第二份以 after look 导入的样式表。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The cost is a copy you maintain. The prebuild script keeps the sync mechanical, but somebody has to notice when it stops running, and a copy that goes stale is worse than a dependency that updates — it is a dependency that updates and does not tell you. Treat the copy as read-only and put edits in the second stylesheet, or the next sync discards them without saying so.", "代价是一份要你维护的副本。prebuild 脚本让同步保持机械化，但总得有人注意到它什么时候不跑了；而一份过期的副本比一个会自动更新的依赖更糟——它是一个会更新、但不告诉你的依赖。把副本当只读的，改动写进第二份样式表；否则下一次同步会把它们丢掉，而且不吭声。")}
+                </Paragraph>
+
+                <SectionHeading id="html">
+                    {locale.text("Markup that arrived as a string", "以字符串到达的标记")}
+                </SectionHeading>
+                <Paragraph>
+                    {locale.text("Rendered markdown, an email body, a CMS field — sooner or later markup arrives as text and has to become elements.", "渲染好的 markdown、一封邮件的正文、CMS 里的一个字段——早晚有一天，标记会以文本的形式到达，然后必须变成元素。")}
+                </Paragraph>
+                <CodeBlock code={dangerousJsCode} />
+                <Paragraph>
+                    {locale.text("That property name is doing real work: it is long, it is awkward, and it takes a wrapper object so that nobody types it by accident. The design decision was that this door should be visible from across the room, and it is the right decision.", "那个属性名是在干实事的：它长、它别扭，还要套一个对象，就是为了没人会顺手打出来。这里的设计决定是「这扇门要从房间那头就看得见」，而这个决定是对的。")}
                 </Paragraph>
                 <CodeBlock code={htmlCode} />
                 <Paragraph>
-                    {locale.text("Because the assignment owns the whole subtree, the boundary cannot also carry children, and the compiler says so at the element.", "由于这次赋值拥有整棵子树，该边界不能同时携带 children，编译器会在元素处指出这一点。")}
+                    {locale.text("unsafe:html is the same decision with the same reasoning, and the word unsafe carries it. It is an explicit wholesale assignment of the element's inner HTML on every reactive update: it does not morph DOM and does not preserve descendant identity, so everything inside is replaced rather than updated in place. Because that assignment owns the whole subtree, the boundary cannot also carry children, and the compiler says so at the element.", "unsafe:html 是同一个决定、同一套理由，而 unsafe 这个词把它扛在身上。它在每次响应式更新时对元素的内部 HTML 做一次显式的整体赋值：不做 DOM 变形，也不保留后代身份，所以里面的一切是被替换，不是就地更新。既然这次赋值拥有整棵子树，这条边界就不能同时带 children——编译器会在元素处把这句话说出来。")}
                 </Paragraph>
                 <CodeBlock code={htmlErrorCode} />
                 <CodeBlock code={htmlErrorOutput} />
-
-                <SectionHeading id="cost">{locale.text("What the boundary costs", "这条边界的代价")}</SectionHeading>
                 <Paragraph>
-                    {locale.text("Both hatches trade checking for reach, and the trade is worth stating plainly. Inside the stylesheet there are no property diagnostics, no unit checking, and no dead-declaration detection; a renamed class in the application silently stops matching. Inside unsafe:html there is no element vocabulary, no escaping performed for you, and no incremental update — markup that must update incrementally needs a parser-owned contract that this boundary deliberately does not infer.", "两条通道都以受检性换取覆盖面，而这笔交易值得明说。样式表内部没有属性诊断、没有单位检查，也没有失效声明的检测；应用里改名的类会静默地不再匹配。unsafe:html 内部没有元素词汇表，不会替你转义，也没有增量更新——必须增量更新的标记需要一份由解析器拥有的契约，而这条边界刻意不去推断它。")}
+                    {locale.text("The cost is three things at once. Nothing escapes the string for you, so the trust decision is entirely upstream of this line. Nothing updates incrementally, so a stream of markup that must change as it arrives has no supported spelling here — the boundary deliberately does not infer a parser-owned contract. And Look has no selector into a subtree it did not construct, so markup that came through this door is styled through the unsafe CSS route above rather than with a look.", "代价是三件事一起来。没有谁替你转义那个字符串，所以「信不信它」这个决定完全在这一行的上游。没有增量更新，所以边到达边变化的标记流在这里没有受支持的写法——这条边界刻意不去推断一份由解析器拥有的契约。而且 Look 没有指向它并未构造的子树的选择器，所以从这扇门进来的标记，要走上面那条 unsafe CSS 路线设样式，而不是用 look。")}
                 </Paragraph>
-                <BulletList>
-                    <li>
-                        {locale.text("Style markup that arrives through unsafe:html with the unsafe CSS route above, not through Look, because Look has no selector into a subtree it did not construct.", "经由 unsafe:html 抵达的标记要用上面的 unsafe CSS 路线来设定样式，而不是用 Look，因为 Look 没有指向它并未构造的子树的选择器。")}
-                    </li>
-                    <li>
-                        {locale.text("Reaching for a hatch is an ordinary decision rather than a failure: the escape hatches page lists all five exits in order, from the diagnostic that teaches the fix to the emitted JavaScript.", "使用逃生通道是一个普通决定，而不是一次失败：逃生通道页按顺序列出全部五个出口，从教你如何修正的诊断，一直到发出的 JavaScript。")}
-                    </li>
-                </BulletList>
+                <Paragraph>
+                    {locale.text("Reaching for either hatch is an ordinary decision rather than a failure.", "用哪一条通道都是普通决定，不是一次失败。")} <Link
+                        to="/reference/escape-hatches"
+                        look={linkLook}
+                    >
+                        {locale.text("The escape hatches page lists all five exits in order, from the diagnostic that teaches the fix to the emitted JavaScript.", "逃生通道那一页按顺序列出全部五个出口，从教你怎么改的诊断，一直到发出的 JavaScript。")}
+                    </Link>
+                </Paragraph>
                 <Callout title={locale.text("The checked domain is the default, not the ceiling", "受检域是默认值，不是上限")}>
                     <Paragraph>
-                        {locale.text("Look's property set is a controlled closed set, so a design that needs something outside it does not argue with the compiler — it crosses this boundary and says where in the cascade the result belongs. What the language keeps is the guarantee that everything inside Look stayed checked.", "Look 的属性集是一个受控的封闭集合，因此需要集合之外某项能力的设计不必与编译器争论——它跨过这条边界，并说明结果在层叠中的位置。语言保留下来的，是「Look 内部的一切仍然受检」这一保证。")}
+                        {locale.text("Look's property set is a controlled closed set, so a design that needs something outside it does not argue with the compiler — it crosses this boundary and says where in the cascade the result belongs. What the language keeps is the guarantee that everything inside Look stayed checked.", "Look 的属性集是一个受控的封闭集合，所以需要集合之外某样能力的设计不必和编译器争论——它跨过这条边界，并说明结果在层叠里的位置。语言保住的，是「Look 内部的一切仍然受检」这个保证。")}
                     </Paragraph>
                 </Callout>
             </Prose>
