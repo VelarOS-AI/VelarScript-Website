@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {headTitle, referenceNav} from "../content.vel"
 
@@ -121,105 +121,107 @@ export component ReferenceNode:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="target">{locale.text("Why these are Node-only", "它们为何只属于 Node")}</h2>
-                <p>
+                <SectionHeading id="target">{locale.text("Why these are Node-only", "它们为何只属于 Node")}</SectionHeading>
+                <Paragraph>
                     {locale.text("These modules are a small first-party surface for local applications and servers. They work under velar run, Core tests, and Core builds. A Web project that imports one of them fails during project compilation with guidance to the platform that has it: velar/serve points Web code to the application dev server and the browser target of velar/http.", "这些模块是面向本地应用与服务器的一小片第一方表面。它们在 velar run、Core 测试与 Core 构建下工作。导入其中任何一个的 Web 项目都会在项目编译期失败，并给出指向具备该能力的平台的指引：velar/serve 会把 Web 代码指向应用开发服务器，以及 velar/http 的浏览器目标。")}
-                </p>
-                <p>
+                </Paragraph>
+                <Paragraph>
                     {locale.text("Node is the current internal engine, but Node classes, callbacks, events, buffers, and overloads are not part of the contract. The contracts and implementations are owned by the independently reusable @velarscript/node package; the CLI only composes that extension for local programs.", "Node 是当前的内部引擎，但 Node 的类、回调、事件、buffer 与重载都不属于契约。契约与实现由可独立复用的 @velarscript/node 包拥有；CLI 只是为本地程序组合这个扩展。")}
-                </p>
+                </Paragraph>
                 <Callout title={locale.text("Which failures get their own class", "哪些失败拥有自己的类")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("Only velar/fs, velar/serve, and velar/http name their own error classes, because only their failures have more than one recovery. Every failure of velar/path, velar/process, velar/env, velar/host, and velar/terminal — a wrong argument, an exceeded budget, an unusable host — has exactly one recovery, which is to change the code, so each arrives as an ordinary Error. A class exists only where a caller would write different recovery for it.", "只有 velar/fs、velar/serve 与 velar/http 拥有自己的错误类，因为只有它们的失败存在不止一种恢复方式。velar/path、velar/process、velar/env、velar/host 与 velar/terminal 的每一种失败——实参错误、超出预算、宿主不可用——都只有一种恢复方式，就是改代码，因此它们都以普通的 Error 到达。只有当调用方会为之写出不同的恢复逻辑时，类才存在。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
 
-                <h2 id="path">{locale.text("velar/path", "velar/path")}</h2>
-                <p>
+                <SectionHeading id="path">{locale.text("velar/path", "velar/path")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Checked host-path operations. Every input path and every public path result is limited to 4,096 code units, so many individually valid parts cannot manufacture an oversized result. dirname, basename, and extension inspect the supplied path rather than normalizing . or .. away first, while normalize, join, resolve, and relative perform their named normalization steps.", "受检的宿主路径操作。每个输入路径与每个公开的路径结果都限制在 4096 个码点以内，因此许多各自合法的片段无法拼出超长结果。dirname、basename 与 extension 检视给定的路径本身，不会先把 . 或 .. 规范化掉；而 normalize、join、resolve 与 relative 会执行各自名称所述的规范化步骤。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={pathMembers}
                     caption={locale.text("velar/path — eleven exports", "velar/path —— 十一个导出")}
                 />
                 <CodeBlock code={pathNodeCode} />
 
-                <h2 id="fs">{locale.text("velar/fs", "velar/fs")}</h2>
-                <p>
+                <SectionHeading id="fs">{locale.text("velar/fs", "velar/fs")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Paths are non-empty, NUL-free strings of at most 4,096 code units. The module has no synchronous forms, no recursive deletion, no byte inspection, no callback event surface, and no public filesystem streams.", "路径是非空、不含 NUL、至多 4096 个码点的字符串。本模块没有同步形式、没有递归删除、没有字节检查、没有回调事件表面，也没有公开的文件系统流。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={fsMembers}
                     caption={locale.text("velar/fs — the file operations and the watcher", "velar/fs —— 文件操作与监视器")}
                 />
                 <CodeBlock code={fsNodeCode} />
                 <Callout title={locale.text("A watcher reports only changes made after it is armed", "监视器只报告它武装之后发生的变化")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("watchFiles resolves when the request is accepted, not when the host has finished arming its native stream, and the stream begins at the moment arming completes. A change written between those two points can never arrive — measured on macOS FSEvents under load, 4 of 40 notifications were lost, one with a 25-second window. This is the real semantics of every filesystem watcher, so the module states it rather than pretending to erase it. To observe a change you are about to make, write first and then start watching, or query the state on both sides of the write.", "watchFiles 在请求被接受时解析，而不是在宿主完成原生流的武装时；流从武装完成的那一刻开始。写在这两个时间点之间的变化因此永远不会到达——在负载下对 macOS FSEvents 的实测中，40 次通知丢失了 4 次，其中一次的窗口长达 25 秒。这是每一个文件系统监视器的真实语义，因此本模块把它讲出来，而不是假装抹掉它。若要观察你自己即将做出的改动，应先写入再开始监视，或在写入前后各查询一次状态。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
 
-                <h2 id="env">{locale.text("velar/env and velar/host", "velar/env 与 velar/host")}</h2>
-                <p>
+                <SectionHeading id="env">
+                    {locale.text("velar/env and velar/host", "velar/env 与 velar/host")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("Environment names use the portable [A-Za-z_][A-Za-z0-9_]* shape and at most 256 characters; there is no process-wide environment dump. On Node the official module captures the original process.env object and its validation operations when it initializes, so replacing the global environment object afterwards cannot redirect a read, and accessor-backed values are rejected without execution.", "环境变量名使用可移植的 [A-Za-z_][A-Za-z0-9_]* 形态，至多 256 个字符；没有进程级的环境倾倒。在 Node 上，官方模块在初始化时捕获原始的 process.env 对象及其验证操作，因此之后替换全局环境对象无法改变一次读取，访问器支撑的值也会在不被执行的情况下被拒绝。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={envMembers}
                     caption={locale.text("velar/env and velar/host — four exports", "velar/env 与 velar/host —— 四个导出")}
                 />
                 <CodeBlock code={envNodeCode} />
-                <p>
+                <Paragraph>
                     {locale.text("Successful shutdown exits with conventional status 130 or 143. A rejection, an invalid result, or an expired deadline is reported and selects exit 1 instead of leaving the process alive forever.", "正常关闭以约定的状态码 130 或 143 退出。被拒绝、返回无效结果或超出期限都会被报告，并选择以 1 退出，而不是让进程永远活着。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="process">{locale.text("velar/process", "velar/process")}</h2>
-                <p>
+                <SectionHeading id="process">{locale.text("velar/process", "velar/process")}</SectionHeading>
+                <Paragraph>
                     {locale.text("start and run execute one program directly, without a shell. A child receives only the runtime's small safe environment baseline plus the explicit map — the parent environment is not copied wholesale, so unrelated API keys cannot leak by default. Chunks preserve the order in which stdout and stderr data is observed by the host, and each channel has its own incremental UTF-8 decoder, so a code point split across native chunks is never exposed as replacement fragments.", "start 与 run 直接执行一个程序，不经过 shell。子进程只收到运行时那一小份安全的环境基线加上显式传入的 map——父进程环境不会被整体复制，因此无关的 API key 默认不会泄漏。数据块保持宿主观察到的 stdout 与 stderr 顺序，每个通道拥有自己的增量 UTF-8 解码器，因此跨原生数据块被切开的码点绝不会以替换字符的碎片形式出现。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={processMembers}
                     caption={locale.text("velar/process — two entry points and one owned handle", "velar/process —— 两个入口与一个被拥有的句柄")}
                 />
                 <CodeBlock code={processNodeCode} />
-                <p>
+                <Paragraph>
                     {locale.text("An executable grant is authority to run that native program and its descendant tree as the current operating-system user. It prevents shell parsing and accidental command substitution; it is not an operating-system sandbox for the program's own filesystem or network effects. A deliberately detached process can escape its group, and retained ownership plus bounded host-pipe closure make that limitation explicit rather than silently losing the lifecycle.", "对可执行文件的授权，是以当前操作系统用户身份运行该原生程序及其后代进程树的权限。它防止 shell 解析与意外的命令替换；它不是针对该程序自身文件系统或网络影响的操作系统沙箱。刻意分离的进程可以逃出进程组；保留所有权与有界的宿主管道关闭，把这一限制明确说出来，而不是让生命周期悄悄丢失。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="terminal">{locale.text("velar/terminal", "velar/terminal")}</h2>
-                <p>
+                <SectionHeading id="terminal">{locale.text("velar/terminal", "velar/terminal")}</SectionHeading>
+                <Paragraph>
                     {locale.text("The terminal is a standard capability handle that publishes close(), so `using` supplies its release contract without a declaration. Each argument list, line, prompt, write, and queued-input window has an explicit bound. Input that arrives between readLine calls is paused and delivered through the next Promise; an oversized line rejects that Promise rather than escaping from a host event callback.", "终端是一个发布了 close() 的标准能力句柄，因此 `using` 无需任何声明即可提供它的释放契约。参数列表、行、提示符、写入与排队输入窗口都各有显式上界。在两次 readLine 之间到达的输入会被暂停，并通过下一个 Promise 交付；超长的行会拒绝那个 Promise，而不是从宿主事件回调中逃逸。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={terminalMembers}
                     caption={locale.text("velar/terminal — one handle, six members", "velar/terminal —— 一个句柄，六个成员")}
                 />
                 <CodeBlock code={terminalNodeCode} />
 
-                <h2 id="serve">{locale.text("velar/serve", "velar/serve")}</h2>
-                <p>
+                <SectionHeading id="serve">{locale.text("velar/serve", "velar/serve")}</SectionHeading>
+                <Paragraph>
                     {locale.text("serve binds an HTTP server and resolves to a Server record containing the actual port and an idempotent async stop(). The application-facing module never owns a Node HTTP server or request stream: it exchanges bounded request and response commands with the same private isolated host used by velar/fs, and only that worker imports Node's HTTP, filesystem, and stream machinery.", "serve 绑定一个 HTTP 服务器，并解析为包含真实端口与幂等异步 stop() 的 Server 记录。面向应用的模块从不拥有 Node 的 HTTP 服务器或请求流：它与 velar/fs 所用的同一个私有隔离宿主交换有界的请求与响应命令，只有那个 worker 会导入 Node 的 HTTP、文件系统与流机制。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={serveMembers}
                     caption={locale.text("velar/serve — the server, the request, and the response", "velar/serve —— 服务器、请求与响应")}
                 />
                 <CodeBlock code={serveNodeCode} />
-                <p>
+                <Paragraph>
                     {locale.text("Handler failures are reported to stderr and return an opaque 500 Internal server error; no development stack is disclosed. Transport-owned headers cannot be overridden, and the worker holds one 128 MiB aggregate budget for cached request bodies, static files, buffered responses, and in-flight stream chunks, so per-value limits do not multiply without bound under concurrency.", "处理函数的失败被报告到 stderr，并返回不透明的 500 Internal server error；不会泄露开发期栈信息。传输层拥有的头部不可被覆盖；worker 为缓存的请求体、静态文件、缓冲响应与在途流块共同持有一份 128 MiB 的总预算，因此单值限制不会在并发下无界相乘。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="http">{locale.text("Node velar/http", "Node 的 velar/http")}</h2>
-                <p>
+                <SectionHeading id="http">{locale.text("Node velar/http", "Node 的 velar/http")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Local programs use the same request vocabulary as Web code. The difference the Node contract adds is secretHeaders: up to 16 descriptors created by secretHeader(name, environment, prefix). Creating the lazy request validates and snapshots the descriptors but does not read their environment variables, so a rotation made before the first response or body reader is observed, while a missing value rejects that first effect before any network operation begins.", "本地程序使用与 Web 代码相同的请求词汇。Node 契约新增的差别是 secretHeaders：至多 16 个由 secretHeader(name, environment, prefix) 创建的描述符。创建惰性请求时会验证并快照这些描述符，但不会读取它们的环境变量，因此在首次读取响应或请求体之前完成的轮换会被观察到，而缺失的值则会在任何网络操作开始之前就拒绝那第一次生效。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={httpMembers}
                     caption={locale.text("velar/http on Node — the request surface and the three failure classes", "Node 上的 velar/http —— 请求表面与三类失败")}
                 />
                 <CodeBlock code={httpNodeCode} />
-                <p>
+                <Paragraph>
                     {locale.text("Secret header names cannot claim transport-controlled or ambient credential headers, cannot conflict with ordinary headers, and their combined header budget remains 64 KiB. Node follows at most 20 redirects and removes every secret-derived header when a redirect crosses origins. Retry count, delay, status classification, idempotency, and whether already-visible output may be replayed remain application policy rather than hidden behavior in velar/http.", "密钥头部的名字不能占用由传输层控制或环境提供的凭据头部，不能与普通头部冲突，其合并后的头部预算仍为 64 KiB。Node 至多跟随 20 次重定向，并在重定向跨越来源时移除每一个由密钥派生的头部。重试次数、延迟、状态码分类、幂等性，以及已经可见的输出能否重放，都属于应用策略，而不是 velar/http 中隐藏的行为。")}
-                </p>
+                </Paragraph>
             </Prose>
         </DocsShell>
     </main>

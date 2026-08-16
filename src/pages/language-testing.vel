@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -11,12 +11,6 @@ const matcherErrorCode = `import {expect} from "velar/test"\n\ntest "a number do
 const matcherErrorOutput = "sample.test.vel:4:5 error VEL4001: Object has no field 'toBeTruthy'\n    expect(1).toBeTruthy()\n    ^^^^^^^^^^^^^^^^^^^^"
 const failureCode = `import {expect} from "velar/test"\n\ndef scale(maximum: number) -> number:\n    assert maximum <= 1000000 else "The chart maximum is beyond the supported range"\n    return maximum\n\nasync def loadLater(id: string) -> string:\n    return id\n\nasync def failLater():\n    throw Error("the task failed")\n\ntest "an oversized chart maximum is rejected":\n    expect(() => scale(1000001)).toThrow()\n\ntest "an out-of-range List position throws":\n    const values: List<number> = [1]\n    expect(() => values[9]).toThrow()\n\ntest "a rejected task is observed with toReject":\n    await expect(failLater()).toReject()\n\ntest "a test body is its own async frame and may await directly":\n    const loaded = await loadLater("r-1")\n    expect(loaded).toBe("r-1")`
 const runShellCode = "velar test\nvelar test features/chart.test.vel\nvelar test --browser chromium"
-
-const pointsLook = look:
-    display = "grid"
-    gap = 8px
-    margin = 0
-    paddingInlineStart = 20px
 
 const sections = [
     {id: "blocks", label: "test blocks", labelZh: "test 块"},
@@ -41,57 +35,59 @@ export component LanguageTesting:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="blocks">{locale.text("test blocks", "test 块")}</h2>
-                <p>
+                <SectionHeading id="blocks">{locale.text("test blocks", "test 块")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A test is a string literal and a block, declared at the top level of a test module. The string is a sentence rather than an identifier, because what a failing test needs to say is what stopped being true. Everywhere outside that shape, test is an ordinary name.", "一个测试就是一个字符串字面量加一个块，声明在测试模块的顶层。这个字符串是一句话而不是标识符，因为失败的测试需要说明的是「哪条曾经成立的事实不再成立」。在这个形状之外的任何位置，test 都是普通名字。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={blocksCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("toBe compares by exact identity and value equality; toEqual is the prelude equals, so it compares data structurally with SameValueZero at the leaves.", "toBe 按精确身份与值相等比较；toEqual 就是前奏中的 equals，按结构比较数据，并在叶子处使用 SameValueZero。")}
                     </li>
                     <li>
                         {locale.text("A matcher takes named arguments like any other call, because it is an ordinary published signature rather than a macro.", "匹配器像其他调用一样接受具名实参，因为它就是一份普通的已发布签名，而不是宏。")}
                     </li>
-                </ul>
-                <p>
+                </BulletList>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={nestedErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={nestedErrorOutput} />
 
-                <h2 id="matchers">{locale.text("Which matchers a value publishes", "一个值发布哪些匹配器")}</h2>
-                <p>
+                <SectionHeading id="matchers">
+                    {locale.text("Which matchers a value publishes", "一个值发布哪些匹配器")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("There are nine matchers, and which ones exist depends on the type of the value handed to expect. Two are always there; the bool pair requires an actual bool, the containment pair takes text or a List, the pattern matcher takes text, and the two failure matchers take a callable and a promise. A matcher that does not apply is a diagnostic rather than a comparison that quietly passes.", "匹配器共有九个，哪些存在取决于交给 expect 的那个值的类型。有两个始终存在；bool 对要求真正的 bool，包含对接受文本或 List，模式匹配器接受文本，两个失败匹配器分别接受可调用值与 promise。不适用的匹配器得到的是一条诊断，而不是一次静默通过的比较。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={typedCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={matcherErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={matcherErrorOutput} />
 
-                <h2 id="failure">{locale.text("Failure and async", "失败与异步")}</h2>
-                <p>
+                <SectionHeading id="failure">{locale.text("Failure and async", "失败与异步")}</SectionHeading>
+                <Paragraph>
                     {locale.text("An expected throw is written by handing a callable to the throw matcher, and an expected rejection by handing over the promise. A test body is its own async frame, so it may await directly without a wrapper. An unhandled error anywhere in the test process fails the test.", "预期的抛出，通过把一个可调用值交给抛出匹配器来书写；预期的拒绝，则把 promise 交出去。测试体本身就是一个异步帧，因此可以直接 await，不需要包装。测试进程中任何位置未被处理的错误都会让该测试失败。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={failureCode} />
 
-                <h2 id="running">{locale.text("Discovery and running", "发现与运行")}</h2>
-                <p>
+                <SectionHeading id="running">{locale.text("Discovery and running", "发现与运行")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A test module is discovered by its name and needs no export and no registration. velar test runs the Node modules; the browser flag runs the browser modules, which have their own suffix, their own controller, and their own chapter in the Web extension guide.", "测试模块由文件名被发现，不需要 export，也不需要注册。velar test 运行 Node 侧的模块；带上浏览器标志则运行浏览器侧的模块——它们有自己的后缀、自己的控制器，以及 Web 扩展指南中自己的一章。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={runShellCode} />
                 <Callout title={locale.text("Checked twice, on purpose", "刻意地被检查两次")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("velar check walks the entry graph, and test modules get their own second pass. A test that no longer compiles is therefore a failure of the check, not a surprise at run time — which matters most for the tests nobody has run in a while.", "velar check 遍历入口图，测试模块随后获得属于自己的第二趟检查。因此，不再能编译的测试是 check 的失败，而不是运行时的意外——这对那些许久没人跑过的测试尤其重要。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager

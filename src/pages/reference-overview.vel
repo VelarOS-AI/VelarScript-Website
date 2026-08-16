@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {headTitle, referenceNav} from "../content.vel"
 
@@ -63,83 +63,85 @@ export component ReferenceOverview:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="contract">{locale.text("The contract", "契约")}</h2>
-                <p>
+                <SectionHeading id="contract">{locale.text("The contract", "契约")}</SectionHeading>
+                <Paragraph>
                     {locale.text("velar/* is a closed vocabulary owned by the language. A module belongs here only when it provides universal computation that any program may need, or a minimal orthogonal capability primitive for reaching the outside world. Domain functionality — editor, game, or chart tooling — is always an installable library, even when it is written entirely in VelarScript.", "velar/* 是语言拥有的封闭词汇表。只有当一个模块提供任何程序都可能需要的通用计算，或者提供触达外部世界的最小正交能力原语时，它才属于这里。领域功能——编辑器、游戏或图表工具——始终是可安装的库，即使它完全用 VelarScript 写成。")}
-                </p>
-                <p>
+                </Paragraph>
+                <Paragraph>
                     {locale.text("Purity decides whether a module may be permanent; universality decides whether it should be. Two questions, asked in order, place every module, so you can predict where a new one lands before anyone tells you. First: does it compute, or does it reach outside the program? Reading a clock, a disk, a network, or an entropy source is reaching outside, and anything that reaches outside is a capability and is always imported. Second, if it only computes: does its name mirror a namespace-shaped JavaScript global? If it does, it is resident and needs no import; if it does not, it is imported by name.", "纯粹性决定一个模块「可不可以」常驻；普遍性决定它「应不应该」常驻。按顺序问的两个问题为每个模块定位，因此在有人告诉你之前，你就能预测一个新模块会落在哪里。第一问：它只做计算，还是会触达程序之外？读时钟、读磁盘、读网络、读熵源都算触达外部；凡触达外部者都是能力，一律需要导入。第二问，若它只做计算：它的名字是否对应一个命名空间形态的 JavaScript 全局？对应则常驻，无需导入；不对应则按名导入。")}
-                </p>
-                <p>
+                </Paragraph>
+                <Paragraph>
                     {locale.text("Implementation language does not decide membership. A reusable domain module written in VelarScript publishes an ordinary npm package with one velar.entry source entry and is imported by package name after installation.", "实现语言不决定成员资格。用 VelarScript 写成的可复用领域模块，发布为带有一个 velar.entry 源入口的普通 npm 包，安装后按包名导入。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="resident">{locale.text("Group 1 — resident namespaces", "第一组——常驻命名空间")}</h2>
-                <p>
+                <SectionHeading id="resident">
+                    {locale.text("Group 1 — resident namespaces", "第一组——常驻命名空间")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("Four namespaces and five prelude names, reachable without an import.", "四个命名空间与五个 prelude 名字，无需导入即可访问。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={residentMembers}
                     caption={locale.text("Group 1 — no import", "第一组——无需导入")}
                     signatureLabel={locale.text("Example", "示例")}
                 />
-                <p>
+                <Paragraph>
                     {locale.text("The second question is what keeps this list short and closed. A prefix costs every reader four characters at every call, so it has to give something back, and what it gives back is recognition: JSON.stringify, Promise.all, and Math.max are spellings a JavaScript author already knows, and Json.parse names the format where a bare parse would not. A prefix the language invented gives nothing back — which is why Look. was withdrawn after one release and its builders returned to velar/look as named imports.", "让这份清单短而封闭的，正是第二问。前缀让每位读者在每次调用时多付四个字符，所以它必须给回些什么，而它给回的是「认得」：JSON.stringify、Promise.all 与 Math.max 都是 JavaScript 作者本就熟悉的拼写，而 Json.parse 点明了格式——裸的 parse 做不到这一点。语言自己发明的前缀什么也给不回来——这正是 Look. 在一个版本后被撤回、其构建器以具名导入回到 velar/look 的原因。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={residentCode} />
-                <p>
+                <Paragraph>
                     {locale.text("Every namespace-shaped JavaScript global has been checked against this list. Object is answered by record fields and Record<T>, Array by List methods, Number by number methods and number(text), String by string methods and Text., and console by print. Date is the one computation-looking name deliberately left out: reading the clock reaches outside, so velar/time is a capability. A future addition must clear question 2 first.", "每一个命名空间形态的 JavaScript 全局都已对照这份清单核对过。Object 由记录字段与 Record<T> 回答，Array 由 List 方法回答，Number 由数字方法与 number(text) 回答，String 由字符串方法与 Text. 回答，console 由 print 回答。Date 是唯一一个看似计算却被有意排除的名字：读时钟触达外部，因此 velar/time 是能力模块。未来的新增必须先通过第二问。")}
-                </p>
-                <p>
+                </Paragraph>
+                <Paragraph>
                     {locale.text("Both spellings that reach a resident member through an import are retired — the named import and the namespace import — and each earns a diagnostic that teaches the namespace spelling, with a velar fix rewrite that performs it.", "通过导入触达常驻成员的两种拼写都已废止——具名导入与命名空间导入——每一种都会得到一条教授命名空间拼写的诊断，并配有能执行该改写的 velar fix。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={residentImportErrorCode} />
                 <CodeBlock code={residentImportErrorOutput} />
 
-                <h2 id="pure">{locale.text("Group 2 — pure modules", "第二组——纯模块")}</h2>
-                <p>
+                <SectionHeading id="pure">{locale.text("Group 2 — pure modules", "第二组——纯模块")}</SectionHeading>
+                <Paragraph>
                     {locale.text("These compute and touch nothing, so question 1 clears them; they are imported because question 2 does not — there is no Collections, Url, or Look in JavaScript to mirror. That is not a demotion. An import line is information: it says this program chose this toolbox.", "这些模块只做计算、什么也不触碰，因此通过了第一问；它们之所以需要导入，是因为没有通过第二问——JavaScript 里并不存在可供对应的 Collections、Url 或 Look。这不是降级。导入行本身就是信息：它说明这个程序选择了这套工具箱。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={pureMembers}
                     caption={locale.text("Group 2 — imported by name", "第二组——按名导入")}
                     signatureLabel={locale.text("Example", "示例")}
                 />
                 <Callout title={locale.text("Three of these can never move", "其中三个永远无法上移")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("velar/time, velar/id, and velar/log sit in this group by spelling but fail question 1 — they read the clock, read entropy, and write to the outside world. They could never become resident whatever they were called.", "velar/time、velar/id 与 velar/log 在拼写上位于这一组，却没有通过第一问——它们读时钟、读熵源、向外部世界写出。无论叫什么名字，它们都不可能变成常驻。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
 
-                <h2 id="capabilities">{locale.text("Group 3 — capabilities", "第三组——能力模块")}</h2>
-                <p>
+                <SectionHeading id="capabilities">{locale.text("Group 3 — capabilities", "第三组——能力模块")}</SectionHeading>
+                <Paragraph>
                     {locale.text("For a capability the import line is the audit signal — it is how a reader sees what a module touches — so no capability becomes resident for convenience, however often it is used.", "对能力模块而言，导入行就是审计信号——读者正是通过它看清一个模块触碰了什么——因此无论使用多频繁，都不会有能力模块为了方便而变成常驻。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={capabilityMembers}
                     caption={locale.text("Group 3 — imported, and target-specific", "第三组——需要导入，且与目标相关")}
                     signatureLabel={locale.text("Example", "示例")}
                 />
                 <CodeBlock code={capabilityNodeCode} />
-                <p>
+                <Paragraph>
                     {locale.text("The local platform modules — velar/serve, velar/fs, velar/env, velar/host, velar/terminal, velar/path, and velar/process — are rejected at compile time for Web targets, with guidance to the platform that has them. Node is the current internal engine, but Node classes, callbacks, events, buffers, and overloads are not part of the contract.", "本地平台模块——velar/serve、velar/fs、velar/env、velar/host、velar/terminal、velar/path 与 velar/process——在 Web 目标上于编译期被拒绝，并给出指向具备它们的平台的指引。Node 是当前的内部引擎，但 Node 的类、回调、事件、buffer 与重载都不属于契约。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="guarantees">{locale.text("What all three share", "三组共同的保证")}</h2>
-                <p>
+                <SectionHeading id="guarantees">{locale.text("What all three share", "三组共同的保证")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Everyday value operations live on checked string, number, and collection members. Nothing patches JavaScript prototypes and nothing creates a new global name. Collection transforms return new lists and maps unless their name explicitly describes another result, and JavaScript reference identity and number semantics remain unchanged.", "日常的值操作位于受检的字符串、数字与集合成员上。没有任何东西给 JavaScript 原型打补丁，也没有任何东西创建新的全局名字。除非名称本身明确描述了别的结果，集合变换都返回新的 list 与 map；JavaScript 的引用同一性与 number 语义保持不变。")}
-                </p>
-                <p>
+                </Paragraph>
+                <Paragraph>
                     {locale.text("Missing collection and parsing results are null, never JavaScript undefined. Runtime validation is explicit: an argument mistake that can be proven statically is a diagnostic, while dynamic misuse throws TypeError or RangeError. Fixed official signatures expose the same name=value calls as user-defined functions, so their documented parameter names are part of the checked API — except where an operation is a positional overload or a pure rest call, which invents no keyword surface: numeric min and max, randomInt, and URL join therefore stay positional.", "集合与解析中缺失的结果是 null，绝不是 JavaScript 的 undefined。运行时验证是显式的：能静态证明的实参错误是诊断，动态误用则抛出 TypeError 或 RangeError。固定的官方签名提供与用户自定义函数相同的 name=value 调用，因此文档中的形参名是受检 API 的一部分——除非某个操作是位置重载或纯粹的剩余参数调用，那样它不会凭空发明关键字表面：数字的 min 与 max、randomInt，以及 URL 的 join，因此保持位置形式。")}
-                </p>
-                <p>
+                </Paragraph>
+                <Paragraph>
                     {locale.text("Resource-producing APIs are bounded contracts rather than best-effort host calls. A List contains at most 1,000,000 items; text and encoded JSON are limited to 16 MiB; JSON data contains at most 1,000,000 values and 128 nested collections. Dynamic misuse fails before a native capability is invoked.", "产生资源的 API 是有界契约，而不是尽力而为的宿主调用。一个 List 至多包含 1,000,000 个元素；文本与编码后的 JSON 限制为 16 MiB；JSON 数据至多包含 1,000,000 个值与 128 层嵌套集合。动态误用会在原生能力被调用之前失败。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="omissions">{locale.text("Deliberate omissions", "有意的省略")}</h2>
-                <p>
+                <SectionHeading id="omissions">{locale.text("Deliberate omissions", "有意的省略")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Shells, sockets below the checked server abstraction, filesystem streams, recursive deletion, byte inspection, reflection, pickle, dynamic import machinery, and JavaScript's legacy prototype surface are deliberately outside the library. Process execution and filesystem mutation live in explicit Node or Desktop extensions rather than ambient globals, browser capabilities remain in independently versioned Web modules, and Canvas and game development remain a later velar/game package built on the Web platform.", "shell、受检服务器抽象之下的 socket、文件系统流、递归删除、字节检查、反射、pickle、动态导入机制，以及 JavaScript 的遗留原型表面，都被有意排除在库之外。进程执行与文件系统修改位于显式的 Node 或 Desktop 扩展中，而不是环境全局；浏览器能力保留在独立版本化的 Web 模块里；Canvas 与游戏开发则留给日后建立在 Web 平台之上的 velar/game 包。")}
-                </p>
+                </Paragraph>
             </Prose>
         </DocsShell>
     </main>

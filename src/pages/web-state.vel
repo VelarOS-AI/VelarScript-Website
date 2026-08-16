@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -21,13 +21,6 @@ const sections = [
     {id: "deep", label: "What a reader subscribes to", labelZh: "读取者订阅了什么"},
 ]
 
-const pointsLook = look:
-    display = "grid"
-    gap = 7px
-    marginTop = 18px
-    marginBottom = 4px
-    paddingLeft = 22px
-
 export component WebState:
     const locale = useLocale()
     return <main>
@@ -44,12 +37,12 @@ export component WebState:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="scopes">{locale.text("Three scopes", "三种作用域")}</h2>
-                <p>
+                <SectionHeading id="scopes">{locale.text("Three scopes", "三种作用域")}</SectionHeading>
+                <Paragraph>
                     {locale.text("state declares a reactive cell in whichever scope it is written. At module scope the cell lives for the life of the page and every importer sees the same one, which is the right lifetime for an application-wide fact and the wrong one for anything a component owns.", "state 在它被书写的作用域中声明一个响应式单元。在模块作用域，这个单元存活到页面结束，且每个导入方看到的都是同一个——这对应用范围的事实是正确的生命周期，对组件自己拥有的东西则是错误的。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={moduleStateCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Assigning an imported binding is forbidden; mutating the value inside one is legal and publishes to everyone reading it.", "对导入的绑定赋值是被禁止的；改变它内部的值是合法的，并会发布给每个读取者。")}
                     </li>
@@ -59,25 +52,25 @@ export component WebState:
                     <li>
                         {locale.text("A module-scope watch is never disposed. Like a module action, it lives for the life of the page.", "模块作用域的 watch 永不被释放。与模块 action 一样，它存活到页面结束。")}
                     </li>
-                </ul>
-                <p>
+                </BulletList>
+                <Paragraph>
                     {locale.text("Component scope and ordinary block or function scope are the other two. Each execution of a function that declares state creates a distinct cell, and closures capture that cell the way they capture any other binding.", "另外两种是组件作用域与普通的块或函数作用域。声明了 state 的函数每执行一次就创建一个不同的单元，闭包捕获这个单元的方式与捕获其他绑定完全一样。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={scopedCode} />
 
-                <h2 id="snapshot">{locale.text("Snapshot, cell, and formula", "快照、单元与公式")}</h2>
-                <p>
+                <SectionHeading id="snapshot">{locale.text("Snapshot, cell, and formula", "快照、单元与公式")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Three declarations that look alike mean three different things. const takes one ordinary reference and keeps it; state creates an independent writable cell initialized from that reference; computed keeps the query itself, so it answers the current value each time it is called.", "三个看起来相似的声明表示三件不同的事。const 取一个普通引用并保留它；state 以该引用为初值创建一个独立的可写单元；computed 保留查询本身，因此每次调用都回答当下的值。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={snapshotCode} />
 
-                <h2 id="computed">{locale.text("computed is a function", "computed 是函数")}</h2>
-                <p>
+                <SectionHeading id="computed">{locale.text("computed is a function", "computed 是函数")}</SectionHeading>
+                <Paragraph>
                     {locale.text("computed(() => value) is the single derived-cache API. It takes a synchronous zero-argument function and returns a callable accessor, so a derived value is read with a call. There is no second memo spelling and no declaration-keyword form; a program that reaches for one is told the current spelling.", "computed(() => value) 是唯一的派生缓存 API。它接受一个同步的零参数函数并返回一个可调用的访问器，因此派生值通过调用来读取。没有第二种 memo 拼写，也没有声明关键字形式；写成那样的程序会被告知当前的拼写。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={computedErrorCode} />
                 <CodeBlock code={computedErrorOutput} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("The callback is checked for shape, not for purity. It may write state, and the write publishes like any other, so keeping a derivation pure is a discipline the language states rather than proves.", "回调只按形状受检，不按纯度受检。它可以写入 state，写入会像其他写入一样发布，因此保持派生纯粹是语言陈述而非证明的纪律。")}
                     </li>
@@ -87,24 +80,24 @@ export component WebState:
                     <li>
                         {locale.text("A computed failure is cached as part of the derived result and rethrown to its managed consumer; once the last consumer is disposed, the computed detaches from its dependencies and recomputes only if read again.", "computed 的失败会作为派生结果的一部分被缓存，并重新抛给它受管的消费者；最后一个消费者被释放后，computed 从依赖上脱离，只有再次被读取时才重新计算。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="watch">{locale.text("watch is for effects", "watch 用于副作用")}</h2>
-                <p>
+                <SectionHeading id="watch">{locale.text("watch is for effects", "watch 用于副作用")}</SectionHeading>
+                <Paragraph>
                     {locale.text("watch expression: runs its body when the tracked value changes. The expression is evaluated immediately to register the dependency and record the baseline, so the body does not run for that first value. The as form names the new and the old value, and both names are required with as — a body that needs only the new value writes an underscore for the other.", "watch expression: 在被追踪的值改变时运行它的体。表达式会立即求值以注册依赖并记录基线，因此体不会为这个初值运行。as 形式为新值与旧值命名，且带 as 时两个名字都必须写——只需要新值的体给另一个写下划线。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={watchCode} />
-                <p>
+                <Paragraph>
                     {locale.text("The choice between computed and watch is a statement about what the code is. A value that other code reads is a computed; work performed because something changed is a watch. Writing that work inside a computed hides a side effect inside a cache, so these two stand side by side for exactly that comparison.", "在 computed 与 watch 之间的选择，是在陈述这段代码是什么。被其他代码读取的值是 computed；因为某物改变而执行的工作是 watch。把这类工作写进 computed，等于把副作用藏进缓存，因此下面这两者并排放在一起正是为了这个对照。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={derivationCode} />
 
-                <h2 id="bursts">{locale.text("A burst publishes once", "一串赋值只发布一次")}</h2>
-                <p>
+                <SectionHeading id="bursts">{locale.text("A burst publishes once", "一串赋值只发布一次")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Consecutive synchronous state assignments publish once: every affected computed accessor, watch, and render observer re-runs a single time per burst, delivered on the microtask flush after the synchronous work completes. This is a compiler and runtime contract rather than an application control, so there is no batching API to call and none to forget.", "连续的同步 state 赋值只发布一次：每个受影响的 computed 访问器、watch 与渲染观察者在一串赋值中只重跑一次，在同步工作完成后的微任务刷新中送达。这是编译器与运行时的契约，而不是应用侧的控制项，因此既没有要调用的批处理 API，也就没有会被忘记的批处理 API。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={burstCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Assignments still commit immediately, so a read between two assignments always sees the latest value and a derived chain cannot be observed in an intermediate state.", "赋值仍然立即提交，因此两次赋值之间的读取总是看到最新的值，派生链也不会被观察到处于中间状态。")}
                     </li>
@@ -114,13 +107,13 @@ export component WebState:
                     <li>
                         {locale.text("A throw in the middle of a burst does not tear state; what was assigned before the failure still publishes on the flush.", "一串赋值中途抛出不会撕裂状态；失败之前已赋的值仍会在刷新时发布。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="deep">{locale.text("What a reader subscribes to", "读取者订阅了什么")}</h2>
-                <p>
+                <SectionHeading id="deep">{locale.text("What a reader subscribes to", "读取者订阅了什么")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A reactive observer subscribes to the property or the collection key it actually read. Nested mutations bubble a version change to the owning state for deep watches, while unrelated property and Map-key consumers stay clean. List size and shifted indexes, Map key structure, and Map values are distinct dependencies, so inserting at one index invalidates only the tracked indexes at or after it, and updating an existing Map value does not invalidate keys or size.", "响应式观察者订阅的是它实际读取的属性或集合键。嵌套改动会把版本变化冒泡给拥有它的 state 以支持深层 watch，而无关的属性与 Map 键的消费者保持不受影响。List 的长度与移位后的索引、Map 的键结构与 Map 的值是彼此独立的依赖，因此在某个索引处插入只会让该位置及其之后被追踪的索引失效，更新一个已有的 Map 值不会让 keys 或 size 失效。")}
-                </p>
-                <ul look={pointsLook}>
+                </Paragraph>
+                <BulletList>
                     <li>
                         {locale.text("Only ordinary mutable records receive lazy reactive proxies. List, Map, and Set keep their native identities and are tracked by compiler-owned collection operations.", "只有普通的可变记录会获得惰性响应代理。List、Map 与 Set 保持它们的原生身份，由编译器拥有的集合操作来追踪。")}
                     </li>
@@ -130,11 +123,11 @@ export component WebState:
                     <li>
                         {locale.text("Replacing a state root detaches the old root together with everything only that root owned, so the canonical spread-and-replace update releases the value it replaced instead of leaving a dead owner behind every surviving descendant.", "替换一个 state 根会把旧根与仅由该根拥有的一切一起摘除，因此惯用的展开替换写法会释放被替换的值，而不是在每个存活后代背后留下一个死掉的拥有者。")}
                     </li>
-                </ul>
+                </BulletList>
                 <Callout title={locale.text("Serialization crosses back to raw values", "序列化会回到原始值")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("Storage, HTTP, realtime, forms, unsafe bridges, and the equality and test boundaries all unwrap a reactive value before validating it, and Map keys and Set members are unwrapped before lookup. A reactive record and its raw identity therefore cannot split membership.", "存储、HTTP、实时、表单、unsafe 桥接，以及相等性与测试边界，都会在验证前解开响应式值；Map 的键与 Set 的成员也在查找前解开。因此响应式记录与它的原始身份不会在成员关系上分裂成两份。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager previous={guidePrevious("/guide/web/state")} next={guideNext("/guide/web/state")} />

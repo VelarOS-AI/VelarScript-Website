@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -12,12 +12,6 @@ const numbersCode = "const magnitude = (-3.7).abs()\nconst rounded = 3.5.round()
 const conversionsCode = `const fromNumber = str(42)\nconst fromBool = str(true)\nconst fromNull = str(null)\n\n// number(text) answers a number or null. It reads a complete decimal number\n// and refuses everything else.\nconst parsedNumber = number("42")\nconst parsedSigned = number("-4.5")\nconst parsedExponent = number("4.5e3")\nconst parsedPartialFraction = number("4.")\nconst parsedLeadingPoint = number(".5")\nconst parsedWithWhitespace = number("  42\\n")\nconst refusedPartial = number("12ab")\nconst refusedSeparator = number("1_000")\nconst refusedRadix = number("0x10")\nconst refusedInfinity = number("1e999")\nconst namedParse = number(text="42")`
 const namespaceCode = `const paragraph = "\n    First line\n\n    Second   line\n"\n\nconst startTrimmed = Text.trimStart("  a  ")\nconst endTrimmed = Text.trimEnd("  a  ")\nconst capitalized = Text.capitalize("velar script")\nconst titleCased = Text.title("velar script")\nconst documentLines = Text.lines(paragraph)\nconst lineOffsets = Text.lineStarts(paragraph)\nconst fixedChunks = Text.chunks("abcdef", 2)\nconst wordList = Text.words("velar   script")\nconst slugified = Text.slug("Velar Script 1.0")\nconst normalized = Text.normalize("café")\nconst normalizedForm = Text.normalize("café", "NFD")\nconst truncated = Text.truncate("a long sentence", 6)\nconst truncatedWithSuffix = Text.truncate("a long sentence", 6, "…")\nconst indented = Text.indent("a\\nb", "    ")\nconst dedented = Text.dedent("    a\\n    b")\nconst collapsedWhitespace = Text.normalizeWhitespace("a   b\\n c")\nconst byteSize = Text.utf8Size("a😀b")\nconst escaped = Text.escapeHtml(\`<a href="/">x</a>\`)\nconst codePoint = Text.codePoint("😀")\nconst fromCodePoint = Text.fromCodePoint(128512)\n\n// Named arguments work here exactly as they do for user-defined functions.\nconst namedTruncate = Text.truncate(value="a long sentence", length=6, suffix="…")\nconst namedNormalize = Text.normalize(value="café", form="NFKC")`
 const patternsCode = `// A pattern is ordinary text, so a raw string is the natural spelling for it.\nconst matched = Text.matches("2026-08-15", r"^\\d{4}-\\d{2}-\\d{2}$")\nconst matchedIgnoringCase = Text.matches("VELAR", "velar", {ignoreCase: true})\nconst matchedMultiline = Text.matches("a\\nb", "^b$", {multiline: true})\nconst matchedDotAll = Text.matches("a\\nb", "a.b", {dotAll: true})\n\nconst firstMatch = Text.findMatch("a1b2", r"\\d")\nconst everyMatch = Text.findMatches("a1b2", r"\\d")\nconst patternReplaced = Text.replaceMatches("a1b2", r"\\d", "#")\nconst patternSplit = Text.splitPattern("a1b2", r"\\d")\n\nexport def readMatch() -> string:\n    const found = Text.findMatch("owner: Ada", r"owner: (\\w+)")\n    if found == null:\n        return "no match"\n    const captured = found.groups.get(0) ?? "none"\n    return f"{found.value} at {found.index}: {captured}"`
-
-const pointsLook = look:
-    display = "grid"
-    gap = 8px
-    margin = 0
-    paddingInlineStart = 20px
 
 const sections = [
     {id: "members", label: "Checked string members", labelZh: "字符串的受检成员"},
@@ -43,63 +37,63 @@ export component LanguageTextNumbers:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="members">{locale.text("Checked string members", "字符串的受检成员")}</h2>
-                <p>
+                <SectionHeading id="members">{locale.text("Checked string members", "字符串的受检成员")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Text operations are compiler-owned members on the value rather than JavaScript prototype calls: the receiver is checked and evaluated once, and the member set is closed, so a name outside it is a diagnostic instead of an absent value. size counts Unicode code points, and every position accepts a negative index counted from the end.", "文本操作是值上由编译器持有的成员，而不是 JavaScript 原型调用：接收者受检且只求值一次；成员集合是封闭的，因此集合之外的名字得到的是诊断，而不是一个缺失的值。size 计的是 Unicode 码点，所有位置参数都接受从末尾倒数的负索引。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={stringsCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={lengthErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={lengthErrorOutput} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={caseErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={caseErrorOutput} />
 
-                <h2 id="numbers">{locale.text("Number members", "数字的成员")}</h2>
-                <p>
+                <SectionHeading id="numbers">{locale.text("Number members", "数字的成员")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Rounding, magnitude, fixed-digit text, and the three predicates are members on the number. A number literal needs no ceremony before a member, and number text is JavaScript's number text: the language keeps the platform's rendering rather than inventing a second one that would disagree with the runtime it compiles to.", "取整、绝对值、定点位数文本以及三个判定都是数字上的成员。数字字面量在成员之前不需要额外形式；数字的文本形式就是 JavaScript 的数字文本形式：这门语言保留平台的渲染，而不是另造一套会与它所编译到的运行时不一致的渲染。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={numbersCode} />
 
-                <h2 id="conversions">{locale.text("The two conversions", "两种转换")}</h2>
-                <p>
+                <SectionHeading id="conversions">{locale.text("The two conversions", "两种转换")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Conversion between text and numbers is written, never implicit. str renders strings, numbers, bools, enums, and null; number reads a complete decimal number and answers null for anything else, including a partial read, a digit separator, a radix prefix, and a magnitude that would overflow to infinity.", "文本与数字之间的转换是书面的，绝不隐式发生。str 渲染字符串、数字、bool、枚举与 null；number 读取一个完整的十进制数，对其余输入一律给出 null——包括读了一半、数位分隔符、进制前缀，以及会溢出到无穷的量级。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={conversionsCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Because the failed read is null rather than a not-a-number value, the caller decides what an unreadable input means at the point where it arrives.", "由于读取失败给出的是 null 而不是一个非数字值，调用方在输入到达的那个位置就决定了不可读的输入意味着什么。")}
                     </li>
                     <li>
                         {locale.text("A digit separator is legal in source and not in data, which keeps a literal readable without making a parser accept a spelling no wire protocol produces.", "数位分隔符在源码中合法、在数据中不合法：这既让字面量保持可读，又不会让解析器去接受任何传输协议都不会产生的拼写。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="namespace">{locale.text("The Text namespace", "Text 命名空间")}</h2>
-                <p>
+                <SectionHeading id="namespace">{locale.text("The Text namespace", "Text 命名空间")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Text is a resident namespace: it is vocabulary every program speaks, so it needs no import and cannot be shadowed by one. It carries the operations that are about text but not about one particular string value — line and word structure, indentation, slugs, Unicode normalization, HTML escaping, and code points.", "Text 是常驻命名空间：它是每个程序都会说的词汇，因此无需导入，也不会被导入遮蔽。它承载那些关于文本、但不属于某一个具体字符串值的操作——行与词的结构、缩进、slug、Unicode 归一化、HTML 转义与码点。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={namespaceCode} />
                 <Callout title={locale.text("Resident, not imported", "常驻，而非导入")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("Math, Text, Json, and Promise are the four resident namespaces. An import of a module by those names does not exist, which is why the reflex of importing a math module reports a diagnostic that names the resident spelling instead.", "Math、Text、Json、Promise 是四个常驻命名空间。不存在以这些名字导入的模块，因此「导入一个 math 模块」的手感会得到一条诊断，把常驻拼写点出来。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
 
-                <h2 id="patterns">{locale.text("Patterns", "模式")}</h2>
-                <p>
+                <SectionHeading id="patterns">{locale.text("Patterns", "模式")}</SectionHeading>
+                <Paragraph>
                     {locale.text("There is no pattern literal. A pattern is ordinary text handed to one of five Text members, with options given as a record, so a raw string is its natural spelling and a pattern can be built, stored, and passed like any other value. Each call creates a fresh Unicode pattern, so no cursor state survives between calls.", "没有模式字面量。模式就是交给五个 Text 成员之一的普通文本，选项以记录给出；因此原始字符串是它的自然拼写，而模式可以像任何别的值一样被构造、保存与传递。每次调用都创建全新的 Unicode 模式，因此调用之间不残留游标状态。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={patternsCode} />
             </Prose>
             <DocsPager

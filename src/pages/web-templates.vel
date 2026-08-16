@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -23,13 +23,6 @@ const sections = [
     {id: "refkey", label: "ref and key", labelZh: "ref 与 key"},
     {id: "literal", label: "Literals and unsafe:html", labelZh: "字面量与 unsafe:html"},
 ]
-
-const pointsLook = look:
-    display = "grid"
-    gap = 7px
-    marginTop = 18px
-    marginBottom = 4px
-    paddingLeft = 22px
 
 const directiveRows: List<MemberRow> = [
     {name: "on:event", signature: "on:click={handler}", summary: "Binds a handler to a native DOM event; the handler's parameter is a typed event.", summaryZh: "把处理器绑定到原生 DOM 事件；处理器参数是带类型的事件。"},
@@ -70,11 +63,11 @@ export component WebTemplates:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="jsx">{locale.text("JSX is part of the grammar", "JSX 属于语法")}</h2>
-                <p>
+                <SectionHeading id="jsx">{locale.text("JSX is part of the grammar", "JSX 属于语法")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Elements, attributes, and interpolations are parsed by the compiler rather than by a preprocessor, so an unknown element or an unknown directive is a diagnostic. A less-than sign begins JSX in a fixed set of positions: after a return, an assignment, an opening parenthesis or bracket, a comma, an arrow, and the nullish operator. JSX has no comment form, so a note about markup lives outside it.", "元素、属性与插值由编译器解析，而不是由预处理器处理，因此未知元素或未知指令会得到诊断。小于号只在一组固定位置开始 JSX：return 之后、赋值之后、左括号或左方括号之后、逗号之后、箭头之后，以及空值合并运算符之后。JSX 没有注释形式，因此关于标记的说明写在它之外。")}
-                </p>
-                <ul look={pointsLook}>
+                </Paragraph>
+                <BulletList>
                     <li>
                         {locale.text("JSX text is normalized before it becomes a text node: every whitespace run inside a text child collapses to one space, and whitespace that exists only because the source wrapped is dropped.", "JSX 文本在变成文本节点前先做规范化：文本子节点内部的每段空白折叠为一个空格，仅因源码折行而存在的空白被丢弃。")}
                     </li>
@@ -84,28 +77,28 @@ export component WebTemplates:
                     <li>
                         {locale.text("Text that must be preserved exactly belongs in an interpolated string.", "必须原样保留的文本应写在插值字符串里。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="table">{locale.text("The directive table", "指令表")}</h2>
-                <p>
+                <SectionHeading id="table">{locale.text("The directive table", "指令表")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A native element accepts twelve directives. The table below is the complete list; every one of them is checked, and a name outside it fails at the attribute rather than at runtime.", "原生元素接受十二个指令。下表是完整清单；它们全部受检，不在表内的名字会在属性处失败，而不是在运行时失败。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={directiveRows}
                     caption={locale.text("Directives a native element accepts", "原生元素接受的指令")}
                 />
 
-                <h2 id="events">{locale.text("on: and the six event types", "on: 与六种事件类型")}</h2>
-                <p>
+                <SectionHeading id="events">{locale.text("on: and the six event types", "on: 与六种事件类型")}</SectionHeading>
+                <Paragraph>
                     {locale.text("on:name binds a handler and the handler's parameter is a typed event. The extension publishes six event value types: Event, KeyboardEvent, PointerEvent, InputEvent, CompositionEvent, and ClipboardEvent. A zero-parameter handler stays valid, and no synthetic event runtime is added on top of the native one.", "on:name 绑定处理器，处理器参数是带类型的事件。扩展发布六种事件值类型：Event、KeyboardEvent、PointerEvent、InputEvent、CompositionEvent 与 ClipboardEvent。零参数处理器仍然有效，且不在原生事件之上添加合成事件运行时。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={eventTypesCode} />
-                <p>
+                <Paragraph>
                     {locale.text("An event object carries typed event fields only. It deliberately carries no target or currentTarget: an untyped element reference inside a handler is how DOM reading leaks back into application code, and the value the handler wanted is available through a binding. The self modifier answers the question target would have answered — was this the element itself, or a descendant — which is what a backdrop-dismiss handler needs.", "事件对象只携带带类型的事件字段。它刻意不携带 target 与 currentTarget：处理器内部的无类型元素引用正是 DOM 读取回流进应用代码的途径，而处理器想要的值可以通过绑定取得。self 修饰符回答了 target 本会回答的问题——这是元素自身还是它的后代——这正是点击遮罩关闭的处理器所需要的。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={eventsCode} />
                 <MemberTable rows={modifierRows} caption={locale.text("The five event modifiers", "五个事件修饰符")} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("There are exactly five modifiers, an unknown one is a compile error, and none may repeat.", "修饰符恰好五个，未知修饰符是编译错误，且任何一个都不能重复。")}
                     </li>
@@ -115,70 +108,76 @@ export component WebTemplates:
                     <li>
                         {locale.text("An event handler runs for effect and returns null; because a record literal follows an arrow, a no-op handler is written as an arrow returning null.", "事件处理器为副作用而运行并返回 null；由于箭头后面跟的是记录字面量，空操作处理器写成返回 null 的箭头函数。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="bindings">{locale.text("The four bind spellings", "四种 bind 拼写")}</h2>
-                <p>
+                <SectionHeading id="bindings">{locale.text("The four bind spellings", "四种 bind 拼写")}</SectionHeading>
+                <Paragraph>
                     {locale.text("bind:value binds one text input, textarea, or select; bind:checked binds one checkbox as a bool; bind:group binds a set of controls that share one decision — a radio group's state holds the selected input's value, and a checkbox group's List<string> state holds the checked values, so checking and unchecking are membership changes. Each bound input identifies itself by its value attribute.", "bind:value 绑定单个文本输入框、textarea 或 select；bind:checked 以 bool 绑定单个复选框；bind:group 绑定共享同一个决定的一组控件——单选组的 state 保存被选中输入的 value，复选组的 List<string> state 保存被勾选的值，因此勾选与取消勾选就是成员关系的变化。每个被绑定的输入用自己的 value 属性标识自身。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={bindCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Every bind target is a writable reactive location: a state name, or a field or index path rooted in one.", "每个 bind 目标都是一个可写的响应位置：一个 state 名字，或者以它为根的字段路径、索引路径。")}
                     </li>
                     <li>
                         {locale.text("A binding is the supported answer to the absent event.value: read the control through the cell it writes.", "绑定就是对缺席的 event.value 给出的受支持答案：通过它写入的那个单元读取控件。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="classes">{locale.text("class and class:name", "class 与 class:name")}</h2>
-                <p>
+                <SectionHeading id="classes">
+                    {locale.text("class and class:name", "class 与 class:name")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("class accepts a name or a List of names. class:name toggles one class name from a bool, and the two compose: the bound list and the toggles are independent contributions to the element's class attribute, so a static class, a reactive class list, and several toggles coexist on one element.", "class 接受一个类名或一个类名 List。class:name 由 bool 切换一个类名，两者可以并存：绑定的列表与各个开关是对元素 class 属性的独立贡献，因此静态类、响应式类列表与若干开关可以同时出现在一个元素上。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={classesCode} />
-                <p>
+                <Paragraph>
                     {locale.text("The toggle's value must be bool. An optional or a truthy value is rejected, which is the same rule the language applies to every condition.", "开关的取值必须是 bool。可选值或依赖真值性的取值会被拒绝，这与语言对每个条件的规则一致。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={classErrorCode} />
                 <CodeBlock code={classErrorOutput} />
 
-                <h2 id="visuals">{locale.text("look, look:, and style:", "look、look: 与 style:")}</h2>
-                <p>
+                <SectionHeading id="visuals">
+                    {locale.text("look, look:, and style:", "look、look: 与 style:")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("look={value} composes an existing Look. Every look:property on the element forms one anonymous base applied after that composition, a duplicate directive fails checking, and a null expression removes the composed property rather than emitting the text null. style:property writes the real CSS property at inline priority; it reuses Look's property table, types, builders, and reactive updates, and exists as a native compatibility layer rather than as a second visual language.", "look={value} 合成一个已有的 Look。元素上的每个 look:property 组成一个匿名基底，在该合成之后应用；重复的指令无法通过检查；取值为 null 会移除被合成的属性，而不是发出文本 null。style:property 以内联优先级写出真实 CSS 属性；它复用 Look 的属性表、类型、构建器与响应式更新，作为原生兼容层存在，而不是第二套视觉语言。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={visualsCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Hooks, media conditions, pseudo-elements, and spreads remain exclusive to a named or local full Look; a form such as look:hover:color does not exist.", "钩子、媒体条件、伪元素与展开仅属于具名或局部的完整 Look；look:hover:color 之类的形式并不存在。")}
                     </li>
                     <li>
                         {locale.text("An attribute whose value is null is removed rather than rendered, so a conditional attribute is an ordinary conditional expression.", "取值为 null 的属性会被移除而不是被渲染，因此条件属性就是普通的条件表达式。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="refkey">{locale.text("ref and key", "ref 与 key")}</h2>
-                <p>
+                <SectionHeading id="refkey">{locale.text("ref and key", "ref 与 key")}</SectionHeading>
+                <Paragraph>
                     {locale.text("ref fills a mutable optional binding with the constructed element. It is null while the component body runs and is filled before @mounted, which is why DOM setup lives there. key belongs on the element a map produces, or on a branch of a conditional that produces one; it identifies the row rather than its position. There are no if, else-if, or else JSX attributes, because conditional children are ordinary expressions.", "ref 用构造好的元素填充一个可变的可选绑定。组件体运行期间它是 null，在 @mounted 之前被填充，因此 DOM 初始化写在那里。key 属于 map 产生的那个元素，或者产生该元素的条件分支；它标识的是这一行，而不是它的位置。JSX 没有 if、else-if、else 属性，因为条件子节点就是普通表达式。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={refKeyCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("A keyed update moves only the rows whose position actually changed, so a row already standing where the new order wants it keeps its focused input and its in-flight composition.", "带 key 的更新只移动位置确实改变的行，因此已经站在新顺序所要位置上的行会保留它获得焦点的输入框与进行中的输入法组合。")}
                     </li>
                     <li>
                         {locale.text("Ordinary and keyed JSX lists both read one checked dense List snapshot, so mutation during rendering cannot change the values participating in that update.", "普通 JSX 列表与带 key 的列表都读取同一份受检的稠密 List 快照，因此渲染期间的改动无法改变参与这次更新的取值。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="literal">{locale.text("Literals and unsafe:html", "字面量与 unsafe:html")}</h2>
-                <p>
+                <SectionHeading id="literal">
+                    {locale.text("Literals and unsafe:html", "字面量与 unsafe:html")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("An attribute literal has three delimiters: double quotes, the HTML single quote, and backticks for a value that already contains a quotation mark. unsafe:html is an explicit wholesale innerHTML assignment on every reactive update; it does not morph DOM or preserve descendant identity, and it cannot be combined with children.", "属性字面量有三种定界符：双引号、HTML 单引号，以及用于本身含引号的取值的反引号。unsafe:html 是每次响应式更新时显式的整体 innerHTML 赋值；它不做 DOM 变形，也不保留后代身份，并且不能与 children 并用。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={literalCode} />
                 <Callout title={locale.text("What the directive set does not contain", "指令集合不包含什么")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("There is no directive that reads an untyped element inside a handler, no raw style attribute, no conditional directive name, and no reusable Style value. Each of those has one supported spelling instead: a binding, a ref, an ordinary conditional expression, and a Look.", "没有任何指令能在处理器内部读取无类型的元素，没有原始 style 属性，没有条件化的指令名，也没有可复用的 Style 值。它们各自都有一种受支持的拼写：绑定、ref、普通条件表达式，以及 Look。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager previous={guidePrevious("/guide/web/templates")} next={guideNext("/guide/web/templates")} />

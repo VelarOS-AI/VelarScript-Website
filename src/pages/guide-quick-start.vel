@@ -1,16 +1,19 @@
 import {Head, Link} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {Callout, CodeBlock, DocsPager, DocsShell, GateNote, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
-const habitErrorCode = "export def visible(done: bool) -> bool:\n    return !done"
-const unitTestCode = `import {expect} from "velar/test"\n\nexport def slug(title: string) -> string:\n    return title.lower().replace(" ", "-")\n\ntest "a title becomes a url slug":\n    expect(slug("Release Notes")).toBe("release-notes")`
+const fixErrorCode = "export def visible(done: bool) -> bool:\n    return !done\n\nexport def same(a: string, b: string) -> bool:\n    return a === b"
 
-const habitErrorOutput = "src/app.vel:2:12 error VEL1005: Use 'not'; VelarScript uses readable logical operators\n    return !done\n           ^"
+const fixErrorOutput = "src/app.vel:2:12 error VEL1005: Use 'not'; VelarScript uses readable logical operators\n    return !done\n           ^\n\nsrc/app.vel:5:14 error VEL1005: Use '=='; equality is already strict in VelarScript\n    return a === b\n             ^^^"
+
+const fixAppliedTextCode = "src/app.vel:2:12 fixed VEL1005: Use readable 'not'\nsrc/app.vel:5:14 fixed VEL1005: Use VelarScript strict equality '=='\napplied 2 mechanical fixes in 1 file; 0 diagnostics remain"
+
+const unitTestCode = `import {expect} from "velar/test"\n\nexport def slug(title: string) -> string:\n    return title.lower().replace(" ", "-")\n\ntest "a title becomes a url slug":\n    expect(slug("Release Notes")).toBe("release-notes")`
 
 const createShellCode = "npm create velar@latest my-app\ncd my-app\nnpm install"
 const templatesShellCode = "npm create velar@latest api -- --template node\nnpm create velar@latest desktop-app -- --template desktop\nnpm create velar@latest product-docs -- --template docs\nnpm create velar@latest shared-library -- --template library\nnpm create velar@latest component-library -- --template component"
-const structureTreeCode = "my-app/\n  velar.json                  project format, entry, extensions, web settings\n  package.json                npm dependencies and the script names below\n  AGENTS.md                   instructions for the model that will write this app\n  public/                     files copied to the build as-is\n  src/\n    main.vel                  entry — mounts the app\n    app.vel                   the application itself\n    app.test.vel              unit tests, run in Node\n    app.browser.test.vel      browser tests, run in a real browser"
+const structureTreeCode = "my-app/\n  velar.json                  project format, entry, extensions, web settings\n  package.json                dependencies, and the scripts that are the gates\n  AGENTS.md                   instructions for the model that will write this\n  README.md                   the same commands, written for a person\n  .gitignore                  node_modules/, dist/, .velar/ — none of them yours\n  public/                     files copied into the build as they are\n  src/\n    main.vel                  entry — mounts the app\n    app.vel                   the application itself\n    app.test.vel              unit tests, run in Node\n    app.browser.test.vel      browser tests, run in a real browser"
 const devShellCode = "npm run dev"
 const checkShellCode = "npm run check"
 const fixShellCode = "npx velar fix"
@@ -37,97 +40,168 @@ export component GuideQuickStart:
     return <main>
         <Head
             title={headTitle("/guide/quick-start", locale.isChinese())}
-            description={locale.text("From nothing to a running, tested application: the commands that create, run, check, test, and build a project, and what each one reports.", "从零到一个可运行、有测试的应用：创建、运行、检查、测试与构建项目的命令，以及每条命令报告什么。")}
+            description={locale.text("From nothing to a running, tested application: the commands that create, run, check, test, and build a project, what each one guarantees, and what each one costs.", "从零到一个可运行、有测试的应用：创建、运行、检查、测试与构建项目的命令，每条命令保证什么，又要付什么代价。")}
             themeColor="#f7f5f0"
         />
         <DocsShell items={guideNav}>
             <PageHeader
                 kicker={locale.text("Start / 02", "开始 / 02")}
                 title={locale.text("Quick start", "快速开始")}
-                summary={locale.text("From nothing to a running, tested application. You need Node.js 24 or newer; everything else comes from npm.", "从零到一个可运行、有测试的应用。你需要 Node.js 24 或更新版本；其余一切都来自 npm。")}
+                summary={locale.text("From nothing to a running, tested application. You need Node.js 24 or newer; everything else comes from npm.", "从零到一个可运行、有测试的应用。你需要 Node.js 24 或更新版本，其余一切都来自 npm。")}
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="create">{locale.text("Create", "创建")}</h2>
+                <SectionHeading id="create">{locale.text("Create", "创建")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("A scaffolder fails halfway through and leaves you a directory that is neither empty nor a project. Now you get to work out which of those files it wrote and which were already yours. Everyone has deleted the wrong one at least once.", "脚手架跑到一半失败了，留下一个目录：既不是空的，也不是个项目。接下来你要自己分辨哪些文件是它写的、哪些本来就是你的。谁都至少删错过一次。")}
+                </Paragraph>
                 <CodeBlock code={createShellCode} />
-                <p>
-                    {locale.text("That gives you a Web application. For the other shapes, add a template. Creation refuses a non-empty target and assembles the complete project in a sibling staging directory before the final rename; it does not install dependencies, install browsers, initialize Git, publish, or deploy.", "这会给你一个 Web 应用。要得到其他形态，加上模板参数。创建过程拒绝非空目标，并在同级暂存目录中组装完整项目，最后再重命名；它不安装依赖、不安装浏览器、不初始化 Git、不发布、不部署。")}
-                </p>
+                <Paragraph>
+                    {locale.text("That cannot happen here. Creation refuses a target that already has anything in it, and it assembles the whole project in a sibling staging directory first, renaming it into place only once every file is written. There is no half-built state to clean up, because a half-built project never appears under the name you asked for.", "这里不会出现那种情况。创建过程会拒绝一个已经有东西的目标；它先在同级的暂存目录里把整个项目组装好，全部文件写完之后才改名就位。没有半成品需要你收拾，因为半成品从来不会以你要的那个名字出现。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("That gives you a Web application. For the other shapes, add a template.", "这样得到的是一个 Web 应用。要别的形态，加上模板参数。")}
+                </Paragraph>
                 <CodeBlock code={templatesShellCode} />
+                <Paragraph>
+                    {locale.text("The cost of that discipline is that creation stops there. It does not install dependencies, download browsers, initialize Git, publish, or deploy — you run npm install yourself, and browser tests will ask for real browsers before they run. A command that quietly does five more things is a command you cannot reason about when one of them fails.", "这份克制的代价是：创建到此为止。它不装依赖、不下载浏览器、不初始化 Git、不发布、不部署——npm install 得你自己跑，浏览器测试跑之前也会要求先装好真实浏览器。一条顺手多做五件事的命令，等其中一件出错时，你就没法推理它了。")}
+                </Paragraph>
 
-                <h2 id="structure">{locale.text("What you got", "你得到了什么")}</h2>
+                <SectionHeading id="structure">{locale.text("What you got", "你得到了什么")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("In a generated project the first question is always the same: which of these files are mine to edit, and which will the tool overwrite the moment I build? Guessing wrong costs you an afternoon and the file.", "打开一个生成出来的项目，第一个问题永远是同一个：哪些文件归我改，哪些会在下一次构建时被工具覆盖掉？猜错一次，赔上一个下午和那个文件。")}
+                </Paragraph>
                 <CodeBlock code={structureTreeCode} />
-                <p>
-                    {locale.text("Two things are worth noticing now. velar.json lists extensions explicitly: a Web project activates @velarscript/web and a Node project activates nothing, because the language does not guess what target you are on. And AGENTS.md is there because the model is the author — velar skill prints the full brief, and AGENTS.md points your tools at it.", "现在有两件事值得注意。velar.json 显式列出 extensions：Web 项目激活 @velarscript/web，Node 项目什么都不激活——因为语言不去猜你在哪个目标上。而 AGENTS.md 存在，是因为作者是模型——velar skill 会打印完整的语言说明，AGENTS.md 则把你的工具指向它。")} <Link
+                <Paragraph>
+                    {locale.text("Everything in that tree is yours. The toolchain owns exactly two directories, and they are already in .gitignore: dist/ is build output, and .velar/ is scratch. In a Web build the toolchain also writes dist/index.html itself, which is why the template does not give you one to edit.", "这棵树里的东西都是你的。工具链只拥有两个目录，而且已经写进了 .gitignore：dist/ 是构建产物，.velar/ 是临时文件。Web 构建时 dist/index.html 也由工具链自己写，所以模板不会给你一份去改。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Two files are worth opening now. velar.json lists extensions explicitly: a Web project activates @velarscript/web and a Node project activates nothing, because the language never guesses which target you are on. And AGENTS.md is there because the model is the author — it points your tools at velar skill, which prints the full language brief.", "有两个文件现在就值得打开。velar.json 显式列出 extensions：Web 项目激活 @velarscript/web，Node 项目什么都不激活——语言从不去猜你在哪个目标上。而 AGENTS.md 之所以存在，是因为作者是模型：它把你的工具指向 velar skill，那条命令会打印完整的语言说明。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The price of declaring the target is that you have to declare it. There is nothing to infer from, so a module written for the Web extension will not compile in a Core library until you either activate the extension there or move the Web-only part out.", "把目标写出来的代价，就是你必须写出来。没有东西可供推断，所以一个照 Web 扩展写的模块，放进 Core 库里是编译不过的，除非你在那边也激活扩展，或者把只属于 Web 的部分挪出去。")} <Link
                         to="/reference/project"
                         look={inlineLinkLook}
                     >
                         {locale.text("The manifest reference lists every field.", "项目清单参考页列出了每一个字段。")}
                     </Link>
-                </p>
+                </Paragraph>
 
-                <h2 id="run">{locale.text("Run it", "运行它")}</h2>
+                <SectionHeading id="run">{locale.text("Run it", "运行它")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("You save, and the page does not change. You reload. Still nothing. Ten minutes later you notice the build failed in a terminal you were not looking at.", "你保存了，页面没变。你刷新，还是没变。十分钟后你才发现，构建在另一个你没看的终端里失败了。")}
+                </Paragraph>
                 <CodeBlock code={devShellCode} />
-                <p>
-                    {locale.text("The dev server rebuilds on save and serves the app. Edit src/app.vel and the page updates.", "开发服务器在保存时重建并提供应用服务。编辑 src/app.vel，页面就会更新。")}
-                </p>
+                <Paragraph>
+                    {locale.text("The dev server rebuilds on save and serves the app. Edit src/app.vel and the page updates.", "开发服务器在保存时重建并提供应用服务。改 src/app.vel，页面就跟着更新。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("What it cannot do is tell you the application is correct. A dev server serves a development build; what you ship is what velar build produces and velar verify approves. A browser tab is a way to look at your work, never a gate that passed.", "它做不到的是告诉你应用是对的。开发服务器提供的是开发构建；真正交付的是 velar build 的产物、由 velar verify 放行。浏览器标签页是你看自己作品的地方，不是一道通过了的门禁。")}
+                </Paragraph>
 
-                <h2 id="diagnostics">{locale.text("Let the compiler teach you", "让编译器教你")}</h2>
-                <p>
-                    {locale.text("Open src/app.vel and write a JavaScript habit on purpose.", "打开 src/app.vel，故意写一个 JavaScript 习惯。")}
-                </p>
-                <CodeBlock code={habitErrorCode} />
-                <p>
-                    {locale.text("Then check it.", "然后检查它。")}
-                </p>
+                <SectionHeading id="diagnostics">{locale.text("Let the compiler teach you", "让编译器教你")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("Type 'string' is not assignable to type 'number'. Accurate, complete, and it leaves you exactly where you were standing. The message states the problem; the answer is still your job.", "Type 'string' is not assignable to type 'number'。准确、完整，然后把你原样留在原地。这条消息陈述了问题，答案还得你自己找。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("That is not a failure of effort by whoever wrote the message. In a language that kept five spellings for one idea, no diagnostic can name the spelling — it would have to name five and ask you to choose. How helpful a compiler is allowed to be is decided long before the message is written.", "这不是写这条消息的人不用心。在一门为同一个想法留了五种拼写的语言里，没有哪条诊断能说出「该写哪种」——它只能列出五种，再让你挑。编译器能帮上多大忙，早在写这条消息之前就定下了。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Open src/app.vel and write two JavaScript habits on purpose.", "打开 src/app.vel，故意写两个 JavaScript 习惯。")}
+                </Paragraph>
+                <CodeBlock code={fixErrorCode} />
+                <Paragraph>{locale.text("Then check it.", "然后检查它。")}</Paragraph>
                 <CodeBlock code={checkShellCode} />
-                <CodeBlock code={habitErrorOutput} />
-                <p>
-                    {locale.text("This is the shape of every diagnostic in VelarScript: it names the one current spelling, not a list of possibilities. You do not have to know the language to fix it, and neither does a model — which is the point. Write not done and the error goes away.", "这就是 VelarScript 中每一条诊断的形状：它给出当前唯一的那种拼写，而不是罗列可能性。你不需要懂这门语言就能改对它，模型也一样——这正是重点所在。写成 not done，错误就消失了。")}
-                </p>
-                <p>
-                    {locale.text("Where a rewrite is purely mechanical, the compiler will do it for you. fix applies only the rewrites that are provably equivalent, which is why it is safe to run unattended; anything requiring a judgment call stays a diagnostic for you to answer.", "当一次改写纯粹是机械的，编译器会替你完成。fix 只应用可证明等价的改写，这正是它可以无人值守运行的原因；任何需要判断的地方都仍然是诊断，交给你来回答。")}
-                </p>
+                <CodeBlock code={fixErrorOutput} />
+                <Paragraph>
+                    {locale.text("Each one names the one current spelling rather than listing possibilities. You do not have to know the language to fix these, and neither does a model. Both diagnostics are also purely mechanical: there is exactly one successor for each, and no judgment is involved in getting there. So the compiler will do it for you.", "每一条都给出当前唯一的那种拼写，而不是罗列可能性。你不必懂这门语言就能改对，模型也一样。这两条还都是纯机械的：各自只有一个后继写法，中间不需要任何判断。所以编译器可以替你改。")}
+                </Paragraph>
                 <CodeBlock code={fixShellCode} />
+                <CodeBlock code={fixAppliedTextCode} />
+                <Paragraph>
+                    {locale.text("fix applies only the rewrites that are provably equivalent — a retired spelling with a single successor, a line-ending semicolon, and the rest of that family. Anything that needs a decision stays a diagnostic addressed to you. That boundary is what makes it safe to run unattended, in a hook or in CI, without reading the diff first.", "fix 只应用可证明等价的改写：只有一个后继的退役拼写、行尾分号，以及同一类的其余几种。任何需要做决定的地方，仍然是一条写给你的诊断。有了这条界线，它才可以无人值守地跑——挂在 hook 上、放进 CI 里，不必先读一遍 diff。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Which is also its limit. fix never does the interesting part; what is left after it runs is the real work, and the count it prints is a measure of how much typing it saved, not of how much thinking. And a compiler that names one spelling has to be right about that spelling. When it is not, the fix is to change the language, not to work around it.", "这也正好是它的上限。fix 从不碰有意思的那部分；它跑完之后剩下的才是真正的活。它打印的那个数字，说明省下了多少打字，不说明省下了多少思考。另外，一个点名拼写的编译器必须选对那个拼写。选错的时候，该改的是语言，不是绕过去。")} <Link
+                        to="/participate"
+                        look={inlineLinkLook}
+                    >
+                        {locale.text("Say so if a word reads wrong.", "觉得哪个词不对，就说出来。")}
+                    </Link>
+                </Paragraph>
+                <GateNote>
+                    {locale.text("Gate: the sample above is a checked counter-example — this site's build compiles it and fails if it ever stops producing a diagnostic, and it verifies that VEL1005 is a code the sample really produces. The velar fix block below it is a transcript of running the command, not a compared artifact.", "门禁：上面那个样本是受检的教学反例——本站构建会编译它，一旦它不再报错就让构建失败；并且会核对 VEL1005 确实由这个样本产生。它下面那块 velar fix 的输出是一次真实运行的记录，不是受比对的产物。")}
+                </GateNote>
 
-                <h2 id="test">{locale.text("Test it", "测试它")}</h2>
+                <SectionHeading id="test">{locale.text("Test it", "测试它")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("A suite is green. The console under it is full of red, and everyone knows about those — they have been there for months, someone is going to look at them. Nobody is going to look at them.", "套件是绿的。它下面的控制台一片红，而且大家都知道那些红字——挂了好几个月了，说是有人会去看。没有人会去看。")}
+                </Paragraph>
                 <CodeBlock code={testShellCode} />
-                <p>
-                    {locale.text("A unit test is a named block in a *.test.vel module. The name is a sentence about the code rather than an identifier — it is what you read when the test fails.", "单元测试是 *.test.vel 模块中的一个具名块。这个名字是一句关于代码的话，而不是一个标识符——测试失败时你读到的正是它。")}
-                </p>
+                <Paragraph>
+                    {locale.text("A unit test is a named block in a *.test.vel module. The name is a sentence about the code rather than an identifier, because it is what you read when the test fails.", "单元测试是 *.test.vel 模块里的一个具名块。这个名字是一句关于代码的话，不是一个标识符——测试挂掉的时候，你读到的就是它。")}
+                </Paragraph>
                 <CodeBlock code={unitTestCode} />
-                <p>
-                    {locale.text("Browser tests live in *.browser.test.vel and drive the real page through velar/web-test. They only run under velar test --browser, and importing that module anywhere else is refused at the import line rather than left to fail at the call.", "浏览器测试位于 *.browser.test.vel，通过 velar/web-test 驱动真实页面。它们只在 velar test --browser 下运行，从别处导入该模块会在 import 行被拒绝，而不是留到调用时才失败。")}
-                </p>
+                <Paragraph>
+                    {locale.text("Browser tests live in *.browser.test.vel and drive the real page through velar/web-test. They only run under velar test --browser, and importing that module anywhere else is refused at the import line rather than left to fail at the call.", "浏览器测试放在 *.browser.test.vel 里，通过 velar/web-test 驱动真实页面。它们只在 velar test --browser 下运行；从别的地方导入这个模块，会在 import 那一行就被拒绝，而不是留到调用时才失败。")}
+                </Paragraph>
                 <Callout title={locale.text("A green suite means no test printed an error anywhere", "套件全绿，意味着没有任何测试在任何地方打印过错误")}>
-                    <p>
-                        {locale.text("Both runners hold one trust rule: any unowned error during a test fails that test. A detached-task failure report, an uncaught exception, an unhandled rejection, a page error, or an error or warning console message in a browser run all mark that test failed. The runner itself keeps running — the failure belongs to the test, never to the process — and the exit code reports it. A green suite therefore means more than that every awaited assertion passed.", "两个运行器都持有同一条信任规则：测试期间任何无主的错误都会让该测试失败。分离任务的失败报告、未捕获的异常、未处理的拒绝、页面错误，或浏览器运行中 error 与 warning 级别的控制台消息，都会把那个测试标记为失败。运行器本身继续运行——失败属于测试，绝不属于进程——并由退出码报告出来。因此套件全绿的含义，比「每一条被等待的断言都通过了」要多。")}
-                    </p>
+                    <Paragraph>
+                        {locale.text("Both runners hold one trust rule: any error during a test that nobody owns fails that test. A detached-task failure report, an uncaught exception, an unhandled rejection, a page error, or an error or warning console message in a browser run all mark that test failed. The runner itself keeps going — the failure belongs to the test, never to the process — and the exit code reports it. A green suite therefore means more than that every awaited assertion passed.", "两个运行器都守着同一条信任规则：测试期间任何没人管的错误，都会让那个测试失败。分离任务的失败报告、未捕获的异常、未处理的拒绝、页面错误，以及浏览器运行中 error 与 warning 级别的控制台消息，都会把那个测试标记为失败。运行器本身继续跑——失败属于测试，绝不属于进程——并由退出码报告出来。所以套件全绿的含义，比「每一条被等待的断言都通过了」要多。")}
+                    </Paragraph>
                 </Callout>
+                <Paragraph>
+                    {locale.text("Be ready for that rule to bite. A third-party script that prints a deprecation warning will fail your browser test, and there is no ignore list to add it to — you fix it, or you stop it printing, or you stop using it. The rule is worth the trouble because the alternative is the console above, but it is a real cost and it arrives on your first noisy dependency.", "要有心理准备，这条规则会咬人。一个打印弃用警告的第三方脚本会让你的浏览器测试挂掉，而且没有忽略列表可以把它加进去——你要么修好它，要么让它别打印，要么别用它。这条规则值得这份麻烦，因为另一条路就是上面那个控制台；但它是实打实的代价，而且在你遇到第一个吵闹的依赖时就会到账。")}
+                </Paragraph>
 
-                <h2 id="build">{locale.text("Build it", "构建它")}</h2>
+                <SectionHeading id="build">{locale.text("Build it", "构建它")}</SectionHeading>
+                <Paragraph>
+                    {locale.text("dist/ exists. You upload it. Production 404s on a hashed asset that never got copied, and the directory looked completely fine the whole time.", "dist/ 在那儿。你把它传上去。生产环境在一个从没被复制过去的哈希资源上 404 了，而那个目录从头到尾看着都完全正常。")}
+                </Paragraph>
                 <CodeBlock code={buildShellCode} />
-                <p>
-                    {locale.text("verify is where the difference between a directory that exists and a build that deploys is decided: it requires exact equality between the output tree and the build's asset inventory, rejects symbolic links and unsafe or duplicate paths, checks every size and hash, recomputes the build identity, and cross-checks the entry, stylesheet, deployment, CSP, cache, fallback, and adapter contracts. preview always runs that verification first.", "verify 正是在「目录存在」与「构建可部署」之间做出判决的地方：它要求输出树与构建的资源清单完全一致，拒绝符号链接以及不安全或重复的路径，检查每一项大小与哈希，重新计算构建标识，并交叉核对入口、样式表、部署、CSP、缓存、回退与适配器契约。preview 总是先运行这道验证。")}
-                </p>
-                <p>
-                    {locale.text("Or run the whole gate in one command, which is what CI does.", "也可以用一条命令运行整道门禁，这正是 CI 所做的事。")}
-                </p>
+                <Paragraph>
+                    {locale.text("verify is where the difference between a directory that exists and a build that deploys is decided. It requires exact equality between the output tree and the build's asset inventory, rejects symbolic links and unsafe or duplicate paths, checks every size and hash, recomputes the build identity, and cross-checks the entry, stylesheet, deployment, CSP, cache, fallback, and adapter contracts. preview always runs that verification first, so a local preview cannot be greener than a deployment.", "「目录存在」和「构建可部署」之间的判决，是在 verify 这里做出的。它要求输出树与构建的资源清单完全一致，拒绝符号链接以及不安全或重复的路径，检查每一项大小与哈希，重新计算构建标识，并交叉核对入口、样式表、部署、CSP、缓存、回退与适配器契约。preview 总是先跑这道验证，所以本地预览不可能比部署更绿。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Two things it does not do. It is strict on purpose, so a deployment that relies on symlinked assets will not pass and has to be rearranged. And it tells you the build is internally consistent, not that your application is right — that part is what the tests above are for.", "有两件事它不做。它是刻意严格的，所以一个依赖符号链接资源的部署方案通不过，只能改结构。还有，它告诉你的是这次构建自身一致，不是你的应用正确——后面那件事，交给上面那些测试。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("Or run the whole gate in one command, which is what CI does.", "也可以用一条命令把整道门禁跑完，CI 做的就是这件事。")}
+                </Paragraph>
                 <CodeBlock code={validateShellCode} />
+                <Paragraph>
+                    {locale.text("For what a build actually contains — the emitted module, the generated runtime beside it, and the command sequence that runs it on Node with no toolchain installed — the evidence page shows the artifacts rather than describing them.", "至于一次构建里究竟有什么——发出的模块、旁边那份生成的运行时，以及在完全没装工具链的机器上只用 Node 跑起来的命令序列——证据页把实物摆出来，不去描述它们。")} <Link
+                        to="/evidence"
+                        look={inlineLinkLook}
+                    >
+                        {locale.text("Open the evidence page", "打开证据页")}
+                    </Link>
+                </Paragraph>
 
-                <h2 id="model">{locale.text("Hand it to your model", "把它交给你的模型")}</h2>
+                <SectionHeading id="model">{locale.text("Hand it to your model", "把它交给你的模型")}</SectionHeading>
                 <CodeBlock code={skillShellCode} />
-                <p>
-                    {locale.text("That prints the brief describing the whole language — every spelling, every trap, the migration table. Give it to whatever model is writing your code. It is version-locked to the compiler you have installed, which is what makes it safe to paste: it describes that toolchain rather than a documented ideal.", "这会打印描述整门语言的说明——每种拼写、每个陷阱、迁移表。把它交给正在写你代码的那个模型。它与你安装的编译器版本锁定，这正是它可以放心粘贴的原因：它描述的是那套工具链，而不是文档里的理想。")}
-                </p>
-                <p>
-                    {locale.text("From here, the language chapters teach the core, the Web chapters teach the extension, and the reference lists the modules member by member.", "从这里开始，语言各章讲授核心，Web 各章讲授扩展，参考区逐个成员列出模块。")} <Link
+                <Paragraph>
+                    {locale.text("That prints the brief describing the whole language: the working loop, the reflexes that need a different spelling, the declaration forms, the idioms, and the escape hatches. Give it to whatever model is writing your code. It ships inside the compiler, so the version you print is the version you installed — a stale brief and a stale compiler are one object and cannot come apart.", "这会打印出描述整门语言的说明：工作循环、需要换一种拼写的那些手感、各种声明形式、写法惯例，以及逃生通道。把它交给正在写你代码的那个模型。它随编译器一起交付，所以你打印出来的版本就是你装的那个版本——「过期的说明」和「过期的编译器」是同一件东西，分不开。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("It costs context, roughly thirty kilobytes at the start of a session, and it describes the language and nothing else. Your project's own conventions — what the modules are for, which decisions are already settled, what not to touch — are still yours to write down, which is what AGENTS.md is for.", "它要花上下文，会话开头大约三十千字节，而且它只讲语言，别的都不讲。你项目自己的约定——这些模块各是干什么的、哪些决定已经定了、什么不许动——仍然要你自己写下来，AGENTS.md 就是放这些的地方。")}
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("The introduction says more about what the brief contains and why a language for model-written code ships one at all.", "关于这份说明里有什么，以及一门为模型书写的代码而设计的语言为什么要自带一份，介绍页讲得更细。")} <Link
+                        to="/guide"
+                        look={inlineLinkLook}
+                    >
+                        {locale.text("The brief your model reads", "交给模型的那份说明")}
+                    </Link>
+                </Paragraph>
+                <Paragraph>
+                    {locale.text("From here, the language chapters teach the core, the Web chapters teach the extension, and the reference lists the modules member by member.", "从这里开始，语言各章讲核心，Web 各章讲扩展，参考区逐个成员列出模块。")} <Link
                         to="/reference"
                         look={inlineLinkLook}
                     >
                         {locale.text("Open the reference", "打开参考")}
                     </Link>
-                </p>
+                </Paragraph>
             </Prose>
             <DocsPager previous={guidePrevious("/guide/quick-start")} next={guideNext("/guide/quick-start")} />
         </DocsShell>

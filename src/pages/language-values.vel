@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -13,12 +13,6 @@ const quoteErrorOutput = "main.vel:1:18 error VEL1005: Use double quotes or back
 const layoutCode = `const title = "VelarScript"\nconst count = 42\nconst windows = r"C:\\Users\\foo"\n\n// A double quote followed immediately by a newline opens a layout string; a\n// quote back at the opening line's indentation closes it.\nconst poem = "\n    first line\n    second "quoted" line\n"\n\nconst report = f"\n    owner: {title}\n    count: {count}\n"\n\nconst rawLayout = r"\n    C:\\Users\\foo\n"\n\nconst rawInterpolatedLayout = rf"\n    {windows}\\assets\\main.js\n"\n\n// Internal indentation beyond the structural margin is preserved exactly.\nconst markdown = "\n    # Heading\n\n        indented code block\n    trailing text\n"`
 const patternsCode = `type Profile:\n    name: string\n    nickname: string?\n    city: string\n    country: string\n\nconst values = [1, 2, 3]\nconst user = {id: "user-1", title: "VelarScript"}\nconst profile: Profile = {name: "Ada", nickname: null, city: "London", country: "UK"}\n\n// A spread copies the source; a field written after it wins.\nconst nextUser = {...user, title: "Owner"}\nconst nextValues = [...values, 4]\n\n// A binding pattern reads fields and positions back out.\nconst {name, nickname, ...details} = profile\nconst [first, ...rest] = values\nconst [onlyOne] = [9]\n\nconst pairs: List<List<string>> = [["a", "1"], ["b", "2"]]\n\nexport def readPairs() -> string:\n    let joined = ""\n    for [key, value] in pairs:\n        joined += f"{key}: {value};"\n    return joined`
 const contextualCode = `// Position 1 — a binding.\nconst type = "declaration"\nconst match = "dispatch"\nconst from = "origin"\nconst as = "alias"\nconst using = "ownership"\nconst test = "assertion"\n\n// Position 2 — a parameter.\nexport def describe(type: string, match: string, from: string, as: string, using: string, test: string) -> string:\n    return type + match + from + as + using + test\n\n// Position 3 — a loop binding.\nconst rows: List<string> = ["a", "b"]\n\nexport def loopBindings() -> string:\n    let joined = ""\n    for type in rows:\n        joined += type\n    for match, from in rows:\n        joined += f"{match}{from}"\n    return joined\n\n// Position 4 — a named argument.\nconst namedArguments = describe(type="t", match="m", from="f", as="a", using="u", test="x")\n\n// Position 5 — a record field.\ntype Descriptor:\n    type: string\n    match: string\n    case: string\n\nconst descriptor: Descriptor = {type: "t", match: "m", case: "c"}\n\n// Position 6 — a member name.\nconst readType = descriptor.type\nconst readCase = descriptor.case\n\n// Position 7 — a record shorthand.\nconst shorthand = {type, match, from, as, using, test}\n\n// Where the two readings could compete, the name wins: only a statement head\n// ending in a colon above a block is the declaration.\nexport def theNameWins(value: string) -> string:\n    match value:\n        case "a":\n            return type\n        case _:\n            return from`
-
-const pointsLook = look:
-    display = "grid"
-    gap = 8px
-    margin = 0
-    paddingInlineStart = 20px
 
 const sections = [
     {id: "bindings", label: "Bindings and blocks", labelZh: "绑定与块"},
@@ -45,12 +39,12 @@ export component LanguageValues:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="bindings">{locale.text("Bindings and blocks", "绑定与块")}</h2>
-                <p>
+                <SectionHeading id="bindings">{locale.text("Bindings and blocks", "绑定与块")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A file is a module and a module is a list of declarations. const and let are the two binding forms; a block opens with a trailing colon and is carried by indentation. Two rules let a logical line outrun a physical one: a line whose first token is a dot or an optional dot continues the line above it, and inside brackets a newline is not a statement boundary at all.", "一个文件就是一个模块，模块是一串声明。const 与 let 是仅有的两种绑定形式；块以行尾冒号开启，并由缩进承载。有两条规则让逻辑行可以长过物理行：以点或可选点开头的行接续上一行；在括号内部，换行完全不是语句边界。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={bindingsCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Comments are // and /* */, and block comments nest, so commenting out a region that already holds one works.", "注释是 // 与 /* */，且块注释可以嵌套，因此注释掉一段本身已含注释的代码是可行的。")}
                     </li>
@@ -60,31 +54,33 @@ export component LanguageValues:
                     <li>
                         {locale.text("There are no semicolons, and one line carries one statement.", "没有分号，一行只承载一条语句。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="literals">{locale.text("The literal set", "字面量集合")}</h2>
-                <p>
+                <SectionHeading id="literals">{locale.text("The literal set", "字面量集合")}</SectionHeading>
+                <Paragraph>
                     {locale.text("The literal set is finite: numbers, strings, true, false, null, List literals, and record literals. Numbers are decimal, and the underscore groups digits in the mantissa or the exponent. There is no separate absent value beside null, so a reader has one shape of nothing to recognize instead of two.", "字面量集合是有限的：数字、字符串、true、false、null、List 字面量与记录字面量。数字一律十进制，下划线可在尾数或指数中分组数位。null 之外没有第二个表示缺失的值，读者只需辨认一种「没有」，而不是两种。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={literalsCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={radixErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={radixErrorOutput} />
-                <p>
+                <Paragraph>
                     {locale.text("Binary and octal literals are refused on the same ground: one written base keeps a number readable to someone who did not choose the base. Infinity and the undefined quotient are not literals either, and are written as the division that produces them.", "二进制与八进制字面量基于同样的理由被拒绝：单一的书面进制，让没有参与选择进制的读者也读得懂这个数。无穷与未定义商同样不是字面量，它们写成产生它们的那次除法。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="strings">{locale.text("String delimiters and prefixes", "字符串定界符与前缀")}</h2>
-                <p>
+                <SectionHeading id="strings">
+                    {locale.text("String delimiters and prefixes", "字符串定界符与前缀")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("There are two delimiters, the double quote and the backtick, and they build the same string value. The canonical spelling follows the text: the delimiter that escapes fewer characters wins, and a tie takes the double quote. velar format applies that rule for you, which is why a JSON payload or an attribute selector can be written with no backslash in it at all. The f, r, and rf prefixes are independent of the delimiter.", "定界符有两种——双引号与反引号——它们构造同一种 string 值。规范拼写由文本本身决定：需要转义更少字符的定界符胜出，平局时取双引号。velar format 会替你执行这条规则，因此 JSON 负载或属性选择器可以完全不带反斜杠地写出来。f、r、rf 前缀与定界符互不相关。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={delimitersCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Only the f prefix interpolates, and it interpolates braces. A literal brace in an f-string is doubled.", "只有 f 前缀会插值，且插值用花括号。f 字符串里的字面花括号写成双份。")}
                     </li>
@@ -94,62 +90,62 @@ export component LanguageValues:
                     <li>
                         {locale.text("Text conversion is code-point-sequence identity. Normalize at the boundary with Text.normalize when the source may send either composed form.", "文本相等就是码点序列相同。若数据源可能发送不同的组合形式，在边界处用 Text.normalize 归一化。")}
                     </li>
-                </ul>
-                <p>
+                </BulletList>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={quoteErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={quoteErrorOutput} />
                 <Callout title={locale.text("The one string habit no diagnostic can catch", "唯一无法由诊断捕获的字符串习惯")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("The JavaScript dollar-brace form is legal text in every VelarScript string, including a backtick one, because generating JavaScript source is a use these strings are expected to serve. A template-literal reflex therefore produces the six characters rather than a diagnostic. The interpolating prefix is f.", "JavaScript 的美元花括号形式在每一种 VelarScript 字符串中都是合法文本，反引号字符串也不例外，因为生成 JavaScript 源码正是这些字符串要服务的用途。于是模板字面量的手感只会产出那六个字符，而不会得到一条诊断。执行插值的前缀是 f。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
 
-                <h2 id="layout">{locale.text("Layout strings", "版式字符串")}</h2>
-                <p>
+                <SectionHeading id="layout">{locale.text("Layout strings", "版式字符串")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A double quote followed immediately by a newline opens a layout string, and a quote back at the opening line's indentation closes it. The closing line's column is the structural margin: it is removed from every line, and indentation beyond it is preserved exactly. This is the block-of-text form, so there is no triple-quoted string to choose against.", "双引号后紧跟换行即开启一个版式字符串，回到起始行缩进处的引号将其闭合。闭合行所在的列就是结构边距：它从每一行中被移除，而超出它的缩进被原样保留。这就是成块文本的写法，因此不存在另一种三引号字符串可供选择。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={layoutCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("A double quote inside the body needs no escape, because the closing delimiter is identified by position rather than by the character alone.", "正文中的双引号无需转义，因为闭合定界符是由位置识别的，而不是仅由字符识别。")}
                     </li>
                     <li>
                         {locale.text("The prefixes apply here too: f interpolates across lines, and r keeps a Windows path readable.", "前缀在这里同样适用：f 可跨行插值，r 让 Windows 路径保持可读。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="patterns">{locale.text("Spreads and binding patterns", "展开与绑定模式")}</h2>
-                <p>
+                <SectionHeading id="patterns">{locale.text("Spreads and binding patterns", "展开与绑定模式")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A spread copies a record or a List into a new one, and a field written after a spread wins. The mirror operation is a binding pattern: it reads fields and positions back out, and it stands wherever a binding stands, including both slots of a loop.", "展开把一个记录或 List 复制进新的记录或 List，写在展开之后的字段胜出。与之互为镜像的是绑定模式：它把字段与位置读回来，并且可以出现在任何能出现绑定的位置，包括循环的两个槽位。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={patternsCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("A record pattern's rest binds a new record; a List pattern's rest binds a new List. Neither aliases the source.", "记录模式的剩余部分绑定一个新记录，List 模式的剩余部分绑定一个新 List，两者都不是源值的别名。")}
                     </li>
                     <li>
                         {locale.text("A named field may be renamed on the way out, which keeps a destructuring readable when the source field name is short.", "具名字段可以在读出时改名，这让源字段名较短时的解构仍然可读。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="contextual">{locale.text("Contextual names", "上下文名字")}</h2>
-                <p>
+                <SectionHeading id="contextual">{locale.text("Contextual names", "上下文名字")}</SectionHeading>
+                <Paragraph>
                     {locale.text("The words type, match, from, as, using, and test declare only in their own statement shape. Everywhere else they are ordinary names: a binding, a parameter, a loop slot, a named argument, a record field, a member, and a record shorthand. Every word an extension adds joins the same rule, which is why destructuring an event that carries a field named type needs no rename.", "type、match、from、as、using、test 这些词只在各自的语句形状中构成声明。在其他任何位置它们都是普通名字：绑定、参数、循环槽位、具名实参、记录字段、成员，以及记录简写。扩展加入的每个词都遵循同一条规则，因此解构一个带有 type 字段的事件不需要改名。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={contextualCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("enum is a real keyword and case is reserved by JavaScript, so neither can be a binding name. Both remain record fields, member names, and match branches.", "enum 是真正的关键字，case 被 JavaScript 保留，因此两者都不能作为绑定名。它们仍然可以是记录字段、成员名与 match 分支。")}
                     </li>
                     <li>
                         {locale.text("A declaration is recognized by its shape: match value: above a block declares, while match(value) calls a function named match.", "声明由形状识别：块之上的 match value: 是声明，而 match(value) 调用的是一个叫 match 的函数。")}
                     </li>
-                </ul>
+                </BulletList>
             </Prose>
             <DocsPager previous={guidePrevious("/guide/language/values")} next={guideNext("/guide/language/values")} />
         </DocsShell>

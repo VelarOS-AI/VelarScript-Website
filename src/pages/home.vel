@@ -55,7 +55,7 @@ const sampleGridLook = look:
     gap = clamp(28px, 4vw, 56px)
 
     if viewport.width <= 900px:
-        gridTemplateColumns = tracks(1fr)
+        gridTemplateColumns = tracks(minmax(0px, 1fr))
 
 const readingLook = look:
     display = "grid"
@@ -85,7 +85,7 @@ const cardsLook = look:
         gridTemplateColumns = repeat(2, minmax(0px, 1fr))
 
     if viewport.width <= 620px:
-        gridTemplateColumns = tracks(1fr)
+        gridTemplateColumns = tracks(minmax(0px, 1fr))
 
 const cardLook = look:
     display = "grid"
@@ -117,7 +117,7 @@ const diagnosticLook = look:
     marginTop = 34px
 
     if viewport.width <= 780px:
-        gridTemplateColumns = tracks(1fr)
+        gridTemplateColumns = tracks(minmax(0px, 1fr))
 
 const diagnosticLabelLook = look:
     margin = 0
@@ -136,7 +136,7 @@ const stepsLook = look:
     marginTop = 34px
 
     if viewport.width <= 860px:
-        gridTemplateColumns = tracks(1fr)
+        gridTemplateColumns = tracks(minmax(0px, 1fr))
 
 const stepTitleLook = look:
     margin = 0

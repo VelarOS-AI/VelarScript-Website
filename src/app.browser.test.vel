@@ -7,6 +7,16 @@ test "the home page renders its definition and its compiled sample":
     expect(await browser.text("[data-home-definition] h1")).toBe("VelarScript")
     await browser.waitFor("[data-home-sample] figure")
 
+test "the header brand draws the language mark in currentColor":
+    await browser.open("/")
+    await browser.waitFor(".brand .brand-mark")
+    expect(await browser.namespace(".brand .brand-mark")).toBe("http://www.w3.org/2000/svg")
+    expect(await browser.attribute(".brand .brand-mark", "viewBox")).toBe("85 113 346 290")
+    expect(await browser.attribute(".brand .brand-mark", "aria-hidden")).toBe("true")
+    expect(await browser.attribute(".brand .brand-mark g", "fill")).toBe("currentColor")
+    expect(await browser.count(".brand .brand-mark path")).toBe(3)
+    expect(await browser.count(".brand img")).toBe(0)
+
 test "the primary navigation reaches the guide as a route change":
     await browser.open("/")
     await browser.click(".primary-nav a:first-of-type")
@@ -29,11 +39,69 @@ test "the language switch flips the navigation and flips it back":
     await browser.click(".language-switch")
     await browser.waitForText(".primary-nav a:first-of-type", before)
 
+// The switch used to reach the page body and stop there. The sidebar labels and
+// the "On this page" label were chosen by a `const` in setup, so they held
+// whichever language the page first loaded in — an English reader got a Chinese
+// sidebar. The test above passed the whole time, because it only ever looked at
+// .primary-nav, so this one looks at the two surfaces that were wrong.
+test "the language switch reaches the sidebar and the section list too":
+    await browser.open("/guide/language/values")
+    await browser.waitFor(".velar-docs-sections")
+    const sidebarBefore = await browser.text(".desktop-docs-nav .nav-group:first-child .nav-label")
+    const sectionsBefore = await browser.text(".velar-docs-sections span")
+    const sidebarFlipped = sidebarBefore == "Start" ? "开始" : "Start"
+    const sectionsFlipped = sectionsBefore == "On this page" ? "本页内容" : "On this page"
+
+    await browser.click(".language-switch")
+    await browser.waitForText(".desktop-docs-nav .nav-group:first-child .nav-label", sidebarFlipped)
+    await browser.waitForText(".velar-docs-sections span", sectionsFlipped)
+
+    await browser.click(".language-switch")
+    await browser.waitForText(".desktop-docs-nav .nav-group:first-child .nav-label", sidebarBefore)
+    await browser.waitForText(".velar-docs-sections span", sectionsBefore)
+
 test "a language chapter carries its sections, its samples, and its pager":
     await browser.open("/guide/language/values")
     await browser.waitFor(".velar-docs-sections")
     expect(await browser.count(".velar-docs-prose pre") >= 3).toBeTruthy()
     await browser.waitFor(".velar-docs-pager")
+
+// D66 ruling 2: Prose owns the vertical rhythm, so every block a chapter lays
+// out has to come from the docs-kit vocabulary. A page that writes its own <p>,
+// <h2> or <ul look={...}> is back to spelling spacing forty times, and that is
+// what these two tests refuse. The class is the observable: the browser test
+// surface reads nodes rather than computed style, so the gap itself cannot be
+// asserted from here.
+test "every block a chapter lays out comes from the prose vocabulary":
+    for path in ["/guide", "/guide/quick-start", "/guide/for-javascript", "/guide/language/operators", "/guide/web/templates", "/reference/cli", "/guide/for-frameworks"]:
+        await browser.open(path)
+        await browser.waitFor(".velar-docs-prose")
+        expect(await browser.count(".velar-docs-prose > p:not(.velar-docs-paragraph)")).toBe(0)
+        expect(await browser.count(".velar-docs-prose > h2:not(.velar-docs-heading)")).toBe(0)
+        expect(await browser.count(".velar-docs-prose > h3:not(.velar-docs-subheading)")).toBe(0)
+        expect(await browser.count(".velar-docs-prose > ul:not(.velar-docs-points)")).toBe(0)
+        expect(await browser.count(".velar-docs-prose > .velar-docs-paragraph") >= 5).toBeTruthy()
+        expect(await browser.count(".velar-docs-prose > .velar-docs-heading") >= 4).toBeTruthy()
+
+test "a chapter's bullet points are the owned list, not a list the page invented":
+    await browser.open("/guide/language/values")
+    await browser.waitFor(".velar-docs-prose")
+    expect(await browser.count(".velar-docs-prose > .velar-docs-points")).toBe(5)
+    expect(await browser.count(".velar-docs-prose > ul:not(.velar-docs-points)")).toBe(0)
+
+// D66 ruling 5B: the built-in AI skill brief is half of "models write, people
+// own", and before this it appeared on the whole site twice, both times as a
+// bare line in a command list. A visitor could not tell it existed. The section
+// is the deliverable, so its absence has to fail rather than merely read worse.
+// The gate notes are counted with it because ruling 5's fifth step is evidence:
+// a section that quietly loses the note naming its gate is back to asserting
+// things nobody checks.
+test "the introduction gives the built-in skill brief a section of its own":
+    await browser.open("/guide")
+    await browser.waitFor(".velar-docs-prose")
+    expect(await browser.count("#skill")).toBe(1)
+    expect(await browser.count(".velar-docs-prose > .velar-docs-heading")).toBe(6)
+    expect(await browser.count(".velar-docs-prose > .velar-docs-gate-note")).toBe(3)
 
 test "the reference CLI page renders its command tables":
     await browser.open("/reference/cli")

@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -22,13 +22,6 @@ const sections = [
     {id: "composition", label: "Composition and identity", labelZh: "合成与身份"},
     {id: "reactive", label: "Reactive visuals live on the element", labelZh: "响应式视觉在元素上"},
 ]
-
-const pointsLook = look:
-    display = "grid"
-    gap = 7px
-    marginTop = 18px
-    marginBottom = 4px
-    paddingLeft = 22px
 
 const builderRows: List<MemberRow> = [
     {name: "color rgb rgba hsl", signature: "rgb(24, 31, 46)", summary: "The four colour constructors.", summaryZh: "四个颜色构造器。"},
@@ -57,22 +50,24 @@ export component WebLook:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="builders">{locale.text("Builders are ordinary values", "构建器是普通的值")}</h2>
-                <p>
+                <SectionHeading id="builders">{locale.text("Builders are ordinary values", "构建器是普通的值")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A look block is a checked literal. Every value inside it comes either from a unit literal or from a builder imported by name from velar/look, so the import list at the top of a file names the visual vocabulary that file uses. A builder is an ordinary value: it may be aliased, passed to another function, returned, and called outside a Look block, with the same checked signature.", "look 块是一个受检的字面量。其中的每个取值要么来自单位字面量，要么来自从 velar/look 按名导入的构建器，因此文件顶部的导入列表就写明了该文件使用的视觉词汇。构建器是普通的值：它可以被起别名、传给另一个函数、被返回，也可以在 Look 块之外调用，签名同样受检。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={builderRows}
                     caption={locale.text("The builders velar/look publishes", "velar/look 发布的构建器")}
                 />
                 <CodeBlock code={buildersCode} />
 
-                <h2 id="units">{locale.text("Unit literals and their arithmetic", "单位字面量与它们的算术")}</h2>
-                <p>
+                <SectionHeading id="units">
+                    {locale.text("Unit literals and their arithmetic", "单位字面量与它们的算术")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("Visual unit suffixes are language syntax and need no import. Seven of them are Length, one is Percentage, one is TrackFraction, two are Duration, and two are Angle. They are ordinary values, so they can be bound, exported, imported, and calculated outside any Look block.", "视觉单位后缀属于语言语法，无需导入。其中七个是 Length，一个是 Percentage，一个是 TrackFraction，两个是 Duration，两个是 Angle。它们是普通的值，因此可以在任何 Look 块之外被绑定、导出、导入与参与计算。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={unitsCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Addition and subtraction require compatible dimensions; Length mixed with Percentage produces LengthPercentage, and mixed units lower to a calc expression.", "加法与减法要求维度相容；Length 与 Percentage 混合得到 LengthPercentage，混合单位下降为 calc 表达式。")}
                     </li>
@@ -82,25 +77,25 @@ export component WebLook:
                     <li>
                         {locale.text("A viewport threshold must resolve at compile time to a local or imported const px, rem, or em token.", "viewport 阈值必须在编译期解析为本地或导入的 const px、rem 或 em 记号。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="properties">{locale.text("Closed property families", "封闭的属性家族")}</h2>
-                <p>
+                <SectionHeading id="properties">{locale.text("Closed property families", "封闭的属性家族")}</SectionHeading>
+                <Paragraph>
                     {locale.text("The published property table is grouped into fourteen families, and each property has a declared value kind. CSS keyword values are written as strings, because a bare identifier is a real VelarScript variable. The sample below takes one property from each family rather than the whole table.", "已发布的属性表分为十四个家族，每个属性都有声明好的取值种类。CSS 关键字取值写成字符串，因为裸标识符是真实的 VelarScript 变量。下面的样本从每个家族各取一个属性，而不是整张表。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={familiesCode} />
-                <p>
+                <Paragraph>
                     {locale.text("Because the table is closed, a misspelled property is a diagnostic with a suggestion rather than a declaration the browser silently discards, and a length written without a unit is refused at the value.", "由于这张表是封闭的，拼错的属性会得到一条带建议的诊断，而不是被浏览器静默丢弃的声明；缺少单位的长度会在取值处被拒绝。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={propertyErrorCode} />
                 <CodeBlock code={propertyErrorOutput} />
 
-                <h2 id="conditions">{locale.text("States, targets, and media", "状态、目标与媒体")}</h2>
-                <p>
+                <SectionHeading id="conditions">{locale.text("States, targets, and media", "状态、目标与媒体")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A Look condition covers nine element states, seven pseudo-element targets, and five media conditions. Conditions may appear inside a target and a target may appear inside a condition; a target may not appear inside another target. Media subjects compose with element states and with each other, and the negation of one scheme is the other.", "Look 条件覆盖九种元素状态、七个伪元素目标与五种媒体条件。条件可以出现在目标内部，目标也可以出现在条件内部；但目标不能出现在另一个目标内部。媒体主语可以与元素状态、以及彼此组合，并且对一种配色方案取否定就是另一种。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={conditionsCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("motion.reduced lowers to the reduced-motion preference, so a reduced-motion variant is expressible without leaving Look.", "motion.reduced 下降为降低动效偏好，因此降低动效的变体无需离开 Look 就能表达。")}
                     </li>
@@ -110,28 +105,30 @@ export component WebLook:
                     <li>
                         {locale.text("content is written as CSS text: a string value is emitted quoted, and only the bare keywords none and normal pass through unquoted.", "content 写作 CSS 文本：字符串取值带引号发出，只有裸关键字 none 与 normal 不带引号透传。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="composition">{locale.text("Composition and identity", "合成与身份")}</h2>
-                <p>
+                <SectionHeading id="composition">{locale.text("Composition and identity", "合成与身份")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A spread composes another Look once, at the outer level, and the declarations that follow it obey ordinary CSS cascade order. A Look is an ordinary value with reference identity, so comparing two Looks compares identity rather than declarations: two identical literals are not equal even though they compile to one shared rule. Choose between named Look values, or compare the inputs that produced them.", "展开在外层把另一个 Look 合成进来一次，其后的声明遵循普通的 CSS 层叠顺序。Look 是带引用身份的普通值，因此比较两个 Look 比较的是身份而不是声明：两个写法相同的字面量并不相等，尽管它们编译成同一条共享规则。要么在具名的 Look 值之间选择，要么比较产生它们的输入。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={compositionCode} />
 
-                <h2 id="reactive">{locale.text("Reactive visuals live on the element", "响应式视觉在元素上")}</h2>
-                <p>
+                <SectionHeading id="reactive">
+                    {locale.text("Reactive visuals live on the element", "响应式视觉在元素上")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("A look literal is built once, where it is written, and the compiler extracts it into the build's stylesheet. That is why it cannot read reactive state: the read would be a snapshot that never updates. A reactive visual belongs on the element, where look={...} chooses a whole Look and look:property={...} sets one property, and a null value removes the controlled property rather than emitting the text null.", "look 字面量在它被书写的位置构建一次，编译器把它提取进构建的样式表。这正是它不能读取响应式状态的原因：那样的读取会是一份永不更新的快照。响应式视觉属于元素：look={...} 选择一整个 Look，look:property={...} 设置单个属性，取值为 null 时移除被控制的属性，而不是发出文本 null。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={reactiveCode} />
-                <p>
+                <Paragraph>
                     {locale.text("Reading state inside a literal is refused at the read, and the diagnostic names both element spellings.", "在字面量内部读取 state 会在读取处被拒绝，诊断会同时指出两种元素上的拼写。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={snapshotErrorCode} />
                 <CodeBlock code={snapshotErrorOutput} />
                 <Callout title={locale.text("What the emitted CSS looks like", "发出的 CSS 是什么样子")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("Look emits readable tokens on a data attribute and readable custom properties rather than random generated class names, and an author's own stable class and data attributes remain public hooks. That is what lets an external stylesheet target the markup at all — the subject of the next-but-one chapter.", "Look 在一个 data 属性上发出可读的记号，并发出可读的自定义属性，而不是随机生成的类名；作者自己稳定的 class 与 data 属性仍然是公开的挂钩点。这正是外部样式表能够选中这些标记的原因——也是再往后一章的主题。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager previous={guidePrevious("/guide/web/look")} next={guideNext("/guide/web/look")} />

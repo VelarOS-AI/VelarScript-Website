@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -13,12 +13,6 @@ const narrowingCode = `type Contact:\n    email: string\n\ntype Owner:\n    prof
 const conversionCode = `enum Status:\n    pending\n    done\n\nconst text: string = "a"\nconst quantity: number = 1\nconst flag: bool = true\nconst nothing: null = null\nconst smallUnion: string | number = 1\n\nexport def textConversion(status: Status, maybe: string?) -> string:\n    const fromString = f"{text}"\n    const fromNumber = f"{quantity}"\n    const fromBool = f"{flag}"\n    const fromNull = f"{nothing}"\n    const fromEnum = f"{status}"\n    const fromOptional = f"{maybe}"\n    const fromUnion = f"{smallUnion}"\n    return fromString + fromNumber + fromBool + fromNull + fromEnum + fromOptional + fromUnion`
 const recordErrorCode = `type User:\n    id: string\n    name: string\n\nconst user: User = {id: "u-1", name: "Ada"}\nconst label = f"{user}"`
 const recordErrorOutput = `main.vel:6:18 error VEL4026: An f-string renders strings, numbers, bools, enums, null, and extension values with a declared text form; format User explicitly — print(value) to inspect it, or Json.stringify(value) for data text\nconst label = f"{user}"\n                 ^^^^`
-
-const pointsLook = look:
-    display = "grid"
-    gap = 8px
-    margin = 0
-    paddingInlineStart = 20px
 
 const sections = [
     {id: "annotations", label: "The annotation vocabulary", labelZh: "注解词汇表"},
@@ -45,77 +39,79 @@ export component LanguageTypes:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="annotations">{locale.text("The annotation vocabulary", "注解词汇表")}</h2>
-                <p>
+                <SectionHeading id="annotations">{locale.text("The annotation vocabulary", "注解词汇表")}</SectionHeading>
+                <Paragraph>
                     {locale.text("The written surface is a closed list: string, number, bool, null, List, Set, Map, Record, unknown, small unions, and function types. A function type always writes its result, including a null result, so a reader of the annotation alone knows whether a call answers anything.", "书面表面是一份封闭清单：string、number、bool、null、List、Set、Map、Record、unknown、小型联合，以及函数类型。函数类型总是写出结果，包括 null 结果，因此仅凭注解就能知道一次调用是否给出值。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={annotationsCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("An omittable parameter and a required parameter whose value may be null are two different contracts, and the annotation spells the difference.", "可省略参数与「必须传入但值可能为 null」的参数是两种不同的契约，注解把这个区别写了出来。")}
                     </li>
                     <li>
                         {locale.text("unknown is the ordinary spelling for unvalidated dynamic input. It must be validated before use, which is what separates it from the JavaScript boundary's any.", "unknown 是未经验证的动态输入的常规拼写。使用前必须验证，这正是它与 JavaScript 边界处的 any 的区别所在。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="shorthand">{locale.text("Promise and Function", "Promise 与 Function")}</h2>
-                <p>
+                <SectionHeading id="shorthand">
+                    {locale.text("Promise and Function", "Promise 与 Function")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("Two names have a shorthand table so a common annotation stays short. A bare Promise resolves to null, and Function takes its inputs first and its result last. An async declaration annotates the resolved value, never the Promise around it.", "有两个名字带有简写表，让常见注解保持简短。裸 Promise 解析为 null，Function 先写输入、最后写结果。async 声明注解的是解析后的值，而不是包在外面的 Promise。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={shorthandCode} />
 
-                <h2 id="readonly">{locale.text("Read-only views", "只读视图")}</h2>
-                <p>
+                <SectionHeading id="readonly">{locale.text("Read-only views", "只读视图")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A read-only type is a view over the same value: it promises that this reference will not write, not that the value is frozen. The view is transitive through reads, so a nested field reached through it is read-only too, while the same value reached through an owning type stays writable.", "只读类型是同一个值上的视图：它承诺这个引用不会写入，而不是承诺该值被冻结。视图在读取上是传递的，因此通过它取到的嵌套字段同样只读，而通过拥有型类型取到的同一个值仍然可写。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={readonlyCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("A read-only binding may be reassigned; what it refuses is a write through the reference.", "只读绑定本身可以被重新赋值；它拒绝的是通过该引用进行的写入。")}
                     </li>
                     <li>
                         {locale.text("A new collection returned by copy or slice owns its outer container, so the caller may mutate it.", "copy 或 slice 返回的新集合拥有自己的外层容器，因此调用方可以修改它。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="optionals">{locale.text("Optionals are unions", "可选值就是联合")}</h2>
-                <p>
+                <SectionHeading id="optionals">{locale.text("Optionals are unions", "可选值就是联合")}</SectionHeading>
+                <Paragraph>
                     {locale.text("An optional type is the union of a type with null. Absence is a value the type states, so it is not something a reader has to infer from context, and every continuation over an optional is written: an optional member, an optional index, an optional call.", "可选类型就是某个类型与 null 的联合。缺失是类型明说的一个值，读者不必从上下文里推测；对可选值的每一次延续都要写出来：可选成员、可选索引、可选调用。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={optionalsCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={presenceErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={presenceErrorOutput} />
 
-                <h2 id="narrowing">{locale.text("What establishes a fact", "什么建立事实")}</h2>
-                <p>
+                <SectionHeading id="narrowing">{locale.text("What establishes a fact", "什么建立事实")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Narrowing is bounded and it is worth knowing where the boundary is. A comparison, a membership probe, an assignment, a terminating guard, and an optional chain that produced a value all establish facts. A getter, an index read, and a Map read are computed values rather than stable locations, so each is read into a binding first; a fact also does not flow into a nested function body.", "收窄是有界的，值得知道界在哪里。比较、成员探测、赋值、以终止分支收尾的守卫，以及产出了值的可选链，都会建立事实。取值器、索引读取与 Map 读取都是计算出来的值而不是稳定位置，因此要先读入一个绑定；事实也不会流入嵌套函数体。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={narrowingCode} />
                 <Callout title={locale.text("Bounded on purpose", "刻意有界")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("There are no conditional, mapped, or programmable types. A type is read by looking at its declaration rather than by evaluating a second program, which is the property that keeps a type readable to someone who did not write it.", "没有条件类型、映射类型或可编程类型。读懂一个类型靠看它的声明，而不是靠再执行一段程序；正是这一点让类型对没写过它的人仍然可读。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
 
-                <h2 id="conversion">{locale.text("The text-conversion contract", "文本转换契约")}</h2>
-                <p>
+                <SectionHeading id="conversion">{locale.text("The text-conversion contract", "文本转换契约")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Text conversion accepts strings, numbers, bools, enums, null, and extension values with a declared text form. A record is not on that list, because there is no single rendering of a record that every caller would have wanted. Inspection is print, and data text is Json.stringify, which is resident and needs no import.", "文本转换接受字符串、数字、bool、枚举、null，以及带有已声明文本形式的扩展值。记录不在这份清单上，因为记录没有哪一种渲染是所有调用方都想要的。检查用 print，数据文本用 Json.stringify——它是常驻的，无需导入。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={conversionCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={recordErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={recordErrorOutput} />
             </Prose>
             <DocsPager previous={guidePrevious("/guide/language/types")} next={guideNext("/guide/language/types")} />

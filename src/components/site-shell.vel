@@ -89,13 +89,13 @@ const footerLook = look:
 
 const footerInnerLook = look:
     display = "grid"
-    gridTemplateColumns = tracks(1fr, "auto")
+    gridTemplateColumns = tracks(minmax(0px, 1fr), "auto")
     alignItems = "end"
     gap = 30px
     paddingBlock = 48px
 
     if viewport.width <= 640px:
-        gridTemplateColumns = tracks(1fr)
+        gridTemplateColumns = tracks(minmax(0px, 1fr))
 
 const footerFactsLook = look:
     display = "grid"
@@ -161,6 +161,8 @@ export component SiteFooter(repositoryUrl: string, version: string):
                         <Link to="/guide" look={footerLinkLook}>{locale.text("Guide", "指南")}</Link>
                         <Link to="/reference" look={footerLinkLook}>{locale.text("Reference", "参考")}</Link>
                         <Link to="/examples" look={footerLinkLook}>{locale.text("Examples", "示例")}</Link>
+                        <Link to="/evidence" look={footerLinkLook}>{locale.text("Evidence", "证据")}</Link>
+                        <Link to="/participate" look={footerLinkLook}>{locale.text("Participate", "参与")}</Link>
                     </span>
                 </div>
                 <p class="meta" look={footerMetaLook}>

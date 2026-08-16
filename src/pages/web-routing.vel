@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -20,13 +20,6 @@ const sections = [
     {id: "errors", label: "The application error chain", labelZh: "应用错误链"},
     {id: "config", label: "Validated public configuration", labelZh: "经过验证的公开配置"},
 ]
-
-const pointsLook = look:
-    display = "grid"
-    gap = 7px
-    marginTop = 18px
-    marginBottom = 4px
-    paddingLeft = 22px
 
 const lazyRows: List<MemberRow> = [
     {name: "lazy", signature: "lazy(loader, exportName, loading=null, failed=null)", summary: "Returns the exported component with its original prop contract, loaded from its own chunk.", summaryZh: "返回带原有 prop 契约的导出组件，从它自己的 chunk 中加载。"},
@@ -55,12 +48,12 @@ export component WebRouting:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="routes">{locale.text("Declaring routes", "声明路由")}</h2>
-                <p>
+                <SectionHeading id="routes">{locale.text("Declaring routes", "声明路由")}</SectionHeading>
+                <Paragraph>
                     {locale.text("route(path, component) declares one entry and Router renders the first matching component. A pattern is a pure pathname beginning with a slash; query text, hash text, backslashes, empty segments, and a redundant trailing slash are all rejected. It may contain :name parameters, or one whole terminal wildcard segment whose value is read as the wildcard parameter — so a named wildcard parameter cannot be combined with the wildcard segment.", "route(path, component) 声明一个条目，Router 渲染第一个匹配的组件。模式是以斜杠开头的纯路径名；查询文本、hash 文本、反斜杠、空段与多余的尾部斜杠都会被拒绝。它可以包含 :name 参数，或者一个整段的终端通配符，其取值以 wildcard 参数读取——因此具名的 wildcard 参数不能与通配符段并用。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={routesCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("When no route matches, an omitted fallback renders a small accessible not-found view instead of an empty router.", "当没有路由匹配时，省略 fallback 会渲染一个小而可访问的未找到视图，而不是一个空的 router。")}
                     </li>
@@ -70,14 +63,14 @@ export component WebRouting:
                     <li>
                         {locale.text("Invalid path parameters, repeated parameters, non-terminal wildcards, non-components, and wrong route props all fail checking before browser execution.", "无效的路径参数、重复的参数、非终端通配符、非组件，以及错误的路由 prop，都会在浏览器执行之前无法通过检查。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="context">{locale.text("What a route receives", "路由收到什么")}</h2>
-                <p>
+                <SectionHeading id="context">{locale.text("What a route receives", "路由收到什么")}</SectionHeading>
+                <Paragraph>
                     {locale.text("RouteContext is an importable named data type with an application-relative path, string params and query Maps, and the hash. A route component may require only its route prop, and currentRoute() answers the same typed snapshot to code that is not itself a route component.", "RouteContext 是可导入的具名数据类型，包含应用相对的 path、字符串 params 与 query 两个 Map，以及 hash。路由组件唯一可以要求的就是它的 route prop；currentRoute() 为本身不是路由组件的代码返回同样的带类型快照。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={contextCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Browser path, query, and hash values must already be strings; routing never calls conversion hooks on malformed host values.", "浏览器提供的 path、query 与 hash 取值必须本来就是字符串；路由不会对畸形的宿主取值调用转换钩子。")}
                     </li>
@@ -87,19 +80,19 @@ export component WebRouting:
                     <li>
                         {locale.text("domId(prefix) answers an application-local unique DOM id for accessible label and description relationships, without requiring a cryptographic identifier.", "domId(prefix) 返回一个应用内唯一的 DOM id，用于可访问的标签与描述关系，而不需要密码学标识符。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="lazy">{locale.text("Splitting a route", "拆分一条路由")}</h2>
-                <p>
+                <SectionHeading id="lazy">{locale.text("Splitting a route", "拆分一条路由")}</SectionHeading>
+                <Paragraph>
                     {locale.text("lazy puts one route in its own chunk while keeping the target inside the checked module graph, because the loader is an ordinary checked dynamic import rather than a string the bundler interprets. It owns one cached successful load, retries after a failed one, mounts only the active child, and destroys loading or resolved children when the route leaves.", "lazy 把一条路由放进它自己的 chunk，同时让目标留在受检模块图中——因为加载器是一个普通的受检动态导入，而不是打包器去解释的字符串。它拥有一次被缓存的成功加载，失败后会重试，只挂载处于活动状态的子项，并在路由离开时销毁加载中或已解析的子项。")}
-                </p>
+                </Paragraph>
                 <MemberTable rows={lazyRows} caption={locale.text("What lazy takes", "lazy 接受什么")} />
-                <p>
+                <Paragraph>
                     {locale.text("The two blocks below are two modules of one project. The neighbour module, chunk.vel, exports the page; the entry declares the lazy route against it. Both compile together in the site's gate.", "下面两个代码块是同一个项目里的两个模块。邻居模块 chunk.vel 导出页面组件；入口模块对它声明惰性路由。两者在本站门禁中一起编译。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={lazyRouteChunkCode} />
                 <CodeBlock code={lazyRouteCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Failures report through velar/app with the resource phase and render either the supplied failure component or an accessible default alert.", "失败经由 velar/app 在 resource 阶段上报，并渲染所提供的失败组件，或一个可访问的默认警告。")}
                     </li>
@@ -109,14 +102,14 @@ export component WebRouting:
                     <li>
                         {locale.text("A failing custom failure component is itself reported and replaced by a built-in accessible alert rather than becoming an unhandled rejection.", "自定义失败组件自身失败时会被上报，并由内置的可访问警告替代，而不是变成未处理的拒绝。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="navigation">{locale.text("Navigation and links", "导航与链接")}</h2>
-                <p>
+                <SectionHeading id="navigation">{locale.text("Navigation and links", "导航与链接")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Link and NavLink preserve native anchor behaviour and intercept only an unmodified primary click on an internal application path. NavLink additionally owns the current-page marker while its target is active, which is the attribute the current Look hook reads. navigate, redirect, back, forward, and reload are the intentional history operations.", "Link 与 NavLink 保留原生锚点行为，只拦截对内部应用路径的、未加修饰键的主键点击。NavLink 还在其目标处于活动状态时拥有当前页标记，这正是 current 这个 Look 钩子读取的属性。navigate、redirect、back、forward 与 reload 是有意为之的历史操作。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={navigationCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Navigation options are a data-only record with boolean replace and scroll fields, fully validated before history or scrolling changes.", "导航选项是一个只含数据的记录，带布尔的 replace 与 scroll 字段，在历史或滚动改变之前被完整验证。")}
                     </li>
@@ -126,20 +119,20 @@ export component WebRouting:
                     <li>
                         {locale.text("announce writes to a compiler-owned live region with a polite or assertive priority, which is how a single-page navigation stays audible.", "announce 以 polite 或 assertive 优先级写入由编译器拥有的 live region，这就是单页导航保持可被朗读的方式。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="head">{locale.text("Document metadata", "文档元数据")}</h2>
-                <p>
+                <SectionHeading id="head">{locale.text("Document metadata", "文档元数据")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Head owns the title, description, canonical link, robots directive, social image, theme colour, and document language for its component's lifetime, and restores the previous values on cleanup. Only the title is required, so a route sets what it knows and leaves the rest alone.", "Head 在其组件的生命周期内拥有 title、description、canonical 链接、robots 指令、社交图片、主题色与文档语言，并在清理时恢复之前的取值。只有 title 是必需的，因此路由设置它知道的部分，其余保持不动。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={headCode} />
 
-                <h2 id="errors">{locale.text("The application error chain", "应用错误链")}</h2>
-                <p>
+                <SectionHeading id="errors">{locale.text("The application error chain", "应用错误链")}</SectionHeading>
+                <Paragraph>
                     {locale.text("onError observes application failures and returns an explicit cleanup function; reportError submits an application error without throwing it again. Reports carry the error, the phase, a detail, the component, and a timestamp, and foreign JavaScript values are normalized to an Error before they arrive.", "onError 观察应用失败并返回一个显式的清理函数；reportError 提交一个应用错误而不再次抛出它。报告携带 error、phase、detail、component 与时间戳；外来的 JavaScript 取值在抵达之前会被规范化为 Error。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={errorsCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("The compiler reports failures from the initial mount, reactive render and synchronous watch blocks, events, @mounted, and @cleanup through this one chain.", "编译器把首次 mount、响应式渲染与同步 watch 块、事件、@mounted 与 @cleanup 的失败，全部经由这一条链上报。")}
                     </li>
@@ -149,18 +142,20 @@ export component WebRouting:
                     <li>
                         {locale.text("An automatic failure with no installed handler is surfaced through the host runtime rather than silently discarded, so handlers own their lifetime and are removed during cleanup.", "没有安装处理器的自动失败会经由宿主运行时浮现，而不是被静默丢弃；因此处理器拥有自己的生命周期，并在清理时被移除。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="config">{locale.text("Validated public configuration", "经过验证的公开配置")}</h2>
-                <p>
+                <SectionHeading id="config">
+                    {locale.text("Validated public configuration", "经过验证的公开配置")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("publicConfig(Type) validates the manifest's public configuration block through the same type declaration used everywhere else and returns the named type, so a missing or mistyped key fails once at startup rather than somewhere in the page. has and keys answer the same block untyped for optional capability discovery.", "publicConfig(Type) 用与别处相同的类型声明验证清单的公开配置块，并返回该具名类型，因此缺失或写错的键在启动时一次性失败，而不是在页面某处失败。has 与 keys 以不带类型的方式回答同一个块，用于可选的能力发现。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={configJsonCode} />
                 <CodeBlock code={configCode} />
                 <Callout title={locale.text("This boundary is public values only", "这条边界只承载公开取值")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("Only the manifest's public configuration block is read. It must be a JSON object, is size limited, rejects non-JSON values and the reserved keys, and is recursively frozen. Public configuration is baked into the content-hashed application entry at build time, and the language never implicitly reads environment files, process environment, server configuration, or secrets.", "只有清单的公开配置块会被读取。它必须是 JSON 对象、有大小上限、拒绝非 JSON 取值与保留键，并被递归冻结。公开配置在构建期被烘焙进内容哈希的应用入口；语言从不隐式读取环境文件、进程环境、服务器配置或密钥。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager previous={guidePrevious("/guide/web/routing")} next={guideNext("/guide/web/routing")} />

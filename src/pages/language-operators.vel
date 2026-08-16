@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -12,12 +12,6 @@ const arithmeticCode = `const price = 12.5\nconst quantity = 4\nconst enabled = 
 const incrementErrorCode = "let count = 0\ncount++"
 const incrementErrorOutput = "main.vel:2:6 error VEL2031: VelarScript has no '++'; write 'count += 1'\ncount++\n     ^^"
 const postfixCode = `type Address:\n    city: string\n\ntype Details:\n    address: Address?\n\ntype Account:\n    profile: Details?\n\nasync def load() -> number:\n    return 1\n\n// Level 11 — await and try, both prefix.\nexport async def prefixLevel() -> number:\n    const awaited = await load()\n    const attempted = try await load()\n    return awaited + (attempted ?? 0)\n\n// Level 12 — call, member, optional member, and index: the tightest level.\nconst account: Account? = null\nconst optionalValues: List<number>? = null\nconst callback: ((number) -> number)? = null\n\nconst city = account?.profile?.address?.city\nconst firstValue = optionalValues?.[0]\nconst result = callback?.(1)\n\nconst title = "advertisement"\nconst member = title.size\nconst flags: List<bool> = [true, false]\nconst index = flags[0]`
-
-const pointsLook = look:
-    display = "grid"
-    gap = 8px
-    margin = 0
-    paddingInlineStart = 20px
 
 const sections = [
     {id: "levels", label: "Twelve levels", labelZh: "十二个层次"},
@@ -44,43 +38,47 @@ export component LanguageOperators:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="levels">{locale.text("Twelve levels", "十二个层次")}</h2>
-                <p>
+                <SectionHeading id="levels">{locale.text("Twelve levels", "十二个层次")}</SectionHeading>
+                <Paragraph>
                     {locale.text("The precedence table has twelve levels and runs from the arrow at level one to call, member, and index access at level twelve. An arrow body extends as far to the right as it can, which is why an arrow used as an operand needs parentheses; the conditional expression at level two nests to the right and needs parentheses for the same reason.", "优先级表共十二层，从第一层的箭头一路排到第十二层的调用、成员与索引访问。箭头体会尽可能向右延伸，因此把箭头当作操作数使用时需要括号；第二层的条件表达式向右嵌套，出于同样的理由也需要括号。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={arrowsCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("After an arrow a brace opens a record, so a factory that answers an empty record is written directly.", "箭头之后的花括号打开的是记录而不是块，因此返回空记录的工厂函数可以直接写出来。")}
                     </li>
                     <li>
                         {locale.text("A callback that needs two statements becomes a named def rather than a braced arrow body.", "需要两条语句的回调改写成具名 def，而不是带花括号的箭头体。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="fallback">{locale.text("The fallback and the boolean pair", "回退与布尔对")}</h2>
-                <p>
+                <SectionHeading id="fallback">
+                    {locale.text("The fallback and the boolean pair", "回退与布尔对")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("The fallback operator at level three answers its left value unless that value is null, and it never shares an unparenthesized chain with and or or. Levels four and five carry or and and, both short-circuiting, and the right side of a chain receives the facts the reaching path established. An absent bool? behaves as false.", "第三层的回退运算符在左值不为 null 时返回左值，并且绝不与 and 或 or 共享一条未加括号的链。第四层与第五层承载 or 与 and，两者都短路，链的右侧会收到到达该处的路径已确立的事实。缺失的 bool? 表现为 false。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={fallbackCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={mixedErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={mixedErrorOutput} />
-                <p>
+                <Paragraph>
                     {locale.text("The two diagnostics are one story read twice. The compiler grouped the expression the way the precedence table requires, so the left operand of the fallback became a plain bool, and the second diagnostic names the choice the author has to make in writing.", "这两条诊断是同一件事被读了两遍。编译器按优先级表要求的方式分了组，于是回退的左操作数成了一个普通 bool；第二条诊断则点名作者必须在书面上做出的那个选择。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="comparison">{locale.text("Comparison, chains, and membership", "比较、链与成员判断")}</h2>
-                <p>
+                <SectionHeading id="comparison">
+                    {locale.text("Comparison, chains, and membership", "比较、链与成员判断")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("Level six carries equality, the ordered comparisons, is, and in. Equality requires the operand types to intersect, so a comparison that could never be true is a diagnostic rather than a silent false; equality on a collection is identity, and content comparison is written with equals. An ordered chain evaluates each operand once and must point one direction; is and in are not chain links and need parentheses inside another comparison.", "第六层承载相等、有序比较、is 与 in。相等要求两侧类型有交集，因此一次永远不可能为真的比较会得到诊断，而不是静默的 false；集合上的相等是身份相等，内容比较写作 equals。有序链对每个操作数只求值一次，且必须指向同一方向；is 与 in 不是链的一环，出现在另一个比较内部时需要括号。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={comparisonCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Because null inhabits every optional, comparing against null is the language's only presence test.", "由于 null 存在于每个可选类型之中，与 null 比较就是这门语言唯一的存在性检查。")}
                     </li>
@@ -90,47 +88,49 @@ export component LanguageOperators:
                     <li>
                         {locale.text("Membership on text is the same operator as membership on a Set or a List.", "文本上的成员判断与 Set 或 List 上的成员判断是同一个运算符。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="arithmetic">{locale.text("Arithmetic and the unary layer", "算术与一元层")}</h2>
-                <p>
+                <SectionHeading id="arithmetic">
+                    {locale.text("Arithmetic and the unary layer", "算术与一元层")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("Levels seven through ten are the numeric layer. The remainder keeps JavaScript's sign, unary minus is looser than the power operator, and member access is tighter than unary minus. Each of those three facts decides a real expression, so the sample writes both groupings side by side rather than describing them.", "第七到第十层是数值层。取余保留 JavaScript 的符号，一元负号比幂运算符更松，而成员访问比一元负号更紧。这三条事实各自决定着真实表达式的含义，因此样本把两种分组并排写出，而不是用文字描述它们。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={arithmeticCode} />
-                <p>
+                <Paragraph>
                     {locale.text("A double slash is a comment in every position, which is why floor division is a member on the number rather than an operator. That is the one removal in this layer with no diagnostic behind it: the rest of the line disappears into the comment, and the binding takes the left operand.", "双斜杠在任何位置都是注释，因此向下取整的除法是数字上的一个成员，而不是运算符。这是本层唯一一处没有诊断兜底的移除：行的其余部分被注释吞掉，绑定拿到的是左操作数。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="postfix">{locale.text("Prefix and postfix", "前缀与后缀")}</h2>
-                <p>
+                <SectionHeading id="postfix">{locale.text("Prefix and postfix", "前缀与后缀")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Level eleven holds await and try, both prefix. try reaches exactly as far as await does, over the whole postfix chain, so a failure anywhere along the chain produces one null. Level twelve is the tightest: call, member, optional member, optional call, and index.", "第十一层是 await 与 try，两者都是前缀。try 的作用范围与 await 完全相同——覆盖整条后缀链——因此链上任何位置的失败都只产生一个 null。第十二层最紧：调用、成员、可选成员、可选调用与索引。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={postfixCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Each optional link in a chain is written, so a reader can see where absence is expected instead of inferring it.", "链上的每一处可选环节都要写出来，读者因此可以直接看到哪里预期会缺失，而不必推测。")}
                     </li>
                     <li>
                         {locale.text("An index on a List throws when the position is out of range; get answers null when absence is the expected answer.", "List 上的索引在位置越界时抛出；当缺失本身就是预期答案时，改用 get 得到 null。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="removed">{locale.text("What was removed", "被移除的部分")}</h2>
-                <p>
+                <SectionHeading id="removed">{locale.text("What was removed", "被移除的部分")}</SectionHeading>
+                <Paragraph>
                     {locale.text("There is no loose equality, no implicit numeric or string coercion, no truthiness, no bitwise layer, and no increment or decrement. Each removal turns a silent conversion into either a diagnostic or a spelling that names what it does.", "没有宽松相等，没有隐式的数字或字符串转换，没有 truthiness，没有位运算层，也没有自增与自减。每一项移除都把一次静默转换变成一条诊断，或是一种自己说明了做什么的拼写。")}
-                </p>
-                <p>
+                </Paragraph>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={incrementErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={incrementErrorOutput} />
                 <Callout title={locale.text("The removals that carry a spelling", "带有替代拼写的移除")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("Three symbol pairs became words: and, or, and not. Strict equality lost its extra sign because there is only one equality left to name. The bitwise operators are absent, and so are the compound assignments built on them; arithmetic compound assignment stays.", "三对符号变成了词：and、or、not。严格相等失去了多余的那个符号，因为剩下的相等只有一种，不需要区分。位运算符不存在，建立在其上的复合赋值同样不存在；算术复合赋值保留。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager

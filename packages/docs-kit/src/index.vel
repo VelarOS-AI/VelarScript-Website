@@ -24,6 +24,12 @@ export type MemberRow:
     summary: string
     summaryZh: string
 
+// A code block's longest line does not wrap, which makes it the one thing on
+// the site that can push a grid track wider than the viewport. That is why
+// every single-column track here and on the pages is spelled
+// tracks(minmax(0px, 1fr)) rather than tracks(1fr): a bare 1fr floors the track
+// at its content's minimum width, and when the content is code that minimum is
+// a whole line of it.
 const codeBlockLook = look:
     overflow = "auto"
     maxWidth = 100%
@@ -46,7 +52,7 @@ const docsLook = look:
     minHeight = 100vh - 66px
 
     if viewport.width <= 840px:
-        gridTemplateColumns = tracks(1fr)
+        gridTemplateColumns = tracks(minmax(0px, 1fr))
 
 const asideLook = look:
     position = "sticky"
@@ -137,32 +143,30 @@ const contentLook = look:
     minWidth = 0
     paddingBlock = clamp(48px, 8vw, 96px)
 
+// Each label is chosen where it is rendered, not prepared in setup. A `const`
+// that calls locale.text() reads the language once, at construction, and then
+// holds that answer forever — the sidebar stayed in whichever language the page
+// first loaded in while the body of the page switched around it. Reading inside
+// the JSX puts the read in the render observer, which is what makes the switch
+// reach it.
 component DocsNavigation(items: List<DocsNavGroup>, label: string, mobile: bool = false):
+    const locale = useLocale()
     return <nav class="nav" look={mobile ? mobileNavListLook : navLook} aria-label={label}>
-        {items.map(group => <section key={group.label} class="nav-group" look={navGroupLook}><span class="nav-label" look={navLabelLook}>{group.label}</span><div class="nav-items" look={navItemsLook}>{group.items.map(item => <span key={item.path} class="nav-item" look={navItemLook}><NavLink to={item.path} exact={true} look={navLinkLook}>{item.label}</NavLink></span>)}</div></section>)}
+        {items.map(group => <section key={group.label} class="nav-group" look={navGroupLook}><span class="nav-label" look={navLabelLook}>{locale.text(group.label, group.labelZh)}</span><div class="nav-items" look={navItemsLook}>{group.items.map(item => <span key={item.path} class="nav-item" look={navItemLook}><NavLink to={item.path} exact={true} look={navLinkLook}>{locale.text(item.label, item.labelZh)}</NavLink></span>)}</div></section>)}
     </nav>
 
 export component DocsShell(items: List<DocsNavGroup>, children: WebNode):
     const locale = useLocale()
-    const localized = items.map(group => {
-        label: locale.text(group.label, group.labelZh),
-        labelZh: group.labelZh,
-        items: group.items.map(item => {
-            path: item.path,
-            label: locale.text(item.label, item.labelZh),
-            labelZh: item.labelZh,
-        }),
-    })
     return <div class="docs" look={docsLook}>
         <aside look={asideLook}>
             <div look={asideBrandLook}><Brand compact={true} /></div>
-            <div look={desktopNavLook}>
-                <DocsNavigation items={localized} label={locale.text("Documentation sections", "文档章节")} />
+            <div class="desktop-docs-nav" look={desktopNavLook}>
+                <DocsNavigation items={items} label={locale.text("Documentation sections", "文档章节")} />
             </div>
             <details class="mobile-docs-nav" look={mobileNavLook}>
                 <summary look={mobileSummaryLook}>{locale.text("Browse documentation", "浏览文档目录")}</summary>
                 <DocsNavigation
-                    items={localized}
+                    items={items}
                     label={locale.text("Mobile documentation sections", "移动端文档章节")}
                     mobile={true}
                 />
@@ -199,7 +203,14 @@ export component PageHeader(kicker: string, title: string, summary: string, tags
         {tags.size > 0 ? <Inline>{tags.map(tag => <Tag key={tag} label={tag} />)}</Inline> : null}
     </header>
 
+// Prose owns the vertical rhythm of a documentation page, and owns it alone.
+// Every block below declares margin = 0, so this one gap decides how far apart
+// any two blocks sit. Changing the rhythm of the whole site is changing this
+// number, not forty hand-written margins spread across the pages.
 const proseLook = look:
+    display = "grid"
+    gridTemplateColumns = tracks(minmax(0px, 1fr))
+    gap = 22px
     paddingBlock = 42px
     color = inkSoft
     fontSize = 1.02rem
@@ -211,6 +222,61 @@ const proseLook = look:
 
 export component Prose(children: WebNode):
     return <article class="velar-docs-prose" look={proseLook}>{children}</article>
+
+// Each block carries a class so that a browser test can ask the running page
+// whether anything inside Prose was hand-written instead of taken from here.
+// The browser test surface reads nodes, not computed style, so the class is how
+// the rhythm's owner is made visible to the gate.
+const paragraphLook = look:
+    margin = 0
+
+export component Paragraph(children: WebNode):
+    return <p class="velar-docs-paragraph" look={paragraphLook}>{children}</p>
+
+// The one exception to the uniform gap. A heading belongs to the section it
+// opens, so the space above it has to be larger than the space below it;
+// with a single gap the two would be equal and the heading would read as if it
+// belonged to the paragraph before it. The extra breath is declared here, on
+// the block that needs it, and nowhere else.
+const sectionHeadingLook = look:
+    margin = 0
+    marginTop = 20px
+
+export component SectionHeading(id: string, children: WebNode):
+    return <h2 class="velar-docs-heading" look={sectionHeadingLook} id={id}>{children}</h2>
+
+const subheadingLook = look:
+    margin = 0
+    marginTop = 10px
+
+export component Subheading(children: WebNode):
+    return <h3 class="velar-docs-subheading" look={subheadingLook}>{children}</h3>
+
+const bulletListLook = look:
+    display = "grid"
+    gap = 8px
+    margin = 0
+    paddingInlineStart = 20px
+
+export component BulletList(children: WebNode):
+    return <ul class="velar-docs-points" look={bulletListLook}>{children}</ul>
+
+// A gate note names the gate that keeps the block above it true, or says plainly
+// that the block is a quoted excerpt with no gate behind it. It is a component
+// because the alternative — a page handing its own look to Paragraph — is how a
+// page reintroduces a spacing of its own, which is the defect this vocabulary
+// exists to remove. It declares no margin: the rhythm stays Prose's. It keeps
+// the paragraph class alongside its own, so the gate still sees an owned block.
+const gateNoteLook = look:
+    margin = 0
+    padding = spacing(10px, 12px)
+    borderLeft = border(2px, rule)
+    color = inkFaint
+    fontSize = 0.84rem
+    lineHeight = 1.6
+
+export component GateNote(children: WebNode):
+    return <p class="velar-docs-paragraph velar-docs-gate-note" look={gateNoteLook}>{children}</p>
 
 const calloutLook = look:
     padding = spacing(18px, 20px)
@@ -260,9 +326,8 @@ const sectionListLinkLook = look:
 
 export component SectionList(items: List<DocsSection>):
     const locale = useLocale()
-    const label = locale.text("On this page", "本页内容")
-    return <nav class="velar-docs-sections" look={sectionListLook} aria-label={label}>
-        <span look={sectionListLabelLook}>{label}</span>
+    return <nav class="velar-docs-sections" look={sectionListLook} aria-label={locale.text("On this page", "本页内容")}>
+        <span look={sectionListLabelLook}>{locale.text("On this page", "本页内容")}</span>
         <ul look={sectionListItemsLook}>
             {items.map(item => <li key={item.id}><a look={sectionListLinkLook} href={f"#{item.id}"}>{locale.text(item.label, item.labelZh)}</a></li>)}
         </ul>
@@ -277,7 +342,7 @@ const pagerLook = look:
     borderTop = border(1px, rule)
 
     if viewport.width <= 620px:
-        gridTemplateColumns = tracks(1fr)
+        gridTemplateColumns = tracks(minmax(0px, 1fr))
 
 def pagerLinkLook(forward: bool) -> Look:
     return look:
@@ -318,7 +383,7 @@ export component DocsPager(previous: DocsNavItem? = null, next: DocsNavItem? = n
 const memberTableWrapLook = look:
     overflow = "auto"
     maxWidth = 100%
-    marginBlock = 20px
+    margin = 0
     border = border(1px, rule)
     borderRadius = 10px
 

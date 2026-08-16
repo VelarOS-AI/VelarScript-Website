@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -13,12 +13,6 @@ const matchTypesCode = `type User:\n    name: string\n    active: bool\n\ntype F
 const matchShapesCode = `type User:\n    name: string\n    active: bool\n\ntype SuccessResponse:\n    kind: string\n    users: List<User>\n    requestId: string\n\ntype FailureResponse:\n    kind: string\n    message: string\n\ntype Response = SuccessResponse | FailureResponse\n\nexport def matchRecords(response: Response) -> string:\n    match response:\n        case {kind: "success", users: [first, ...rest], requestId} as whole:\n            return f"{first.name} {rest.size} {whole.kind} {requestId}"\n        case {kind: "failure", message}:\n            return message\n        case _:\n            return "Unsupported response"\n\nexport def matchLists(values: List<number>) -> string:\n    match values:\n        case []:\n            return "empty"\n        case [only]:\n            return f"one: {only}"\n        case [first, second]:\n            return f"two: {first} {second}"\n        case [first, ...rest]:\n            return f"many: {first} + {rest.size}"\n\n// A record pattern may capture the remaining fields.\nexport def matchRest(response: SuccessResponse) -> number:\n    match response:\n        case {kind, ...rest}:\n            return kind.size + rest.users.size\n\nexport def matchNestedPatterns(rows: List<SuccessResponse>) -> string:\n    match rows:\n        case [{kind: "success", users: [first]}]:\n            return first.name\n        case _:\n            return "no match"`
 const loopsCode = `type User:\n    name: string\n    active: bool\n\nconst users: List<User> = [{name: "Ada", active: true}]\nconst usersById: Map<string, User> = Map([["u-1", {name: "Ada", active: true}]])\n\nexport def loopForms() -> string:\n    let joined = ""\n\n    for user in users:\n        joined += user.name\n\n    for user, index in users:\n        joined += f"{index}: {user.name}"\n\n    // Both slots accept the complete binding-pattern grammar.\n    for id, {name} in usersById:\n        joined += f"{id}: {name}"\n\n    // Brackets mean destructuring one item, not a two-slot loop.\n    for [left, right] in [[1, 2], [3, 4]]:\n        joined += f"{left}{right}"\n\n    let attempts = 0\n    while attempts < 3:\n        attempts += 1\n\n    return joined + str(attempts)\n\n// break and continue are available only inside loops.\nexport def breakAndContinue(values: List<number>) -> number:\n    let total = 0\n    for value in values:\n        if value < 0:\n            continue\n        if value > 100:\n            break\n        total += value\n    return total\n\n// A while body receives the successful condition's facts on every iteration.\nexport def whileFacts(pending: List<number>) -> number:\n    let total = 0\n    while pending.size > 0:\n        total += pending.pop(0)\n    return total`
 const pullCode = `// async for consumes one explicit pull contract: source.next() must have the\n// checked type of a function answering a promise of an optional.\nclass ChunkSource:\n    let remaining: List<string> = ["a", "b"]\n\n    async def next() -> string?:\n        if self.remaining.size == 0:\n            return null\n        return self.remaining.pop(0)\n\nexport async def asyncLoop(reply: ChunkSource) -> string:\n    let joined = ""\n    async for chunk in reply:\n        joined += chunk\n    return joined\n\nexport async def asyncLoopWithIndex(reply: ChunkSource) -> string:\n    let joined = ""\n    async for chunk, index in reply:\n        joined += f"{index}: {chunk}"\n    return joined\n\n// A while true pull loop, for a source whose exhaustion is genuinely reported\n// as an absent value.\nexport def pullLoop(chunks: List<string>) -> string:\n    let assembled = ""\n    let cursor = 0\n    while true:\n        const chunk = chunks.get(cursor)\n        if chunk == null:\n            break\n        assembled += chunk\n        cursor += 1\n    return assembled`
-
-const pointsLook = look:
-    display = "grid"
-    gap = 8px
-    margin = 0
-    paddingInlineStart = 20px
 
 const sections = [
     {id: "conditions", label: "A condition judges truth", labelZh: "条件只判断真假"},
@@ -45,72 +39,74 @@ export component LanguageControlFlow:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="conditions">{locale.text("A condition judges truth", "条件只判断真假")}</h2>
-                <p>
+                <SectionHeading id="conditions">{locale.text("A condition judges truth", "条件只判断真假")}</SectionHeading>
+                <Paragraph>
                     {locale.text("bool and bool? are the only types a condition accepts, and an absent bool? is false. The three questions JavaScript folds into one stay three: truth is the condition itself, presence is a comparison against null, and emptiness is a size comparison. Each is a different question, and a reader of the line can tell which one is being asked.", "条件只接受 bool 与 bool?，缺失的 bool? 视为 false。JavaScript 折叠成一个的三个问题在这里仍然是三个：真假就是条件本身，存在性是与 null 的比较，空则是长度比较。三者是不同的问题，读到这一行的人能分辨此刻问的是哪一个。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={conditionsCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={elifErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={elifErrorOutput} />
 
-                <h2 id="match-values">{locale.text("Match over values", "对值的 match")}</h2>
-                <p>
+                <SectionHeading id="match-values">{locale.text("Match over values", "对值的 match")}</SectionHeading>
+                <Paragraph>
                     {locale.text("match dispatches on values. Over an enum or a closed union it is exhaustive, so adding a member reports at every match that does not handle it — which is the property that makes an enum worth declaring rather than a set of strings. Several patterns may share one arm, and a dotted path is a value pattern at any depth.", "match 对值进行分派。对枚举或封闭联合，它是穷尽的：新增一个成员会在每一处没有处理它的 match 上报告——正是这一点让枚举值得声明，而不是退化成一组字符串。多个模式可以共享一条分支，带点的路径在任何深度上都是值模式。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={matchValuesCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={switchErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={switchErrorOutput} />
-                <p>
+                <Paragraph>
                     {locale.text("There is no fall-through to reason about and no break to forget, because an arm ends where the next case begins. The only fallback is a wildcard arm, written where a reader looks for it.", "这里没有需要推敲的贯穿行为，也没有会忘记写的 break，因为一条分支在下一个 case 开始处结束。唯一的兜底是通配分支，写在读者会去找它的位置。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="match-types">{locale.text("Match over types", "对类型的 match")}</h2>
-                <p>
+                <SectionHeading id="match-types">{locale.text("Match over types", "对类型的 match")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A type pattern narrows the subject on its arm, with or without an alias, and a guard adds a further condition to the same arm. Because the subject is narrowed rather than re-checked inside the body, the arm reads as the case it handles.", "类型模式在自己的分支上收窄主体，写不写别名都可以；守卫为同一条分支再加一个条件。由于主体是被收窄的，而不是在分支体内重新检查，这条分支读起来就是它所处理的那种情形。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={matchTypesCode} />
 
-                <h2 id="match-shapes">{locale.text("Record and List patterns", "记录与 List 模式")}</h2>
-                <p>
+                <SectionHeading id="match-shapes">
+                    {locale.text("Record and List patterns", "记录与 List 模式")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("A record pattern matches fields and binds them at once, and it may capture the remaining fields. A List pattern matches by arity and may end with a rest binding. Patterns nest, so one arm can state the whole shape a branch expects rather than reaching into it step by step.", "记录模式匹配字段并同时绑定它们，也可以捕获剩余字段。List 模式按元素个数匹配，并可以以剩余绑定收尾。模式可以嵌套，因此一条分支可以直接写出它所期待的整个形状，而不必一步步往里取。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={matchShapesCode} />
 
-                <h2 id="loops">{locale.text("The loop forms", "循环形式")}</h2>
-                <p>
+                <SectionHeading id="loops">{locale.text("The loop forms", "循环形式")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A one-slot for, a two-slot for, a for over a range, while, and async for are the five. Both slots of a for accept the complete binding-pattern grammar, and brackets in the first slot mean destructuring one item rather than a two-slot loop. break and continue exist only inside a loop.", "单槽位 for、双槽位 for、对 range 的 for、while，以及 async for，构成五种形式。for 的两个槽位都接受完整的绑定模式语法；第一个槽位中的方括号表示解构单个元素，而不是双槽位循环。break 与 continue 只在循环内部存在。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={loopsCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("A for over a range covers the counting loop, and range needs no import.", "对 range 的 for 覆盖了计数循环，而 range 无需导入。")}
                     </li>
                     <li>
                         {locale.text("A while body receives the successful condition's facts on every iteration, so draining a collection is a size guard rather than a presence dance.", "while 的循环体在每次迭代中都收到条件成立所建立的事实，因此耗尽一个集合是一次长度守卫，而不是围绕存在性的来回试探。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="pull">{locale.text("Pull sources", "拉取式数据源")}</h2>
-                <p>
+                <SectionHeading id="pull">{locale.text("Pull sources", "拉取式数据源")}</SectionHeading>
+                <Paragraph>
                     {locale.text("async for consumes one explicit contract: the source publishes next, whose checked type is a function answering a promise of an optional, and exhaustion is the absent value. When the source has no such method, the same loop is written with while true and a break on the absent answer.", "async for 消费一份显式契约：数据源发布 next，其受检类型是「返回可选值的 promise 的函数」，而耗尽就是缺失值。当数据源没有这样的方法时，同一个循环用 while true 加上对缺失答案的 break 来写。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={pullCode} />
                 <Callout title={locale.text("No generators", "没有生成器")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("There is no yield and no iterator protocol to implement. An incremental source is either a checked pull contract or a producer callback, both of which a reader can follow without knowing how a suspended function resumes.", "没有 yield，也没有需要实现的迭代器协议。增量数据源要么是一份受检的拉取契约，要么是一个生产者回调；这两种读者都能跟下去，无需先了解一个被挂起的函数是如何恢复的。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager

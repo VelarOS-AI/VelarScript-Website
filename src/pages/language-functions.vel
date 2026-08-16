@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -13,12 +13,6 @@ const asyncCode = `type User:\n    id: string\n    name: string\n\ndef apiUser(i
 const droppedErrorCode = `async def save() -> string:\n    return "saved"\n\nexport def run():\n    save()`
 const droppedErrorOutput = "main.vel:5:5 error VEL4027: This call returns Promise<string>; 'await save()' to wait for it, or 'async save()' to run it detached\n    save()\n    ^^^^^^"
 const genericsCode = `export def mapValues<T, U>(items: List<T>, transform: (T) -> U) -> List<U>:\n    return items.map(transform)\n\nconst flags: List<bool> = mapValues(["a", ""], value => value != "")\n\n// Type arguments are inferred at each call site; there is no explicit\n// instantiation syntax, and a parameter the call leaves unsolved is unknown.\nexport def identity<T>(value: T) -> T:\n    return value\n\nconst identicalText = identity("a")\nconst identicalNumber = identity(1)\n\n// The three closed bounds.\nexport def label<T: Text>(value: T) -> string:\n    return f"{value}"\n\nexport def ranked<T: Comparable>(values: List<T>) -> List<T>:\n    return values.sorted()\n\nexport def smallest<T: Comparable>(values: List<T>) -> T?:\n    return values.min()\n\nexport def encoded<T: Data>(value: T) -> string:\n    return Json.stringify(value)\n\nexport def cloned<T: Data>(value: T) -> T:\n    return Json.clone(value)\n\nconst labelled = label(5)\nconst rankedText = ranked(["b", "a"])\nconst encodedRecord = encoded({id: "u-1"})\n\n// A class method takes type parameters too.\nclass Registry:\n    let stored: List<unknown> = []\n\n    def keep<T>(value: T) -> T:\n        self.stored.append(value)\n        return value`
-
-const pointsLook = look:
-    display = "grid"
-    gap = 8px
-    margin = 0
-    paddingInlineStart = 20px
 
 const sections = [
     {id: "declaring", label: "Parameters and results", labelZh: "参数与结果"},
@@ -45,69 +39,69 @@ export component LanguageFunctions:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="declaring">{locale.text("Parameters and results", "参数与结果")}</h2>
-                <p>
+                <SectionHeading id="declaring">{locale.text("Parameters and results", "参数与结果")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A parameter states its type, and a default is written at the declaration rather than reconstructed in the body. A body-backed function may omit its result annotation; where the inferred result is null, omitting it is required, so a declaration that writes an arrow always promises something a caller can use. An explicit result stays a checked contract on every reachable path.", "参数写出自己的类型，默认值写在声明处，而不是在函数体里重建。有函数体的函数可以省略结果注解；当推断结果为 null 时必须省略，因此写出了箭头的声明总是承诺了调用方能用的东西。显式结果在每条可达路径上都保持为受检契约。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={declaringCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("A function that returns on some paths and falls off the end on others infers an optional result.", "在部分路径返回、其余路径落到末尾的函数，推断出的是可选结果。")}
                     </li>
                     <li>
                         {locale.text("Recursive result dependencies solve to a fixed point, so a recursive helper needs no annotation to break a cycle.", "递归的结果依赖会解到不动点，因此递归辅助函数不需要靠注解来打断循环。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="calls">{locale.text("Positional, then named", "先位置，后具名")}</h2>
-                <p>
+                <SectionHeading id="calls">{locale.text("Positional, then named", "先位置，后具名")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A call writes positional arguments first and named arguments after, and named arguments may be reordered while source expressions still evaluate left to right. Once a fixed parameter has a default every following fixed parameter does too, which is what keeps the positional and the named reading of one call identical.", "调用先写位置实参，再写具名实参；具名实参可以重排，而源表达式仍按从左到右求值。一旦某个固定参数带上默认值，其后的每个固定参数也必须带，正是这一点让同一次调用的位置读法与具名读法完全一致。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={callsCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={colonErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={colonErrorOutput} />
 
-                <h2 id="arrows">{locale.text("Arrows", "箭头函数")}</h2>
-                <p>
+                <SectionHeading id="arrows">{locale.text("Arrows", "箭头函数")}</SectionHeading>
+                <Paragraph>
                     {locale.text("An arrow carries one expression. A parameter may be bare, parenthesized, or annotated; an unannotated parameter takes its type from the annotation the arrow is assigned to. A callback that needs two statements becomes a named def, which is why an arrow body never opens a block and a brace after the arrow opens a record.", "箭头承载一个表达式。参数可以是裸的、加括号的或带注解的；未注解的参数从箭头被赋值到的那个注解取得类型。需要两条语句的回调改写成具名 def——这正是箭头体从不开启块、而箭头之后的花括号打开的是记录的原因。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={arrowsCode} />
 
-                <h2 id="rest">{locale.text("Rest parameters and spread", "剩余参数与展开")}</h2>
-                <p>
+                <SectionHeading id="rest">{locale.text("Rest parameters and spread", "剩余参数与展开")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A rest parameter collects the remaining positional arguments into a List of one element type, and the same three dots spread a List back into a call. Fixed parameters may precede a rest parameter, with or without defaults.", "剩余参数把余下的位置实参收进一个单一元素类型的 List，同样的三个点也把 List 展开回一次调用。固定参数可以出现在剩余参数之前，带默认值与否都可以。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={restCode} />
 
-                <h2 id="async">{locale.text("Async functions", "async 函数")}</h2>
-                <p>
+                <SectionHeading id="async">{locale.text("Async functions", "async 函数")}</SectionHeading>
+                <Paragraph>
                     {locale.text("An async declaration annotates the resolved value, and the call type is the Promise around it. There are two ways to consume a call that answers a Promise: await waits for it, and the async statement runs it detached. A call whose Promise is dropped is a diagnostic, so a task that nobody is waiting for is a written decision rather than an omission.", "async 声明注解的是解析后的值，而调用类型是包在外面的 Promise。消费返回 Promise 的调用有两种写法：await 等待它，async 语句让它脱离当前流程运行。直接丢弃 Promise 的调用会得到诊断，因此「没有人等待这个任务」是一个写出来的决定，而不是一次遗漏。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={asyncCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={droppedErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={droppedErrorOutput} />
 
-                <h2 id="generics">{locale.text("Type parameters and bounds", "类型参数与界")}</h2>
-                <p>
+                <SectionHeading id="generics">{locale.text("Type parameters and bounds", "类型参数与界")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Type parameters exist on functions and on class methods. Type arguments are inferred at each call site and there is no explicit instantiation syntax. Three bounds are published — Comparable for ordering, Text for conversion to text, and Data for structured encoding — and the list is closed: there is no constraint language a library could extend.", "类型参数存在于函数与类方法上。类型实参在每个调用处推断，且没有显式实例化语法。已发布的界有三个——用于排序的 Comparable、用于转为文本的 Text、用于结构化编码的 Data——这份清单是封闭的：不存在可供库扩展的约束语言。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={genericsCode} />
                 <Callout title={locale.text("Why the bound list is closed", "界的清单为何封闭")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("A user-defined bound would put the reader back to reading a library before reading the code in front of them. The same reason keeps decorators out: the modifier keywords are a closed vocabulary the compiler owns, and a new marking arrives as a new keyword rather than as an extension point.", "用户自定义的界会让读者在读眼前这段代码之前，先得去读一个库。装饰器被排除在外是同样的理由：修饰关键字是一份由编译器持有的封闭词汇，新的标记以新关键字的形式到来，而不是作为扩展点。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager

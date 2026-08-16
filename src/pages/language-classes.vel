@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -13,12 +13,6 @@ const usingCode = `class Terminal:\n    let open: bool = true\n\n    def close()
 const absentCode = `class Chart:\n    let size: number = 10\n\n    // There is no setter. A field is assigned, or a method names the work it\n    // does.\n    def setSize(value: number):\n        assert 0 < value <= 4096 else "The chart size is outside the supported range"\n        self.size = value\n\n// self is not a reserved member name.\nclass SelfReference:\n    let self: string = "a field called self"\n\n    def read() -> string:\n        return self.self\n\n// A private member is marked with a modifier and reached through ordinary\n// member access.\nclass Vault:\n    private let secret: string = "s"\n\n    def fingerprint() -> number:\n        return self.secret.size\n\nconst chart = Chart()\nchart.setSize(200)\nconst direct = chart.size`
 const setterErrorCode = "class Chart:\n    let stored: number = 10\n\n    get size() -> number:\n        return self.stored\n\n    set size(value: number):\n        self.stored = value"
 const setterErrorOutput = "main.vel:7:5 error VEL2007: VelarScript classes have no setters; assign the field directly, or declare a method such as 'def setSize(value: T)'\n    set size(value: number):\n    ^^^^^^^^"
-
-const pointsLook = look:
-    display = "grid"
-    gap = 8px
-    margin = 0
-    paddingInlineStart = 20px
 
 const sections = [
     {id: "shape", label: "Fields and one constructor", labelZh: "字段与唯一构造函数"},
@@ -45,69 +39,69 @@ export component LanguageClasses:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="shape">{locale.text("Fields and one constructor", "字段与唯一构造函数")}</h2>
-                <p>
+                <SectionHeading id="shape">{locale.text("Fields and one constructor", "字段与唯一构造函数")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A class has at most one constructor, and an instance is produced by calling the class. Fields are const or let and state their type; a field with no initializer must be definitely assigned in the constructor body. A class name is not a value, so passing a factory around is written as an arrow that constructs.", "类至多有一个构造函数，实例由调用这个类产生。字段是 const 或 let 并写出自己的类型；没有初始化器的字段必须在构造函数体中被确定赋值。类名不是值，因此传递工厂的写法是一个执行构造的箭头函数。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={shapeCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={newErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={newErrorOutput} />
 
-                <h2 id="members">{locale.text("Modifiers", "修饰关键字")}</h2>
-                <p>
+                <SectionHeading id="members">{locale.text("Modifiers", "修饰关键字")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A parameter prefixed with const, let, or private declares a field and initializes it from that argument, so the two halves of the usual pattern collapse into one line. private marks a member the outside cannot reach, static marks one that belongs to the class, and a getter is a computed read with no assignment behind it.", "以 const、let 或 private 前缀的参数直接声明一个字段，并用该实参初始化它，于是常见写法的两半合并成一行。private 标记外部无法触及的成员，static 标记属于类本身的成员，而取值器是一次计算出来的读取，背后没有赋值。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={membersCode} />
 
-                <h2 id="inheritance">{locale.text("Inheritance", "继承")}</h2>
-                <p>
+                <SectionHeading id="inheritance">{locale.text("Inheritance", "继承")}</SectionHeading>
+                <Paragraph>
                     {locale.text("abstract, extends, super, and override are the four words. An override is written rather than inferred, so renaming a base member surfaces as a diagnostic at every place that meant to override it. A base field is one storage location shared by the whole instance, and it is read and written through self.", "abstract、extends、super、override 是四个关键词。override 是写出来的而不是推断的，因此基类成员改名会在每一处本打算覆写它的位置以诊断的形式暴露。基类字段是整个实例共享的一处存储位置，读写都通过 self。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={inheritanceCode} />
 
-                <h2 id="dispose">{locale.text("The release contract", "释放契约")}</h2>
-                <p>
+                <SectionHeading id="dispose">{locale.text("The release contract", "释放契约")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A class declares at most one release block, and it is the one compiler-known class member: it is not callable from source, it must be safe to run twice, and its body may await. A derived release adds to its base's rather than replacing it, so releasing a subclass runs the derived body first and the base body after.", "一个类至多声明一个释放块，它是唯一由编译器认识的类成员：源码不能调用它，它必须可以安全地运行两次，其函数体可以 await。派生类的释放是在基类之上追加而不是取代，因此释放一个子类会先执行派生体、再执行基类体。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={disposeCode} />
 
-                <h2 id="using">{locale.text("Ownership", "所有权")}</h2>
-                <p>
+                <SectionHeading id="using">{locale.text("Ownership", "所有权")}</SectionHeading>
+                <Paragraph>
                     {locale.text("using binds an owned value and releases it on every exit from the enclosing scope, including an early return and a thrown error. Several owned values release in reverse declaration order, and a loop body is an ordinary owning scope. An owned value may not leave the scope that releases it, but a callee may borrow it: a borrow is not ownership.", "using 绑定一个被拥有的值，并在离开所在作用域的每条路径上释放它，包括提前 return 与抛出的错误。多个被拥有的值按声明的逆序释放，循环体本身就是一个普通的拥有作用域。被拥有的值不能离开释放它的作用域，但被调用方可以借用它：借用不是所有权。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={usingCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("using reads the release contract from the value's static type, which is why the contract and the ownership word are one feature rather than two.", "using 从值的静态类型上读取释放契约，因此契约与所有权关键字是同一项特性，而不是两项。")}
                     </li>
                     <li>
                         {locale.text("A resource whose lifetime does not fit a scope is still closed by an ordinary method call; using is the spelling for the case that does fit.", "生命周期不契合作用域的资源，仍然通过普通方法调用来关闭；using 是给契合那一类情形的拼写。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="absent">{locale.text("What a class does not carry", "类不承载什么")}</h2>
-                <p>
+                <SectionHeading id="absent">{locale.text("What a class does not carry", "类不承载什么")}</SectionHeading>
+                <Paragraph>
                     {locale.text("There are no setters: a setter makes an assignment run code the assignment does not show, so a field is assigned directly or a method names the work it does. There is no this, no class-header constructor fields, no constructor block, no private identifier sigil, and no user-defined decorator. The modifier keywords are a closed vocabulary, and a new marking arrives as a new keyword.", "没有设值器：设值器会让一次赋值执行赋值本身没有显示出来的代码，因此要么直接给字段赋值，要么由一个方法说明它所做的工作。没有 this，没有类头部的构造字段，没有构造块，没有私有标识符符号，也没有用户自定义装饰器。修饰关键字是一份封闭词汇，新的标记以新关键字的形式到来。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={absentCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={setterErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={setterErrorOutput} />
                 <Callout title={locale.text("Composition over extending a foreign class", "组合，而不是继承外来的类")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("A class declared through the JavaScript boundary cannot be extended: construction would have to chain across the bridge, and the base is a contract whose body the compiler cannot see. Hold the instance in a field and expose the behavior needed. Extending Error is unaffected, because Error is a builtin rather than a declared foreign class.", "通过 JavaScript 边界声明的类不能被继承：构造会不得不跨过桥接，而基类是一份编译器看不到函数体的契约。把实例保存在字段里，只暴露所需要的行为即可。继承 Error 不受影响，因为 Error 是内建类型，而不是声明出来的外来类。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager

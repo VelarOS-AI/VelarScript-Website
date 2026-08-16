@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -20,13 +20,6 @@ const sections = [
     {id: "cost", label: "What the boundary costs", labelZh: "这条边界的代价"},
 ]
 
-const pointsLook = look:
-    display = "grid"
-    gap = 7px
-    marginTop = 18px
-    marginBottom = 4px
-    paddingLeft = 22px
-
 export component WebBeyondLook:
     const locale = useLocale()
     return <main>
@@ -43,12 +36,12 @@ export component WebBeyondLook:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="import">{locale.text("import css unsafe", "import css unsafe")}</h2>
-                <p>
+                <SectionHeading id="import">{locale.text("import css unsafe", "import css unsafe")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Look is a controlled visual vocabulary, so some real CSS is deliberately outside it: multi-column layout, generated-content counters, container queries, and the print and orientation media types among them. When a design needs one of those, native CSS is an explicit boundary with a declared position relative to Look's output.", "Look 是一套受控的视觉词汇，因此有一部分真实 CSS 被刻意留在它之外：多栏布局、生成内容计数器、容器查询，以及 print 与 orientation 媒体类型等。当设计需要其中之一时，原生 CSS 是一条显式边界，并带有相对于 Look 输出的声明位置。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={cascadeCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("The import takes a relative project path and nothing else, and the word unsafe is part of the spelling rather than a lint suppression.", "该导入只接受相对的项目路径，别的都不接受；unsafe 这个词属于拼写本身，而不是一条 lint 抑制注释。")}
                     </li>
@@ -58,22 +51,22 @@ export component WebBeyondLook:
                     <li>
                         {locale.text("Look emits readable tokens on a data attribute and readable custom properties rather than random generated class names, and an author's own stable class and data attributes remain public hooks — which is what lets an external stylesheet target the markup at all.", "Look 在 data 属性上发出可读的记号，并发出可读的自定义属性，而不是随机生成的类名；作者自己稳定的 class 与 data 属性仍然是公开的挂钩点——这正是外部样式表能够选中这些标记的原因。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="cascade">{locale.text("Position in the cascade", "在层叠中的位置")}</h2>
-                <p>
+                <SectionHeading id="cascade">{locale.text("Position in the cascade", "在层叠中的位置")}</SectionHeading>
+                <Paragraph>
                     {locale.text("before look and after look set source order only. They do not assign a separate Velar priority, so specificity and important remain the stylesheet author's responsibility. A base Look selector and a simple class selector have equal specificity, which is exactly why source order is the thing worth declaring; a stateful Look selector adds a second attribute selector and is therefore more specific than one simple class in either position.", "before look 与 after look 只设定源码顺序。它们不赋予单独的 Velar 优先级，因此特异性与 important 仍然是样式表作者的责任。基础 Look 选择器与简单类选择器特异性相等，这正是源码顺序值得被声明出来的原因；带状态的 Look 选择器会多出一个属性选择器，因此在任一位置都比单个简单类更特异。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={beforeCssCode} />
                 <CodeBlock code={afterCssCode} />
 
-                <h2 id="package">{locale.text("A stylesheet from a package", "来自包的样式表")}</h2>
-                <p>
+                <SectionHeading id="package">{locale.text("A stylesheet from a package", "来自包的样式表")}</SectionHeading>
+                <Paragraph>
                     {locale.text("The import takes a project path, so a component library whose CSS lives in the package directory is brought in by copying it into the project. That is a deliberate two-line build step: the file becomes a reviewable artifact whose version is visible in the repository instead of a silent dependency of the visual layer.", "该导入接受的是项目路径，因此 CSS 位于包目录中的组件库要通过复制到项目里来引入。这是刻意为之的两行构建步骤：该文件成为可评审的产物，版本在仓库中可见，而不是视觉层的一个隐形依赖。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={syncJsonCode} />
                 <CodeBlock code={vendorCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Import the copy before look so the application's own Look wins equal-specificity conflicts.", "把这份副本以 before look 导入，让应用自己的 Look 在特异性相等的冲突中胜出。")}
                     </li>
@@ -83,35 +76,35 @@ export component WebBeyondLook:
                     <li>
                         {locale.text("Treat the copy as read-only: local edits belong in a second stylesheet imported after look, or in Look itself, so the next sync does not silently discard them.", "把副本视为只读：本地修改应放在以 after look 导入的第二份样式表里，或放进 Look 本身，这样下次同步不会静默地丢弃它们。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="html">{locale.text("unsafe:html", "unsafe:html")}</h2>
-                <p>
+                <SectionHeading id="html">{locale.text("unsafe:html", "unsafe:html")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Trusted markup renders through the string-only unsafe:html boundary. It is an explicit wholesale assignment of the element's inner HTML on every reactive update: it does not morph DOM and does not preserve descendant identity, so anything inside it is replaced rather than updated in place.", "受信任的标记经由只接受字符串的 unsafe:html 边界渲染。它在每次响应式更新时对元素的内部 HTML 做一次显式的整体赋值：它不做 DOM 变形，也不保留后代身份，因此其中的一切是被替换而不是就地更新。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={htmlCode} />
-                <p>
+                <Paragraph>
                     {locale.text("Because the assignment owns the whole subtree, the boundary cannot also carry children, and the compiler says so at the element.", "由于这次赋值拥有整棵子树，该边界不能同时携带 children，编译器会在元素处指出这一点。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={htmlErrorCode} />
                 <CodeBlock code={htmlErrorOutput} />
 
-                <h2 id="cost">{locale.text("What the boundary costs", "这条边界的代价")}</h2>
-                <p>
+                <SectionHeading id="cost">{locale.text("What the boundary costs", "这条边界的代价")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Both hatches trade checking for reach, and the trade is worth stating plainly. Inside the stylesheet there are no property diagnostics, no unit checking, and no dead-declaration detection; a renamed class in the application silently stops matching. Inside unsafe:html there is no element vocabulary, no escaping performed for you, and no incremental update — markup that must update incrementally needs a parser-owned contract that this boundary deliberately does not infer.", "两条通道都以受检性换取覆盖面，而这笔交易值得明说。样式表内部没有属性诊断、没有单位检查，也没有失效声明的检测；应用里改名的类会静默地不再匹配。unsafe:html 内部没有元素词汇表，不会替你转义，也没有增量更新——必须增量更新的标记需要一份由解析器拥有的契约，而这条边界刻意不去推断它。")}
-                </p>
-                <ul look={pointsLook}>
+                </Paragraph>
+                <BulletList>
                     <li>
                         {locale.text("Style markup that arrives through unsafe:html with the unsafe CSS route above, not through Look, because Look has no selector into a subtree it did not construct.", "经由 unsafe:html 抵达的标记要用上面的 unsafe CSS 路线来设定样式，而不是用 Look，因为 Look 没有指向它并未构造的子树的选择器。")}
                     </li>
                     <li>
                         {locale.text("Reaching for a hatch is an ordinary decision rather than a failure: the escape hatches page lists all five exits in order, from the diagnostic that teaches the fix to the emitted JavaScript.", "使用逃生通道是一个普通决定，而不是一次失败：逃生通道页按顺序列出全部五个出口，从教你如何修正的诊断，一直到发出的 JavaScript。")}
                     </li>
-                </ul>
+                </BulletList>
                 <Callout title={locale.text("The checked domain is the default, not the ceiling", "受检域是默认值，不是上限")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("Look's property set is a controlled closed set, so a design that needs something outside it does not argue with the compiler — it crosses this boundary and says where in the cascade the result belongs. What the language keeps is the guarantee that everything inside Look stayed checked.", "Look 的属性集是一个受控的封闭集合，因此需要集合之外某项能力的设计不必与编译器争论——它跨过这条边界，并说明结果在层叠中的位置。语言保留下来的，是「Look 内部的一切仍然受检」这一保证。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager previous={guidePrevious("/guide/web/beyond-look")} next={guideNext("/guide/web/beyond-look")} />

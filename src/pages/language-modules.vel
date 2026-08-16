@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -21,12 +21,6 @@ const dynamicCode = `export async def loadBanner() -> string:\n    const reports
 
 const packageErrorCode = `export async def loadUrls() -> string:\n    const urls = await import("velar/url")\n    return "loaded"`
 const packageErrorOutput = `main.vel:2:31 error VEL2014: Dynamic imports require a literal relative path ending in '.vel'\n    const urls = await import("velar/url")\n                              ^^^^^^^^^^^`
-
-const pointsLook = look:
-    display = "grid"
-    gap = 8px
-    margin = 0
-    paddingInlineStart = 20px
 
 const sections = [
     {id: "exports", label: "Every export form", labelZh: "每种导出形式"},
@@ -53,75 +47,75 @@ export component LanguageModules:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="exports">{locale.text("Every export form", "每种导出形式")}</h2>
-                <p>
+                <SectionHeading id="exports">{locale.text("Every export form", "每种导出形式")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A file is a module and its module system is ES modules. const, let, def, async def, type, an alias, enum, and class all export by writing the word in front of the declaration. A name that is never exported stays private to its module, and a value may still carry that private shape across the graph.", "一个文件就是一个模块，其模块系统就是 ES 模块。const、let、def、async def、type、别名、enum 与 class，都通过在声明前写下这个词来导出。从未被导出的名字保持为该模块私有，而一个值仍然可以带着这份私有形状穿过模块图。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={exportsCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Import declarations are hoisted above every other statement, so a dependency has finished initializing before the first line of the importing module runs.", "导入声明被提升到其他所有语句之上，因此在导入方模块的第一行执行之前，依赖已经完成初始化。")}
                     </li>
                     <li>
                         {locale.text("An unused import is not an error and produces no warning; importing a name still initializes the module it comes from.", "未使用的导入不是错误，也不会产生警告；导入一个名字仍然会初始化它所来自的模块。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="imports">{locale.text("What each spelling brings in", "每种拼写带入什么")}</h2>
-                <p>
+                <SectionHeading id="imports">{locale.text("What each spelling brings in", "每种拼写带入什么")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A named import brings the names in, as renames one at the import site, and a namespace import reads a whole module through one name. A namespace field is always read-only, and a namespace member cannot stand in a type position — a type is imported by name.", "具名导入把名字带入，as 在导入处重命名其中之一，命名空间导入则通过一个名字读取整个模块。命名空间字段始终只读，且命名空间成员不能出现在类型位置——类型要按名字导入。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={importsCode} />
-                <p>
+                <Paragraph>
                     {locale.text("The same three spellings work against your own modules. The two blocks below are two modules of one project — the dependency, chunk.vel, and the module that imports it — and both compile together in the site's gate.", "同样的三种拼写也作用于你自己的模块。下面两个代码块是同一个项目里的两个模块——依赖模块 chunk.vel 与导入它的模块——两者在本站门禁中一起编译。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={relativeChunkCode} />
                 <CodeBlock code={relativeCode} />
 
-                <h2 id="barrel">{locale.text("Re-exports", "再导出")}</h2>
-                <p>
+                <SectionHeading id="barrel">{locale.text("Re-exports", "再导出")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A module can re-export another module's named exports without creating local bindings, which is how a package entry exposes symbols from its internal modules. Re-exported names join the barrel's interface under their aliases with the full origin contract. Re-exporting everything at once is deliberately absent: every symbol is named, so the module interface stays readable as a list.", "一个模块可以再导出另一个模块的具名导出，而不创建本地绑定；包的入口正是这样把内部模块的符号暴露出去的。再导出的名字以其别名加入桶模块的接口，并保留完整的来源契约。「一次性再导出全部」被刻意排除：每个符号都要写出名字，模块接口因此始终能作为一份清单被读懂。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={barrelCode} />
 
-                <h2 id="live">{locale.text("Live bindings", "活绑定")}</h2>
-                <p>
+                <SectionHeading id="live">{locale.text("Live bindings", "活绑定")}</SectionHeading>
+                <Paragraph>
                     {locale.text("An imported name is read-only in the importing module, but an exported let remains live: the exporting module may reassign it between a consumer's reads. That is also why a module with live exports must be imported by name rather than through a namespace — a namespace field cannot carry the write.", "被导入的名字在导入方模块中是只读的，但导出的 let 仍然是活的：导出方可以在消费者两次读取之间重新赋值。这也正是带有活绑定导出的模块必须按名字导入、而不能通过命名空间导入的原因——命名空间字段承载不了那次写入。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={livePairChunkCode} />
                 <CodeBlock code={livePairCode} />
 
-                <h2 id="side-effects">{locale.text("No side-effect import", "没有副作用导入")}</h2>
-                <p>
+                <SectionHeading id="side-effects">{locale.text("No side-effect import", "没有副作用导入")}</SectionHeading>
+                <Paragraph>
                     {locale.text("An import written only for its effect is refused. A module that has to run something exports a function and the caller calls it, so the effect appears where it happens rather than in a line that looks like a declaration.", "只为副作用而写的导入会被拒绝。需要执行某些动作的模块导出一个函数，由调用方调用它，于是副作用出现在它真正发生的位置，而不是藏在一行看起来像声明的代码里。")}
-                </p>
-                <p>
+                </Paragraph>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={effectErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={effectErrorOutput} />
 
-                <h2 id="dynamic">{locale.text("Dynamic import", "动态导入")}</h2>
-                <p>
+                <SectionHeading id="dynamic">{locale.text("Dynamic import", "动态导入")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A dynamic import takes a literal relative path ending in the VelarScript extension — never a package name, never a resident module, never a computed string — because the module graph must stay decidable at compile time. The result is the target module's checked interface, so its exported bindings keep their types and reading a name it does not export is a compile error. Caching belongs to the module graph: the first load initializes the module and every later import of the same path answers the same namespace.", "动态导入接受一个以 VelarScript 扩展名结尾的字面相对路径——不能是包名，不能是常驻模块，也不能是计算出来的字符串——因为模块图必须在编译期保持可判定。其结果是目标模块的受检接口，因此它导出的绑定保留各自的类型，而读取它没有导出的名字是一个编译错误。缓存属于模块图：第一次加载初始化该模块，之后每一次对同一路径的导入都给出同一个命名空间。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={dynamicChunkCode} />
                 <CodeBlock code={dynamicCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={packageErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={packageErrorOutput} />
                 <Callout title={locale.text("Failure is ordinary and catchable", "失败是普通的、可捕获的")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("A module that throws while initializing rejects the promise the dynamic import answers, so a plugin that fails to load is handled with the same try and catch as any other failure. Nothing about lazy loading needs a second error mechanism.", "在初始化过程中抛出的模块，会让动态导入返回的 promise 被拒绝，因此加载失败的插件用与其他失败完全相同的 try 与 catch 处理。惰性加载不需要第二套错误机制。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager

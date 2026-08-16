@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -20,13 +20,6 @@ const sections = [
     {id: "forms", label: "Reading a form", labelZh: "读取表单"},
     {id: "files", label: "Files", labelZh: "文件"},
 ]
-
-const pointsLook = look:
-    display = "grid"
-    gap = 7px
-    marginTop = 18px
-    marginBottom = 4px
-    paddingLeft = 22px
 
 const formRows: List<MemberRow> = [
     {name: "read", signature: "read(form, Type) -> Type", summary: "Decodes a flat native form into a record type through the existing runtime validator.", summaryZh: "经由已有的运行时验证器，把扁平的原生表单解码为记录类型。"},
@@ -56,12 +49,12 @@ export component WebBrowser:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="timers">{locale.text("Timers and subscriptions", "定时器与订阅")}</h2>
-                <p>
+                <SectionHeading id="timers">{locale.text("Timers and subscriptions", "定时器与订阅")}</SectionHeading>
+                <Paragraph>
                     {locale.text("after schedules one callback and every schedules repeated work. Each takes a Duration rather than a bare number, and each answers its own idempotent stop function — which is why the three environment subscriptions have the same shape and one cleanup loop releases all five. There is no setTimeout, no setInterval, and no effect API.", "after 安排一次回调，every 安排重复工作。两者都接受 Duration 而不是裸数字，并各自返回自己的幂等 stop 函数——这正是三个环境订阅具有相同形状、且一个清理循环就能释放全部五个的原因。这里没有 setTimeout、没有 setInterval，也没有 effect API。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={timersCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Repeating work schedules its next turn only after the current callback settles, so slow polling cannot overlap itself.", "重复的工作只在当前回调结束之后才安排下一轮，因此缓慢的轮询不会自我重叠。")}
                     </li>
@@ -71,26 +64,26 @@ export component WebBrowser:
                     <li>
                         {locale.text("Callback failures are normalized through velar/app with the timer phase, so a throwing timer is reported rather than lost.", "回调失败经由 velar/app 在 timer 阶段被规范化上报，因此抛错的定时器会被上报而不是丢失。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="environment">{locale.text("Reading the host", "读取宿主")}</h2>
-                <p>
+                <SectionHeading id="environment">{locale.text("Reading the host", "读取宿主")}</SectionHeading>
+                <Paragraph>
                     {locale.text("location, environment, and media are synchronous reads that each return a checked record rather than a live host object. Host strings and booleans must already have the declared type; a malformed value is rejected rather than implicitly converted, and the returned language list is an application-owned copy rather than a view into the browser.", "location、environment 与 media 是同步读取，各自返回一个受检的记录，而不是活的宿主对象。宿主提供的字符串与布尔值必须本来就是声明的类型；畸形取值会被拒绝而不是隐式转换，返回的语言列表是应用拥有的副本，而不是对浏览器内部的视图。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={environmentCode} />
 
-                <h2 id="layout">{locale.text("Layout readouts", "布局读数")}</h2>
-                <p>
+                <SectionHeading id="layout">{locale.text("Layout readouts", "布局读数")}</SectionHeading>
+                <Paragraph>
                     {locale.text("measure answers an element's rectangle, scrollMetrics answers its scroll position together with the viewport and content sizes, and frame answers a Promise of the next frame's timestamp — the checked way to wait for a paint. Rectangles must contain finite numbers, and the readouts call the validated platform operation rather than an instance override.", "measure 返回元素的矩形，scrollMetrics 返回它的滚动位置以及视口与内容尺寸，frame 返回下一帧时间戳的 Promise——这是等待一次绘制的受检方式。矩形必须包含有限数字，且这些读数调用经过验证的平台操作，而不是实例上的覆写。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={measurementCode} />
 
-                <h2 id="elements">{locale.text("Element controls", "元素控制")}</h2>
-                <p>
+                <SectionHeading id="elements">{locale.text("Element controls", "元素控制")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Focus, scrolling, text selection, and pointer capture all take the element itself rather than a selector, so a ref is the entry point. A textarea ref narrows to a text-area element, whose selection is read and written in Unicode code-point offsets rather than the platform's own units — a native selection that splits a surrogate pair is rejected.", "焦点、滚动、文本选择与指针捕获都接受元素本身而不是选择器，因此 ref 是入口。textarea 的 ref 收窄为文本域元素，它的选择区按 Unicode 码点偏移读写，而不是按平台自己的单位——切开代理对的原生选择区会被拒绝。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={elementsCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Behaviour arguments are exactly auto, smooth, or instant, and scroll coordinates must be finite numbers; an invalid value fails before the browser capability is invoked.", "行为参数恰好是 auto、smooth 或 instant，滚动坐标必须是有限数字；无效取值在调用浏览器能力之前就失败。")}
                     </li>
@@ -100,21 +93,23 @@ export component WebBrowser:
                     <li>
                         {locale.text("Components remain responsible for choosing when focus should move or return; the module supplies the operation, not the policy.", "何时移动或归还焦点仍由组件决定；模块提供的是操作，不是策略。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="clipboard">{locale.text("Clipboard, windows, and dialogs", "剪贴板、窗口与对话框")}</h2>
-                <p>
+                <SectionHeading id="clipboard">
+                    {locale.text("Clipboard, windows, and dialogs", "剪贴板、窗口与对话框")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("The synchronous clipboard boundary works on a real copy, cut, or paste event, so it is reached from an event directive rather than by asking for a permission. The asynchronous pair requires a secure context and may reject when browser policy denies access. A dialog ref narrows to a dialog element, and the three dialog helpers validate the browser object without exposing an untyped DOM.", "同步的剪贴板边界作用于真实的 copy、cut 或 paste 事件，因此它经由事件指令抵达，而不是通过申请权限。异步的一对需要安全上下文，并可能在浏览器策略拒绝访问时被拒绝。dialog 的 ref 收窄为对话框元素，三个对话框辅助函数在不暴露无类型 DOM 的前提下验证浏览器对象。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={clipboardCode} />
 
-                <h2 id="forms">{locale.text("Reading a form", "读取表单")}</h2>
-                <p>
+                <SectionHeading id="forms">{locale.text("Reading a form", "读取表单")}</SectionHeading>
+                <Paragraph>
                     {locale.text("velar/forms reads a native form without leaking the platform's own form-data object and without forcing application code through an unknown value. read decodes a flat form into an existing record type: it supports strings, finite numbers, checkbox booleans, enums, repeated string fields, and optional scalars, while invalid required numbers, enums, native files, nested records, and unsupported collections fail explicitly.", "velar/forms 读取原生表单，既不泄漏平台自己的表单数据对象，也不迫使应用代码经过 unknown。read 把扁平的表单解码成一个已有的记录类型：它支持字符串、有限数字、复选框布尔值、枚举、重复的字符串字段与可选标量；而无效的必需数字、枚举、原生文件、嵌套记录与不受支持的集合都会显式失败。")}
-                </p>
+                </Paragraph>
                 <MemberTable rows={formRows} caption={locale.text("What velar/forms publishes", "velar/forms 发布了什么")} />
                 <CodeBlock code={formsCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("read does not create another schema language and does not infer business rules. Required text, trimming, minimums, custom messages, and submission behaviour remain application code and ordinary HTML attributes.", "read 不创建第二套 schema 语言，也不推断业务规则。必填文本、去空白、最小值、自定义消息与提交行为，仍然是应用代码与普通 HTML 属性的事。")}
                     </li>
@@ -124,17 +119,17 @@ export component WebBrowser:
                     <li>
                         {locale.text("Submission stays explicit through the ordinary event directives; the helpers require a real form element.", "提交仍然通过普通的事件指令显式进行；这些辅助函数要求一个真实的表单元素。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="files">{locale.text("Files", "文件")}</h2>
-                <p>
+                <SectionHeading id="files">{locale.text("Files", "文件")}</SectionHeading>
+                <Paragraph>
                     {locale.text("pick uses the native file-input path and answers a list of opaque File values that expose read-only name, size, type, and modification metadata. Only a value returned by pick may be read as text or as a data URL, or attached to a multipart body, so a forged structural record fails even when it resembles the public metadata. download accepts actual text for its name, data, and media type.", "pick 走原生文件输入路径，返回一组不透明的 File 值，暴露只读的名称、大小、类型与修改时间元数据。只有 pick 返回的取值才可以被读为文本或 data URL，或附加到 multipart 请求体上，因此伪造的结构化记录即使看起来与公开元数据相同也会失败。download 的名称、数据与媒体类型都接受真实的文本。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={filesCode} />
                 <Callout title={locale.text("What these modules deliberately do not expose", "这些模块刻意不暴露什么")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("Directory access, persistent file handles, raw clipboard formats, mutable scroll fields, and the platform's own file and form-data constructors are not source-level APIs. Each module captures the host operations it needs when it initializes, so JavaScript loaded later cannot redirect an owned focus, scroll, reset, or read.", "目录访问、持久文件句柄、原始剪贴板格式、可变的滚动字段，以及平台自己的文件与表单数据构造器，都不是源码层面的 API。每个模块在初始化时捕获它需要的宿主操作，因此稍后加载的 JavaScript 无法改道一次受拥有的聚焦、滚动、重置或读取。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager previous={guidePrevious("/guide/web/browser")} next={guideNext("/guide/web/browser")} />

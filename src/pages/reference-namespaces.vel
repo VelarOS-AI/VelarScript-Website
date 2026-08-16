@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {headTitle, referenceNav} from "../content.vel"
 
@@ -109,64 +109,64 @@ export component ReferenceNamespaces:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="math">{locale.text("Math.", "Math.")}</h2>
-                <p>
+                <SectionHeading id="math">{locale.text("Math.", "Math.")}</SectionHeading>
+                <Paragraph>
                     {locale.text(`The namespace exposes JavaScript Number mathematics without claiming Python integer or decimal behavior. Every operation nevertheless requires an actual number at runtime: the JavaScript Math global's coercion cannot turn "2", [], or another dynamic value into a VelarScript number. What belongs on a number is a number member, so what is left here is exactly what cannot be one — the constants, the multi-argument functions, and the transcendentals.`, `该命名空间提供 JavaScript Number 的数学运算，并不宣称具备 Python 的整数或十进制行为。但每个操作在运行时都要求真正的 number：JavaScript Math 全局的强制转换无法把 "2"、[] 或其他动态值变成 VelarScript 的 number。属于数字本身的应当是数字的受检成员，因此留在这里的正是无法成为成员的那些——常量、多参数函数与超越函数。`)}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={mathMembers}
                     caption={locale.text("Math. — constants, bounds, powers and logarithms, trigonometry, numeric helpers", "Math. —— 常量、边界、幂与对数、三角函数、数值辅助")}
                 />
                 <CodeBlock code={mathCode} />
                 <Callout title={locale.text("The receiver-shaped operations are number members", "接收者形态的操作是数字的成员")}>
-                    <p>
+                    <Paragraph>
                         {locale.text(".abs(), .round(), .floor(), .ceil(), .toFixed(digits), and the predicates .isInteger(), .isNaN(), and .isFinite() are written on the number itself. round answers the nearest integer, toFixed returns decimal text with 0 through 100 digits, and isInteger follows Number.isInteger, so Infinity and NaN are not integers.", ".abs()、.round()、.floor()、.ceil()、.toFixed(digits)，以及谓词 .isInteger()、.isNaN()、.isFinite()，都写在数字自身上。round 返回最近的整数，toFixed 返回 0 到 100 位小数的文本，isInteger 遵循 Number.isInteger，因此 Infinity 与 NaN 都不是整数。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
 
-                <h2 id="text">{locale.text("Text.", "Text.")}</h2>
-                <p>
+                <SectionHeading id="text">{locale.text("Text.", "Text.")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Text. is the extension toolbox beside the checked string methods. It needs no import, and nothing moves between the two, so the member list a reader must hold in mind never grows. The receiver operations — size, trim, upper, lower, slice, char, has, index, count, startsWith, endsWith, isBlank, split, replace, replaceAll, repeat, padStart, and padEnd — stay on the string; the transformations that are not receiver operations live here.", "Text. 是与受检字符串方法并列的扩展工具箱。它无需导入，两边也不互相移动，因此读者需要记住的成员清单不会增长。接收者操作——size、trim、upper、lower、slice、char、has、index、count、startsWith、endsWith、isBlank、split、replace、replaceAll、repeat、padStart 与 padEnd——留在字符串上；不属于接收者操作的那些变换住在这里。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={textMembers}
                     caption={locale.text("Text. — transformations and the stateless pattern family", "Text. —— 变换与无状态的模式族")}
                 />
                 <CodeBlock code={textCode} />
-                <p>
+                <Paragraph>
                     {locale.text("Positions are Unicode code points, matching string iteration rather than JavaScript UTF-16 units, so a match index can be passed straight to char or slice. Pattern expressions use JavaScript pattern syntax in Unicode mode through a captured intrinsic; each operation creates a fresh pattern and source code never receives RegExp or its mutable lastIndex. Pattern source is limited to 4,096 code units, pattern input and returned match text to 16 MiB, and list-producing pattern operations to 1,000,000 results.", "位置以 Unicode 码点计，与字符串迭代一致，而不是 JavaScript 的 UTF-16 单元，因此匹配得到的 index 可以直接交给 char 或 slice。模式表达式通过被捕获的内建实现使用 Unicode 模式下的 JavaScript 模式语法；每次操作都创建全新的模式，源码永远不会拿到 RegExp 或它可变的 lastIndex。模式源限制为 4096 个码元，模式输入与返回的匹配文本限制为 16 MiB，产生列表的模式操作限制为 1,000,000 条结果。")}
-                </p>
+                </Paragraph>
                 <Callout title={locale.text("Equality is code-point identity", "相等是码点序列的同一性")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("Canonically equivalent text is not equal: a precomposed accented character and the letter plus its combining accent render identically but compare unequal, report a different size, and miss each other as Map and Set keys. Normalize where such text enters the program — macOS filenames arrive decomposed while typed text is usually composed.", "规范等价的文本并不相等：预组合的重音字符与「字母加组合重音」渲染完全相同，却比较不相等、size 不同，并且作为 Map 与 Set 的键时互不命中。应在这类文本进入程序的位置做归一化——macOS 的文件名是分解形式，而键入的文本通常是组合形式。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
 
-                <h2 id="json">{locale.text("Json.", "Json.")}</h2>
-                <p>
+                <SectionHeading id="json">{locale.text("Json.", "Json.")}</SectionHeading>
+                <Paragraph>
                     {locale.text("JSON data is deliberately narrower than arbitrary JavaScript values: finite numbers, strings, booleans, null, dense Lists, fixed records, and Record<T> dynamic string-key records, recursively. Map, Set, class instances, functions, sparse Lists, accessor and symbol fields, non-finite numbers, and cyclic graphs are rejected instead of inheriting JSON.stringify's silent field omission or {} substitution. Repeated references are allowed when the graph is acyclic.", "JSON 数据被有意地限制得比任意 JavaScript 值更窄：有限数、字符串、布尔、null、稠密 List、固定记录，以及 Record<T> 动态字符串键记录，并可递归嵌套。Map、Set、类实例、函数、稀疏 List、访问器与 symbol 字段、非有限数与含环的图都会被拒绝，而不是继承 JSON.stringify 那种默默丢字段或替换成 {} 的行为。当图无环时，允许重复引用。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={jsonMembers}
                     caption={locale.text("Json. — six members, and no parallel schema language", "Json. —— 六个成员，没有并行的 schema 语言")}
                 />
                 <CodeBlock code={jsonCode} />
-                <p>
+                <Paragraph>
                     {locale.text("The second argument is the existing runtime form of a record type, a runtime transparent alias, or an enum; there is no parallel schema declaration. The compiler registers those frozen Type values under one shared runtime identity, including across module boundaries, and parse, tryParse, and clone check that identity before parsing or cloning. They never inspect an arbitrary object's is or parse fields as permission to skip validation. Parsing and encoded output are limited to 16 MiB, and validation stops beyond 1,000,000 values or 128 nested collections.", "第二个实参就是记录类型、运行时透明别名或枚举的既有运行时形态；不存在并行的 schema 声明。编译器把这些冻结的 Type 值登记在同一个共享的运行时标识之下，跨模块边界亦然；parse、tryParse 与 clone 会在解析或克隆之前检查该标识。它们绝不会把任意对象上的 is 或 parse 字段当作跳过验证的许可。解析与编码输出限制为 16 MiB，验证在超过 1,000,000 个值或 128 层嵌套集合时停止。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="promise">{locale.text("Promise.", "Promise.")}</h2>
-                <p>
+                <SectionHeading id="promise">{locale.text("Promise.", "Promise.")}</SectionHeading>
+                <Paragraph>
                     {locale.text("These helpers use the host Promise queue. They do not create threads, cancel a Promise, or replace the JavaScript event loop. all, race, and timeout require actual Promises at runtime, including across JavaScript realms; an arbitrary thenable is rejected without probing a then accessor.", "这些辅助函数使用宿主的 Promise 队列。它们不创建线程、不取消 Promise，也不替换 JavaScript 事件循环。all、race 与 timeout 在运行时要求真正的 Promise，跨 JavaScript realm 亦然；任意 thenable 会被拒绝，且不会去探测 then 访问器。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={promiseMembers}
                     caption={locale.text("Promise. — the async combinators", "Promise. —— 异步组合子")}
                 />
                 <CodeBlock code={promiseCode} />
-                <p>
+                <Paragraph>
                     {locale.text("The bounds are explicit: all and race may start at most 10,000 operations at once, map concurrency is at most 1,024, retry is at most 10,000 attempts, and timer durations stay within the signed 32-bit host timer range. Short asynchronous workers use the language's expression arrow directly, and a named async worker declared -> T may return either T or another Promise<T> without adding return await merely to satisfy the checker.", "边界是显式的：all 与 race 一次至多启动 10,000 个操作，map 的并发上限为 1,024，retry 至多 10,000 次尝试，定时器时长保持在宿主定时器的有符号 32 位范围内。短小的异步 worker 直接使用语言的表达式箭头；声明为 -> T 的具名 async worker 可以返回 T 或另一个 Promise<T>，无需仅为满足检查器而添加 return await。")}
-                </p>
+                </Paragraph>
             </Prose>
         </DocsShell>
     </main>

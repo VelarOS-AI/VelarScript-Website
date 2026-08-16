@@ -1,0 +1,107 @@
+import {Head} from "velar/web"
+import {BulletList, Callout, CodeBlock, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
+import {Container, Section, useLocale} from "@velarscript/site-ui"
+import {headTitle} from "../content.vel"
+
+const reproShellCode = "npx velar repro"
+
+const reproOutputTextCode = "Wrote a minimal reproduction of 1 diagnostic -> .velar/repro\nThe extracted bundle produces the same diagnostics."
+
+const reportTextCode = `What I wrote (or wanted to write):\n    <the smallest .vel source that still shows it>\n\nWhat the compiler said:\n    <the diagnostic, verbatim — code, caret line, wording>\n\nHow I resolved it:\n    <the workaround, or the single word "blocked">`
+
+const sections = [
+    {id: "spelling", label: "A word reads wrong", labelZh: "某个词读起来不对"},
+    {id: "defect", label: "The compiler did something wrong", labelZh: "编译器做错了事"},
+    {id: "docs", label: "A page is wrong or hard to read", labelZh: "某一页是错的或读着费劲"},
+    {id: "models", label: "Filing as a model", labelZh: "模型也可以提"},
+]
+
+export component Participate:
+    const locale = useLocale()
+    return <main data-participate>
+        <Head
+            title={headTitle("/participate", locale.isChinese())}
+            description={locale.text("How to report a spelling that reads wrong, a compiler defect, or a documentation problem — and why the spelling reports are the valuable ones right now.", "如何反馈一个读起来不对的拼写、一个编译器缺陷，或一处文档问题——以及为什么现阶段拼写反馈最有价值。")}
+            themeColor="#f7f5f0"
+        />
+        <Section>
+            <Container narrow={true}>
+                <PageHeader
+                    kicker={locale.text("Participate", "参与")}
+                    title={locale.text("Tell us a word reads wrong", "告诉我们哪个词读起来不对")}
+                    summary={locale.text("A language meant to be read by someone who did not write the code cannot find its own blind spots. The people who read it can. This page is the whole channel, and none of it needs you to write any code.", "一门语言如果目标是让没写过这段代码的人也能读懂，那它自己找不到自己的盲区——能找到的是读它的人。这一页就是全部的反馈通道，其中没有一条需要你写代码。")}
+                />
+                <SectionList items={sections} />
+                <Prose>
+                    <Paragraph>
+                        {locale.text("VelarScript has made no backward-compatibility promise yet. Changing a word today costs nothing; changing it after 1.0 costs everyone who wrote against it. That window is open now, it closes, and it can only be spent on objections people actually send.", "VelarScript 目前没有做出任何向后兼容承诺。今天改一个词是免费的，1.0 之后再改，代价由所有照着它写过代码的人承担。这扇窗现在开着，它会关上，而且只有真的有人来提，它才用得上。")}
+                    </Paragraph>
+
+                    <SectionHeading id="spelling">{locale.text("A word reads wrong", "某个词读起来不对")}</SectionHeading>
+                    <Paragraph>
+                        {locale.text("This is the most valuable kind of report right now and the one people send least. You do not need to be an expert and you do not need a better word to propose. \"I read this three times and still guessed wrong\" is a complete report — the wrong guess is the useful part, because it shows where the word points.", "现在最有价值的就是这一类，而它恰恰是最少人提的。你不需要是专家，也不需要先想出一个更好的词。「我读了三遍还是猜错了」就是一份完整的报告——猜错的那个意思才是有用的部分，因为它说明这个词把人指向了哪里。")}
+                    </Paragraph>
+                    <Paragraph>
+                        {locale.text("If you could not read it, that is a defect in the language, not in you. The whole premise is that a person who did not write the code can read it.", "如果你读不懂，那是语言的缺陷，不是你的。这门语言的全部前提就是：没写过这段代码的人也能读懂它。")}
+                    </Paragraph>
+
+                    <SectionHeading id="defect">
+                        {locale.text("The compiler did something wrong", "编译器做错了事")}
+                    </SectionHeading>
+                    <Paragraph>
+                        {locale.text("Run this where it failed:", "在出问题的地方跑这个：")}
+                    </Paragraph>
+                    <CodeBlock code={reproShellCode} />
+                    <Paragraph>
+                        {locale.text("It writes a self-contained reproduction and prints where:", "它会写出一个自足的复现包，并打印路径：")}
+                    </Paragraph>
+                    <CodeBlock code={reproOutputTextCode} />
+                    <Paragraph>
+                        {locale.text("The second line matters: before handing the directory over, the command extracts it somewhere else and re-checks it, so you are not sent off with a reproduction that only works on your machine. If it stops reproducing once extracted, it says that instead of pretending otherwise.", "第二行是重点：在把目录交给你之前，命令会把它解到别处重新跑一遍，免得你带着一个只在自己机器上成立的复现去提 issue。如果解出来之后复现不了，它会直说，而不是装作没事。")}
+                    </Paragraph>
+                    <Paragraph>
+                        {locale.text("The report has three sections, and the command fills in the hardest one for you:", "报告只有三段，其中最难写的那一段由命令替你填好：")}
+                    </Paragraph>
+                    <CodeBlock code={reportTextCode} />
+                    <BulletList>
+                        <li>
+                            {locale.text("Nothing is uploaded. The command writes to disk and stops. Whether to send it, and to whom, is your decision.", "它不上传任何东西。命令只写到磁盘就结束。发不发、发给谁，是你的决定。")}
+                        </li>
+                        <li>
+                            {locale.text("Nothing is collected beyond the reproduction — no environment variables, no account name, no absolute paths from your machine.", "除了复现本身，它什么都不收集——不读环境变量、不读账户名，也不会留下你机器上的绝对路径。")}
+                        </li>
+                        <li>
+                            {locale.text("Most \"compiler bugs\" turn into a teaching diagnostic while you are cutting the program down. That step is not wasted; the ones that survive it make near-perfect reports.", "多数「编译器 bug」在你把程序削小的过程中就变成了一条讲道理的诊断。那一步不白花；活下来的那些会变成近乎完美的报告。")}
+                        </li>
+                        <li>
+                            {locale.text("A defect that arrives with a reproduction is treated as a gate failure rather than folklore — it becomes a test that stays in the suite.", "带复现的缺陷会被当作门禁失败处理，而不是当作传说——它会变成一条留在测试套件里的测试。")}
+                        </li>
+                    </BulletList>
+
+                    <SectionHeading id="docs">
+                        {locale.text("A page is wrong or hard to read", "某一页是错的或读着费劲")}
+                    </SectionHeading>
+                    <Paragraph>
+                        {locale.text("\"I had to read this twice\" is a valid report. So is \"the English is fine but the Chinese reads like a translation\" — the Chinese on this project is meant to be written in Chinese, not translated into it, and where it slips we want to hear about it.", "「我得读两遍」是有效的反馈。「英文没问题，但中文读着像译文」也是——本项目的中文应当是用中文写的，而不是翻译过来的；哪里没做到，我们想知道。")}
+                    </Paragraph>
+                    <Paragraph>
+                        {locale.text("The same goes for a page that is accurate but tells you only what, never why. That is a documentation defect here, not a style preference.", "同样，如果某一页说的都对，却只告诉你「是什么」、从不说「为什么」，那在这里算文档缺陷，不算风格偏好。")}
+                    </Paragraph>
+
+                    <SectionHeading id="models">{locale.text("Filing as a model", "模型也可以提")}</SectionHeading>
+                    <Paragraph>
+                        {locale.text("This project's premise is that models write the code and people own it. So a model that hits a compiler wall should use this same channel: run velar repro, then file with the template. A model's report that a spelling could not be written is first-hand evidence, not noise — it is the exact reader the language is designed for.", "这个项目的前提是：模型写代码，人来负责。所以模型撞到编译器的墙时，走的应该是同一条通道——先跑 velar repro，再按模板提交。模型说「这个拼写我写不出来」是第一手证据，不是噪音——它正是这门语言所设计的那个读者。")}
+                    </Paragraph>
+                    <Paragraph>
+                        {locale.text("The built-in skill brief carries this instruction, so an agent working in a VelarScript codebase already knows to do it.", "内置的技能简报里写了这条，所以在 VelarScript 代码库里干活的智能体本来就知道该这么做。")}
+                    </Paragraph>
+
+                    <Callout title={locale.text("Where to send it", "发到哪里")}>
+                        <Paragraph>
+                            {locale.text("All three go to the same place — the issue templates in the language repository. Pick Spelling objection, Defect, or Documentation; each one asks only for what that kind of report needs.", "三类都发到同一个地方——语言仓的 issue 模板。选「拼写异议」「缺陷」或「文档」，每个模板只问那一类反馈真正需要的东西。")}
+                        </Paragraph>
+                    </Callout>
+                </Prose>
+            </Container>
+        </Section>
+    </main>

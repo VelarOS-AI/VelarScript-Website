@@ -14,7 +14,7 @@ def labels(groups: List<DocsNavGroup>, chinese: bool) -> List<string>:
 
 test "the information architecture has the shape the site is built for":
     expect(UI_API_VERSION).toBe("0.2")
-    expect(primaryNav).toHaveLength(3)
+    expect(primaryNav).toHaveLength(4)
     expect(guideNav).toHaveLength(3)
     expect(guideNav[0].items).toHaveLength(4)
     expect(guideNav[1].items).toHaveLength(13)
@@ -58,6 +58,8 @@ test "every navigated path has a route the router really serves":
         expect(served.has(item.path)).toBe(true)
     expect(served.has("/")).toBe(true)
     expect(served.has("/examples")).toBe(true)
+    expect(served.has("/evidence")).toBe(true)
+    expect(served.has("/participate")).toBe(true)
 
 test "the pager walks the chain from the first page to the last":
     expect(guidePrevious("/guide")).toBe(null)
@@ -69,6 +71,8 @@ test "a page title reads the label its sidebar entry declares":
     expect(pageTitle("/guide/language/values").en).toBe("Values")
     expect(pageTitle("/guide/language/values").zh).toBe("值")
     expect(pageTitle("/reference/cli").en).toBe("CLI commands")
+    expect(pageTitle("/evidence").en).toBe("Evidence")
+    expect(pageTitle("/evidence").zh).toBe("证据")
     expect(pageTitle("/missing").en).toBe("Page not found")
     expect(headTitle("/guide/web/look", false)).toBe("Look · VelarScript")
     expect(headTitle("/guide/web/look", true)).toBe("Look · VelarScript")

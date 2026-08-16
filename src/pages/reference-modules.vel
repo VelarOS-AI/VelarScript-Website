@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {headTitle, referenceNav} from "../content.vel"
 
@@ -116,85 +116,87 @@ export component ReferenceModules:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="collections">{locale.text("velar/collections", "velar/collections")}</h2>
-                <p>
+                <SectionHeading id="collections">
+                    {locale.text("velar/collections", "velar/collections")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("This is a different table from the checked List methods. List has map and no groupBy; this module has groupBy and no map. It stays behind an import because it is a toolbox a program reaches for, not vocabulary every program speaks. Core Lists use the same direct vocabulary beside it: append(value) adds one item, extend(values) adds a typed List atomically, and slice(…) returns a copy.", "这张表与受检的 List 方法是两张不同的表。List 有 map 而没有 groupBy；本模块有 groupBy 而没有 map。它留在导入之后，是因为它是程序按需取用的工具箱，而不是每个程序都在说的词汇。与之并列，Core 的 List 使用同样直接的词汇：append(value) 添加一项，extend(values) 原子地添加一个带类型的 List，slice(…) 返回副本。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={collectionsMembers}
                     caption={locale.text("velar/collections — iteration, lookup, grouping, ordering, aggregation", "velar/collections —— 迭代、查找、分组、排序、聚合")}
                 />
                 <CodeBlock code={collectionsCode} />
-                <p>
+                <Paragraph>
                     {locale.text("Language-level callback methods read a checked shallow snapshot, so callback mutation cannot silently extend, truncate, or replace the values participating in the current operation. The imported helpers use the same snapshot boundary, including for Array subclasses with overridden methods or iterators, and values returned from host callbacks normalize JavaScript undefined to null before becoming observable.", "语言层的回调方法读取一份受检的浅快照，因此回调中的修改无法悄悄扩展、截断或替换参与当前操作的值。导入的辅助函数使用同一条快照边界，即使面对重写了方法或迭代器的 Array 子类也是如此；从宿主回调返回的值在变为可观察之前，会把 JavaScript 的 undefined 规范化为 null。")}
-                </p>
+                </Paragraph>
                 <Callout title={locale.text("Ordering never borrows JavaScript's relational coercion", "排序绝不借用 JavaScript 的关系型强制转换")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("The compiler rejects known boolean, record, optional, mixed, and enum key results. An enum carries no runtime order, so the diagnostic teaches sorted(by=rank) or a string-backed enum whose values encode the order. Dynamic keys are checked before comparison.", "编译器拒绝已知的布尔、记录、可选、混合类型以及枚举作为键的结果。枚举不携带运行时顺序，因此诊断会教你使用 sorted(by=rank)，或使用值本身编码了顺序的字符串枚举。动态键在比较之前接受检查。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
 
-                <h2 id="url">{locale.text("velar/url", "velar/url")}</h2>
-                <p>
+                <SectionHeading id="url">{locale.text("velar/url", "velar/url")}</SectionHeading>
+                <Paragraph>
                     {locale.text(`Query names are strings. Values are explicit string, number, and bool scalars, null, or dense Lists of those; records, classes, and functions are rejected instead of becoming "[object Object]". null values are omitted, List values produce repeated keys, and duplicate parsed keys keep their last value. Query numbers must be finite.`, `查询名是字符串。值是显式的 string、number、bool 标量，或 null，或它们的稠密 List；记录、类与函数会被拒绝，而不是变成 "[object Object]"。null 值被省略，List 值产生重复的键，解析出的重复键保留最后一个值。查询中的数字必须是有限数。`)}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={urlMembers}
                     caption={locale.text("velar/url — ten exports", "velar/url —— 十个导出")}
                 />
                 <CodeBlock code={urlCode} />
-                <p>
+                <Paragraph>
                     {locale.text("URL text operations validate actual strings at dynamic boundaries rather than inheriting JavaScript String(...) coercion; this includes the browser's current base URL and every field copied from a native URL result. URL text and encoded query output are limited to 2 MiB, and query maps contain at most 100,000 fields.", "URL 文本操作在动态边界上验证真正的字符串，而不是继承 JavaScript 的 String(...) 强制转换；这包括浏览器的当前 base URL，以及从原生 URL 结果复制过来的每一个字段。URL 文本与编码后的查询输出限制为 2 MiB，查询 map 至多包含 100,000 个字段。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="time">{locale.text("velar/time", "velar/time")}</h2>
-                <p>
+                <SectionHeading id="time">{locale.text("velar/time", "velar/time")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Time values are Unix epoch milliseconds, matching the host runtime without exposing mutable Date objects. date and utc reject out-of-range or nonexistent calendar values instead of using JavaScript Date rollover, and years do not receive JavaScript's special 1900 offset for 0 through 99.", "时间值是 Unix epoch 毫秒，与宿主运行时一致，但不暴露可变的 Date 对象。date 与 utc 拒绝超出范围或不存在的日历值，而不是使用 JavaScript Date 的滚动行为；年份也不会获得 JavaScript 对 0 到 99 的 1900 特殊偏移。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={timeMembers}
                     caption={locale.text("velar/time — eight exports", "velar/time —— 八个导出")}
                 />
                 <CodeBlock code={timeCode} />
-                <p>
+                <Paragraph>
                     {locale.text("ISO parsing is owned and deterministic: a date-only value is UTC midnight, and a datetime must carry Z or a numeric offset, which keeps results identical across JavaScript engines and host time zones. Locale formatting and named-time-zone projection still use the host internationalization data; VelarScript does not invent a second timezone database or datetime object model.", "ISO 解析由语言自己拥有且是确定性的：只有日期的值表示 UTC 午夜，日期时间必须带 Z 或数字偏移，从而让结果在不同 JavaScript 引擎与宿主时区下保持一致。本地化格式化与具名时区投影仍使用宿主的国际化数据；VelarScript 不发明第二套时区数据库或日期时间对象模型。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="id">{locale.text("velar/id", "velar/id")}</h2>
-                <p>
+                <SectionHeading id="id">{locale.text("velar/id", "velar/id")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Two exports, and an import line, because generating an identifier reads the host entropy source. That is question 1 answered: it reaches outside the program.", "两个导出，加一行导入——因为生成标识符要读取宿主的熵源。这就是第一问的答案：它触达程序之外。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={idMembers}
                     caption={locale.text("velar/id — two exports", "velar/id —— 两个导出")}
                 />
                 <CodeBlock code={idCode} />
 
-                <h2 id="log">{locale.text("velar/log", "velar/log")}</h2>
-                <p>
+                <SectionHeading id="log">{locale.text("velar/log", "velar/log")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Structured logging replaces direct source-level access to console while remaining on the existing JavaScript runtime. Without a custom sink the runtime writes through the host console internally; VelarScript source still receives no console global. VelarScript never uploads logs or telemetry automatically.", "结构化日志取代了源码层对 console 的直接访问，同时仍然运行在既有的 JavaScript 运行时之上。没有自定义 sink 时，运行时在内部通过宿主 console 写出；VelarScript 源码依然拿不到 console 全局。VelarScript 绝不自动上传日志或遥测数据。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={logMembers}
                     caption={locale.text("velar/log — five exports", "velar/log —— 五个导出")}
                 />
                 <CodeBlock code={logCode} />
-                <p>
+                <Paragraph>
                     {locale.text("Each sink receives its own fields snapshot, so mutation inside one callback cannot rewrite what another sink observes. One logger accepts at most 1,000 merged fields, field names are limited to 1,024 characters, messages to 64 KiB, scopes to 1,024 characters, and an application may install at most 1,000 sinks. Sink failures fall back to the internal host logger and cannot recursively invoke the failing sink.", "每个 sink 收到属于自己的字段快照，因此某个回调内部的修改无法改写另一个 sink 观察到的内容。单个 logger 至多接受 1,000 个合并字段，字段名限制为 1,024 个字符，消息限制为 64 KiB，作用域限制为 1,024 个字符，应用至多安装 1,000 个 sink。sink 失败时回落到内部宿主 logger，且不会递归调用出错的那个 sink。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="test">{locale.text("velar/test", "velar/test")}</h2>
-                <p>
+                <SectionHeading id="test">{locale.text("velar/test", "velar/test")}</SectionHeading>
+                <Paragraph>
                     {locale.text("velar/test provides the small assertion surface velar test runs, without introducing a second testing language. The two comparison matchers do the language's two comparison jobs, and each is the operation it names rather than a second implementation of it: an assertion that disagreed with the language's own equality would be the worst kind of trap.", "velar/test 提供 velar test 所运行的那一小片断言表面，而不引入第二门测试语言。两个比较匹配器承担语言自身的两项比较工作，并且每一个就是它所命名的那个操作，而不是它的第二份实现：一条与语言自身相等性不一致的断言，会是最糟糕的那类陷阱。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={testMembers}
                     caption={locale.text("velar/test — expect and its matchers", "velar/test —— expect 及其匹配器")}
                 />
                 <CodeBlock code={testCode} />
-                <p>
+                <Paragraph>
                     {locale.text("A test name is a sentence about the code rather than an identifier — it is what you read when the test fails. Failure display is deliberately bounded to 1,000 visited nodes, 16 levels, 50 collection items, and 256 string code units, and it reads only accepted dense List and data-record fields: assertion diagnostics never become an unbounded object inspector.", "测试名是一句关于代码的话，而不是一个标识符——测试失败时你读到的正是它。失败展示被有意限制在 1,000 个访问节点、16 层深度、50 个集合元素与 256 个字符串码点之内，并且只读取被接受的稠密 List 与数据记录字段：断言诊断绝不会变成一个无界的对象检视器。")}
-                </p>
+                </Paragraph>
             </Prose>
         </DocsShell>
     </main>

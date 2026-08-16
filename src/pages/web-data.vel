@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -19,13 +19,6 @@ const sections = [
     {id: "multipart", label: "Multipart bodies", labelZh: "multipart 请求体"},
     {id: "realtime", label: "Realtime connections", labelZh: "实时连接"},
 ]
-
-const pointsLook = look:
-    display = "grid"
-    gap = 7px
-    marginTop = 18px
-    marginBottom = 4px
-    paddingLeft = 22px
 
 const failureRows: List<MemberRow> = [
     {name: "HttpError", signature: "status, url, body", summary: "A non-2xx response. Its url is the final response URL after redirects.", summaryZh: "非 2xx 响应。它的 url 是重定向之后的最终响应 URL。"},
@@ -49,18 +42,20 @@ export component WebData:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="calls">{locale.text("One call convention", "单一调用约定")}</h2>
-                <p>
+                <SectionHeading id="calls">{locale.text("One call convention", "单一调用约定")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Every fixed Web API uses the same call rule as an ordinary function: arguments may be positional or explicitly named. The names are part of the checked contract, optional values may be omitted, and supplied expressions still run from left to right as written even when their names are out of declaration order. Use positional arguments where the meaning is already obvious and named arguments where they remove ambiguity; the compiler rejects unknown, repeated, or missing names instead of guessing.", "每个固定的 Web API 都使用与普通函数相同的调用规则：实参可以是位置形式，也可以显式具名。名字属于受检契约的一部分，可选值可以省略，且即使名字顺序与声明顺序不同，给出的表达式仍按书写的从左到右顺序求值。含义已经显而易见时用位置实参，需要消除歧义时用具名实参；编译器会拒绝未知、重复或缺失的名字，而不是去猜。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={callsCode} />
 
-                <h2 id="storage">{locale.text("Typed local and session storage", "带类型的 local 与 session 存储")}</h2>
-                <p>
+                <SectionHeading id="storage">
+                    {locale.text("Typed local and session storage", "带类型的 local 与 session 存储")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("storage and session publish the same seven members, and scope answers a namespaced view with the same seven. A typed get validates the stored text against a record type and falls back when it does not match, so a half-written key cannot travel under a declared type. Every write goes through the strict data contract, and each read and write accepts a byte budget.", "storage 与 session 发布同样的七个成员，scope 返回一个带命名空间的视图，同样是这七个。带类型的 get 会按记录类型验证存下的文本，不匹配时使用回退值，因此写了一半的键无法顶着已声明的类型流通。每次写入都经过严格的数据契约，且每次读写都接受一个字节预算。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={storageCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("A read whose stored text exceeds the budget returns the declared fallback without parsing it, and a write over budget fails before any storage mutation.", "存储文本超出预算的读取会直接返回声明的回退值而不解析它；超出预算的写入在任何存储改动之前就失败。")}
                     </li>
@@ -70,28 +65,28 @@ export component WebData:
                     <li>
                         {locale.text("Values written directly by JavaScript in a different representation are foreign data and return the declared fallback rather than entering typed code.", "由 JavaScript 以另一种表示直接写入的取值属于外来数据，读取时返回声明的回退值，而不是进入带类型的代码。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="database">{locale.text("The IndexedDB store", "IndexedDB 存储")}</h2>
-                <p>
+                <SectionHeading id="database">{locale.text("The IndexedDB store", "IndexedDB 存储")}</SectionHeading>
+                <Paragraph>
                     {locale.text("database(name) provides the same vocabulary with every member asynchronous, and without scope or watch. Values are stored as canonical strict text rather than arbitrary structured clones, which is what allows an oversized value to be rejected before parsing and a foreign value to return the declared fallback.", "database(name) 提供同样的词汇，但每个成员都是异步的，且没有 scope 与 watch。取值以规范的严格文本存储，而不是任意的结构化克隆，这正是超大取值能在解析前被拒绝、外来取值能返回声明回退值的原因。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={databaseCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Operations resolve only when their transaction commits, not merely when the individual request reports success, so a later abort is observable as the original failure.", "操作只在其事务提交时才解决，而不是在单个请求报告成功时就解决，因此之后的中止会以原始失败的形式被观察到。")}
                     </li>
                     <li>
                         {locale.text("A failed or blocked open resets the cached connection so a later operation may retry, and version changes or unexpected closes discard stale handles.", "打开失败或被阻塞会重置缓存的连接，使之后的操作可以重试；版本变化或意外关闭会丢弃陈旧的句柄。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="http">{locale.text("Requests and typed responses", "请求与带类型的响应")}</h2>
-                <p>
+                <SectionHeading id="http">{locale.text("Requests and typed responses", "请求与带类型的响应")}</SectionHeading>
+                <Paragraph>
                     {locale.text("The seven request constructors create lazy requests, and a request exposes response, json, text, streamText, blob, parse, and cancel. parse uses the existing runtime validator for a declared type, so there is no second schema system to keep in agreement with the first. Options are plain data records with only documented fields; accessors, unknown fields, non-string headers, and forbidden methods fail at request creation.", "七个请求构造函数创建惰性请求，请求暴露 response、json、text、streamText、blob、parse 与 cancel。parse 使用已有的运行时验证器来验证一个已声明的类型，因此不存在需要与第一套保持一致的第二套 schema 系统。选项是只含文档字段的纯数据记录；访问器、未知字段、非字符串请求头与被禁止的方法都会在创建请求时失败。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={httpCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Successful bytes are cached, so repeated text, json, and blob reads are stable and concurrent buffered readers coalesce onto one body read.", "成功读到的字节会被缓存，因此重复的 text、json 与 blob 读取是稳定的，并发的缓冲读取者会合并到同一次 body 读取上。")}
                     </li>
@@ -101,29 +96,29 @@ export component WebData:
                     <li>
                         {locale.text("Cancellation is idempotent and owns the whole lazy request: cancelling before the first body reader prevents the request from starting at all.", "取消是幂等的，并拥有整个惰性请求：在第一个 body 读取者之前取消会让请求根本不启动。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="failures">{locale.text("Discriminated failures", "被区分的失败")}</h2>
-                <p>
+                <SectionHeading id="failures">{locale.text("Discriminated failures", "被区分的失败")}</SectionHeading>
+                <Paragraph>
                     {locale.text("velar/http keeps its own error hierarchy because a caller branches on status, reason, and phase directly rather than on message text. The module does not retry implicitly: status policy, backoff, idempotency, and replay safety belong to the caller.", "velar/http 保留自己的错误层级，因为调用方是直接按 status、reason 与 phase 分支的，而不是按消息文本。该模块不隐式重试：状态策略、退避、幂等性与重放安全都属于调用方。")}
-                </p>
+                </Paragraph>
                 <MemberTable rows={failureRows} caption={locale.text("The three failure classes", "三个失败类")} />
 
-                <h2 id="multipart">{locale.text("Multipart bodies", "multipart 请求体")}</h2>
-                <p>
+                <SectionHeading id="multipart">{locale.text("Multipart bodies", "multipart 请求体")}</SectionHeading>
+                <Paragraph>
                     {locale.text("formBody is the export the Web target adds: a checked multipart builder whose file members accept only opaque records returned by the file picker, so a forged structural object fails at runtime even when it resembles the public file metadata. The browser owns the multipart boundary, which is why supplying a content-type header with a form body is rejected rather than risking an invalid one.", "formBody 是 Web 目标额外添加的导出：一个受检的 multipart 构建器，它的文件成员只接受文件选择器返回的不透明记录，因此伪造的结构化对象即使看起来与公开的文件元数据相同，也会在运行时失败。multipart 的分隔串由浏览器拥有，这正是为 form 请求体同时提供 content-type 请求头会被拒绝、而不是冒险产生无效分隔串的原因。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={formBodyCode} />
-                <p>
+                <Paragraph>
                     {locale.text("A JSON request body uses the same strict lossless data contract as storage: records, dense lists, finite primitives, and null are accepted, while maps, sets, class and function values, cycles, sparse lists, and non-finite numbers fail before the request starts.", "JSON 请求体使用与存储相同的严格无损数据契约：接受记录、稠密列表、有限的基本值与 null，而 Map、Set、类与函数取值、环、稀疏列表与非有限数字都会在请求开始之前失败。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="realtime">{locale.text("Realtime connections", "实时连接")}</h2>
-                <p>
+                <SectionHeading id="realtime">{locale.text("Realtime connections", "实时连接")}</SectionHeading>
+                <Paragraph>
                     {locale.text("socket wraps text WebSocket messages and eventStream wraps server-sent events. Both publish close, so both are ordinary owned resources: a scoped block releases them at its end, and a connection an application keeps open is closed from a sibling cleanup block. The API introduces no effects and no hidden lifecycle behaviour.", "socket 包装文本 WebSocket 消息，eventStream 包装服务器推送事件。两者都发布 close，因此都是普通的受拥有资源：作用域块在结束时释放它们，而应用保持开启的连接则由兄弟清理块关闭。该 API 不引入 effect，也不引入隐藏的生命周期行为。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={realtimeCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Handler records accept only documented enumerable callable fields; accessors and unknown fields fail before the native connection is constructed.", "处理器记录只接受有文档的可枚举可调用字段；访问器与未知字段在构造原生连接之前就失败。")}
                     </li>
@@ -133,11 +128,11 @@ export component WebData:
                     <li>
                         {locale.text("Binary WebSocket messages are reported to the error handler and close the text-only channel.", "二进制 WebSocket 消息会上报给错误处理器，并关闭这条只接受文本的通道。")}
                     </li>
-                </ul>
+                </BulletList>
                 <Callout title={locale.text("One validator, three boundaries", "一个验证器，三条边界")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("Storage, HTTP, and realtime all validate through the same type declaration the rest of the program already uses. A declared type is the runtime validator, so the boundary check and the compile-time check cannot drift apart, and there is no second schema to keep in agreement.", "存储、HTTP 与实时都通过程序其余部分已经在用的同一份类型声明来验证。已声明的类型就是运行时验证器，因此边界检查与编译期检查不会各自漂移，也不存在需要保持一致的第二套 schema。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager previous={guidePrevious("/guide/web/data")} next={guideNext("/guide/web/data")} />

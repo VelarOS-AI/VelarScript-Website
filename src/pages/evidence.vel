@@ -1,0 +1,198 @@
+import {Head, Link} from "velar/web"
+import {BulletList, Callout, CodeBlock, GateNote, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
+import {Container, Section, foundationSea as sea, useLocale} from "@velarscript/site-ui"
+import {headTitle} from "../content.vel"
+
+// Every block on this page is an artifact, not a description of one. The source
+// samples compile under the site's gate; the emitted module is byte-compared
+// against what the compiler really produces. Where a block is a quoted excerpt
+// rather than a gated comparison, the page says so in place — see the gate note
+// under each section.
+const ejectNodeCode = `type Task:\n    id: string\n    title: string\n    done: bool\n\ndef openCount(tasks: readonly List<Task>) -> number:\n    return tasks.filter(task => not task.done).size\n\nconst tasks: List<Task> = [\n    {id: "read", title: "Read the chapter", done: true},\n    {id: "write", title: "Write a module", done: false},\n]\nprint(f"{openCount(tasks)} of {tasks.size} open")`
+
+const ejectEmittedCode = `import {\n  __velarCollectionSize,\n  __velarListFilter,\n} from "velar/compiler-runtime-collection-lowering-v1";\n\nfunction openCount(tasks) {\n  return __velarCollectionSize(__velarListFilter(tasks, task => !(task.done)));\n}\n\nconst tasks = [{ id: "read", title: "Read the chapter", done: true }, { id: "write", title: "Write a module", done: false }];\n\nconsole.log(\`${openCount(tasks)} of ${__velarCollectionSize(tasks)} open\`);`
+
+const runtimeExcerptTextCode = `// dist/node_modules/velar/compiler-runtime-collection-lowering-v1.js, line 480\nfunction __velarListFilter(value, predicate) { const items = __velarCopyList(value, "List.filter"); __velarReactiveCollectionTrack(value); const output = []; for (let index = 0; index < items.length; index += 1) { const item = __velarReactiveCollectionRead(value, index, items[index]); const accepted = predicate(item); if (typeof accepted !== "boolean") throw new __velarCollectionNativeTypeError("List.filter predicate must return bool"); if (accepted) output[output.length] = __velarReactiveRaw(item); } return __velarMarkOwnedList(output); }`
+
+const runtimeSizeTreeCode = "dist/node_modules/velar/\n  compiler-runtime-collection-lowering-v1.js   984 lines\n  compiler-runtime-collections-v1.js           194 lines\n  compiler-runtime-reactive-v1.js              101 lines"
+
+const ejectShellCode = `velar build\n\nmkdir bare && cp -R dist/. bare/\necho '{"name":"ejected-app","private":true,"type":"module"}' > bare/package.json\n\ncd bare && node main.js`
+
+const ejectTreeCode = "bare/main.js\nbare/main.js.map\nbare/node_modules/velar/compiler-runtime-collection-lowering-v1.js\nbare/node_modules/velar/compiler-runtime-collections-v1.js\nbare/node_modules/velar/compiler-runtime-reactive-v1.js\nbare/package.json"
+
+const ejectRunTextCode = "1 of 2 open"
+
+const lookCode = `import {rgb, spacing} from "velar/look"\n\nconst ink = rgb(24, 31, 46)\n\nexport def panelLook(compact: bool) -> Look:\n    return look:\n        display = "grid"\n        gap = 16px\n        padding = spacing(16px, 20px)\n        color = ink\n\n        if compact:\n            gap = 8px\n\n        if viewport.width <= 720px:\n            padding = 12px`
+
+const lookCssCode = `[data-velar-look~="base:display"]{display:var(--velar-look-base-display)}\n[data-velar-look~="base:gap"]{gap:var(--velar-look-base-gap)}\n[data-velar-look~="base:padding"]{padding:var(--velar-look-base-padding)}\n[data-velar-look~="base:color"]{color:var(--velar-look-base-color)}\n@media (width <= 720px){[data-velar-look~="viewport-width-lte-720px:padding"][data-velar-look]{padding:var(--velar-look-viewport-width-lte-720px-padding)}}`
+
+const readonlyErrorCode = `type Task:\n    id: string\n    title: string\n    done: bool\n\ncomponent TaskRow(task: Task):\n    def toggle():\n        task.done = true\n\n    return <li><button type="button" on:click={toggle}>{task.title}</button></li>`
+
+const readonlyErrorOutput = "main.vel:8:9 error VEL3002: Cannot assign through readonly Task; it is a read-only view\n        task.done = true\n        ^^^^^^^^^"
+
+const validatorNodeCode = `export enum Plan:\n    free\n    team\n\nexport type Profile:\n    id: string\n    name: string\n    plan: Plan\n\ndef read(text: string) -> string:\n    try:\n        const profile = Json.parse(text, Profile)\n        return f"ok — {profile.name} on {profile.plan}"\n    catch error:\n        if error is ValidationError:\n            return f"rejected — {error.message}"\n        throw error\n\nprint(read(\`{"id":"u1","name":"Ada","plan":"team"}\`))\nprint(read(\`{"id":"u1","name":"Ada","plan":"enterprise"}\`))\nprint(read(\`{"id":"u1","name":"Ada"}\`))\nprint(read(\`{"id":"u1","name":42,"plan":"free"}\`))`
+
+const validatorRunTextCode = "ok — Ada on team\nrejected — Value does not match Profile — field 'plan' does not match Plan\nrejected — Value does not match Profile — field 'plan' is missing\nrejected — Value does not match Profile — field 'name' does not match string"
+
+const sections = [
+    {id: "module", label: "What one module compiles to", labelZh: "一个模块编译成什么"},
+    {id: "runtime", label: "The runtime that ships with it", labelZh: "随产物一起交付的运行时"},
+    {id: "leave", label: "Leaving, on plain Node", labelZh: "只用 Node 带着产物离开"},
+    {id: "look", label: "Look, extracted at build time", labelZh: "Look 在构建期被提取"},
+    {id: "refuse", label: "What the compiler refuses", labelZh: "编译器拒绝什么"},
+    {id: "validator", label: "One declaration, checked at run time", labelZh: "一份声明，运行时受检"},
+]
+
+const linkLook = look:
+    color = sea
+    textDecoration = "none"
+
+    if @hover:
+        textDecoration = "underline"
+
+export component Evidence:
+    const locale = useLocale()
+    return <main data-evidence>
+        <Head
+            title={headTitle("/evidence", locale.isChinese())}
+            description={locale.text("The compiled output, the generated runtime, the eject path, the extracted stylesheet, and the diagnostics — as artifacts rather than descriptions.", "编译产物、生成的运行时、离开的路径、被提取的样式表，以及诊断本身——都以实物给出，不以描述给出。")}
+            themeColor="#f7f5f0"
+        />
+        <Section>
+            <Container narrow={true}>
+                <PageHeader
+                    kicker={locale.text("Evidence", "证据")}
+                    title={locale.text("What the compiler actually produces", "编译器到底产出什么")}
+                    summary={locale.text("Other pages describe the output. This one shows it. Every block below was produced by running the toolchain, and each section names the gate that keeps it true — or says plainly when a block is a quoted excerpt instead.", "其他页面描述产物，这一页把产物摆出来。下面每一块都是真的跑出来的；每一节都写明是哪道门禁在守着它——如果某一块只是摘录而没有门禁，也直说。")}
+                />
+                <SectionList items={sections} />
+                <Prose>
+                    <Paragraph>
+                        {locale.text("A language that promises readable output has to be checkable on that promise, and a screenshot of prose is not a check. So this page is built the other way round: the artifacts come first, and the sentences only say where each one came from and what keeps it honest.", "一门语言如果承诺产物可读，那它必须能被查验，而一段散文不构成查验。所以这一页是反过来搭的：先摆实物，句子只负责说明每一件实物从哪来、靠什么守着不变质。")}
+                    </Paragraph>
+
+                    <SectionHeading id="module">
+                        {locale.text("What one module compiles to", "一个模块编译成什么")}
+                    </SectionHeading>
+                    <Paragraph>
+                        {locale.text("This is a whole program for the Node target — nothing elided, nothing simplified for the page.", "这是 Node 目标下的一个完整程序，没有省略，也没有为了上页面而简化。")}
+                    </Paragraph>
+                    <CodeBlock code={ejectNodeCode} />
+                    <Paragraph>
+                        {locale.text("And this is dist/main.js after velar build, unedited:", "下面是 velar build 之后的 dist/main.js，未经编辑：")}
+                    </Paragraph>
+                    <CodeBlock code={ejectEmittedCode} />
+                    <Paragraph>
+                        {locale.text("Your function keeps its name and its shape. The collection call became a named helper import rather than a method on a wrapped object, which is why the output reads as ordinary JavaScript instead of as a framework's internals.", "你的函数名字和形状都还在。集合调用变成了一个具名的助手导入，而不是包装对象上的方法——这就是为什么这段产物读起来是普通 JavaScript，而不是某个框架的内部机制。")}
+                    </Paragraph>
+                    <GateNote>
+                        {locale.text("Gate: the two blocks above are a gated pair. This site's build compiles the first one and compares the second byte for byte against what the compiler emits, ignoring only the trailing sourceMappingURL line. If the emitter changes, this page fails to build.", "门禁：上面两块是一对受检样本。本站构建会编译第一块，并把第二块与编译器真实发出的产物逐字节比对，只忽略末尾的 sourceMappingURL 一行。emitter 一旦变了，这一页就构建不过。")}
+                    </GateNote>
+
+                    <SectionHeading id="runtime">
+                        {locale.text("The runtime that ships with it", "随产物一起交付的运行时")}
+                    </SectionHeading>
+                    <Paragraph>
+                        {locale.text("The build also writes a generated runtime beside your module. It is part of the build output, not part of the toolchain — you keep it when you leave.", "构建还会在你的模块旁边写出一份生成的运行时。它属于构建产物，不属于工具链——你离开的时候把它一起带走。")}
+                    </Paragraph>
+                    <CodeBlock code={runtimeSizeTreeCode} />
+                    <Paragraph>
+                        {locale.text("Judge the readability yourself rather than take an adjective for it. This is one function from the largest of those files:", "可读性请自己判断，不要接受一个形容词。下面是最大那个文件里的一个函数：")}
+                    </Paragraph>
+                    <CodeBlock code={runtimeExcerptTextCode} />
+                    <Paragraph>
+                        {locale.text("Names are intact, nothing is minified, and you can read what it does. It is also written one statement per line and was not laid out for browsing. Both of those are true, and the second one is the reason this excerpt is here rather than a sentence claiming the runtime is pleasant to read.", "名字完整，没有压缩，你能读懂它在做什么。同时它也是一行写完一个函数、并非为人浏览排版的。这两件事都是真的；把这段摘录放在这里，正是因为第二件事——比起一句「运行时读起来很舒服」，你更该自己看一眼。")}
+                    </Paragraph>
+                    <GateNote>
+                        {locale.text("Gate: none — this block is a quoted excerpt, not a compared artifact. The file and line are given so you can open your own build and check it. The line count comes from the same build that produced the module above.", "门禁：没有——这一块是摘录，不是受比对的产物。文件名与行号都给了，你可以打开自己的构建去核对。行数来自与上一节同一次构建。")}
+                    </GateNote>
+
+                    <SectionHeading id="leave">
+                        {locale.text("Leaving, on plain Node", "只用 Node 带着产物离开")}
+                    </SectionHeading>
+                    <Paragraph>
+                        {locale.text("The strongest thing a toolchain can say about lock-in is a command sequence you can run yourself. Build, copy only the output into an empty directory, and run it with nothing but Node:", "关于「会不会被锁死」，一套工具链能说的最有力的话，是一串你可以自己跑的命令。构建，把产物复制进一个空目录，然后只用 Node 跑它：")}
+                    </Paragraph>
+                    <CodeBlock code={ejectShellCode} />
+                    <Paragraph>
+                        {locale.text("The empty directory now holds exactly this — no compiler, no CLI, no @velarscript packages:", "那个空目录里现在只有这些——没有编译器、没有 CLI、没有任何 @velarscript 包：")}
+                    </Paragraph>
+                    <CodeBlock code={ejectTreeCode} />
+                    <Paragraph>{locale.text("And it prints:", "它打印出：")}</Paragraph>
+                    <CodeBlock code={ejectRunTextCode} />
+                    <GateNote>
+                        {locale.text("Gate: tests/package.acceptance.ts in the language repository, the block commented \"Anti-lock-in eject gate\". It asserts more than the run above: the emitted output must import nothing from @velarscript, the bare directory's node_modules may contain only the generated runtime, and the ejected program's output must match the original build's exactly.", "门禁：语言仓的 tests/package.acceptance.ts，注释写着「Anti-lock-in eject gate」的那一段。它断言的比上面这次手跑更严：产物不许 import 任何 @velarscript，空目录的 node_modules 里只许有那份生成的运行时，且弹出后的输出必须与原构建完全一致。")}
+                    </GateNote>
+                    <Callout title={locale.text("Where this stops being true", "这条到哪里为止")}>
+                        <Paragraph>
+                            {locale.text("That gate covers the Node target. A production web build bundles, minifies, and content-hashes for deployment, so the deployed bundle is not the form you read — a web application's readable form is its module emission plus source maps. Saying otherwise would be the easy claim, and it would be false.", "这道门禁守的是 Node 目标。生产 Web 构建会为部署做打包、压缩与内容哈希，所以部署出来的 bundle 不是拿来读的那一份——Web 应用的可读形态是模块发射加 source map。把这一点含糊过去会更好听，但那是假话。")}
+                        </Paragraph>
+                        <Paragraph>
+                            <Link to="/reference/escape-hatches" look={linkLook}>
+                                {locale.text("Escape hatches", "逃生通道")}
+                            </Link>
+                        </Paragraph>
+                    </Callout>
+
+                    <SectionHeading id="look">
+                        {locale.text("Look, extracted at build time", "Look 在构建期被提取")}
+                    </SectionHeading>
+                    <Paragraph>
+                        {locale.text("A runtime style library evaluates styles while the page runs and inserts rules as it goes. A look literal is built once, where it is written, and the compiler lifts it into the build's stylesheet. That difference is invisible in prose and obvious in the output.", "运行时样式库是在页面跑起来之后求值、边跑边插规则。look 字面量则在它被写下的位置构建一次，由编译器提到构建的样式表里。这个差别用文字说不清楚，看产物就一目了然。")}
+                    </Paragraph>
+                    <CodeBlock code={lookCode} />
+                    <Paragraph>
+                        {locale.text("The build's stylesheet then contains these rules — including the breakpoint, as a real media query — before the application has run a single line:", "构建出来的样式表里于是有了这些规则——连断点都是一条真正的媒体查询——而此时应用一行都还没跑：")}
+                    </Paragraph>
+                    <CodeBlock code={lookCssCode} />
+                    <GateNote>
+                        {locale.text("Gate: the source above is compiled by this site's sample gate. The CSS below it is a quoted excerpt from that build's stylesheet, not a byte-compared artifact — the gate can compare an emitted module today but not an emitted stylesheet. Treat the rule text as illustrative of the shape and the timing, not as a byte guarantee.", "门禁：上面那段源码由本站样本门禁编译。下面的 CSS 是那次构建的样式表摘录，不是逐字节比对的产物——门禁今天能比对发出的模块，还不能比对发出的样式表。请把规则文本当作对形态与时机的说明，而不是逐字节的保证。")}
+                    </GateNote>
+
+                    <SectionHeading id="refuse">{locale.text("What the compiler refuses", "编译器拒绝什么")}</SectionHeading>
+                    <Paragraph>
+                        {locale.text("A row component receives a task and marks it done the obvious way. In most component systems this compiles, runs, and quietly writes into the parent's data.", "一个行组件收到一个 task，用最自然的方式把它标记为完成。在多数组件系统里，这段代码能编译、能运行，并且悄悄写进了父组件的数据。")}
+                    </Paragraph>
+                    <CodeBlock code={readonlyErrorCode} />
+                    <Paragraph>{locale.text("Here it does not compile:", "在这里它编译不过：")}</Paragraph>
+                    <CodeBlock code={readonlyErrorOutput} />
+                    <Paragraph>
+                        {locale.text("A record prop arrives as a transitive read-only view, so the child reports which item it is and the owner performs the change. The cost is one callback hop; what it buys is that every change to a piece of state has exactly one possible author.", "记录 prop 是以传递性只读视图进来的，所以子组件只说「是哪一个」，真正的改动由数据的拥有者做。代价是多一次回调往返；换到的是：每一份状态的每一次改动，都只可能有一个作者。")}
+                    </Paragraph>
+                    <GateNote>
+                        {locale.text("Gate: this pair is a checked counter-example. The site's gate compiles the sample and fails the build if it stops producing a diagnostic, and it verifies that every VEL code quoted above is one the sample really produces.", "门禁：这一对是受检的教学反例。本站门禁会编译该样本，一旦它不再报错就让构建失败；并且会校验上面引用的每个 VEL 码确实由这个样本产生。")}
+                    </GateNote>
+
+                    <SectionHeading id="validator">
+                        {locale.text("One declaration, checked at run time", "一份声明，运行时受检")}
+                    </SectionHeading>
+                    <Paragraph>
+                        {locale.text("There is no schema object here and no second way of describing the data. The second argument to Json.parse is the type itself.", "这里没有 schema 对象，也没有第二种描述数据的写法。Json.parse 的第二个参数就是那个类型本身。")}
+                    </Paragraph>
+                    <CodeBlock code={validatorNodeCode} />
+                    <Paragraph>{locale.text("Running it prints:", "跑起来打印出：")}</Paragraph>
+                    <CodeBlock code={validatorRunTextCode} />
+                    <Paragraph>
+                        {locale.text("Three kinds of bad data, rejected field by field: an enum value outside the set, a missing field, and a field of the wrong type. The declaration the compiler checks your source against is the same one doing this.", "三种坏数据，逐字段被拒：枚举取值不在集合内、字段缺失、字段类型不对。编译器用来检查你源码的那份声明，就是在这里干活的这一份。")}
+                    </Paragraph>
+                    <BulletList>
+                        <li>
+                            {locale.text("The same declaration validates HTTP responses, stored values, decoded forms, and the manifest's public configuration, so one change reaches every use at once.", "同一份声明也用于验证 HTTP 响应、存储读出的值、解码后的表单，以及清单里的公开配置——所以改一次，处处生效。")}
+                        </li>
+                        <li>
+                            {locale.text("The honest scope: this is a language-level guarantee under the standard toolchain, not a claim that nothing else can do it. A schema library gives you one declaration too, with the type inferred from the schema rather than the other way round, and it gives you far more room for business rules — required text, trimming, minimums — which here stay ordinary application code.", "诚实的边界：这是语言层面、标准工具链下的保证，不是说别人做不到。schema 库同样只要一份声明，只不过类型是从 schema 推出来的；而且它在业务规则上给得多得多——必填、去空白、最小值——这些在这里仍然是普通的应用代码。")}
+                        </li>
+                    </BulletList>
+                    <GateNote>
+                        {locale.text("Gate: the source above is compiled by this site's sample gate. The printed output is a transcript of running it, not a compared artifact.", "门禁：上面的源码由本站样本门禁编译。打印出来的输出是一次真实运行的记录，不是受比对的产物。")}
+                    </GateNote>
+
+                    <Callout title={locale.text("What this page does not show", "这一页没有给出什么")}>
+                        <Paragraph>
+                            {locale.text("No benchmark numbers, here or anywhere on this site. The output is JavaScript running on the same engine as everything it might be compared with, so language-level speed is not a claim VelarScript is in a position to make. If a measurement ever appears, it will run in continuous integration and be reproducible from the repository first.", "没有任何基准数字，这一页没有，全站也没有。产物是 JavaScript，跑在和被比较对象同一个引擎上，所以「语言层面的速度」根本不是 VelarScript 有资格作出的断言。如果将来出现测量数字，那一定是先进了持续集成、并且可以从仓库复现之后的事。")}
+                        </Paragraph>
+                    </Callout>
+                </Prose>
+            </Container>
+        </Section>
+    </main>

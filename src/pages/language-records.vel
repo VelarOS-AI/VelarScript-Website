@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -13,12 +13,6 @@ const enumsCode = `export enum Status:\n    pending\n    active\n    done\n\ncon
 const wireErrorCode = "enum Status:\n    pending\n    done\n\nexport def isDone(raw: string) -> bool:\n    return raw == Status.done"
 const wireErrorOutput = "main.vel:6:12 error VEL4001: string and Status.done can meet only where an enum member matches a raw string, and the enum and string domains never meet in '=='; an enum member converts to string only as a one-way wire exit, so choose by what an unknown value means here: write Status.parse(text) == Status.done when the text must name a member — Status.parse throws on anything else — or str(Status.done) == text when unknown values are expected and must be ignored, as on an open wire protocol\n    return raw == Status.done\n           ^^^^^^^^^^^^^^^^^^"
 const unionsCode = `export enum EventKind:\n    text\n    tool\n\nexport type TextEvent:\n    kind: EventKind.text\n    text: string\n\nexport type ToolEvent:\n    kind: EventKind.tool\n    toolId: string\n\nexport type Event = TextEvent | ToolEvent\n\nexport def describe(event: Event) -> string:\n    if event.kind == EventKind.text:\n        return event.text\n    return event.toolId\n\nexport def describeByMatch(event: Event) -> string:\n    match event:\n        case {kind: EventKind.text}:\n            return event.text\n        case {kind: EventKind.tool}:\n            return event.toolId\n\n// Reading a field every member shares produces the union of its field types.\nexport def sharedField(event: Event) -> EventKind:\n    return event.kind\n\n// An assertion carries a singleton fact back to the owning record too.\nexport def assertedVariant(event: Event) -> string:\n    assert event.kind == EventKind.tool else "expected a tool event"\n    return event.toolId`
-
-const pointsLook = look:
-    display = "grid"
-    gap = 8px
-    margin = 0
-    paddingInlineStart = 20px
 
 const sections = [
     {id: "shapes", label: "Record shapes", labelZh: "记录形状"},
@@ -45,72 +39,72 @@ export component LanguageRecords:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="shapes">{locale.text("Record shapes", "记录形状")}</h2>
-                <p>
+                <SectionHeading id="shapes">{locale.text("Record shapes", "记录形状")}</SectionHeading>
+                <Paragraph>
                     {locale.text("One keyword declares both record shapes and aliases. The colon form declares a structural record: fields may be optional or read-only, and may hold Lists, Maps, Records, functions, classes, enums, and bounded unions. A record type is structurally open, so a field a newer producer added arrives without breaking the shape.", "一个关键字同时声明记录形状与别名。冒号形式声明一个结构化记录：字段可以是可选的或只读的，也可以承载 List、Map、Record、函数、类、枚举与有界联合。记录类型在结构上是开放的，因此更新过的生产者新增的字段能够到达，而不会撑破形状。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={shapesCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={interfaceErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={interfaceErrorOutput} />
-                <p>
+                <Paragraph>
                     {locale.text("The words interface, record, and struct all report the same way. Three spellings for one idea would make a reader ask what the choice meant, so there is one.", "interface、record、struct 三个词得到同样的报告。一个想法有三种拼写会让读者追问这次选择意味着什么，因此这里只有一种。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="aliases">{locale.text("Aliases", "别名")}</h2>
-                <p>
+                <SectionHeading id="aliases">{locale.text("Aliases", "别名")}</SectionHeading>
+                <Paragraph>
                     {locale.text("The equals form gives an existing type a readable name. An alias is transparent: it expands for checking and crosses module boundaries without creating a wrapper the caller has to unwrap. It also carries the origin's validator, so an alias is usable everywhere a record type is.", "等号形式给现有类型一个可读的名字。别名是透明的：检查时展开，跨模块传递，且不会造出一个调用方还得拆开的包装。它同样携带原类型的验证器，因此别名可以用在任何能用记录类型的位置。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={aliasesCode} />
 
-                <h2 id="validator">{locale.text("The runtime validator", "运行时验证器")}</h2>
-                <p>
+                <SectionHeading id="validator">{locale.text("The runtime validator", "运行时验证器")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Every record type, alias, and enum carries parse and is. The declaration that checks the source is the same declaration that validates data arriving from JSON, HTTP, storage, and forms — there is no second schema to keep in step with the first. parse answers the checked value or throws ValidationError with the path and reason of the first field that did not fit; is answers a bool and narrows the value on the branch that follows.", "每个记录类型、别名与枚举都自带 parse 与 is。检查源码的那份声明，同时验证来自 JSON、HTTP、存储与表单的数据——不存在第二套需要与第一套保持同步的 schema。parse 给出受检的值，或抛出 ValidationError 并带上第一个不合形状字段的路径与原因；is 给出一个 bool，并在随后的分支中收窄该值。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={validatorCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Validation reads data. It never invokes a getter merely to inspect a value.", "验证只读取数据，绝不会仅仅为了检查一个值而调用取值器。")}
                     </li>
                     <li>
                         {locale.text("The try expression turns a parse into an optional when a fallback exists, which the errors chapter covers.", "当存在回退方案时，try 表达式把一次 parse 变成可选值；这一点在错误一章展开。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="carrier">{locale.text("Validators as values", "作为值的验证器")}</h2>
-                <p>
+                <SectionHeading id="carrier">{locale.text("Validators as values", "作为值的验证器")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A type name in value position is a compiler-known carrier, so a decoder can be written once and reused for every type. That carrier is what lets a boundary helper stay generic without a type-level program behind it.", "处于值位置的类型名是一个编译器已知的载体，因此解码器只需写一次，就能对每个类型复用。正是这个载体让边界辅助函数保持通用，而背后不需要一段类型级程序。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={carrierCode} />
 
-                <h2 id="enums">{locale.text("Enums", "枚举")}</h2>
-                <p>
+                <SectionHeading id="enums">{locale.text("Enums", "枚举")}</SectionHeading>
+                <Paragraph>
                     {locale.text("An enum is a finite, string-backed workflow state. Members serialize under their own names unless a member maps its name onto one explicit wire string. values() answers a fresh List in declaration order, so iterating the member set needs no spread of the enum itself.", "枚举是有限的、以字符串承载的工作流状态。成员按自身名字序列化，除非某个成员把名字映射到一个显式的传输字符串。values() 给出按声明顺序排列的全新 List，因此遍历成员集合无需展开枚举本身。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={enumsCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={wireErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={wireErrorOutput} />
                 <Callout title={locale.text("The diagnostic asks a design question", "这条诊断问的是一个设计问题")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("The two suggested spellings differ in what an unknown value means. Parsing states that the text must name a member and throws on anything else; comparing the text form answers false for a value this program does not know, which is what an open wire protocol wants. The compiler cannot pick for the author, so it names both.", "两种建议拼写的差别在于：未知值意味着什么。parse 声明该文本必须命名一个成员，遇到别的就抛出；比较文本形式则对本程序不认识的值答 false，这正是开放传输协议所需要的。编译器无法替作者做这个选择，于是把两条都点了出来。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
 
-                <h2 id="unions">{locale.text("Discriminated unions", "可判别联合")}</h2>
-                <p>
+                <SectionHeading id="unions">{locale.text("Discriminated unions", "可判别联合")}</SectionHeading>
+                <Paragraph>
                     {locale.text("An enum member is usable in type position, which makes a field a singleton. A union of records whose discriminating field is a singleton is discriminated: comparing that field, matching a record pattern on it, or asserting it all narrow the whole record. Reading a field every member shares produces the union of its field types.", "枚举成员可以出现在类型位置，这让一个字段成为单例。若一组记录的判别字段是单例，它们的联合就是可判别的：比较该字段、对它做记录模式匹配，或对它断言，都会收窄整条记录。读取每个成员共有的字段，得到的是这些字段类型的联合。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={unionsCode} />
             </Prose>
             <DocsPager

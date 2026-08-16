@@ -1,5 +1,5 @@
 import {Head, Link} from "velar/web"
-import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {foundationSea as sea, useLocale} from "@velarscript/site-ui"
 
 import {headTitle, referenceNav} from "../content.vel"
@@ -144,7 +144,7 @@ const testMembers = [
 
 const sections = [
     {id: "web", label: "velar/web", labelZh: "velar/web"},
-    {id: "app", label: "velar/app", labelZh: "velar/app"},
+    {id: "velar-app", label: "velar/app", labelZh: "velar/app"},
     {id: "config", label: "velar/config", labelZh: "velar/config"},
     {id: "look", label: "velar/look", labelZh: "velar/look"},
     {id: "http", label: "velar/http", labelZh: "velar/http"},
@@ -176,163 +176,165 @@ export component ReferenceWeb:
             />
             <SectionList items={sections} />
             <Prose>
-                <p>
+                <Paragraph>
                     {locale.text("These modules exist only when velar.json activates @velarscript/web. The language core owns no browser word: component, JSX, state, resource, action, watch, @mounted, @cleanup, look, keyframes, the unsafe CSS import, and the three reserved globals computed, mount, and tick are the complete addition the extension makes to the language. Everything below is a module, not syntax.", "只有当 velar.json 激活 @velarscript/web 时，这些模块才存在。语言核心不拥有任何浏览器词汇：component、JSX、state、resource、action、watch、@mounted、@cleanup、look、keyframes、unsafe CSS 导入，以及三个保留全局 computed、mount 与 tick，构成了该扩展对语言的全部增补。下面列出的都是模块，而不是语法。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={webServicesCode} />
 
-                <h2 id="web">{locale.text("velar/web", "velar/web")}</h2>
-                <p>
+                <SectionHeading id="web">{locale.text("velar/web", "velar/web")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Routing, navigation, document metadata, and two accessibility primitives. A mounted Router constructs the target component before destroying or replacing the active page: if construction fails, the prior page remains mounted and velar/app receives the failure, so a broken route does not blank the application.", "路由、导航、文档元数据，以及两个无障碍原语。已挂载的 Router 会先构造目标组件，再销毁或替换当前页面：若构造失败，先前的页面保持挂载，失败交给 velar/app，因此一条坏路由不会让应用变成空白。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={webMembers}
                     caption={locale.text("velar/web — fifteen exports", "velar/web —— 十五个导出")}
                 />
-                <p>
+                <Paragraph>
                     <Link to="/guide/web/routing" look={chapterLinkLook}>
                         {locale.text("Guide: Routing and configuration", "指南：路由与配置")}
                     </Link>
-                </p>
+                </Paragraph>
 
-                <h2 id="app">{locale.text("velar/app", "velar/app")}</h2>
-                <p>
+                <SectionHeading id="velar-app">{locale.text("velar/app", "velar/app")}</SectionHeading>
+                <Paragraph>
                     {locale.text("One error channel for the whole application. The compiler reports failures from initial mount, reactive render and synchronous watch blocks, synchronous or asynchronous events, @mounted, and @cleanup. A detached async statement reports its rejection through the same chain under the distinct detached phase; with no handler installed the failure surfaces through the host runtime, never silently.", "整个应用共用一条错误通道。编译器会报告来自初次 mount、响应式 render 与同步 watch 块、同步或异步事件、@mounted 与 @cleanup 的失败。分离的 async 语句通过同一条链路以独立的 detached 阶段报告其拒绝；未安装处理器时，失败通过宿主运行时浮现，绝不会被静默吞掉。")}
-                </p>
+                </Paragraph>
                 <MemberTable rows={appMembers} caption={locale.text("velar/app — two exports", "velar/app —— 两个导出")} />
-                <p>
+                <Paragraph>
                     <Link to="/guide/web/lifecycle" look={chapterLinkLook}>
                         {locale.text("Guide: Lifecycle and mount", "指南：生命周期与挂载")}
                     </Link>
-                </p>
+                </Paragraph>
 
-                <h2 id="config">{locale.text("velar/config", "velar/config")}</h2>
-                <p>
+                <SectionHeading id="config">{locale.text("velar/config", "velar/config")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Only velar.json's web.publicConfig is read. It must be a JSON object, is limited to 64 KiB, rejects non-finite and non-JSON values and the reserved keys __proto__, prototype, and constructor, and is recursively frozen. It is baked into the content-hashed application entry at build time, so changing it changes the build identity. VelarScript never implicitly reads .env, process.env, server configuration, or secrets, and this boundary must contain public values only.", "只读取 velar.json 的 web.publicConfig。它必须是 JSON 对象，限制为 64 KiB，拒绝非有限值、非 JSON 值以及 __proto__、prototype、constructor 这三个保留键，并被递归冻结。它在构建时被编入内容哈希的应用入口，因此修改它就会改变构建标识。VelarScript 绝不隐式读取 .env、process.env、服务器配置或密钥，这条边界只能承载公开值。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={configMembers}
                     caption={locale.text("velar/config — three exports", "velar/config —— 三个导出")}
                 />
-                <p>
+                <Paragraph>
                     <Link to="/guide/web/routing" look={chapterLinkLook}>
                         {locale.text("Guide: Routing and configuration", "指南：路由与配置")}
                     </Link>
-                </p>
+                </Paragraph>
 
-                <h2 id="look">{locale.text("velar/look", "velar/look")}</h2>
-                <p>
+                <SectionHeading id="look">{locale.text("velar/look", "velar/look")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Unit suffixes are language syntax and need no import: px, rem, em, vw, vh, vmin, and vmax are Length; % is Percentage; fr is TrackFraction; ms and s are Duration; deg and turn are Angle. The builders are named imports, so the import list at the top of a file names the visual vocabulary that file speaks. Each is an ordinary value, so const make = rgb aliases it and higher-order use keeps the same checked signature.", "单位后缀是语言语法，无需导入：px、rem、em、vw、vh、vmin 与 vmax 是 Length；% 是 Percentage；fr 是 TrackFraction；ms 与 s 是 Duration；deg 与 turn 是 Angle。构建器是具名导入，因此文件顶部的导入清单写明了这个文件所说的视觉词汇。每一个都是普通值，因此 const make = rgb 可以为它取别名，高阶使用也保持同一份受检签名。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={lookMembers}
                     caption={locale.text("velar/look — twenty builders, plus the visual Type objects", "velar/look —— 二十个构建器，以及视觉类型对象")}
                 />
-                <p><Link to="/guide/web/look" look={chapterLinkLook}>{locale.text("Guide: Look", "指南：Look")}</Link></p>
+                <Paragraph>
+                    <Link to="/guide/web/look" look={chapterLinkLook}>{locale.text("Guide: Look", "指南：Look")}</Link>
+                </Paragraph>
 
-                <h2 id="http">{locale.text("velar/http", "velar/http")}</h2>
-                <p>
+                <SectionHeading id="http">{locale.text("velar/http", "velar/http")}</SectionHeading>
+                <Paragraph>
                     {locale.text("One call convention: a lazy request object, then a body reader. Object bodies are snapshotted and JSON encoded when the request is created rather than when a reader starts fetching, so later mutation cannot change what is dispatched. velar/http does not retry implicitly — status policy, backoff, idempotency, and replay safety belong to the caller.", "统一的调用约定：先得到一个惰性请求对象，再调用请求体读取器。对象形式的请求体在请求创建时就完成快照与 JSON 编码，而不是等到读取器开始 fetch，因此之后的修改无法改变实际发出的内容。velar/http 不做隐式重试——状态码策略、退避、幂等性与重放安全都归调用方。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={httpMembers}
                     caption={locale.text("velar/http — the request surface and the three failure classes", "velar/http —— 请求表面与三类失败")}
                 />
-                <p>
+                <Paragraph>
                     <Link to="/guide/web/data" look={chapterLinkLook}>
                         {locale.text("Guide: Storage, HTTP and realtime", "指南：存储、HTTP 与实时")}
                     </Link>
-                </p>
+                </Paragraph>
 
-                <h2 id="storage">{locale.text("velar/storage", "velar/storage")}</h2>
-                <p>
+                <SectionHeading id="storage">{locale.text("velar/storage", "velar/storage")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Every write uses the strict JSON data contract. Unsupported or lossy values visible to the compiler fail during checking; dynamic values are validated again at runtime before storage is mutated. IndexedDB accepts only its strict JSON text representation before type validation, so a Date, Map, accessor record, or other foreign value written by JavaScript cannot enter through a permissive runtime type — the read returns its declared fallback instead.", "每一次写入都使用严格的 JSON 数据契约。编译器可见的不支持或有损的值在检查期失败；动态值在存储被修改之前于运行时再次验证。IndexedDB 在类型验证之前只接受它的严格 JSON 文本表示，因此由 JavaScript 写入的 Date、Map、访问器记录或其他外来值无法通过宽松的运行时类型进入——读取会返回声明的兜底值。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={storageMembers}
                     caption={locale.text("velar/storage — three exports and their members", "velar/storage —— 三个导出及其成员")}
                 />
                 <CodeBlock code={webBrowserCode} />
-                <p>
+                <Paragraph>
                     <Link to="/guide/web/data" look={chapterLinkLook}>
                         {locale.text("Guide: Storage, HTTP and realtime", "指南：存储、HTTP 与实时")}
                     </Link>
-                </p>
+                </Paragraph>
 
-                <h2 id="forms">{locale.text("velar/forms", "velar/forms")}</h2>
-                <p>
+                <SectionHeading id="forms">{locale.text("velar/forms", "velar/forms")}</SectionHeading>
+                <Paragraph>
                     {locale.text("read decodes a flat native form into the existing colon-form record type: string, finite number, bool checkboxes, enums, List<string> repeated fields, and optional string, number, and enum fields. Blank optional numbers and missing optional scalars become null; invalid required numbers, enums, native files, nested records, and unsupported collections fail explicitly. read does not create another schema language or infer business rules — required text, trimming, minimums, custom messages, and submission behavior remain application code and ordinary HTML attributes.", "read 把扁平的原生表单解码为既有的冒号式记录类型：string、有限 number、bool 复选框、枚举、List<string> 重复字段，以及可选的 string、number 与枚举字段。空白的可选数字与缺失的可选标量变为 null；无效的必填数字、枚举、原生文件、嵌套记录与不支持的集合都会显式失败。read 不会造出另一门 schema 语言，也不推断业务规则——必填、去空白、最小值、自定义消息与提交行为，仍然由应用代码与普通 HTML 属性负责。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={formsMembers}
                     caption={locale.text("velar/forms — fourteen exports", "velar/forms —— 十四个导出")}
                 />
-                <p>
+                <Paragraph>
                     <Link to="/guide/web/browser" look={chapterLinkLook}>
                         {locale.text("Guide: Browser capabilities", "指南：浏览器能力")}
                     </Link>
-                </p>
+                </Paragraph>
 
-                <h2 id="browser">{locale.text("velar/browser", "velar/browser")}</h2>
-                <p>
+                <SectionHeading id="browser">{locale.text("velar/browser", "velar/browser")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Timer handles are explicit component resources: start them during setup or @mounted, retain the returned stop function, and release it from the sibling @cleanup block. VelarScript exposes no setTimeout, no setInterval, and no React-style effect API.", "定时器句柄是显式的组件资源：在 setup 或 @mounted 中启动，保留返回的停止函数，并在同级的 @cleanup 块中释放。VelarScript 不暴露 setTimeout、setInterval，也没有 React 式的 effect API。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={browserMembers}
                     caption={locale.text("velar/browser — timers, environment, layout, focus, dialogs, selection, clipboard", "velar/browser —— 定时器、环境、布局、焦点、对话框、选区、剪贴板")}
                 />
-                <p>
+                <Paragraph>
                     <Link to="/guide/web/browser" look={chapterLinkLook}>
                         {locale.text("Guide: Browser capabilities", "指南：浏览器能力")}
                     </Link>
-                </p>
+                </Paragraph>
 
-                <h2 id="files">{locale.text("velar/files", "velar/files")}</h2>
-                <p>
+                <SectionHeading id="files">{locale.text("velar/files", "velar/files")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Native authority lives in a host-private registry rather than a copyable record field, so a forged structural object fails at runtime even when it resembles the public file metadata. Directory access, persistent file handles, and the File System Access API are deliberately outside this version.", "原生权威存放在宿主私有的注册表中，而不是可复制的记录字段，因此伪造的结构对象即使看起来与公开的文件元数据一致，也会在运行时失败。目录访问、持久文件句柄与 File System Access API 被有意排除在本版本之外。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={filesMembers}
                     caption={locale.text("velar/files — four exports and one opaque value", "velar/files —— 四个导出与一个不透明值")}
                 />
-                <p>
+                <Paragraph>
                     <Link to="/guide/web/browser" look={chapterLinkLook}>
                         {locale.text("Guide: Browser capabilities", "指南：浏览器能力")}
                     </Link>
-                </p>
+                </Paragraph>
 
-                <h2 id="realtime">{locale.text("velar/realtime", "velar/realtime")}</h2>
-                <p>
+                <SectionHeading id="realtime">{locale.text("velar/realtime", "velar/realtime")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Connections are ordinary owned resources: applications close them explicitly from a sibling @cleanup. Handler throws and rejected promises are reported through velar/app with a stable realtime phase and detail instead of escaping the native event loop. Realtime URLs are limited to 2 MiB and text messages to 16 MiB.", "连接是普通的被拥有资源：应用在同级的 @cleanup 中显式关闭它们。处理器抛出的异常与被拒绝的 Promise 通过 velar/app 以稳定的 realtime 阶段与细节报告，而不是从原生事件循环中逃逸。实时 URL 限制为 2 MiB，文本消息限制为 16 MiB。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={realtimeMembers}
                     caption={locale.text("velar/realtime — two constructors and their members", "velar/realtime —— 两个构造器及其成员")}
                 />
-                <p>
+                <Paragraph>
                     <Link to="/guide/web/data" look={chapterLinkLook}>
                         {locale.text("Guide: Storage, HTTP and realtime", "指南：存储、HTTP 与实时")}
                     </Link>
-                </p>
+                </Paragraph>
 
-                <h2 id="web-test">{locale.text("velar/web-test", "velar/web-test")}</h2>
-                <p>
+                <SectionHeading id="web-test">{locale.text("velar/web-test", "velar/web-test")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Browser tests live in *.browser.test.vel and run only through velar test --browser. Because that command is the only place this module has a runtime, importing it from an application module or a plain *.test.vel is refused at the import line rather than left to fail at the call. The test body runs in the test process rather than in the page, so mount, JSX, document, and velar/storage are unavailable there.", "浏览器测试位于 *.browser.test.vel，只通过 velar test --browser 运行。由于该命令是这个模块唯一拥有运行时的地方，从应用模块或普通 *.test.vel 导入它会在 import 行被拒绝，而不是留到调用时才失败。测试体运行在测试进程中而不是页面中，因此 mount、JSX、document 与 velar/storage 在那里不可用。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={testMembers}
                     caption={locale.text("velar/web-test — the controller, the storage controls, and the network routes", "velar/web-test —— 控制器、存储控制与网络路由")}
                 />
                 <Callout title={locale.text("A green browser suite means no test printed an error anywhere", "浏览器套件全绿，意味着没有任何测试在任何地方打印过错误")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("Any unowned error during a test fails that test: a page error, an error or warning console message, an uncaught exception, an unhandled rejection, or a detached-task failure report. The runner itself keeps running — the failure belongs to the test, never to the process — and the exit code reports it.", "测试期间任何无主的错误都会让该测试失败：页面错误、error 或 warning 级别的控制台消息、未捕获的异常、未处理的拒绝，或分离任务的失败报告。运行器本身继续运行——失败属于测试，绝不属于进程——并由退出码报告出来。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
-                <p>
+                <Paragraph>
                     <Link to="/guide/web/testing" look={chapterLinkLook}>
                         {locale.text("Guide: Testing web applications", "指南：测试 Web 应用")}
                     </Link>
-                </p>
+                </Paragraph>
             </Prose>
         </DocsShell>
     </main>

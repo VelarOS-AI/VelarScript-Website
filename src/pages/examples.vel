@@ -1,6 +1,6 @@
 import {Head, Link} from "velar/web"
 import {border, clamp, minmax, spacing, tracks} from "velar/look"
-import {Callout, CodeBlock, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {Callout, CodeBlock, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {Container, Section, foundationInk as ink, foundationInkSoft as inkSoft, foundationPaperPure as paperPure, foundationRule as rule, foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {headTitle} from "../content.vel"
 
@@ -14,14 +14,16 @@ const sections = [
     {id: "core", label: "tour/core", labelZh: "tour/core"},
     {id: "web", label: "tour/web", labelZh: "tour/web"},
     {id: "desktop", label: "tour/desktop", labelZh: "tour/desktop"},
-    {id: "app", label: "app — Release Studio", labelZh: "app —— Release Studio"},
+    {id: "release-studio", label: "app — Release Studio", labelZh: "app —— Release Studio"},
     {id: "run", label: "Running them", labelZh: "运行它们"},
 ]
 
+// A list of example cards rather than a run of bullets, so it is not a
+// BulletList. Its own margin stays at zero: Prose owns the space around it.
 const listLook = look:
     display = "grid"
     gap = 16px
-    marginTop = 20px
+    margin = 0
     padding = 0
     listStyle = "none"
 
@@ -35,7 +37,7 @@ const entryLook = look:
     background = paperPure
 
     if viewport.width <= 700px:
-        gridTemplateColumns = tracks(1fr)
+        gridTemplateColumns = tracks(minmax(0px, 1fr))
 
 const entryNameLook = look:
     color = ink
@@ -69,24 +71,24 @@ export component Examples:
                 />
                 <SectionList items={sections} />
                 <Prose>
-                    <h2 id="two">{locale.text("Two kinds of knowledge", "两种知识")}</h2>
-                    <p>
+                    <SectionHeading id="two">{locale.text("Two kinds of knowledge", "两种知识")}</SectionHeading>
+                    <Paragraph>
                         {locale.text(`The tour teaches every spelling, exactly once — it answers "how do I say this in Vel?". The application teaches how a real codebase is put together: module division, state ownership, routing, tests — it answers "what does Vel at real size look like?".`, "巡览讲授每一种拼写，且每种恰好一次——它回答「这件事在 Vel 里怎么写？」。应用讲授一份真实代码库是如何组织起来的：模块划分、状态归属、路由、测试——它回答「真实规模的 Vel 长什么样？」。")}
-                    </p>
-                    <p>
+                    </Paragraph>
+                    <Paragraph>
                         {locale.text("These are two kinds of knowledge rather than two sizes of the same one. Knowing that resource exists does not tell you whether a feed belongs in a resource, in a module store, or in a component; knowing how one application is laid out does not tell you the syntax for a keyframes block. So the tour puts nearly identical spellings side by side on purpose, and the application never does — it shows one choice and says why.", "这是两类知识，而不是同一类知识的两种规模。知道存在 resource，并不能告诉你某个数据流应该放在 resource、模块 store 还是组件里；知道一个应用如何布局，也不能告诉你 keyframes 块的语法。因此巡览有意把几乎相同的拼写并排放置，而应用从不这样做——它只给出一个选择，并说明理由。")}
-                    </p>
-                    <p>
+                    </Paragraph>
+                    <Paragraph>
                         {locale.text("Read them in that order: the tour first, skimmed rather than studied, because it is a reference you come back to; then the application, start to finish, because structure only makes sense whole.", "按这个顺序读：先读巡览，略读而不是精读，因为它是一份你会反复回来查的参考；然后从头到尾读那个应用，因为结构只有整体看才讲得通。")}
-                    </p>
+                    </Paragraph>
 
-                    <h2 id="core">{locale.text("tour/core", "tour/core")}</h2>
-                    <p>
+                    <SectionHeading id="core">{locale.text("tour/core", "tour/core")}</SectionHeading>
+                    <Paragraph>
                         {locale.text("Seventeen chapters on the Core target, which activates no extension: values, operators, types and optionals, records and enums, functions and calls, text and numbers, collections, control flow, classes, errors, modules, the JavaScript boundary, files, processes, contextual names, and testing. Everything Core can compile lives here, even when a Web application is where you would meet it — List, Map, match, try, classes, and modules are language rather than Web, so a Node service and a desktop application use them identically.", "Core 目标上的十七章，该目标不激活任何扩展：值、运算符、类型与可选值、记录与枚举、函数与调用、文本与数字、集合、控制流、类、错误、模块、JavaScript 边界、文件、进程、上下文名字与测试。凡是 Core 能编译的都放在这里，即使你通常是在 Web 应用中遇到它们——List、Map、match、try、类与模块属于语言而不属于 Web，因此 Node 服务与桌面应用对它们的用法完全相同。")}
-                    </p>
-                    <p>
+                    </Paragraph>
+                    <Paragraph>
                         {locale.text("The excerpt below is chapter 11, on errors and assertions. Discrimination is the class; code is that same identity in string form.", "下面的节选来自第 11 章，讲错误与断言。区分靠的是类；code 是同一身份的字符串形式。")}
-                    </p>
+                    </Paragraph>
                     <CodeBlock code={coreTourCode} />
                     <ul look={listLook}>
                         <li look={entryLook}>
@@ -102,13 +104,13 @@ export component Examples:
                         </li>
                     </ul>
 
-                    <h2 id="web">{locale.text("tour/web", "tour/web")}</h2>
-                    <p>
+                    <SectionHeading id="web">{locale.text("tour/web", "tour/web")}</SectionHeading>
+                    <Paragraph>
                         {locale.text(`Thirteen chapters on the Web target: components and JSX, directives, state and derived values, resources and actions, lifecycle and mount, Look, motion, the escape hatches beyond Look, routing, browser capabilities, storage and connections, and both kinds of test. It covers only what the extension adds on top of Core, which is what makes "is this part of the language or part of the Web extension?" answerable by which directory a chapter is in.`, "Web 目标上的十三章：组件与 JSX、指令、状态与派生值、resource 与 action、生命周期与挂载、Look、动效、Look 之外的逃生通道、路由、浏览器能力、存储与连接，以及两种测试。它只覆盖该扩展在 Core 之上新增的部分——这正是让「这属于语言还是属于 Web 扩展？」可以靠章节所在目录来回答的原因。")}
-                    </p>
-                    <p>
+                    </Paragraph>
+                    <Paragraph>
                         {locale.text("The excerpt below is the opening of chapter 03, on synchronous reactivity.", "下面的节选是第 03 章的开头，讲同步响应式。")}
-                    </p>
+                    </Paragraph>
                     <CodeBlock code={webTourCode} />
                     <ul look={listLook}>
                         <li look={entryLook}>
@@ -124,10 +126,10 @@ export component Examples:
                         </li>
                     </ul>
 
-                    <h2 id="desktop">{locale.text("tour/desktop", "tour/desktop")}</h2>
-                    <p>
+                    <SectionHeading id="desktop">{locale.text("tour/desktop", "tour/desktop")}</SectionHeading>
+                    <Paragraph>
                         {locale.text("Four chapters on the Desktop target: the host surface, the three long-lived handles, the desktop test module, and a desktop browser test. The Desktop extension composes the Web extension, so every Web spelling is available unchanged and this tour walks only what Desktop adds.", "桌面目标上的四章：宿主表面、三种长期存活的句柄、桌面测试模块，以及一个桌面浏览器测试。桌面扩展组合了 Web 扩展，因此每一种 Web 拼写都原样可用，这份巡览只走桌面新增的部分。")}
-                    </p>
+                    </Paragraph>
                     <CodeBlock code={desktopTourDesktopCode} />
                     <ul look={listLook}>
                         <li look={entryLook}>
@@ -143,18 +145,20 @@ export component Examples:
                         </li>
                     </ul>
                     <Callout title={locale.text("The tour is also gate corpus", "巡览同时也是门禁语料")}>
-                        <p>
+                        <Paragraph>
                             {locale.text("The formatter walks every .vel file under examples/, CI checks and builds every project there, and a coverage gate reverse-queries the compiler's own vocabulary tables and fails by name when a spelling is missing from the tour. A formatter or analyzer defect in a corner nothing else exercises used to have somewhere to hide; this is the corner, and it is now walked on every run.", "格式化器遍历 examples/ 下的每一个 .vel 文件，CI 检查并构建其中每一个项目，还有一道覆盖率门禁会反向查询编译器自己的词汇表，并在某种拼写缺席巡览时按名字报错。过去，格式化器或分析器在无人问津的角落里的缺陷是有地方藏身的；那个角落就是这里，而现在每次运行都会走一遍。")}
-                        </p>
+                        </Paragraph>
                     </Callout>
 
-                    <h2 id="app">{locale.text("app — Release Studio", "app —— Release Studio")}</h2>
-                    <p>
+                    <SectionHeading id="release-studio">
+                        {locale.text("app — Release Studio", "app —— Release Studio")}
+                    </SectionHeading>
+                    <Paragraph>
                         {locale.text("One complete Web application: a release-readiness console with four routes, one shared store, persisted reader preferences, a form, a checklist, and two kinds of test. The board tracks releases; each release has a stage — planned, building, verifying, released — a target date, and a checklist. One rule holds the application together: a release may leave verifying only once its checklist is clear. Everything else is arithmetic over that.", "一个完整的 Web 应用：发布就绪度控制台，四条路由、一个共享 store、被持久化的阅读者偏好、一个表单、一份清单，以及两种测试。看板跟踪的是发布；每个发布有一个阶段——planned、building、verifying、released——一个目标日期与一份清单。有一条规则把整个应用维系在一起：只有清单清空之后，发布才能离开 verifying。其余的一切都是围绕它的算术。")}
-                    </p>
-                    <p>
+                    </Paragraph>
+                    <Paragraph>
                         {locale.text("What this example teaches is structure — how to divide modules, where state belongs, how routing is declared, and which tests belong in a browser. It does not try to show every spelling; that is the tour's job. The excerpt below is the whole domain layer's core: nothing in it is reactive and nothing touches a document, which is what lets its unit tests exercise all of it with no page and no browser.", "这个示例讲授的是结构——如何划分模块、状态归属何处、路由如何声明，以及哪些测试属于浏览器。它不试图展示每一种拼写，那是巡览的工作。下面的节选是整个领域层的核心：其中没有任何响应式的东西，也不触碰文档，这正是让它的单元测试可以在没有页面、没有浏览器的情况下把它全部跑一遍的原因。")}
-                    </p>
+                    </Paragraph>
                     <CodeBlock code={domainCode} />
                     <ul look={listLook}>
                         <li look={entryLook}>
@@ -169,17 +173,17 @@ export component Examples:
                             </div>
                         </li>
                     </ul>
-                    <p>
+                    <Paragraph>
                         {locale.text(`Four decisions in it are worth copying. State lives at the scope of the question it answers: the board is a fact about the application, so it is module state; a half-typed check title is a fact about one form, so it is state inside that component; server data that is only interesting while a panel is on screen is a resource inside that panel. A component prop is a transitive readonly view, so a view asks for a change by identifier through the store rather than writing to the data it was given. Routing is declared in one module, so "what URLs does this application answer?" has a short answer. And the two test kinds answer different questions: arithmetic and store transitions run in the ordinary test process in milliseconds, while routing, rendering, form validation, and whether a preference survives a reload need a real engine.`, "其中有四个决定值得照搬。状态位于它所回答的那个问题的尺度上：看板是关于整个应用的事实，因此它是模块级 state；一个只打了一半的清单标题是关于某个表单的事实，因此它是那个组件内部的 state；只有当面板在屏幕上时才有意义的服务端数据，是那个面板内部的 resource。组件属性是可传递的只读视图，因此视图通过 store、按标识符请求变更，而不是直接写它拿到的数据。路由在一个模块里声明，于是「这个应用响应哪些 URL？」有一个简短的答案。两种测试回答不同的问题：算术与 store 状态迁移在普通测试进程里以毫秒计运行，而路由、渲染、表单验证，以及某项偏好是否能在重载后存活，都需要真正的引擎。")}
-                    </p>
+                    </Paragraph>
 
-                    <h2 id="run">{locale.text("Running them", "运行它们")}</h2>
-                    <p>
+                    <SectionHeading id="run">{locale.text("Running them", "运行它们")}</SectionHeading>
+                    <Paragraph>
                         {locale.text("Both corpora are ordinary VelarScript projects, so the ordinary commands apply: velar check for the whole module graph, velar test for the unit tests, velar test --browser all for the same application in Chromium, Firefox, and WebKit, velar dev for a dev server, and velar build for a production build. Where a page here and a file there disagree, the file is the one the compiler checked.", "两套语料都是普通的 VelarScript 项目，因此普通命令同样适用：velar check 检查整张模块图，velar test 运行单元测试，velar test --browser all 在 Chromium、Firefox 与 WebKit 中运行同一个应用，velar dev 启动开发服务器，velar build 做生产构建。当本页与那边的文件不一致时，以经过编译器检查的文件为准。")} <Link
                             to="/guide"
                         >
                             {locale.text("Read the guide", "阅读指南")}
-                        </Link></p>
+                        </Link></Paragraph>
                 </Prose>
             </Container>
         </Section>

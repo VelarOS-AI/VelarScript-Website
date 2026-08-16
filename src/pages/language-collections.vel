@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -13,12 +13,6 @@ const indexErrorOutput = `main.vel:2:15 error VEL4001: Use Map.get(key) instead 
 const iterationCode = `export def iterate() -> string:\n    const values: List<string> = ["a", "b"]\n    const tags: Set<string> = Set(["x", "y"])\n    const scores: Map<string, number> = Map([["Ada", 9]])\n    const counts: Record<number> = {one: 1, two: 2}\n    let joined = ""\n\n    // A one-slot for visits List and Set values, Map and Record keys, and\n    // string characters.\n    for value in values:\n        joined += value\n    for tag in tags:\n        joined += tag\n    for key in scores:\n        joined += key\n    for key in counts:\n        joined += key\n    for character in "ab":\n        joined += character\n\n    // A two-slot for yields value and index for Lists, Sets, and strings, and\n    // key and value for Maps and Records.\n    for value, index in values:\n        joined += f"{value}{index}"\n    for character, index in "ab":\n        joined += f"{character}{index}"\n    for key, score in scores:\n        joined += f"{key}{score}"\n    for key, count in counts:\n        joined += f"{key}{count}"\n\n    return joined\n\n// Replacing the value at an existing key keeps that key's position; removing a\n// key and adding it again moves it to the end.\nexport def orderContract() -> string:\n    const scores: Map<string, number> = Map([["a", 1], ["b", 2]])\n    scores.set("a", 9)\n    scores.remove("b")\n    scores.set("b", 3)\n    let joined = ""\n    for key in scores:\n        joined += key\n    return joined\n\n// Order is insertion order everywhere, with one Record exception inherited\n// from the JavaScript object it is: integer-spelled keys come first.\nconst byId: Record<string> = {"2": "second", "1": "first"}\nconst ordered = Map([["2", "second"], ["1", "first"]])`
 const moduleCode = `import {chunk, compact, countBy, drop, enumerate, first, flatten, groupBy, join, keyBy, last, maxBy, minBy, partition, reversed, sortBy, sum, take, unique, zip} from "velar/collections"\n\ntype Row:\n    id: string\n    group: string\n    rank: number\n\nconst rows: List<Row> = [\n    {id: "a", group: "x", rank: 2},\n    {id: "b", group: "y", rank: 1},\n    {id: "c", group: "x", rank: 3},\n]\nconst values: List<number> = [3, 1, 2, 3]\nconst words: List<string> = ["b", "a", "b"]\nconst nested: List<List<number>> = [[1, 2], [3]]\nconst sparse: List<number?> = [1, null, 3]\n\nconst paired = enumerate(words)\nconst zipped = zip(words, values)\nconst uniqueValues = unique(values)\nconst chunked = chunk(values, 2)\nconst flattened = flatten(nested)\nconst compacted = compact(sparse)\nconst backwards = reversed(values)\nconst firstTwo = take(values, 2)\nconst withoutFirst = drop(values, 1)\nconst firstValue = first(values)\nconst lastValue = last(values)\nconst split = partition(values, value => value > 2)\n\nconst grouped = groupBy(rows, row => row.group)\nconst keyed = keyBy(rows, row => row.id)\nconst counted = countBy(rows, row => row.group)\n\nconst ranked = sortBy(rows, row => row.rank)\nconst smallest = minBy(rows, row => row.rank)\nconst largest = maxBy(rows, row => row.rank)\n\nconst summed = sum(values)\nconst joined = join(words, "-")\n\n// Named arguments follow the published signatures.\nconst namedChunk = chunk(values=values, size=2)\nconst namedSort = sortBy(values=rows, key=row => row.rank, descending=true)`
 const rangeCode = "// range is a Core prelude function and needs no import.\nconst toEnd = range(3)\nconst fromStart = range(1, 4)\nconst stepped = range(0, 10, 2)\nconst countingDown = range(10, 0, -2)\nconst namedBounds = range(start=1, end=4)\n\nexport def loopOverRange() -> number:\n    let total = 0\n    for value in range(4):\n        total += value\n    return total\n\n// Math is resident too, so numeric work needs no import either.\nconst clamped = Math.clamp(11, 0, 10)\nconst smallestOf = Math.min(3, 1, 2)\nconst largestOf = Math.max(3, 1, 2)\nconst squareRoot = Math.sqrt(9)\nconst raised = Math.pow(2, 8)\nconst hypotenuse = Math.hypot(3, 4)\nconst randomInRange = Math.randomInt(1, 6)"
-
-const pointsLook = look:
-    display = "grid"
-    gap = 8px
-    margin = 0
-    paddingInlineStart = 20px
 
 const sections = [
     {id: "families", label: "Four families", labelZh: "四个家族"},
@@ -45,72 +39,72 @@ export component LanguageCollections:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="families">{locale.text("Four families", "四个家族")}</h2>
-                <p>
+                <SectionHeading id="families">{locale.text("Four families", "四个家族")}</SectionHeading>
+                <Paragraph>
                     {locale.text("List is ordered and dense, Set holds unique members, Map takes typed keys, and Record is the JSON-shaped counterpart with string keys. Each is constructed by naming it; an empty mutable collection with no annotation infers its element type from the first checked mutation.", "List 有序且稠密，Set 保存唯一成员，Map 接受带类型的键，Record 是以字符串为键的 JSON 形状对应物。构造方式就是写出它的名字；没有注解的空可变集合，从第一次受检的修改中推断元素类型。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={familiesCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("Map and Record answer different questions: a Map is a keyed store the program builds, and a Record is the shape data arrives in.", "Map 与 Record 回答的是不同的问题：Map 是程序自己搭建的按键存储，Record 是数据到达时所具有的形状。")}
                     </li>
                     <li>
                         {locale.text("Keys are uniformly strings or finite numbers, which is what lets order stay defined and validation stay a read.", "键统一是字符串或有限数字，正因如此顺序才能有定义，验证也才能只是一次读取。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="list">{locale.text("List", "List")}</h2>
-                <p>
+                <SectionHeading id="list">{locale.text("List", "List")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A List publishes one spelling per operation. Mutation is append, extend, insert, remove, and pop; ordering answers a new List through sorted and reversed rather than rewriting the receiver. Two readings of a position exist on purpose: an index throws when the position is out of range, and get answers null when absence is an expected answer.", "List 为每种操作只发布一种拼写。修改用 append、extend、insert、remove 与 pop；排序通过 sorted 与 reversed 给出新的 List，而不是改写接收者。位置有两种读法，这是刻意的：索引在越界时抛出，而当缺失本身就是预期答案时用 get 得到 null。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={listCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={pushErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={pushErrorOutput} />
-                <p>
+                <Paragraph>
                     {locale.text("The mutating JavaScript operations are absent as a group: splice, shift, unshift, and the in-place sort and reverse. Each has a written counterpart, and the diagnostic names it.", "会就地修改的 JavaScript 操作作为一组被移除：splice、shift、unshift，以及原地的 sort 与 reverse。它们各自都有书面的对应写法，诊断会把它点出来。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="keyed">{locale.text("Set, Map, and Record", "Set、Map 与 Record")}</h2>
-                <p>
+                <SectionHeading id="keyed">{locale.text("Set, Map, and Record", "Set、Map 与 Record")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Set carries membership and the three set operations. Map reads through get, which answers an optional, because a missing key is an ordinary answer rather than a bug. Record is indexed like the JSON object it lowers to, and its reads answer an optional for the same reason.", "Set 承载成员判断与三种集合运算。Map 通过 get 读取，得到的是可选值，因为键不存在是一个普通答案而不是缺陷。Record 像它所降级成的 JSON 对象那样用索引访问，出于同样的理由，它的读取也给出可选值。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={keyedCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What the compiler refuses", "编译器拒绝的写法")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={indexErrorCode} />
-                <p>
+                <Paragraph>
                     <strong>{locale.text("What velar check answers", "velar check 的回答")}</strong>
-                </p>
+                </Paragraph>
                 <CodeBlock code={indexErrorOutput} />
 
-                <h2 id="iteration">{locale.text("Iteration and order", "迭代与顺序")}</h2>
-                <p>
+                <SectionHeading id="iteration">{locale.text("Iteration and order", "迭代与顺序")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A one-slot loop visits List and Set values, Map and Record keys, and string characters. A two-slot loop yields value and index for the ordered families and key and value for the keyed ones. Order is insertion order everywhere, with one Record exception inherited from the JavaScript object it is: integer-spelled keys come first.", "单槽位循环访问 List 与 Set 的值、Map 与 Record 的键，以及字符串的字符。双槽位循环对有序家族给出值与索引，对按键家族给出键与值。顺序在各处都是插入顺序，只有 Record 有一个继承自它所是的那个 JavaScript 对象的例外：整数拼写的键排在最前。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={iterationCode} />
 
-                <h2 id="module">{locale.text("velar/collections", "velar/collections")}</h2>
-                <p>
+                <SectionHeading id="module">{locale.text("velar/collections", "velar/collections")}</SectionHeading>
+                <Paragraph>
                     {locale.text("The module is a different table from the checked methods, not an alternative spelling of them. List has map and no groupBy; the module has groupBy and no map. It stays behind an import because it is a toolbox a program reaches for rather than vocabulary every program speaks, and every function in it answers a new value.", "这个模块与受检方法是两张不同的表，而不是它们的另一种拼写。List 有 map 而没有 groupBy；模块有 groupBy 而没有 map。它留在 import 之后，因为它是程序按需取用的工具箱，而不是每个程序都会说的词汇；模块中的每个函数都给出新值。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={moduleCode} />
 
-                <h2 id="range">{locale.text("range and Math", "range 与 Math")}</h2>
-                <p>
+                <SectionHeading id="range">{locale.text("range and Math", "range 与 Math")}</SectionHeading>
+                <Paragraph>
                     {locale.text("range is a Core prelude function and needs no import, which is why counting loops have no ceremony around them. Math is a resident namespace on the same footing as Text and Json: its members are reached by writing them, and importing a module by that name does not exist.", "range 是 Core 前奏函数，无需导入，因此计数循环周围没有额外形式。Math 与 Text、Json 处在同一层级，是常驻命名空间：写出成员名即可访问，而以该名字导入模块这件事并不存在。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={rangeCode} />
                 <Callout title={locale.text("Two tables that look alike", "两张长得很像的表")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("The checked methods belong to the value; the module functions take the value as their first argument. When a name appears in both — reversed, for instance — the two agree on meaning and differ only in where the receiver is written.", "受检方法属于值本身；模块函数把值作为第一个实参。当同一个名字在两边都出现——比如 reversed——它们在含义上一致，差别只在接收者写在哪里。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager

@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -19,13 +19,6 @@ const sections = [
     {id: "seams", label: "Storage and network seams", labelZh: "存储与网络接缝"},
     {id: "running", label: "Running them", labelZh: "运行方式"},
 ]
-
-const pointsLook = look:
-    display = "grid"
-    gap = 7px
-    marginTop = 18px
-    marginBottom = 4px
-    paddingLeft = 22px
 
 const controllerRows: List<MemberRow> = [
     {name: "open reload", signature: `await browser.open("/section")`, summary: "Loads an application path in a fresh context, or reloads the current one.", summaryZh: "在全新上下文中加载一个应用路径，或重新加载当前路径。"},
@@ -56,26 +49,26 @@ export component WebTesting:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="unit">{locale.text("The unit half", "单元测试这一半")}</h2>
-                <p>
+                <SectionHeading id="unit">{locale.text("The unit half", "单元测试这一半")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A test block only exists at the top level of a module whose name ends in the test suffix, and it runs in the test process against the compiled module, with no page. The reactive facts are still observable there, because tick() answers a Promise that resolves after the pending flush has settled — so a test writes state, awaits the flush, and then asserts what the flush produced.", "test 块只存在于名字以测试后缀结尾的模块顶层，它在测试进程中针对已编译的模块运行，没有页面。响应式事实在那里依然可观察，因为 tick() 返回一个在待处理刷新结束后解决的 Promise——于是测试写入 state、等待刷新，然后断言这次刷新产生了什么。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={unitTestCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("An awaited tick cannot step over a broken update: if the flush reported a failure no handler claimed, tick rejects with it.", "被 await 的 tick 无法跨过一次损坏的更新：若该次刷新上报了没有处理器认领的失败，tick 会以它拒绝。")}
                     </li>
                     <li>
                         {locale.text("A module action publishes pending around its call, so a test can assert the busy flag on both sides of the await.", "模块 action 在其调用前后发布 pending，因此测试可以在 await 的两侧断言这个忙碌标志。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="matchers">{locale.text("What expect answers", "expect 回答什么")}</h2>
-                <p>
+                <SectionHeading id="matchers">{locale.text("What expect answers", "expect 回答什么")}</SectionHeading>
+                <Paragraph>
                     {locale.text("expect provides typed matchers for identity, structural equality, containment, matching, length, throwing, and rejecting. Structural equality is the language's own equality — one implementation, not a matching one — so an assertion can never answer differently from the language it is testing. It therefore invents no test-only structural model, invokes no record getter, accepts no sparse list, and treats no distinct class instance as equal.", "expect 提供带类型的匹配器，覆盖身份、结构相等、包含、匹配、长度、抛出与拒绝。结构相等就是语言自己的相等——只有一份实现，而不是另一份「行为相同」的实现——因此断言绝不会给出与被测语言不同的答案。它不发明只供测试用的结构模型，不调用记录的 getter，不接受稀疏列表，也不把不同的类实例当作相等。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={matchersCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("The truthy and falsy spellings accept only actual booleans; they do not reintroduce a truthiness rule the language removed.", "truthy 与 falsy 的拼写只接受真正的布尔值；它们不会把语言已经移除的真值性规则重新引入。")}
                     </li>
@@ -85,42 +78,42 @@ export component WebTesting:
                     <li>
                         {locale.text("Failure rendering is bounded for large and deep values, and it never calls conversion hooks on functions or unknown objects.", "对大型与深层取值的失败呈现是有界的，且它从不对函数或未知对象调用转换钩子。")}
                     </li>
-                </ul>
+                </BulletList>
                 <CodeBlock code={httpFailureTestCode} />
 
-                <h2 id="suffix">{locale.text("The suffix is the boundary", "后缀就是边界")}</h2>
-                <p>
+                <SectionHeading id="suffix">{locale.text("The suffix is the boundary", "后缀就是边界")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A browser test uses a separate module suffix and runs only through the browser test command, because that command is the only place the controller module has a runtime. The boundary therefore sits on the import line rather than being left to fail at the call. This module compiles — the site's gate checks it as a browser-test module:", "浏览器测试使用独立的模块后缀，并且只通过浏览器测试命令运行，因为只有该命令下控制器模块才有运行时。因此边界落在 import 行上，而不是留到调用时才失败。下面这个模块可以编译——本站门禁把它作为浏览器测试模块检查：")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={pageBrowserTestCode} />
-                <p>
+                <Paragraph>
                     {locale.text("The same import in any other module kind is refused, and the diagnostic names the fix:", "同样的导入出现在其他任何模块种类中都会被拒绝，诊断会指出修法：")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={browserTestErrorCode} />
                 <CodeBlock code={browserTestErrorOutput} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("A browser test body runs in the test process and not in the page, so mount, JSX, and the application storage modules are unavailable there. A call that reaches for them fails the test through the same rule.", "浏览器测试体在测试进程中运行，而不是在页面中，因此 mount、JSX 与应用存储模块在那里不可用。伸手去用它们的调用会依同一条规则让测试失败。")}
                     </li>
                     <li>
                         {locale.text("The unchecked JavaScript import and the re-export spellings are closed the same way, so the controller cannot be laundered into application code.", "未受检的 JavaScript 导入与再导出的拼写以同样的方式被封闭，因此控制器无法被洗进应用代码。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="controller">{locale.text("The browser controller", "浏览器控制器")}</h2>
-                <p>
+                <SectionHeading id="controller">{locale.text("The browser controller", "浏览器控制器")}</SectionHeading>
+                <Paragraph>
                     {locale.text("The controller exposes a compact automation surface on purpose. It is not a general DOM or page-evaluation escape hatch: every member performs a real action or reads a real value, and the ones that would otherwise need arbitrary page scripting — the platform namespace, the running animation, the interaction timings — are published as checked members instead.", "控制器刻意暴露一个紧凑的自动化表面。它不是通用的 DOM 或页面求值逃生通道：每个成员要么执行一次真实操作，要么读取一个真实取值；而那些否则需要任意页面脚本才能拿到的东西——平台命名空间、正在运行的动画、交互时序——则以受检成员的形式发布。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={controllerRows}
                     caption={locale.text("What the browser controller publishes", "浏览器控制器发布了什么")}
                 />
 
-                <h2 id="seams">{locale.text("Storage and network seams", "存储与网络接缝")}</h2>
-                <p>
+                <SectionHeading id="seams">{locale.text("Storage and network seams", "存储与网络接缝")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Two more controllers exist so a test can reach the states a product would otherwise need a debug affordance for. The storage controllers expose raw string reads and writes after the page opens, which is how a recovery path is tested against malformed or legacy bytes without shipping a query parameter, a debug button, or a script escape in the product. The network controller installs a bounded response for one application path, which is how streaming and failure interfaces are driven without a fake-provider branch in the application.", "还有两个控制器存在，让测试可以抵达那些产品否则需要专门调试口才能到达的状态。存储控制器在页面打开后暴露原始字符串的读写，这就是在不向产品中塞入查询参数、调试按钮或脚本逃逸口的前提下，针对畸形或历史遗留字节测试恢复路径的方式。网络控制器为某个应用路径安装一条有界响应，这就是在应用中不加假数据源分支的前提下驱动流式与失败界面的方式。")}
-                </p>
-                <ul look={pointsLook}>
+                </Paragraph>
+                <BulletList>
                     <li>
                         {locale.text("Each browser test already owns a fresh context, so these controls cannot leak state between tests and are unavailable outside the browser test command.", "每个浏览器测试本来就拥有一个全新的上下文，因此这些控制项不会在测试之间泄漏状态，并且在浏览器测试命令之外不可用。")}
                     </li>
@@ -130,17 +123,17 @@ export component WebTesting:
                     <li>
                         {locale.text("The framework owns the time, DOM, and network seams, which is what makes a browser test's outcome a property of the application rather than of the machine it ran on.", "框架拥有时间、DOM 与网络这三处接缝，这正是浏览器测试的结果成为应用的性质、而不是运行它的机器的性质的原因。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="running">{locale.text("Running them", "运行方式")}</h2>
-                <p>
+                <SectionHeading id="running">{locale.text("Running them", "运行方式")}</SectionHeading>
+                <Paragraph>
                     {locale.text("The first command runs the unit tests. The second builds a real production site with its content security policy, starts an isolated local host, creates a fresh browser context for each test, and automatically fails on page errors or console error and warning messages. Chromium is the local default; all three engines may be selected explicitly, and the browser binaries remain an explicit install.", "第一条命令运行单元测试。第二条会构建一个带内容安全策略的真实生产站点、启动隔离的本地宿主、为每个测试创建全新的浏览器上下文，并在出现页面错误或控制台的错误与警告消息时自动失败。本地默认使用 Chromium；三种引擎都可以显式选择，浏览器二进制文件仍需显式安装。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={runShellCode} />
                 <Callout title={locale.text("The run is supervised", "这次运行是受监管的")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("The whole browser-test run executes in a dedicated supervised worker with a per-test bound, an aggregate bound, and a cleanup bound. Browser engines are explicit owners rather than opaque launches, and interrupt signals propagate to the worker while keeping their exit codes. A timed-out promise, a stuck browser close, or a killed invoking command therefore cannot leave a headless renderer behind.", "整个浏览器测试运行在一个专用的受监管 worker 中执行，带有单测试上限、整体上限与清理上限。浏览器引擎是显式的拥有者，而不是不透明的启动；中断信号会传播到 worker，并保留各自的退出码。因此超时的 promise、卡住的浏览器关闭，或被杀死的调用命令，都不会留下无头渲染器。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager previous={guidePrevious("/guide/web/testing")} next={guideNext("/guide/web/testing")} />

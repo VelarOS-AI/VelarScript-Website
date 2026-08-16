@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -20,13 +20,6 @@ const sections = [
     {id: "reduced", label: "Reduced motion and toggling", labelZh: "降低动效与开关"},
 ]
 
-const pointsLook = look:
-    display = "grid"
-    gap = 7px
-    marginTop = 18px
-    marginBottom = 4px
-    paddingLeft = 22px
-
 export component WebMotion:
     const locale = useLocale()
     return <main>
@@ -43,61 +36,65 @@ export component WebMotion:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="two">{locale.text("Two spellings and no third", "两种拼写，没有第三种")}</h2>
-                <p>
+                <SectionHeading id="two">{locale.text("Two spellings and no third", "两种拼写，没有第三种")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Motion has exactly two checked spellings. transition, together with its four longhands, describes a state change — a hover colour, an opening panel, a fading toast. A module-level keyframes value passed to animate describes a timeline. The animation longhands stay outside Look because animate owns the checked contract, and a raw CSS animation string is rejected at the property.", "动效恰好有两种受检拼写。transition 与它的四个 longhand 描述一次状态变化——悬停的颜色、展开的面板、淡出的提示。传给 animate 的模块级 keyframes 值描述一条时间线。animation 的各个 longhand 留在 Look 之外，因为受检契约由 animate 拥有；原始 CSS animation 字符串会在属性处被拒绝。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={animationErrorCode} />
                 <CodeBlock code={animationErrorOutput} />
 
-                <h2 id="keyframes">{locale.text("The keyframes literal", "keyframes 字面量")}</h2>
-                <p>
+                <SectionHeading id="keyframes">{locale.text("The keyframes literal", "keyframes 字面量")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A stop is from, to, or an integer percentage from one through ninety-nine. Comma-separated stops share one body, and declaration groups progress in ascending order. A keyframes body contains direct, statically lowerable Look properties only: literals, unit values, arithmetic over them, and positional velar/look builder calls.", "一个停靠点是 from、to，或者从一到九十九的整数百分比。用逗号分隔的停靠点共享一个体，声明组按升序推进。keyframes 体只包含可静态下降的直接 Look 属性：字面量、单位值、对它们的算术，以及位置参数形式的 velar/look 构建器调用。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={keyframesCode} />
-                <p>
+                <Paragraph>
                     {locale.text("Non-interpolating properties are rejected here even though a Look accepts them, because a keyframe that cannot interpolate is a declaration the browser would drop.", "即使 Look 接受某些不参与插值的属性，它们在这里仍然会被拒绝，因为无法插值的关键帧只是浏览器会直接丢弃的声明。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={keyframesErrorCode} />
                 <CodeBlock code={keyframesErrorOutput} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("A stop cannot read reactive state; make the presence of an animation dynamic on the element instead.", "停靠点不能读取响应式状态；应当让动画的有无在元素上动态变化。")}
                     </li>
                     <li>
                         {locale.text("Equal keyframe structures share one generated CSS name and one emitted rule, including across module boundaries.", "结构相同的关键帧共享一个生成的 CSS 名字与一条发出的规则，跨模块边界也是如此。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="animate">{locale.text("animate and its closed sets", "animate 与它的封闭集合")}</h2>
-                <p>
+                <SectionHeading id="animate">
+                    {locale.text("animate and its closed sets", "animate 与它的封闭集合")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("animate takes the frames and a duration, then optional easing, delay, count, loop, direction, and fill. The duration must be positive, the delay cannot be negative, count is a positive integer, and count together with a looping animation is refused — so those two options are the whole repetition vocabulary. The easings, the directions, and the fills are closed sets.", "animate 接受帧与一个时长，然后是可选的 easing、delay、count、loop、direction 与 fill。时长必须为正，延迟不能为负，count 是正整数，且 count 与循环动画不能同时给出——因此这两个选项就是重复的全部词汇。easing、direction 与 fill 都是封闭集合。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={animateCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("The Look animation property accepts one Animation, a List of them, or null.", "Look 的 animation 属性接受一个 Animation、它们的 List，或 null。")}
                     </li>
                     <li>
                         {locale.text("animate is an ordinary function call, so its arguments may be positional or named exactly as any other call's are.", "animate 是普通的函数调用，因此它的实参可以是位置形式或具名形式，与其他任何调用完全一样。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="transition">{locale.text("transition is a state change", "transition 是状态变化")}</h2>
-                <p>
+                <SectionHeading id="transition">
+                    {locale.text("transition is a state change", "transition 是状态变化")}
+                </SectionHeading>
+                <Paragraph>
                     {locale.text("The transition builder takes a property name, a duration, and optionally an easing and a delay. Written next to a state condition, it says what should ease when that condition turns on, which is a different statement from a timeline that runs on its own.", "transition 构建器接受一个属性名、一个时长，以及可选的 easing 与 delay。写在状态条件旁边时，它说明的是该条件开启时什么应当过渡——这与一条自行播放的时间线是不同的陈述。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={transitionCode} />
 
-                <h2 id="reduced">{locale.text("Reduced motion and toggling", "降低动效与开关")}</h2>
-                <p>
+                <SectionHeading id="reduced">{locale.text("Reduced motion and toggling", "降低动效与开关")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A media condition governs motion like any other visual decision, so honouring a reduced-motion preference does not leave Look. Making an animation appear and disappear is the element's job: bind it with look:animation, where null removes the native animation.", "媒体条件像其他视觉决定一样管辖动效，因此尊重降低动效偏好无需离开 Look。让动画出现与消失是元素的工作：用 look:animation 绑定它，其中 null 会移除原生动画。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={politeCode} />
                 <Callout title={locale.text("When a stylesheet must own its own keyframes", "当样式表必须拥有自己的关键帧")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("The CSS at-rule for keyframes is not a Look target. A stylesheet that must own its own keyframe names — one shipped by a design system, or a name-dependent third-party class — crosses the unsafe CSS boundary like any other native CSS, which the next chapter covers.", "CSS 的关键帧 at-rule 不是 Look 的目标。必须拥有自己关键帧名字的样式表——设计系统提供的，或依赖名字的第三方类——像其他原生 CSS 一样跨越 unsafe CSS 边界，这正是下一章的内容。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager previous={guidePrevious("/guide/web/motion")} next={guideNext("/guide/web/motion")} />

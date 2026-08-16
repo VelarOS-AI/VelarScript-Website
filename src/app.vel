@@ -4,6 +4,7 @@ import {clamp} from "velar/look"
 import {Container, SiteFoundation, foundationInkSoft as inkSoft, foundationSea as sea, useLocale} from "@velarscript/site-ui"
 import {primaryNav, SiteRuntimeConfig} from "./content.vel"
 import {SiteFooter, SiteHeader} from "./components/site-shell.vel"
+import {Evidence} from "./pages/evidence.vel"
 import {Examples} from "./pages/examples.vel"
 import {GuideForFrameworks} from "./pages/guide-for-frameworks.vel"
 import {GuideForJavaScript} from "./pages/guide-for-javascript.vel"
@@ -23,6 +24,7 @@ import {LanguageTesting} from "./pages/language-testing.vel"
 import {LanguageTextNumbers} from "./pages/language-text-numbers.vel"
 import {LanguageTypes} from "./pages/language-types.vel"
 import {LanguageValues} from "./pages/language-values.vel"
+import {Participate} from "./pages/participate.vel"
 import {ReferenceCli} from "./pages/reference-cli.vel"
 import {ReferenceDesktop} from "./pages/reference-desktop.vel"
 import {ReferenceEscapeHatches} from "./pages/reference-escape-hatches.vel"
@@ -128,6 +130,8 @@ const routes = [
     route("/reference/escape-hatches", ReferenceEscapeHatches),
     route("/reference/desktop", ReferenceDesktop),
     route("/examples", Examples),
+    route("/evidence", Evidence),
+    route("/participate", Participate),
 ]
 
 // The paths the router really serves, so a test can compare them with the

@@ -59,10 +59,10 @@ const brandLinkLook = look:
     color = ink
     textDecoration = "none"
 
-const brandImageLook = look:
+const brandMarkLook = look:
+    display = "block"
     width = 28px
     height = 28px
-    objectFit = "contain"
 
 const brandNameLook = look:
     fontSize = 1.02rem
@@ -74,11 +74,23 @@ const brandLabelLook = look:
     fontSize = 0.78rem
     fontWeight = 650
 
+// The VelarScript language mark, drawn inline from assets/brand/velarscript-mark.svg
+// in the language repository: V is the primary silhouette and S is the negative
+// space between the strokes. The brand README allows the shape to be rendered in
+// currentColor, which is why it is drawn here rather than loaded as an image —
+// one file then serves the light header and any dark surface. The wordmark sits
+// beside it, so the shape itself carries no accessible name.
 export component Brand(compact: bool = false):
     const locale = useLocale()
     return <span class="brand">
         <Link to="/" look={brandLinkLook}>
-            <img look={brandImageLook} src="/brand/velar-sail.png" alt="" />
+            <svg class="brand-mark" look={brandMarkLook} viewBox="85 113 346 290" aria-hidden="true">
+                <g fill="currentColor">
+                    <path d="M97 128C98 126 99 125 102 125h94c9 0 15 4 19 13l42 81c6 10 16 17 27 24 12 9 18 21 17 35 0 8-4 16-9 24l-55 81L98 134c-2-3-2-5-1-6Z"></path>
+                    <path d="M271 180c3-11 10-22 17-29l17-17c6-6 11-9 19-9h95l-86 153c1-9-1-19-6-27-4-7-12-14-19-20l-25-22c-10-8-14-18-12-29Z"></path>
+                    <path d="m237 383 82-81-46 84c-5 4-11 5-18 5s-13-3-18-8Z"></path>
+                </g>
+            </svg>
             <span class="brand-name" look={brandNameLook}>VelarScript</span>
             {compact ? null : <span look={brandLabelLook}>{locale.text("Language + Web", "语言 + Web")}</span>}
         </Link>

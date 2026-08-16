@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {BulletList, Callout, CodeBlock, DocsPager, DocsShell, MemberRow, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {guideNav, guideNext, guidePrevious, headTitle} from "../content.vel"
 
@@ -19,13 +19,6 @@ const sections = [
     {id: "mount", label: "mount attaches one root", labelZh: "mount 挂载唯一的根"},
     {id: "modules", label: "The module surface", labelZh: "模块表面"},
 ]
-
-const pointsLook = look:
-    display = "grid"
-    gap = 7px
-    marginTop = 18px
-    marginBottom = 4px
-    paddingLeft = 22px
 
 const moduleRows: List<MemberRow> = [
     {name: "velar/web", signature: "route, Router, Link, NavLink, lazy, navigate, currentRoute, Head, announce, domId", summary: "Routing, navigation, document metadata, and the live region.", summaryZh: "路由、导航、文档元数据与 live region。"},
@@ -57,12 +50,12 @@ export component WebOverview:
             />
             <SectionList items={sections} />
             <Prose>
-                <h2 id="activation">{locale.text("Activation is declared", "激活是声明出来的")}</h2>
-                <p>
+                <SectionHeading id="activation">{locale.text("Activation is declared", "激活是声明出来的")}</SectionHeading>
+                <Paragraph>
                     {locale.text("The language core contains no JSX, no components, no reactivity, and no styling. A project that wants them lists @velarscript/web in velar.json, and only then do those words exist in its modules. A module in a project without the extension is checked as ordinary Core, where component and look are unremarkable identifiers.", "语言核心不包含 JSX、组件、响应式与样式。需要它们的项目在 velar.json 中列出 @velarscript/web，此后这些词才在其模块中存在。未启用扩展的项目里，模块按普通 Core 受检，component 与 look 只是平常的标识符。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={manifestJsonCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("extensions is a list, so a project may activate more than one extension.", "extensions 是一个列表，因此一个项目可以激活多个扩展。")}
                     </li>
@@ -72,20 +65,20 @@ export component WebOverview:
                     <li>
                         {locale.text("The same manifest carries the web block that velar/config reads and the build settings the CLI uses.", "同一份清单还携带 velar/config 读取的 web 块与 CLI 使用的构建设置。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="entry">{locale.text("One entry, one root", "一个入口，一个根")}</h2>
-                <p>
+                <SectionHeading id="entry">{locale.text("One entry, one root", "一个入口，一个根")}</SectionHeading>
+                <Paragraph>
                     {locale.text("A Web application is an ordinary module graph whose entry ends with a mount call. Nothing about the file is special: the type, the Look, the component, and the state below are the same declarations any other module writes.", "Web 应用是一张普通的模块图，其入口以一次 mount 调用结束。这个文件本身没有任何特殊之处：下面的类型、Look、组件与状态，与其他模块写的是同样的声明。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={entryAppCode} />
 
-                <h2 id="vocabulary">{locale.text("What the extension owns", "扩展拥有什么")}</h2>
-                <p>
+                <SectionHeading id="vocabulary">{locale.text("What the extension owns", "扩展拥有什么")}</SectionHeading>
+                <Paragraph>
                     {locale.text("The charter names the complete addition: ten contextual keywords, two lifecycle hooks, three reserved global functions, the unsafe CSS import, and the unit literals. Nothing else in a Web module is new syntax, so everything not on that list is Core and behaves exactly as the language chapters describe it.", "典章列出了完整的增补：十个上下文关键字、两个生命周期钩子、三个保留的全局函数、unsafe CSS 导入，以及单位字面量。Web 模块中再没有别的新语法，因此不在这份清单上的一切都属于 Core，行为与语言各章所述完全一致。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={vocabularyCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("The contextual keywords are component with exposes and expose, state, resource, action, watch, look, keyframes, and css in the unsafe stylesheet import.", "上下文关键字是：带 exposes 与 expose 的 component、state、resource、action、watch、look、keyframes，以及 unsafe 样式表导入中的 css。")}
                     </li>
@@ -95,25 +88,25 @@ export component WebOverview:
                     <li>
                         {locale.text("JSX itself, including fragments and the host marker, is part of the grammar rather than a preprocessor step.", "JSX 本身——包括 fragment 与 host 标记——属于语法，而不是预处理步骤。")}
                     </li>
-                </ul>
-                <p>
+                </BulletList>
+                <Paragraph>
                     {locale.text("A contextual keyword declares only in its own shape, so it stays available as an ordinary name everywhere else. This module binds state, action, and look as constants and still declares component state in the same file.", "上下文关键字只在自己的形状中起声明作用，因此在其他位置它仍然是可用的普通名字。下面这个模块把 state、action 与 look 绑定为常量，同一个文件里仍然声明了组件 state。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={contextualCode} />
 
-                <h2 id="reserved">{locale.text("Six words a module refuses", "模块拒绝的六个词")}</h2>
-                <p>
+                <SectionHeading id="reserved">{locale.text("Six words a module refuses", "模块拒绝的六个词")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Three reserved globals — computed, mount, and tick — are real runtime entry points, and the three media subjects — viewport, scheme, and motion — are read by Look conditions. A Web module refuses all six as binding names, and those six words are the whole difference between what a Core module accepts and what a Web module accepts.", "三个保留全局——computed、mount 与 tick——是真实的运行时入口，三个媒体主语——viewport、scheme 与 motion——由 Look 条件读取。Web 模块拒绝把这六个词用作绑定名；这六个词就是 Core 模块与 Web 模块在可接受范围上的全部差别。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={reservedErrorCode} />
                 <CodeBlock code={reservedErrorOutput} />
 
-                <h2 id="mount">{locale.text("mount attaches one root", "mount 挂载唯一的根")}</h2>
-                <p>
+                <SectionHeading id="mount">{locale.text("mount attaches one root", "mount 挂载唯一的根")}</SectionHeading>
+                <Paragraph>
                     {locale.text("mount(node, target) attaches one root to the document and answers null. The target is a CSS selector string or an element. The root is constructed synchronously so the runtime can own its failure transaction, which is why a direct await inside the argument is rejected and preload work is awaited into a binding first.", "mount(node, target) 把一个根挂载到文档并返回 null。target 是 CSS 选择器字符串或一个元素。根是同步构造的，运行时才能拥有它的失败事务，因此参数中直接写 await 会被拒绝，预加载工作要先 await 进一个绑定。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={mountCode} />
-                <ul look={pointsLook}>
+                <BulletList>
                     <li>
                         {locale.text("One component instance mounts exactly once; a repeated mount fails explicitly rather than moving DOM silently.", "同一个组件实例只挂载一次；重复挂载会显式失败，而不是静默地搬运 DOM。")}
                     </li>
@@ -123,20 +116,20 @@ export component WebOverview:
                     <li>
                         {locale.text("A missing mount target reports through the mount phase and renders that fatal state into the document body, since the requested target is exactly what is absent.", "缺失的 mount 目标经由 mount 阶段上报，并把该致命状态渲染进文档 body，因为缺的恰好就是被请求的目标。")}
                     </li>
-                </ul>
+                </BulletList>
 
-                <h2 id="modules">{locale.text("The module surface", "模块表面")}</h2>
-                <p>
+                <SectionHeading id="modules">{locale.text("The module surface", "模块表面")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Browser capabilities arrive as explicit modules rather than ambient globals. Direct source-level use of console, document, window, navigator, location, history, fetch, JSON, Math, or Date is reported as VEL3008, and the diagnostic names the official module to import instead. Each official module captures the host objects it needs when it initializes, so JavaScript loaded later cannot redirect an official operation.", "浏览器能力以显式模块而不是环境全局的形式出现。在源码层面直接使用 console、document、window、navigator、location、history、fetch、JSON、Math 或 Date 会得到 VEL3008，诊断会指出应改为导入哪个官方模块。每个官方模块在初始化时捕获它需要的宿主对象，因此稍后加载的 JavaScript 无法改道一次官方操作。")}
-                </p>
+                </Paragraph>
                 <MemberTable
                     rows={moduleRows}
                     caption={locale.text("The modules the Web extension publishes", "Web 扩展发布的模块")}
                 />
                 <Callout title={locale.text("Where the Core language stops", "Core 语言在哪里结束")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("Everything in the language chapters keeps working inside a Web module: the same types, the same collections, the same control flow, the same error rules. Reading a Web chapter is therefore reading an addition, never a replacement.", "语言各章的一切在 Web 模块中照常有效：同样的类型、同样的集合、同样的控制流、同样的错误规则。因此读 Web 章节读到的始终是增补，而不是替换。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
             </Prose>
             <DocsPager previous={guidePrevious("/guide/web")} next={guideNext("/guide/web")} />

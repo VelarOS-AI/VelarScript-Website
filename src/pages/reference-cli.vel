@@ -1,5 +1,5 @@
 import {Head} from "velar/web"
-import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Prose, SectionList} from "@velarscript/docs-kit"
+import {Callout, CodeBlock, DocsShell, MemberTable, PageHeader, Paragraph, Prose, SectionHeading, SectionList} from "@velarscript/docs-kit"
 import {useLocale} from "@velarscript/site-ui"
 import {headTitle, referenceNav} from "../content.vel"
 
@@ -72,54 +72,54 @@ export component ReferenceCli:
             />
             <SectionList items={sections} />
             <Prose>
-                <p>
+                <Paragraph>
                     {locale.text("Run velar --help for the same list from the toolchain you actually have installed. Every command below accepts either the conventional project directory or an explicit manifest file, which is how checked-in deployment profiles share one source root while declaring different base paths, adapters, source-map policy, or public configuration.", "运行 velar --help，可以从你实际安装的工具链得到同一份列表。下列每条命令都既接受约定的项目目录，也接受显式的清单文件——这正是签入仓库的多套部署配置得以共享同一个源根、却声明不同 base 路径、适配器、source map 策略或公开配置的方式。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="writing">{locale.text("Writing code", "书写代码")}</h2>
+                <SectionHeading id="writing">{locale.text("Writing code", "书写代码")}</SectionHeading>
                 <MemberTable rows={writingMembers} caption={locale.text("Writing", "书写")} />
                 <CodeBlock code={writingShellCode} />
-                <p>
+                <Paragraph>
                     {locale.text("format recursively owns the project's .vel files while excluding .git, node_modules, .velar, the public directory, and the output directory. The division between fix and check is the important one: fix performs the rewrite when it is provably behavior-preserving, and leaves the rest as a diagnostic precisely because an unattended tool must not guess.", "format 递归地管辖项目的 .vel 文件，同时排除 .git、node_modules、.velar、公共目录与输出目录。fix 与 check 的分工才是关键：当改写可证明保持行为时，fix 会执行它；其余的仍留作诊断，正是因为无人值守的工具不该去猜。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="running">{locale.text("Running and testing", "运行与测试")}</h2>
+                <SectionHeading id="running">{locale.text("Running and testing", "运行与测试")}</SectionHeading>
                 <MemberTable rows={runningMembers} caption={locale.text("Running and testing", "运行与测试")} />
                 <CodeBlock code={runningShellCode} />
-                <p>
+                <Paragraph>
                     {locale.text("run remains the lifecycle owner of the compiled child. Its first SIGINT or SIGTERM is forwarded so velar/host.onShutdown can finish the program's registered cleanup, and a second signal or an expired launcher deadline force-terminates it. The CLI waits for the child's inherited stdio to close, so terminating the command cannot leave a detached program holding files, ports, or output streams.", "run 始终是编译出的子进程的生命周期拥有者。第一个 SIGINT 或 SIGTERM 会被转发，使 velar/host.onShutdown 能完成程序注册的清理；第二个信号或启动器期限到期则强制终止它。CLI 会等待子进程继承的 stdio 关闭，因此终止命令不会留下一个仍占着文件、端口或输出流的分离程序。")}
-                </p>
+                </Paragraph>
                 <Callout title={locale.text("Where a test run compiles", "测试运行在哪里编译")}>
-                    <p>
+                    <Paragraph>
                         {locale.text("velar test and velar run compile into a short-lived sandbox inside the project — .velar/test-* and .velar/run-* — rather than the system temporary directory. Keeping the compiled tree inside the project preserves Node's upward node_modules resolution, so bridged JavaScript dependencies resolve against the project's real installation with no environment overrides. The sandbox is removed after each run; the project templates already list .velar/ in .gitignore.", "velar test 与 velar run 编译到项目内一个短生命周期的沙箱——.velar/test-* 与 .velar/run-*——而不是系统临时目录。把编译产物留在项目内，保留了 Node 向上查找 node_modules 的解析方式，因此桥接的 JavaScript 依赖会对着项目的真实安装解析，不需要任何环境变量覆盖。沙箱在每次运行后被移除；项目模板已经在 .gitignore 中列入了 .velar/。")}
-                    </p>
+                    </Paragraph>
                 </Callout>
 
-                <h2 id="shipping">{locale.text("Building and shipping", "构建与交付")}</h2>
+                <SectionHeading id="shipping">{locale.text("Building and shipping", "构建与交付")}</SectionHeading>
                 <MemberTable rows={shippingMembers} caption={locale.text("Building and shipping", "构建与交付")} />
                 <CodeBlock code={shippingShellCode} />
-                <p>
+                <Paragraph>
                     {locale.text("verify is where the difference between a directory that exists and a build that deploys is decided, and preview always runs it first. verify-deployment closes the remaining gap between a correct directory and what users actually receive: it reuses the local verifier, then compares every public file with the explicit HTTPS origin, and checks MIME types, security and cache headers, root and deep navigation, and a unique missing hashed asset. Its --json report records a successful observation; it becomes provenance evidence only when an external system signs or attests it.", "verify 正是「目录存在」与「构建可部署」之间做出判决的地方，而 preview 总是先运行它。verify-deployment 弥合了「目录正确」与「用户实际收到的东西」之间剩下的差距：它复用本地验证器，再把每个公开文件与显式的 HTTPS 来源比对，并检查 MIME 类型、安全与缓存头部、根导航与深层导航，以及一个唯一的缺失哈希资源。它的 --json 报告记录的是一次成功的观测；只有当外部系统对其签名或背书时，它才成为来源证据。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="projects">{locale.text("Projects and dependencies", "项目与依赖")}</h2>
+                <SectionHeading id="projects">{locale.text("Projects and dependencies", "项目与依赖")}</SectionHeading>
                 <MemberTable rows={projectMembers} caption={locale.text("Projects and dependencies", "项目与依赖")} />
                 <CodeBlock code={projectsShellCode} />
-                <p>
+                <Paragraph>
                     {locale.text("These commands do not replace npm and do not introduce a second registry. npm owns dependency resolution and the lock; VelarScript validates that it is operating inside a format-2 project and synchronizes only extension activation metadata. The first install remains ordinary npm bootstrap, because a newly created project does not yet have its local velar executable.", "这些命令不取代 npm，也不引入第二个 registry。npm 拥有依赖解析与锁文件；VelarScript 只验证自己是否运行在 format-2 项目内，并只同步扩展激活的元数据。首次安装仍然是普通的 npm 引导，因为新建的项目还没有本地的 velar 可执行文件。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="model">{locale.text("Handing work to a model", "把工作交给模型")}</h2>
+                <SectionHeading id="model">{locale.text("Handing work to a model", "把工作交给模型")}</SectionHeading>
                 <MemberTable rows={skillMembers} caption={locale.text("The brief", "语言说明")} />
                 <CodeBlock code={skillShellCode} />
-                <p>
+                <Paragraph>
                     {locale.text("The brief is version-locked to the compiler you have installed, which is what makes it safe to paste into whatever model is writing your code: it describes that toolchain, not a documented ideal. A created project also carries an AGENTS.md that points a model's tooling at it.", "这份说明与你安装的编译器版本锁定，这正是把它粘贴给任何正在写你代码的模型都安全的原因：它描述的是那套工具链，而不是某个文档里的理想。新建的项目还带有一份 AGENTS.md，把模型的工具指向它。")}
-                </p>
+                </Paragraph>
 
-                <h2 id="sequences">{locale.text("The three sequences", "三条常用序列")}</h2>
-                <p>
+                <SectionHeading id="sequences">{locale.text("The three sequences", "三条常用序列")}</SectionHeading>
+                <Paragraph>
                     {locale.text("Almost all day-to-day use is three short sequences: the writing loop, the hand-off before a change leaves your machine, and the shipping path.", "日常使用几乎就是三条短序列：书写循环、改动离开你机器之前的交接，以及交付路径。")}
-                </p>
+                </Paragraph>
                 <CodeBlock code={loopShellCode} />
                 <CodeBlock code={commitShellCode} />
                 <CodeBlock code={shipShellCode} />

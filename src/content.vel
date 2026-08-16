@@ -19,6 +19,7 @@ export const primaryNav: List<NavItem> = [
     {path: "/guide", label: "Guide", labelZh: "指南"},
     {path: "/reference", label: "Reference", labelZh: "参考"},
     {path: "/examples", label: "Examples", labelZh: "示例"},
+    {path: "/evidence", label: "Evidence", labelZh: "证据"},
 ]
 
 // The guide is one ordered chain. The sidebar groups it and the pager walks it,
@@ -125,6 +126,10 @@ export def pageTitle(path: string) -> PageTitle:
         return {en: "VelarScript", zh: "VelarScript"}
     if path == "/examples":
         return {en: "Examples", zh: "示例"}
+    if path == "/evidence":
+        return {en: "Evidence", zh: "证据"}
+    if path == "/participate":
+        return {en: "Participate", zh: "参与"}
     return {en: "Page not found", zh: "页面不存在"}
 
 // Every page head reads the same format, so no page spells the suffix itself.
