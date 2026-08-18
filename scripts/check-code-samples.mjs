@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { compareDiagnosticCodeSets } from "./sample-diagnostic-codes.mjs";
 
 // Every code sample on this site is checked by the suffix of the constant that
 // holds it. There is no central registry to keep in sync: the name a page
@@ -129,11 +130,11 @@ function checkCounterExample(sample, diagnostics) {
   const outputId = `${sample.id.slice(0, -"ErrorCode".length)}ErrorOutput`;
   const output = errorOutputs.get(outputId);
   if (output === undefined) return;
-  const produced = new Set(diagnostics.codes);
-  for (const quoted of new Set(output.match(/VEL\d+/gu) ?? [])) {
-    if (!produced.has(quoted)) {
-      failures.push(`${outputId}: quotes ${quoted}, which the sample does not produce (it produces ${[...produced].join(", ")})`);
-    }
+  const comparison = compareDiagnosticCodeSets(output, diagnostics.text);
+  if (comparison.missing.length > 0 || comparison.unexpected.length > 0) {
+    failures.push(`${outputId}: documented diagnostic codes must equal the sample's diagnostics; documented [${comparison.quoted.join(", ")}], produced [${comparison.produced.join(", ")}]`
+      + `${comparison.missing.length > 0 ? `, missing [${comparison.missing.join(", ")}]` : ""}`
+      + `${comparison.unexpected.length > 0 ? `, unexpected [${comparison.unexpected.join(", ")}]` : ""}`);
   }
 }
 

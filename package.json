@@ -17,10 +17,12 @@
   ],
   "scripts": {
     "bootstrap:local": "node scripts/bootstrap-toolchain.mjs",
+    "toolchain:check": "node scripts/check-toolchain-source.mjs",
     "check": "velar check",
     "format": "velar format",
     "format:check": "velar format --check",
     "samples:check": "node scripts/check-code-samples.mjs",
+    "samples:gate-test": "node --test scripts/sample-diagnostic-codes.test.mjs",
     "voice:check": "node scripts/check-chinese-voice.mjs",
     "dev": "velar dev",
     "test": "velar test",
@@ -36,7 +38,7 @@
     "deploy:stage": "bash scripts/deploy-production-local.sh stage",
     "deploy:local": "bash scripts/deploy-production-local.sh deploy",
     "verify:deployment": "velar verify-deployment release/deployment/site",
-    "validate": "npm run deploy:check && npm run samples:check && npm run voice:check && npm run format:check && npm run check && npm test && npm run packages:check && npm run build && npm run verify"
+    "validate": "npm run deploy:check && npm run toolchain:check && npm run samples:gate-test && npm run samples:check && npm run voice:check && npm run format:check && npm run check && npm test && npm run packages:check && npm run build && npm run verify"
   },
   "dependencies": {
     "@velarscript/docs-kit": "0.1.0",
